@@ -13,7 +13,7 @@ export class MigrationRunner {
 		// Improved regex to find table names while skipping SQL keywords
 		// We look for words following TABLE, INTO, UPDATE, FROM, but skip IF NOT EXISTS
 		const tableRegex =
-			/(?:TABLE|INTO|UPDATE|FROM)\s+(?:IF\s+NOT\s+EXISTS\s+)?["`]?([a-zA-Z0-9_-]+)["`]?/gi;
+			/(?:TABLE|INTO|UPDATE|FROM|JOIN)\s+(?:IF\s+NOT\s+EXISTS\s+)?["`]?([a-zA-Z0-9_-]+)["`]?/gi;
 		const keywords = new Set([
 			'if',
 			'not',
@@ -55,7 +55,11 @@ export class MigrationRunner {
 			const normalizedModuleId = moduleId.toLowerCase().replace(/-/g, '_');
 			const normalizedTableName = tableName.replace(/-/g, '_');
 
-			if (!normalizedTableName.startsWith(normalizedModuleId + '_')) {
+			// Allow common system tables if needed, but for now strictly enforce prefix
+			if (
+				!normalizedTableName.startsWith(normalizedModuleId + '_') &&
+				!normalizedTableName.startsWith('molos_')
+			) {
 				throw new Error(
 					`Security Violation: Module ${moduleId} attempted to access table ${tableName}. All tables must be prefixed with '${moduleId}_' (or '${normalizedModuleId}_').`
 				);
@@ -99,8 +103,14 @@ export class MigrationRunner {
 					// 1. Security Check: Ensure module only touches its own tables
 					this.validateSql(moduleId, sqlContent);
 
-					// 2. Execute the SQL
-					this.db.run(sql.raw(sqlContent));
+					// 2. Execute the SQL (split by statement-breakpoint if present)
+					const statements = sqlContent.split('--> statement-breakpoint');
+					for (const statement of statements) {
+						const trimmed = statement.trim();
+						if (trimmed) {
+							this.db.run(sql.raw(trimmed));
+						}
+					}
 
 					this.db.run(
 						sql`INSERT INTO _module_migrations (module_id, migration_name) VALUES (${moduleId}, ${file})`

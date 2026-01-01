@@ -6,7 +6,7 @@ This section describes the structure and implementation of API endpoints for you
 
 Each primary entity in your module should have a `+server.ts` file in its respective API directory to handle basic CRUD operations (GET, POST, PUT, DELETE).
 
-### Example: Tasks Module - `src/routes/api/tasks/+server.ts`
+### Example: Tasks Module - `src/routes/ui/MoLOS-Tasks/+server.ts`
 
 ```typescript
 import { json } from '@sveltejs/kit';
@@ -59,7 +59,7 @@ export const DELETE: RequestHandler = async ({ url }) => {
 
 For sub-entities or related resources, create subdirectories within the API route and define their `+server.ts` files accordingly.
 
-### Example: `src/routes/api/tasks/projects/+server.ts`
+### Example: `src/routes/ui/MoLOS-Tasks/projects/+server.ts`
 
 ```typescript
 // Example for projects related to tasks

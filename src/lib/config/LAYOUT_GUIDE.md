@@ -147,9 +147,9 @@ See [Module Configuration Guide](./modules/README.md) for detailed instructions.
 ### Example 4: Adding Badges to Navigation Items
 
 ```typescript
-'/ui/tasks': {
+'/ui/MoLOS-Tasks': {
   name: 'Tasks',
-  href: '/ui/tasks',
+  href: '/ui/MoLOS-Tasks',
   icon: List,
   navigation: [
     { name: 'All Tasks', icon: List, badge: 12 },

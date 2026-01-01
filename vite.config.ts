@@ -107,9 +107,13 @@ linkExternalModules();
 export default defineConfig({
 	plugins: [tailwindcss(), sveltekit()],
 
+	resolve: {
+		preserveSymlinks: true
+	},
+
 	server: {
 		fs: {
-			allow: ['external_modules']
+			allow: ['external_modules', '..']
 		}
 	},
 

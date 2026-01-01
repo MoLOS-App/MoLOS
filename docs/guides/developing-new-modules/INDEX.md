@@ -139,7 +139,7 @@ The **Tasks module** is the canonical reference implementation. Use it as a temp
 - **Database**: `src/lib/server/db/schema/tasks/tables.ts`
 - **Models**: `src/lib/models/tasks/index.ts`
 - **Repositories**: `src/lib/repositories/tasks/`
-- **API**: `src/routes/api/tasks/`
+- **API**: `src/routes/ui/MoLOS-Tasks/`
 - **UI**: `src/routes/ui/(modules)/tasks/`
 - **Components**: `src/lib/components/modules/tasks/`
 - **Config**: `src/lib/config/modules/tasks/config.ts`
