@@ -125,14 +125,14 @@ export function getCoreAiTools(userId: string): ToolDefinition[] {
 				const startOfDay = new Date(targetDate.setHours(0, 0, 0, 0)).getTime() / 1000;
 				const endOfDay = startOfDay + 86400;
 
-				const [tasks, dailyLog, expenses, activities] = await Promise.all([
-					// taskRepo.getByUserId(userId),
-					// dailyLogRepo.getByDate(userId, startOfDay),
-					// expenseRepo.getByUserId(userId, 50),
-					// activityRepo.getByUserId(userId, 50)
-				]);
+				// TODO: Implement repositories for tasks, daily logs, expenses, and activities
+				// For now, return empty data structure
+				const tasks: unknown[] = [];
+				const dailyLog = null;
+				const expenses: unknown[] = [];
+				const activities: unknown[] = [];
 
-				const todaysTasks = tasks.filter(
+				const todaysTasks = (tasks as any[]).filter(
 					(t) =>
 						(t.dueDate && t.dueDate >= startOfDay && t.dueDate < endOfDay) ||
 						(t.doDate && t.doDate >= startOfDay && t.doDate < endOfDay)
