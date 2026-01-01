@@ -124,6 +124,10 @@ export default defineConfig({
 			{
 				extends: './vite.config.ts',
 
+				resolve: {
+					preserveSymlinks: false
+				},
+
 				test: {
 					name: 'client',
 
@@ -141,11 +145,15 @@ export default defineConfig({
 			{
 				extends: './vite.config.ts',
 
+				resolve: {
+					preserveSymlinks: false
+				},
+
 				test: {
 					name: 'server',
 					environment: 'node',
 					include: ['src/**/*.{test,spec}.{js,ts}'],
-					exclude: ['src/**/*.svelte.{test,spec}.{js,ts}']
+					exclude: ['src/**/*.svelte.{test,spec}.{js,ts}', '**/node_modules/**']
 				}
 			}
 		]

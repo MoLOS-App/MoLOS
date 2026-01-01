@@ -81,3 +81,4 @@ CREATE TABLE IF NOT EXISTS my_analytics_reports (
 - **Isolation**: Never try to modify tables belonging to other modules.
 - **Paths**: Use `$lib/` aliases for shared MoLOS utilities, but keep your module-specific logic inside your own `lib/` folder.
 - **Error Handling**: If your migration fails, MoLOS will deactivate your module and show the error in the settings page.
+- **Testing**: When running tests, ensure `node_modules` folders are excluded to avoid running dependency test files. Configure your test runner (e.g., Vitest) with `exclude: ['**/node_modules/**']` in the test configuration.
