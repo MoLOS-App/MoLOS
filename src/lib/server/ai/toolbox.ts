@@ -1,7 +1,6 @@
 import { getCoreAiTools } from './core-tools';
 import { getAllModules } from '$lib/config/modules';
 import type { ToolDefinition } from '$lib/models/ai';
-import { MODULE_AI_TOOLS } from './module-tools';
 
 export class AiToolbox {
 	/**
@@ -9,29 +8,47 @@ export class AiToolbox {
 	 * This includes core tools and tools from active external modules.
 	 */
 	async getTools(userId: string, activeModuleIds: string[] = []): Promise<ToolDefinition[]> {
+		console.log('[AiToolbox] getTools called with activeModuleIds:', activeModuleIds);
+
 		// 1. Start with core tools (global/system level)
 		let tools = getCoreAiTools(userId);
+		console.log('[AiToolbox] Core tools loaded:', tools.length);
 
 		// 2. Discover tools from all registered modules (core and external)
 		const allModules = getAllModules();
+		console.log('[AiToolbox] All modules found:', allModules.map(m => ({ id: m.id, name: m.name, isExternal: m.isExternal })));
 
 		// We include all core modules by default, and external modules only if active
 		const modulesToLoad = allModules.filter((m) => !m.isExternal || activeModuleIds.includes(m.id));
+		console.log('[AiToolbox] Modules to load:', modulesToLoad.map(m => m.id));
 
 		for (const module of modulesToLoad) {
+			console.log(`[AiToolbox] Processing module: ${module.id} (external: ${module.isExternal})`);
 			try {
-				// Check server-side registry for AI tools
-				const getToolsFn = MODULE_AI_TOOLS[module.id];
-				if (getToolsFn) {
-					console.log(`Loading AI tools for module: ${module.name}`);
-					const moduleTools = await getToolsFn(userId);
-					tools = [...tools, ...moduleTools];
+				// Try to load AI tools from module
+				try {
+					console.log(`[AiToolbox] Importing tools for module: ${module.id}`);
+					const importPath = `../../modules/${module.id}/server/ai/ai-tools.ts`;
+					const aiToolsModule = await import(/* @vite-ignore */ importPath);
+					console.log(`[AiToolbox] Import successful for ${module.id}, has getAiTools:`, !!aiToolsModule.getAiTools);
+					if (aiToolsModule.getAiTools) {
+						console.log(`[AiToolbox] Loading AI tools for module: ${module.name}`);
+						const moduleTools = await aiToolsModule.getAiTools(userId);
+						console.log(`[AiToolbox] Module ${module.id} provided ${moduleTools.length} tools`);
+						tools = [...tools, ...moduleTools];
+					} else {
+						console.log(`[AiToolbox] Module ${module.id} has no getAiTools function`);
+					}
+				} catch (importError) {
+					console.log(`[AiToolbox] Import failed for module ${module.id}:`, importError);
+					// No AI tools for this module
 				}
 			} catch (e) {
-				console.warn(`Failed to load AI tools for module ${module.id}:`, e);
+				console.warn(`[AiToolbox] Failed to load AI tools for module ${module.id}:`, e);
 			}
 		}
 
+		console.log('[AiToolbox] Total tools returned:', tools.length);
 		return tools;
 	}
 
