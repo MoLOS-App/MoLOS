@@ -239,7 +239,7 @@ const config = getModuleById('tasks');
 console.log(config.navigation); // Get subroutes
 
 // Get module by route
-const current = getModuleByPath('/ui/tasks/all');
+const current = getModuleByPath('/ui/MoLOS-Tasks/all');
 
 // Get navigation items for a module
 const items = getModuleNavigation('dashboard');
@@ -307,7 +307,7 @@ const dashConfig = MODULE_REGISTRY['dashboard'];
 ### Tasks
 
 - **ID**: `tasks`
-- **Path**: `/ui/tasks`
+- **Path**: `/ui/MoLOS-Tasks`
 - **Config**: [config.ts](./tasks/config.ts)
 - **Database Tables**: `tasks_tasks`
 - **Navigation**:

@@ -7,13 +7,7 @@
 	import {
 		Search,
 		Bell,
-		Sparkles,
-		ArrowUpRight,
-		CheckSquare,
-		Activity,
-		DollarSign,
-		Target,
-		Utensils
+		Sparkles
 	} from 'lucide-svelte';
 	import * as Icons from 'lucide-svelte';
 	import { fade, fly } from 'svelte/transition';
@@ -28,15 +22,7 @@
 		now.getHours() < 12 ? 'Good Morning' : now.getHours() < 18 ? 'Good Afternoon' : 'Good Evening';
 
 	// Mock notifications for the UI
-	const notifications = [
-		{ id: 1, title: 'Task Overdue', description: 'Complete "Project Proposal"', type: 'warning' },
-		{
-			id: 2,
-			title: 'Goal Reached',
-			description: 'You hit your weekly weight goal!',
-			type: 'success'
-		}
-	];
+	const notifications = [];
 
 	function handleSearch(e: KeyboardEvent) {
 		if (e.key === 'Enter' && searchQuery.trim()) {
@@ -112,19 +98,7 @@
 							<div
 								class="rounded-xl bg-background p-2.5 text-primary shadow-xs transition-all group-hover:scale-110"
 							>
-								{#if module.id === 'tasks'}
-									<Icons.CheckSquare size={24} />
-								{:else if module.id === 'health'}
-									<Icons.Activity size={24} />
-								{:else if module.id === 'finance'}
-									<Icons.DollarSign size={24} />
-								{:else if module.id === 'goals'}
-									<Icons.Target size={24} />
-								{:else if module.id === 'meals'}
-									<Icons.Utensils size={24} />
-								{:else}
-									<Icons.Box size={24} />
-								{/if}
+								<Icons.Box size={24} />
 							</div>
 							<div class="text-center">
 								<p class="text-xs font-bold">{module.name}</p>
@@ -171,26 +145,7 @@
 					</Card.Title>
 				</Card.Header>
 				<Card.Content class="space-y-2.5">
-					<div class="flex items-center justify-between text-xs">
-						<span class="text-muted-foreground font-medium">Active Tasks</span>
-						<span class="font-black">{stats.tasks.active}</span>
-					</div>
-					<div class="flex items-center justify-between text-xs">
-						<span class="text-muted-foreground font-medium">Monthly Spend</span>
-						<span class="font-black">{stats.finance.monthlySpend} {stats.finance.currency}</span>
-					</div>
-					<div class="flex items-center justify-between text-xs">
-						<span class="text-muted-foreground font-medium">Goal Progress</span>
-						<span class="font-black">{stats.goals.avgProgress}%</span>
-					</div>
-					<Button
-						variant="outline"
-						size="sm"
-						class="mt-1 h-8 w-full rounded-xl text-[10px] font-bold tracking-widest uppercase"
-						onclick={() => goto('/ui/tasks/dashboard')}
-					>
-						Full Report <ArrowUpRight class="ml-1 h-3 w-3" />
-					</Button>
+					<p class="text-xs text-muted-foreground">No stats available</p>
 				</Card.Content>
 			</Card.Root>
 		</div>

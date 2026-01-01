@@ -1,6 +1,7 @@
 import { sequence } from '@sveltejs/kit/hooks';
 import { execSync } from 'child_process';
-import { existsSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
+import path from 'path';
 import { env } from '$env/dynamic/private';
 import { auth } from '$lib/server/auth';
 import { db } from '$lib/server/db';
@@ -12,6 +13,24 @@ import { SettingsRepository } from '$lib/repositories/settings/settings-reposito
 import { getThemeClasses, type Theme, type Font, FONTS } from '$lib/theme';
 
 import { ModuleManager } from '$lib/server/modules/module-manager';
+
+// Load .env file manually to ensure environment variables are available
+function loadEnv() {
+	const envPath = path.resolve(process.cwd(), '.env');
+	if (existsSync(envPath)) {
+		const envContent = readFileSync(envPath, 'utf-8');
+		envContent.split('\n').forEach((line) => {
+			const [key, ...valueParts] = line.split('=');
+			if (key && valueParts.length > 0) {
+				const value = valueParts
+					.join('=')
+					.trim()
+					.replace(/^["']|["']$/g, '');
+				process.env[key.trim()] = value;
+			}
+		});
+	}
+}
 
 async function setupDatabase() {
 	const dbPath = env.DATABASE_URL;
@@ -61,9 +80,14 @@ async function setupDatabase() {
 
 // Run database setup on server start
 if (!building) {
+	loadEnv();
 	await setupDatabase();
 	// Initialize external modules
-	await ModuleManager.init();
+	try {
+		await ModuleManager.init();
+	} catch (error) {
+		console.error('[Hooks] Failed to initialize ModuleManager:', error);
+	}
 }
 
 const authHandler: Handle = async ({ event, resolve }) => {
@@ -75,7 +99,7 @@ const authHandler: Handle = async ({ event, resolve }) => {
 		pathname.includes('.') || pathname.startsWith('/_app') || pathname.startsWith('/favicon');
 	const isAuthApi = pathname.startsWith('/api/auth');
 
-	if (!isStaticAsset && !isAuthApi && !pathname.startsWith('/api/health')) {
+	if (!isStaticAsset && !isAuthApi) {
 		// Check if any users exist in the database
 		const userCountResult = await db.all(sql`SELECT count(*) as count FROM user`);
 		const userCount = (userCountResult[0] as unknown as { count: number }).count;

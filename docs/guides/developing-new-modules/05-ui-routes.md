@@ -82,7 +82,7 @@ The root `+page.svelte` of a module often redirects to its dashboard page, ensur
 	import { onMount } from 'svelte';
 
 	onMount(async () => {
-		await goto('/ui/tasks/dashboard');
+		await goto('/ui/MoLOS-Tasks/dashboard');
 	});
 </script>
 

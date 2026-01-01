@@ -28,7 +28,7 @@ export async function loadAllTasksData() {
 	try {
 		// Simulate API call
 		await new Promise(resolve => setTimeout(resolve, 1000));
-		// const fetchedTasks = await api.get('/api/tasks');
+		// const fetchedTasks = await api.get('/ui/MoLOS-Tasks');
 		// tasks.set(fetchedTasks);
 		tasksUIState.update(state => ({ ...state, loading: false }));
 	} catch (err: any) {

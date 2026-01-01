@@ -95,7 +95,7 @@ When a new tag (e.g., `v1.0.1`) is pushed, a GitHub Action automatically:
 
 ### Health Checks
 
-MoLOS provides a health check endpoint at `/api/health`. This endpoint verifies:
+MoLOS provides a health check endpoint at `/ui/MoLOS-Health`. This endpoint verifies:
 
 - Application uptime.
 - Database connectivity.

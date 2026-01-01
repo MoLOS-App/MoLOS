@@ -21,37 +21,37 @@ export const tasksModuleConfig: ModuleConfig = {
 		{
 			id: 'dashboard',
 			title: 'Dashboard',
-			href: '/ui/tasks/dashboard',
+			href: '/ui/MoLOS-Tasks/dashboard',
 			icon: LayoutDashboard
 		},
 		{
 			id: 'my-tasks',
 			title: 'My Tasks',
-			href: '/ui/tasks/my',
+			href: '/ui/MoLOS-Tasks/my',
 			icon: Users // Using Users as an example, replace with appropriate icon
 		},
 		{
 			id: 'projects',
 			title: 'Projects',
-			href: '/ui/tasks/projects',
+			href: '/ui/MoLOS-Tasks/projects',
 			icon: BookText // Using BookText as an example, replace with appropriate icon
 		},
 		{
 			id: 'areas',
 			title: 'Areas',
-			href: '/ui/tasks/areas',
+			href: '/ui/MoLOS-Tasks/areas',
 			icon: BookText // Using BookText as an example, replace with appropriate icon
 		},
 		{
 			id: 'daily-log',
 			title: 'Daily Log',
-			href: '/ui/tasks/daily-log',
+			href: '/ui/MoLOS-Tasks/daily-log',
 			icon: BookText // Using BookText as an example, replace with appropriate icon
 		},
 		{
 			id: 'settings',
 			title: 'Settings',
-			href: '/ui/tasks/settings',
+			href: '/ui/MoLOS-Tasks/settings',
 			icon: Settings
 		}
 	]

@@ -22,6 +22,10 @@ function loadEnv() {
 
 async function main() {
 	loadEnv();
+	// Ensure MOLOS_AUTOLOAD_MODULES is set to true for sync script if not explicitly set
+	if (process.env.MOLOS_AUTOLOAD_MODULES === undefined) {
+		process.env.MOLOS_AUTOLOAD_MODULES = 'true';
+	}
 	console.log('[SyncModules] Starting module synchronization...');
 	try {
 		await ModuleManager.init();

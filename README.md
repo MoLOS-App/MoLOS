@@ -105,6 +105,69 @@ MoLOS is built for extensibility. If you're a developer, you'll love the clean a
 
 ---
 
+## 🧩 Plug-and-Play Module System
+
+MoLOS features a sophisticated, dynamic module management system that allows for seamless integration of optional features. This "Plug-and-Play" architecture ensures that the core application remains lightweight while providing a powerful ecosystem of optional modules.
+
+### 🛠 How it Works
+
+The system is designed to be "zero-config" for the end user. It automatically manages the lifecycle of external modules through a discovery and standardization process:
+
+```mermaid
+graph TD
+    A[Start MoLOS] --> B[Scan Parent Directory]
+    B --> C{Discovered MoLOS-*?}
+    C -- Yes --> D[Register in Database]
+    D --> E[Standardize Code & Paths]
+    E --> F[Run Database Migrations]
+    F --> G[Create System Symlinks]
+    G --> H[Module Active & Integrated]
+    C -- No --> I[Core Only Mode]
+```
+
+### 📋 Key Features
+
+- **Automatic Discovery:** On startup, MoLOS scans its parent directory for any folders starting with `MoLOS-`. These are identified as potential modules and registered automatically.
+- **Dynamic Linking:** Discovered modules are automatically symlinked into the core application. This includes their UI routes, API endpoints, and internal libraries, making them appear as native parts of the app.
+- **Smart Standardization:** The system programmatically audits each module's code. It automatically fixes path discrepancies, standardizes configuration exports, and rewrites internal import aliases (e.g., `$lib/stores/...`) to ensure the module "just works" within the main app's structure.
+- **Automated Database Management:** If a module requires its own database tables, the system automatically detects its Drizzle configuration and applies the necessary migrations or schema pushes during the synchronization phase.
+- **Unified Development:** Developers can work on the entire ecosystem simultaneously using `npm run dev:all`, which orchestrates the core application and all active modules, keeping their databases in sync in real-time.
+
+### 🔄 Module Lifecycle
+
+1.  **Discovery:** The `ModuleManager` identifies local module folders in the workspace.
+2.  **Validation:** Each module's `manifest.yaml` is checked for consistency.
+3.  **Standardization:** The system rewrites internal imports and navigation links to match the core's routing structure.
+4.  **Database Sync:** Drizzle migrations are executed to ensure the module's data layer is ready.
+5.  **Linking:** Symlinks are created for `routes/ui`, `routes/api`, and `lib` folders.
+6.  **Activation:** The module becomes available in the UI and API immediately.
+
+This architecture allows MoLOS to remain lightweight while offering a vast library of optional, deeply integrated modules like Finance, Health, and Task management.
+
+### 🛠 Managing Modules
+
+MoLOS provides commands to manage external modules:
+
+#### Auto-Discovery and Synchronization
+- **Auto-Discovery:** When `MOLOS_AUTOLOAD_MODULES=true` (default in development), MoLOS automatically scans the `external_modules` directory for folders starting with `MoLOS-` and registers them as local modules.
+- **Sync Command:** `npm run modules:sync` - Synchronizes all modules, applying migrations, creating symlinks, and cleaning up broken links.
+
+#### Adding a Module
+1. Place the module folder (e.g., `MoLOS-Finance`) in the `external_modules` directory.
+2. Run `npm run modules:sync` to register and integrate the module.
+3. The module will be automatically linked into the core application.
+
+#### Removing a Module
+1. Remove the module folder from `external_modules`.
+2. Run `npm run modules:sync` to clean up symlinks and database entries.
+3. Alternatively, modules can be disabled/enabled through the UI settings.
+
+#### Development Commands
+- **Orchestrated Dev:** `npm run dev:all` - Starts the core application and all active modules simultaneously, keeping databases synchronized.
+- **Standalone Module Dev:** For individual module development, use the module's own `npm run dev` in its directory.
+
+---
+
 ## 🤝 Contributing
 
 We love contributors! Whether you're fixing a bug, adding a module, or improving documentation, your help is welcome. Check out our [Development Guide](docs/guides/developing-new-modules/INDEX.md) to see how we build things.

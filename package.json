@@ -8,6 +8,7 @@
 		"build": "vite build",
 		"preview": "vite preview --host --port 4173",
 		"serve": "tsx scripts/supervisor.ts",
+		"dev:all": "tsx scripts/orchestrate-dev.ts",
 		"modules:sync": "tsx scripts/sync-modules.ts",
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
