@@ -1,0 +1,35 @@
+node_modules
+.kilocode/
+.vscode/
+internal_documentation/
+devtools/
+
+# Output
+.output
+.vercel
+.netlify
+.wrangler
+/.svelte-kit
+/build
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.*
+!.env.example
+!.env.test
+
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# SQLite
+*.db
+src/lib/config/modules/MoLOS-sample-module
+src/routes/ui/(modules)/(external_modules)/
+docs/system-prompts-and-models-of-ai-tools/
+docs/ai-chatbot-svelte/
+docs/guides/MoLOS-sample-module/.git
