@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: molos-ingress
+  annotations:
+    # Nginx Ingress
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: 'letsencrypt-prod'
+    # Traefik Ingress (uncomment if using Traefik)
+    # traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    # traefik.ingress.kubernetes.io/router.tls: "true"
+spec:
+  tls:
+    - hosts:
+        - molos.example.com
+      secretName: molos-tls
+  rules:
+    - host: molos.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: molos-service
+                port:
+                  number: 80

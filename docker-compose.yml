@@ -1,0 +1,15 @@
+services:
+  molos:
+    build: .
+    image: ghcr.io/${GITHUB_REPOSITORY:-molos/molos}:latest
+    container_name: molos
+    restart: always
+    ports:
+      - '4173:4173'
+    environment:
+      - NODE_ENV=production
+      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
+      - DATABASE_URL=/data/molos.db
+    volumes:
+      - ./molos_data:/data
+      - ./external_modules:/app/external_modules
