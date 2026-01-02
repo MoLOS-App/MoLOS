@@ -14,6 +14,11 @@ import { execSync } from 'child_process';
 import { parse } from 'yaml';
 import { MigrationRunner } from './migration-runner';
 import { db } from '$lib/server/db';
+import {
+	SYMLINK_CONFIG,
+	getModuleSymlinks,
+	getModuleSymlinkSources
+} from '../config/symlink-config';
 import { SettingsRepository } from '$lib/repositories/settings/settings-repository';
 import { categorizeError, createModuleError, formatErrorForLogging } from './module-error-handler';
 import type { ModuleError } from '$lib/config/module-types';
@@ -28,14 +33,8 @@ export interface ModuleManifest {
 }
 
 export class ModuleManager {
-	private static EXTERNAL_DIR = path.join(process.cwd(), 'external_modules');
-	private static PARENT_DIR = path.join(process.cwd(), '..');
-	private static INTERNAL_CONFIG_DIR = path.join(process.cwd(), 'src/lib/config/modules');
-	private static UI_ROUTES_DIR = path.join(
-		process.cwd(),
-		'src/routes/ui/(modules)/(external_modules)'
-	);
-	private static API_ROUTES_DIR = path.join(process.cwd(), 'src/routes/api/(external_modules)');
+	private static EXTERNAL_DIR = SYMLINK_CONFIG.externalModulesDir;
+	private static PARENT_DIR = SYMLINK_CONFIG.parentDir;
 
 	static async init() {
 		console.log('[ModuleManager] Initializing external modules...');
@@ -329,13 +328,20 @@ export class ModuleManager {
 	}
 
 	private static setupSymlinks(moduleId: string, modulePath: string) {
+		const destinations = getModuleSymlinks(moduleId);
+		const sources = getModuleSymlinkSources(moduleId, modulePath);
+
 		// Ensure parent directories exist BEFORE creating symlinks
-		// This is critical for SvelteKit type generation
 		const parentDirs = [
-			this.INTERNAL_CONFIG_DIR,
-			this.UI_ROUTES_DIR,
-			this.API_ROUTES_DIR,
-			path.join(process.cwd(), 'src/lib/modules')
+			SYMLINK_CONFIG.componentsDir,
+			SYMLINK_CONFIG.configDir,
+			SYMLINK_CONFIG.modelsDir,
+			SYMLINK_CONFIG.repositoriesDir,
+			SYMLINK_CONFIG.storesDir,
+			SYMLINK_CONFIG.serverAiDir,
+			SYMLINK_CONFIG.dbSchemaDir,
+			SYMLINK_CONFIG.uiRoutesDir,
+			SYMLINK_CONFIG.apiRoutesDir
 		];
 
 		for (const dir of parentDirs) {
@@ -344,31 +350,13 @@ export class ModuleManager {
 			}
 		}
 
-		// Link config.ts to src/lib/config/modules/[id]
-		// We link the whole folder to make imports inside config.ts work
-		const configDest = path.join(this.INTERNAL_CONFIG_DIR, moduleId);
-		this.createSymlink(modulePath, configDest);
-
-		// Link lib to src/lib/modules/[id] to support $lib/modules/[id] imports
-		const libSource = path.join(modulePath, 'lib');
-		if (existsSync(libSource)) {
-			const libDest = path.join(process.cwd(), 'src/lib/modules', moduleId);
-			this.createSymlink(libSource, libDest);
-		}
-
-		// Link UI routes
-		const uiSource = path.join(modulePath, 'routes/ui');
-		if (existsSync(uiSource)) {
-			const uiDest = path.join(this.UI_ROUTES_DIR, moduleId);
-			this.createSymlink(uiSource, uiDest);
-		}
-
-		// Link API routes
-		const apiSource = path.join(modulePath, 'routes/api');
-		if (existsSync(apiSource)) {
-			const apiDest = path.join(this.API_ROUTES_DIR, moduleId);
-			this.createSymlink(apiSource, apiDest);
-		}
+		// Create granular symlinks
+		Object.entries(destinations).forEach(([key, dest]) => {
+			const source = (sources as any)[key];
+			if (source && existsSync(source) && dest) {
+				this.createSymlink(source, dest);
+			}
+		});
 	}
 
 	private static runBasicTests(moduleId: string, modulePath: string) {
@@ -451,56 +439,55 @@ export class ModuleManager {
 			});
 		}
 
-		// 3. Fix $lib/stores/modules/[module_name] -> $lib/modules/[moduleId]/stores
+		// 3. Fix $lib/stores/modules/[module_name] -> $lib/stores/external_modules/[moduleId]
 		const storeRegex = /\$lib\/stores\/modules\/([\w-]+)/g;
 		if (content.match(storeRegex)) {
 			content = content.replace(storeRegex, (match, p1) => {
-				// If it's already standardized, skip
-				if (match.includes(`$lib/modules/${moduleId}`)) return match;
-				// If it's a subpath like $lib/stores/modules/tasks/api
 				const subpath = match.substring(`$lib/stores/modules/${p1}`.length);
-				return `$lib/modules/${moduleId}/stores${subpath}`;
+				return `$lib/stores/external_modules/${moduleId}${subpath}`;
 			});
 		}
 
-		// 4. Fix $lib/components/modules/[module_name] -> $lib/modules/[moduleId]/components
+		// 4. Fix $lib/components/modules/[module_name] -> $lib/components/external_modules/[moduleId]
 		const componentRegex = /\$lib\/components\/modules\/([\w-]+)/g;
 		if (content.match(componentRegex)) {
 			content = content.replace(componentRegex, (match, p1) => {
-				if (match.includes(`$lib/modules/${moduleId}`)) return match;
 				const subpath = match.substring(`$lib/components/modules/${p1}`.length);
-				return `$lib/modules/${moduleId}/components${subpath}`;
+				return `$lib/components/external_modules/${moduleId}${subpath}`;
 			});
 		}
 
-		// 5. Fix $lib/repositories/[module_name] -> $lib/modules/[moduleId]/lib/repositories
+		// 5. Fix $lib/repositories/[module_name] -> $lib/repositories/external_modules/[moduleId]
 		const repoRegex = /\$lib\/repositories\/([\w-]+)/g;
 		if (content.match(repoRegex)) {
 			content = content.replace(repoRegex, (match, p1) => {
-				if (match.includes(`$lib/modules/${moduleId}`)) return match;
 				const subpath = match.substring(`$lib/repositories/${p1}`.length);
-				return `$lib/modules/${moduleId}/lib/repositories${subpath}`;
+				return `$lib/repositories/external_modules/${moduleId}${subpath}`;
 			});
 		}
 
-		// 6. Fix $lib/server/db/schema/[module_name] -> $lib/modules/[moduleId]/lib/server/db/schema
+		// 6. Fix $lib/server/db/schema/[module_name] -> $lib/server/db/schema/external_modules/[moduleId]
 		const schemaRegex = /\$lib\/server\/db\/schema\/([\w-]+)/g;
 		if (content.match(schemaRegex)) {
 			content = content.replace(schemaRegex, (match, p1) => {
-				if (match.includes(`$lib/modules/${moduleId}`)) return match;
 				const subpath = match.substring(`$lib/server/db/schema/${p1}`.length);
-				return `$lib/modules/${moduleId}/lib/server/db/schema${subpath}`;
+				return `$lib/server/db/schema/external_modules/${moduleId}${subpath}`;
 			});
 		}
 
-		// 7. Fix $lib/models/[module_name] -> $lib/modules/[moduleId]/lib/models
+		// 7. Fix $lib/models/[module_name] -> $lib/models/external_modules/[moduleId]
 		const modelRegex = /\$lib\/models\/([\w-]+)/g;
 		if (content.match(modelRegex)) {
 			content = content.replace(modelRegex, (match, p1) => {
-				if (match.includes(`$lib/modules/${moduleId}`)) return match;
 				const subpath = match.substring(`$lib/models/${p1}`.length);
-				return `$lib/modules/${moduleId}/lib/models${subpath}`;
+				return `$lib/models/external_modules/${moduleId}${subpath}`;
 			});
+		}
+
+		// 8. Fix $lib/config/modules/types -> $lib/config/types
+		const configTypesRegex = /\$lib\/config\/modules\/types/g;
+		if (content.match(configTypesRegex)) {
+			content = content.replace(configTypesRegex, '$lib/config/types');
 		}
 
 		writeFileSync(configPath, content);
@@ -527,22 +514,58 @@ export class ModuleManager {
 
 			if (isRoute) {
 				// 1. Replace relative imports to lib from routes
-				// ../../lib/repositories -> $lib/modules/[id]/repositories
+				// ../../lib/repositories -> $lib/repositories/external_modules/[id]
 				// This handles: routes/api/+server.ts importing from ../../lib/repositories
 				const relativeLibRegex = /from\s+['"]\.\.\/\.\.\/lib\/([^'"]+)['"]/g;
 				if (content.match(relativeLibRegex)) {
 					content = content.replace(relativeLibRegex, (match, p1) => {
-						return `from '$lib/modules/${moduleId}/${p1}'`;
+						// Map lib subdirectories to their new granular aliases
+						if (p1.startsWith('repositories')) {
+							return `from '$lib/repositories/external_modules/${moduleId}${p1.substring(12)}'`;
+						}
+						if (p1.startsWith('models')) {
+							return `from '$lib/models/external_modules/${moduleId}${p1.substring(6)}'`;
+						}
+						if (p1.startsWith('stores')) {
+							return `from '$lib/stores/external_modules/${moduleId}${p1.substring(6)}'`;
+						}
+						if (p1.startsWith('components')) {
+							return `from '$lib/components/external_modules/${moduleId}${p1.substring(10)}'`;
+						}
+						return `from '$lib/repositories/external_modules/${moduleId}/${p1}'`; // Default to repositories if unknown
+					});
+					changed = true;
+				}
+
+				// 1.1 Fix legacy $lib/modules/[id] imports in routes
+				const legacyLibModulesRegex = new RegExp(`from\\s+['"]\\$lib/modules/${moduleId}/([^'"]+)['"]`, 'g');
+				if (content.match(legacyLibModulesRegex)) {
+					content = content.replace(legacyLibModulesRegex, (match, p1) => {
+						if (p1.startsWith('repositories')) {
+							let subpath = p1.substring(12);
+							if (subpath === `/${moduleId}`) subpath = '';
+							// If it was just '$lib/modules/id/repositories', subpath is empty or starts with /
+							return `from '$lib/repositories/external_modules/${moduleId}${subpath}'`;
+						}
+						if (p1.startsWith('models')) {
+							return `from '$lib/models/external_modules/${moduleId}${p1.substring(6)}'`;
+						}
+						if (p1.startsWith('stores')) {
+							return `from '$lib/stores/external_modules/${moduleId}${p1.substring(6)}'`;
+						}
+						if (p1.startsWith('components')) {
+							return `from '$lib/components/external_modules/${moduleId}${p1.substring(10)}'`;
+						}
+						return match;
 					});
 					changed = true;
 				}
 
 				// 2. Replace relative imports to model files
-				// ../../lib/models -> $lib/modules/[id]/lib/models
 				const relativeModelRegex = /from\s+['"]\.\.\/\.\.\/lib\/models([^'"]*)['"]/g;
 				if (content.match(relativeModelRegex)) {
 					content = content.replace(relativeModelRegex, (match, p1) => {
-						return `from '$lib/modules/${moduleId}/lib/models${p1}'`;
+						return `from '$lib/models/external_modules/${moduleId}${p1}'`;
 					});
 					changed = true;
 				}
@@ -605,45 +628,45 @@ export class ModuleManager {
 				}
 			}
 
-			// 1. Replace $lib/stores/modules/[module_name] with $lib/modules/[moduleId]/stores
+			// 1. Replace $lib/stores/modules/[module_name] with $lib/stores/external_modules/[moduleId]
 			const storeRegex = /\$lib\/stores\/modules\/[\w-]+/g;
 			if (content.match(storeRegex)) {
-				content = content.replace(storeRegex, `$lib/modules/${moduleId}/stores`);
+				content = content.replace(storeRegex, `$lib/stores/external_modules/${moduleId}`);
 				changed = true;
 			}
 
-			// 2. Replace $lib/components/modules/[module_name] with $lib/modules/[moduleId]/components
+			// 2. Replace $lib/components/modules/[module_name] with $lib/components/external_modules/[moduleId]
 			const componentRegex = /\$lib\/components\/modules\/[\w-]+/g;
 			if (content.match(componentRegex)) {
-				content = content.replace(componentRegex, `$lib/modules/${moduleId}/components`);
+				content = content.replace(componentRegex, `$lib/components/external_modules/${moduleId}`);
 				changed = true;
 			}
 
-			// 3. Replace $lib/repositories/[module_name] with $lib/modules/[moduleId]/lib/repositories
+			// 3. Replace $lib/repositories/[module_name] with $lib/repositories/external_modules/[moduleId]
 			const repoRegex = /\$lib\/repositories\/[\w-]+/g;
 			if (content.match(repoRegex)) {
-				content = content.replace(repoRegex, `$lib/modules/${moduleId}/lib/repositories`);
+				content = content.replace(repoRegex, `$lib/repositories/external_modules/${moduleId}`);
 				changed = true;
 			}
 
-			// 4. Replace $lib/models/[module_name] with $lib/modules/[moduleId]/lib/models
+			// 4. Replace $lib/models/[module_name] with $lib/models/external_modules/[moduleId]
 			const modelRegex = /\$lib\/models\/[\w-]+/g;
 			if (content.match(modelRegex)) {
-				content = content.replace(modelRegex, `$lib/modules/${moduleId}/lib/models`);
+				content = content.replace(modelRegex, `$lib/models/external_modules/${moduleId}`);
 				changed = true;
 			}
 
-			// 4.1. Replace $lib/modules/[moduleId]/models with $lib/modules/[moduleId]/lib/models
-			const moduleModelRegex = new RegExp(`\\$lib/modules/${moduleId}/models`, 'g');
-			if (content.match(moduleModelRegex)) {
-				content = content.replace(moduleModelRegex, `$lib/modules/${moduleId}/lib/models`);
-				changed = true;
-			}
-
-			// 5. Replace $lib/server/db/schema/[module_name] with $lib/modules/[moduleId]/lib/server/db/schema
+			// 5. Replace $lib/server/db/schema/[module_name] with $lib/server/db/schema/external_modules/[moduleId]
 			const schemaRegex = /\$lib\/server\/db\/schema\/[\w-]+/g;
 			if (content.match(schemaRegex)) {
-				content = content.replace(schemaRegex, `$lib/modules/${moduleId}/lib/server/db/schema`);
+				content = content.replace(schemaRegex, `$lib/server/db/schema/external_modules/${moduleId}`);
+				changed = true;
+			}
+
+			// 6. Fix $lib/config/modules/types -> $lib/config/types
+			const configTypesRegex = /\$lib\/config\/modules\/types/g;
+			if (content.match(configTypesRegex)) {
+				content = content.replace(configTypesRegex, '$lib/config/types');
 				changed = true;
 			}
 
@@ -703,11 +726,30 @@ export class ModuleManager {
 				changed = true;
 			}
 
-			// 10. Fix $lib/modules/[moduleId]/lib/repositories -> $lib/modules/[moduleId]/repositories
-			// The symlink for lib is to src/lib/modules/[id], so lib/repositories becomes [id]/repositories
-			const libRepoRegex = new RegExp(`\\$lib/modules/${moduleId}/lib/repositories`, 'g');
-			if (content.match(libRepoRegex)) {
-				content = content.replace(libRepoRegex, `$lib/modules/${moduleId}/repositories`);
+			// 10. Fix legacy $lib/modules/[moduleId] imports
+			const legacyLibRegex = new RegExp(`\\$lib/modules/${moduleId}/lib/repositories`, 'g');
+			if (content.match(legacyLibRegex)) {
+				content = content.replace(legacyLibRegex, `$lib/repositories/external_modules/${moduleId}`);
+				changed = true;
+			}
+			const legacyModelRegex = new RegExp(`\\$lib/modules/${moduleId}/lib/models`, 'g');
+			if (content.match(legacyModelRegex)) {
+				content = content.replace(legacyModelRegex, `$lib/models/external_modules/${moduleId}`);
+				changed = true;
+			}
+			const legacyStoreRegex = new RegExp(`\\$lib/modules/${moduleId}/stores`, 'g');
+			if (content.match(legacyStoreRegex)) {
+				content = content.replace(legacyStoreRegex, `$lib/stores/external_modules/${moduleId}`);
+				changed = true;
+			}
+			const legacyComponentRegex = new RegExp(`\\$lib/modules/${moduleId}/components`, 'g');
+			if (content.match(legacyComponentRegex)) {
+				content = content.replace(legacyComponentRegex, `$lib/components/external_modules/${moduleId}`);
+				changed = true;
+			}
+			const legacySchemaRegex = new RegExp(`\\$lib/modules/${moduleId}/lib/server/db/schema`, 'g');
+			if (content.match(legacySchemaRegex)) {
+				content = content.replace(legacySchemaRegex, `$lib/server/db/schema/external_modules/${moduleId}`);
 				changed = true;
 			}
 
@@ -755,10 +797,15 @@ export class ModuleManager {
 
 	public static cleanupOrphanedSymlinks(activeModuleIds: Set<string>) {
 		const symlinkDirs = [
-			this.INTERNAL_CONFIG_DIR,
-			path.join(process.cwd(), 'src/lib/modules'),
-			this.UI_ROUTES_DIR,
-			this.API_ROUTES_DIR
+			SYMLINK_CONFIG.componentsDir,
+			SYMLINK_CONFIG.configDir,
+			SYMLINK_CONFIG.modelsDir,
+			SYMLINK_CONFIG.repositoriesDir,
+			SYMLINK_CONFIG.storesDir,
+			SYMLINK_CONFIG.serverAiDir,
+			SYMLINK_CONFIG.dbSchemaDir,
+			SYMLINK_CONFIG.uiRoutesDir,
+			SYMLINK_CONFIG.apiRoutesDir
 		];
 
 		for (const dir of symlinkDirs) {
@@ -788,15 +835,8 @@ export class ModuleManager {
 	}
 
 	public static cleanupModuleArtifacts(moduleId: string) {
-		// Only clean up source symlinks. SvelteKit-generated artifacts (.svelte-kit) will be
-		// automatically regenerated by SvelteKit, and manually removing them causes race conditions
-		// where SvelteKit tries to write to directories that have been deleted.
-		const paths = [
-			// Source Symlinks (these need cleanup)
-			path.join(this.INTERNAL_CONFIG_DIR, moduleId),
-			path.join(this.UI_ROUTES_DIR, moduleId),
-			path.join(this.API_ROUTES_DIR, moduleId)
-		];
+		const destinations = getModuleSymlinks(moduleId);
+		const paths = Object.values(destinations).filter(Boolean) as string[];
 
 		for (const p of paths) {
 			try {

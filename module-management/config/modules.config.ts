@@ -15,4 +15,4 @@ export {
 	getAllModules as getAvailableModules,
 	getModuleNavigation,
 	getModuleByPath as getModuleConfig
-} from './modules';
+} from './index';

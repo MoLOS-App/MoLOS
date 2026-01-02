@@ -91,6 +91,7 @@ export function cleanupModuleArtifacts(moduleId: string): void {
 	const paths = [
 		// Source Symlinks (these need cleanup)
 		ModulePaths.getConfigSymlinkDest(moduleId),
+		ModulePaths.getLibSymlinkDest(moduleId),
 		ModulePaths.getUIRoutesSymlinkDest(moduleId),
 		ModulePaths.getAPIRoutesSymlinkDest(moduleId)
 	];

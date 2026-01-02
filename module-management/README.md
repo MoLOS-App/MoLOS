@@ -74,6 +74,80 @@ module-management/
 └── utils/                      # Shared utilities (future use)
 ```
 
+## Symlink Layout
+
+The module system creates symbolic links to integrate external modules into the main application structure. This allows modules to be developed independently while being seamlessly integrated at runtime.
+
+```
+src/
+├── lib/
+│   ├── components/
+│   │   ├── external_modules/
+│   │   │    └── <MODULE_ID> -> ./external_modules/<MODULE_ID>/lib/components
+│   ├── config/
+│   │   ├── external_modules/
+│   │   │    └── <MODULE_ID> -> ./external_modules/<MODULE_ID>/config.ts
+│   ├── hooks
+│   ├── models/
+│   │   ├── ai
+│   │   └── external_modules/
+│   │        └── <MODULE_ID> -> ./external_modules/<MODULE_ID>/lib/models
+│   ├── repositories/
+│   │   ├── external_modules/
+│   │   │    └── <MODULE_ID> -> ./external_modules/<MODULE_ID>/lib/repositories
+│   ├── stores/
+│   │   ├── external_modules/
+│   │   │    └── <MODULE_ID> -> ./external_modules/<MODULE_ID>/lib/stores
+│   │   ├── ai
+│   │   └── settings
+│   └── server/
+│       ├── ai
+│       │    └── external_modules
+│       │            └── <MODULE_ID> -> ./external_modules/<MODULE_ID>/lib/server/ai
+│       ├── db/
+│       │   └── schema/
+│       │       └── external_modules/
+│       │            └── <MODULE_ID> -> ./external_modules/<MODULE_ID>/lib/server/db/schema
+├── routes/
+│   ├── api/
+│   │   ├── admin
+│   │   │   └── modules
+│   │   │       └── diagnostics
+│   │   │           └── [moduleId]
+│   │   ├── ai
+│   │   │   ├── chat
+│   │   │   └── settings
+│   │   ├── (external_modules)
+│   │   │   └── <MODULE_ID> -> ./external_modules/<MODULE_ID>/routes/api
+│   │   └── settings
+│   │       ├── external-modules
+│   │       ├── logs
+│   │       └── system
+│   └── ui
+│       ├── (auth)
+│       │   ├── login
+│       │   ├── logout
+│       │   ├── signup
+│       │   └── welcome
+│       ├── (modules)
+│       │   ├── dashboard
+│       │   └── (external_modules)
+│       │       └── <MODULE_ID> -> ./external_modules/<MODULE_ID>/routes/ui
+│       ├── settings
+│       │   ├── admin
+│       │   ├── ai
+│       │   ├── modules
+│       │   ├── profile
+│       │   └── theme
+│       └── system
+│           └── restarting
+└── themes
+```
+
+**Notes:**
+- Symbolic links are created dynamically for each module in `external_modules/`
+- The symlink structure allows modules to be imported as if they were part of the main codebase
+
 ## Key Components
 
 ### Core Manager (`server/core-manager.ts`)
