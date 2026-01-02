@@ -150,7 +150,7 @@ export class ModuleManager {
 
 			// For local modules, if the symlink in external_modules was manually removed, mark for deletion
 			const isLocal = mod.repoUrl.startsWith('local://');
-			if (isLocal && !existsSync(modulePath)) {
+			if (isLocal && !existsSync(modulePath) && mod.status !== 'pending') {
 				console.log(`[ModuleManager] Local module ${moduleId} symlink removed, marking for deletion.`);
 				await settingsRepo.updateExternalModuleStatus(mod.id, 'deleting');
 				continue;
@@ -158,7 +158,15 @@ export class ModuleManager {
 
 			try {
 				// 0. Clean Refresh: Remove and re-clone (unless it's a local module already in place)
-				const localSourcePath = isLocal ? path.join(this.PARENT_DIR, moduleId) : null;
+				let localSourcePath: string | null = null;
+				if (isLocal) {
+					const pathPart = mod.repoUrl.substring(8);
+					if (pathPart === moduleId || pathPart === '') {
+						localSourcePath = path.join(this.PARENT_DIR, moduleId);
+					} else {
+						localSourcePath = path.isAbsolute(pathPart) ? pathPart : path.resolve(this.PARENT_DIR, pathPart);
+					}
+				}
 
 				console.log(`[ModuleManager] Refreshing module ${moduleId} from ${mod.repoUrl}...`);
 				this.cleanupModuleArtifacts(moduleId);
