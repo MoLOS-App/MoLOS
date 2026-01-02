@@ -1,0 +1,1 @@
+/home/eduardez/Workspace/MoLOS-org/MoLOS/module-management/server/module-diagnostics.ts
