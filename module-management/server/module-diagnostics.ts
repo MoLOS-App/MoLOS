@@ -124,7 +124,9 @@ export class ModuleDiagnosticsService {
 			diagnostics.recommendations = this.generateRecommendations(diagnostics);
 		} catch (error) {
 			diagnostics.health = 'error';
-			diagnostics.recommendations.push(`Failed to run diagnostics: ${error instanceof Error ? error.message : String(error)}`);
+			diagnostics.recommendations.push(
+				`Failed to run diagnostics: ${error instanceof Error ? error.message : String(error)}`
+			);
 		}
 
 		return diagnostics;
@@ -227,7 +229,9 @@ export class ModuleDiagnosticsService {
 				try {
 					const content = require('fs').readFileSync(filePath, 'utf-8');
 
-					const tableMatches = content.match(/CREATE TABLE\s+(?:IF NOT EXISTS\s+)?["'`]?(\w+)["'`]?/gi);
+					const tableMatches = content.match(
+						/CREATE TABLE\s+(?:IF NOT EXISTS\s+)?["'`]?(\w+)["'`]?/gi
+					);
 					if (tableMatches) {
 						for (const match of tableMatches) {
 							const tableName = match.match(/["'`]?(\w+)["'`]?$/)?.[1] || '';
@@ -255,7 +259,10 @@ export class ModuleDiagnosticsService {
 	private checkConfiguration(
 		moduleId: string,
 		modulePath: string
-	): { manifest: { valid: boolean; errors: string[] }; exports: { valid: boolean; errors: string[] } } {
+	): {
+		manifest: { valid: boolean; errors: string[] };
+		exports: { valid: boolean; errors: string[] };
+	} {
 		const fs = require('fs');
 		const { parse } = require('yaml');
 
@@ -274,14 +281,18 @@ export class ModuleDiagnosticsService {
 				if (manifest.id === moduleId) {
 					result.manifest.valid = true;
 				} else {
-					result.manifest.errors.push(`ID mismatch: manifest has "${manifest.id}", directory is "${moduleId}"`);
+					result.manifest.errors.push(
+						`ID mismatch: manifest has "${manifest.id}", directory is "${moduleId}"`
+					);
 				}
 
 				if (!manifest.version) {
 					result.manifest.errors.push('Missing version field');
 				}
 			} catch (error) {
-				result.manifest.errors.push(`Failed to parse: ${error instanceof Error ? error.message : String(error)}`);
+				result.manifest.errors.push(
+					`Failed to parse: ${error instanceof Error ? error.message : String(error)}`
+				);
 			}
 		} else {
 			result.manifest.errors.push('Missing manifest.yaml');
@@ -293,13 +304,18 @@ export class ModuleDiagnosticsService {
 			try {
 				const content = fs.readFileSync(configPath, 'utf-8');
 
-				if (content.includes('export') && (content.includes('moduleConfig') || content.includes('export default'))) {
+				if (
+					content.includes('export') &&
+					(content.includes('moduleConfig') || content.includes('export default'))
+				) {
 					result.exports.valid = true;
 				} else {
 					result.exports.errors.push('config.ts missing moduleConfig or default export');
 				}
 			} catch (error) {
-				result.exports.errors.push(`Failed to read: ${error instanceof Error ? error.message : String(error)}`);
+				result.exports.errors.push(
+					`Failed to read: ${error instanceof Error ? error.message : String(error)}`
+				);
 			}
 		} else {
 			result.exports.errors.push('Missing config.ts');
@@ -362,7 +378,9 @@ export class ModuleDiagnosticsService {
 			recommendations.push(`Fix manifest.yaml: ${diagnostics.config.manifest.errors.join(', ')}`);
 		}
 		if (!diagnostics.config.exports.valid) {
-			recommendations.push(`Fix config.ts exports: ${diagnostics.config.exports.errors.join(', ')}`);
+			recommendations.push(
+				`Fix config.ts exports: ${diagnostics.config.exports.errors.join(', ')}`
+			);
 		}
 
 		// Database issues

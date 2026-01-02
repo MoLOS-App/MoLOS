@@ -15,7 +15,9 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 	// Example: Load user-specific data or module configuration
 	const userId = locals.user?.id; // Assuming user is available in locals
 	// ... fetch data using repositories or services
-	return { /* data to be passed to layout and pages */ };
+	return {
+		/* data to be passed to layout and pages */
+	};
 };
 ```
 
@@ -38,20 +40,20 @@ The `+layout.svelte` file defines the overall layout for the module, including c
 	});
 </script>
 
-<div class="flex flex-col h-full">
+<div class="flex h-full flex-col">
 	{#if $tasksUIState.loading && !$tasksUIState.error}
-		<div class="flex items-center justify-center flex-1">
-			<Loader2 class="w-8 h-8 animate-spin text-primary" />
+		<div class="flex flex-1 items-center justify-center">
+			<Loader2 class="h-8 w-8 animate-spin text-primary" />
 		</div>
 	{:else if $tasksUIState.error}
-		<div class="flex items-center justify-center flex-1 p-4">
+		<div class="flex flex-1 items-center justify-center p-4">
 			<div
-				class="max-w-md p-4 text-center border rounded-lg border-destructive/20 bg-destructive/10 text-destructive"
+				class="max-w-md rounded-lg border border-destructive/20 bg-destructive/10 p-4 text-center text-destructive"
 			>
 				<h2 class="mb-2 font-bold">Error Loading Tasks Data</h2>
 				<p class="text-sm">{$tasksUIState.error}</p>
 				<button
-					class="px-4 py-2 mt-4 text-sm font-medium rounded-md bg-primary text-primary-foreground"
+					class="mt-4 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
 					onclick={() => loadAllTasksData()}
 				>
 					Retry
@@ -59,7 +61,7 @@ The `+layout.svelte` file defines the overall layout for the module, including c
 			</div>
 		</div>
 	{:else}
-		<div class="flex-1 p-4 overflow-auto md:p-6 lg:p-8">
+		<div class="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
 			{@render children()}
 		</div>
 	{/if}
@@ -96,9 +98,7 @@ Subdirectories within the module's UI routes (`src/routes/ui/(modules)/{module-n
 ### Example: Tasks Module - `src/routes/ui/(modules)/tasks/projects/+page.svelte`
 
 ```svelte
-<!-- Example content for a projects page -->
-<h1>Projects</h1>
-<p>List of projects goes here.</p>
+<!-- Example content for a projects page --><h1>Projects</h1><p>List of projects goes here.</p>
 ```
 
 ## Route Patterns

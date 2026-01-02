@@ -34,7 +34,10 @@ export const GET: RequestHandler = async ({ params }) => {
 	} catch (error) {
 		console.error('[ModuleDiagnostics] Error:', error);
 		return json(
-			{ error: 'Failed to run diagnostics', details: error instanceof Error ? error.message : String(error) },
+			{
+				error: 'Failed to run diagnostics',
+				details: error instanceof Error ? error.message : String(error)
+			},
 			{ status: 500 }
 		);
 	}

@@ -75,7 +75,7 @@ import { financeModuleConfig } from './finance/config';
 
 export const modules = [
 	tasksModuleConfig,
-	financeModuleConfig,
+	financeModuleConfig
 	// ... other module configs
 ];
 ```

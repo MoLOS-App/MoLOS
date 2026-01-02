@@ -177,7 +177,7 @@
 
 		try {
 			// TODO: this has to be different because of external modules
-			
+
 			// Determine which stores to refresh
 			// const isTask =
 			// 	entity.includes('task') ||
@@ -305,7 +305,6 @@
 	});
 </script>
 
-
 {#if isOpen}
 	<aside
 		class="flex flex-col border-l border-border/50 bg-background/95 shadow-[0_0_40px_rgba(0,0,0,0.1)] backdrop-blur-xl transition-all duration-500"
@@ -338,7 +337,7 @@
 			/>
 		{:else}
 			<!-- Chat View -->
-			<div class="flex-1 p-6 overflow-y-auto scroll-smooth" bind:this={scrollViewport}>
+			<div class="flex-1 overflow-y-auto scroll-smooth p-6" bind:this={scrollViewport}>
 				<div class="space-y-8">
 					{#each messages.filter((m) => m.role === 'user' || (m.role === 'assistant' && (m.content?.trim() !== '' || m.contextMetadata || m.parts || m.attachments))) as msg (msg.id)}
 						<ChatMessage message={msg} />
@@ -346,9 +345,9 @@
 					{#if isLoading}
 						<div class="flex items-start">
 							<div
-								class="flex items-center gap-2 px-4 py-2 text-sm text-muted-foreground rounded-2xl bg-muted"
+								class="text-muted-foreground flex items-center gap-2 rounded-2xl bg-muted px-4 py-2 text-sm"
 							>
-								<Loader2 class="w-3 h-3 animate-spin" />
+								<Loader2 class="h-3 w-3 animate-spin" />
 								Thinking...
 							</div>
 						</div>

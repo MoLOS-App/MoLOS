@@ -16,6 +16,7 @@ This implementation significantly improves the MoLOS module system's resilience,
 **What was created**: Comprehensive TypeScript type definitions and Zod schemas for the entire module system.
 
 **Key Features**:
+
 - **ModuleManifest**: Complete type definition for `manifest.yaml` with validation schema
   - Includes new fields: `minMolosVersion`, `dependencies`, `enabled`
   - Zod-based runtime validation with detailed error messages
@@ -28,6 +29,7 @@ This implementation significantly improves the MoLOS module system's resilience,
 - **Validation Helpers**: `validateModuleManifest()`, `validateModuleConfig()`, `formatValidationErrors()`
 
 **Benefits**:
+
 - Type safety across the module system
 - Compile-time validation support
 - Consistent error messaging
@@ -40,6 +42,7 @@ This implementation significantly improves the MoLOS module system's resilience,
 ### ✅ 2. Enhanced Error State Management
 
 **Changes to Database Schema** (`src/lib/server/db/schema/settings/tables.ts`):
+
 ```typescript
 // New status values supporting granular error tracking
 ERROR_MANIFEST → error_manifest      // manifest.yaml validation failed
@@ -49,6 +52,7 @@ DISABLED → disabled                  // User disabled module
 ```
 
 **New Database Columns**:
+
 - `errorDetails`: JSON-serialized error context
 - `errorType`: Categorized error type
 - `recoverySteps`: JSON array of suggested recovery actions
@@ -58,6 +62,7 @@ DISABLED → disabled                  // User disabled module
 ### ✅ 3. Module Error Handler (`src/lib/server/modules/module-error-handler.ts`)
 
 **Key Functionality**:
+
 - **Error Categorization**: Analyzes errors and maps to error types
 - **Recovery Steps**: Pre-defined recovery suggestions for each error category
   - Manifest validation errors
@@ -67,11 +72,12 @@ DISABLED → disabled                  // User disabled module
 - **Structured Logging**: Formats errors for storage and display
 
 **Example Error Types**:
+
 ```typescript
-'manifest_validation'  // Invalid YAML or missing fields
-'migration_failed'     // SQL errors or table naming issues
-'config_export'        // Missing or malformed exports
-'symlink_failed'       // Filesystem permission or link issues
+'manifest_validation'; // Invalid YAML or missing fields
+'migration_failed'; // SQL errors or table naming issues
+'config_export'; // Missing or malformed exports
+'symlink_failed'; // Filesystem permission or link issues
 ```
 
 ### ✅ 4. Module Manager Refactored (`src/lib/server/modules/module-manager.ts`)
@@ -79,6 +85,7 @@ DISABLED → disabled                  // User disabled module
 **Before**: Failed modules were deleted from filesystem and database
 
 **After**: Failed modules are preserved in error state
+
 - Symlinks and artifacts cleaned up
 - Module preserved in DB with error details
 - No system crash or reboot triggered
@@ -86,6 +93,7 @@ DISABLED → disabled                  // User disabled module
 - Detailed error logging for investigation
 
 **New Error Handling Flow**:
+
 ```
 Module Initialization Error
     ↓
@@ -105,6 +113,7 @@ Continue with other modules (system remains stable)
 ### ✅ 5. Settings Repository Enhanced (`src/lib/repositories/settings/settings-repository.ts`)
 
 **New Method**: `updateExternalModuleStatus()`
+
 - Accepts comprehensive `ModuleError` object
 - Stores error details, type, and recovery steps
 - Backward compatible with simple status updates
@@ -138,7 +147,7 @@ Continue with other modules (system remains stable)
 
 5. **Database Schema**
    - Validates table naming conventions
-   - Ensures module ID or "molos_" prefix
+   - Ensures module ID or "molos\_" prefix
 
 6. **Routes Structure**
    - Checks SvelteKit route files
@@ -152,6 +161,7 @@ Continue with other modules (system remains stable)
 ### ✅ 7. SQL Security Validation (`src/lib/server/db/sql-security.ts`)
 
 **Features**:
+
 - **SQL Parser**: Extracts table names from CREATE/ALTER/DROP statements
 - **Keyword Whitelist**: Validates only allowed SQL operations
 - **Dangerous Operation Detection**: Blocks DROP DATABASE, PRAGMA, ATTACH, DETACH
@@ -159,6 +169,7 @@ Continue with other modules (system remains stable)
 - **Statement Validation**: Checks syntax and bracket balance
 
 **Usage**:
+
 ```typescript
 // Validate single file
 const result = SQLValidator.validateMigrationFile(filePath, moduleId);
@@ -173,12 +184,14 @@ const result = SQLValidator.validateSQL(content, moduleId);
 ### ✅ 8. Pre-validation in Sync Script (`scripts/sync-modules.ts`)
 
 **New Process**:
+
 1. Read all modules in `external_modules/`
 2. Pre-validate manifest.yaml for each
 3. Report all validation errors upfront
 4. Continue with full initialization (modules with errors handled gracefully)
 
 **Benefits**:
+
 - Catch issues early with clear messages
 - No silent failures
 - User can fix issues and re-run
@@ -192,6 +205,7 @@ const result = SQLValidator.validateSQL(content, moduleId);
 **Purpose**: Eliminate hardcoded paths throughout the system
 
 **Key Features**:
+
 - `SYMLINK_CONFIG`: Central configuration object
 - `getModuleSymlinks()`: Calculate all symlink destinations for a module
 - `getModuleSymlinkSources()`: Calculate symlink sources
@@ -200,12 +214,14 @@ const result = SQLValidator.validateSQL(content, moduleId);
 - `validateSymlinkDirs()`: Verify required directories exist
 
 **Benefits**:
+
 - Single source of truth for paths
 - Easy to reconfigure for different setups
 - Environment-based customization support
 - Testable path logic
 
 **Example**:
+
 ```typescript
 const symlinks = getModuleSymlinks('MoLOS-Tasks');
 // {
@@ -225,12 +241,14 @@ const symlinks = getModuleSymlinks('MoLOS-Tasks');
 **Commands**:
 
 #### Create New Module
+
 ```bash
 npm run module:create my-module
 npm run module:create my-module --name "My Module" --author "Your Name" --description "Module description"
 ```
 
 **Generates**:
+
 - Complete directory structure (lib, routes, drizzle)
 - manifest.yaml with defaults
 - config.ts with basic navigation
@@ -241,6 +259,7 @@ npm run module:create my-module --name "My Module" --author "Your Name" --descri
 - README.md
 
 #### Validate Module
+
 ```bash
 npm run module:validate ./external_modules/my-module
 ```
@@ -248,6 +267,7 @@ npm run module:validate ./external_modules/my-module
 **Output**: Same as `scripts/validate-module.ts`
 
 #### Test Module
+
 ```bash
 npm run module:test ./external_modules/my-module
 ```
@@ -292,6 +312,7 @@ npm run module:test ./external_modules/my-module
 **Method**: GET
 
 **Response**:
+
 ```json
 {
   "moduleId": "MoLOS-Tasks",
@@ -314,11 +335,12 @@ npm run module:test ./external_modules/my-module
 ## Part 6: Updated npm Scripts
 
 **New commands added to package.json**:
+
 ```json
 {
-  "module:create": "tsx scripts/module-dev-cli.ts create",
-  "module:validate": "tsx scripts/module-dev-cli.ts validate",
-  "module:test": "tsx scripts/module-dev-cli.ts test"
+	"module:create": "tsx scripts/module-dev-cli.ts create",
+	"module:validate": "tsx scripts/module-dev-cli.ts validate",
+	"module:test": "tsx scripts/module-dev-cli.ts test"
 }
 ```
 
@@ -373,11 +395,13 @@ Layer 4: Navigation & Routes
 ### For Module Developers
 
 **Before**:
+
 - Limited error messages
 - No guidance on what went wrong
 - Module deleted on failure
 
 **After**:
+
 - Run `npm run module:validate <path>` to check before deploying
 - Use `npm run module:create` to scaffold new modules
 - View detailed diagnostics at `/api/admin/modules/diagnostics/{id}`
@@ -386,11 +410,13 @@ Layer 4: Navigation & Routes
 ### For System Administrators
 
 **Before**:
+
 - Modules disappear without trace
 - Limited visibility into state
 - No recovery options
 
 **After**:
+
 - View module health via diagnostics endpoint
 - See detailed error information in database
 - Modules preserved for inspection
@@ -402,6 +428,7 @@ Layer 4: Navigation & Routes
 ## Files Created/Modified
 
 ### Created Files
+
 1. `src/lib/config/module-types.ts` - Type definitions and validation schemas
 2. `src/lib/config/symlink-config.ts` - Centralized symlink configuration
 3. `src/lib/server/modules/module-error-handler.ts` - Error categorization and recovery
@@ -413,6 +440,7 @@ Layer 4: Navigation & Routes
 9. `drizzle/0001_extended_error_states.sql` - Database migration
 
 ### Modified Files
+
 1. `src/lib/server/db/schema/settings/tables.ts` - Extended error state schema
 2. `src/lib/repositories/settings/settings-repository.ts` - Enhanced error tracking methods
 3. `src/lib/server/modules/module-manager.ts` - Error state handling instead of deletion
@@ -424,12 +452,14 @@ Layer 4: Navigation & Routes
 ## Testing Recommendations
 
 ### Unit Tests
+
 - [ ] Module type validation (Zod schemas)
 - [ ] Error handler categorization logic
 - [ ] SQL validator (table names, keywords)
 - [ ] Symlink configuration calculation
 
 ### Integration Tests
+
 - [ ] Module initialization with valid manifest
 - [ ] Module initialization with invalid manifest (preserve in error state)
 - [ ] Module initialization with migration error
@@ -437,6 +467,7 @@ Layer 4: Navigation & Routes
 - [ ] Pre-validation in sync script
 
 ### Manual Testing
+
 - [ ] Create new module with CLI
 - [ ] Validate valid module
 - [ ] Validate invalid module (see detailed errors)
@@ -448,21 +479,25 @@ Layer 4: Navigation & Routes
 ## Future Improvements (Not Implemented)
 
 ### Phase 2: Dependency Management
+
 - Extend manifest to support module dependencies
 - Validate dependency graph before activation
 - Implement dependency resolution order
 
 ### Phase 3: Advanced Testing
+
 - Module validation test suite
 - E2E route testing
 - Database migration testing
 
 ### Phase 4: Module Versioning & Rollback
+
 - Semantic version support
 - Migration rollback capability
 - Version compatibility checking
 
 ### Phase 5: UI Enhancements
+
 - Dashboard for module management
 - Diagnostics viewer UI
 - Error remediation wizard
@@ -478,7 +513,7 @@ Layer 4: Navigation & Routes
 ✅ **Observability**: Comprehensive diagnostics and health checks  
 ✅ **Maintainability**: Centralized configuration, no hardcoded paths  
 ✅ **Security**: SQL validation prevents dangerous operations  
-✅ **Scalability**: Foundation for module versioning and dependencies  
+✅ **Scalability**: Foundation for module versioning and dependencies
 
 ---
 
@@ -487,7 +522,7 @@ Layer 4: Navigation & Routes
 ✅ Production build successful (50s build time)  
 ✅ No TypeScript errors  
 ✅ All new code follows existing patterns  
-✅ Backward compatible with existing modules  
+✅ Backward compatible with existing modules
 
 ---
 

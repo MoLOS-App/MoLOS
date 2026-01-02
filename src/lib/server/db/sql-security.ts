@@ -67,7 +67,9 @@ export class SQLValidator {
 		} catch (error) {
 			return {
 				valid: false,
-				errors: [`Failed to read migration file: ${error instanceof Error ? error.message : String(error)}`],
+				errors: [
+					`Failed to read migration file: ${error instanceof Error ? error.message : String(error)}`
+				],
 				warnings: [],
 				tables: []
 			};
@@ -93,12 +95,16 @@ export class SQLValidator {
 		}
 
 		// Extract and validate table names
-		const tableMatches = normalized.match(/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?["'`]?(\w+)["'`]?/gi);
+		const tableMatches = normalized.match(
+			/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?["'`]?(\w+)["'`]?/gi
+		);
 
 		if (tableMatches) {
 			for (const match of tableMatches) {
 				// Extract table name from match
-				const tableName = match.replace(/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?["'`]?/gi, '').replace(/["'`]?$/g, '');
+				const tableName = match
+					.replace(/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?["'`]?/gi, '')
+					.replace(/["'`]?$/g, '');
 
 				if (!tableName) continue;
 
@@ -209,7 +215,10 @@ export class SQLValidator {
 	/**
 	 * Analyze all SQL files in a drizzle directory
 	 */
-	static analyzeDirectory(drizzlePath: string, moduleId: string): {
+	static analyzeDirectory(
+		drizzlePath: string,
+		moduleId: string
+	): {
 		valid: boolean;
 		files: Record<string, SQLValidationResult>;
 		allTables: string[];

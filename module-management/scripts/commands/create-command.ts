@@ -20,7 +20,9 @@ export class CreateCommand {
 	static async execute(moduleName: string, options: Partial<ModuleOptions> = {}): Promise<void> {
 		// Validate module name
 		if (!/^[a-zA-Z0-9_-]+$/.test(moduleName)) {
-			console.error('❌ Module name must contain only alphanumeric characters, hyphens, and underscores');
+			console.error(
+				'❌ Module name must contain only alphanumeric characters, hyphens, and underscores'
+			);
 			process.exit(1);
 		}
 
@@ -100,7 +102,8 @@ export default moduleConfig;
 				dev: 'vite',
 				build: 'vite build',
 				preview: 'vite preview',
-				'db:generate': 'drizzle-kit generate:sqlite --out drizzle --schema ./lib/server/db/schema.ts',
+				'db:generate':
+					'drizzle-kit generate:sqlite --out drizzle --schema ./lib/server/db/schema.ts',
 				'db:migrate': 'drizzle-kit migrate:sqlite',
 				'db:studio': 'drizzle-kit studio'
 			},

@@ -14,9 +14,6 @@ export const load: PageServerLoad = async ({ locals }) => {
 			return state ? state.enabled : true; // Default to enabled if no state found
 		});
 
-
-
-
 	return {
 		user: locals.user,
 		modules: modules.map((m) => ({

@@ -58,6 +58,7 @@ npm run module:create my-feature-module --name "My Feature" --author "Your Name"
 ```
 
 This creates a complete module scaffold with:
+
 - Directory structure
 - `manifest.yaml` configuration
 - TypeScript models and types
@@ -86,6 +87,7 @@ npm run dev
 ```
 
 The dev server will:
+
 1. Auto-discover your module
 2. Create symlinks to routes and configs
 3. Initialize database schemas
@@ -211,7 +213,7 @@ MoLOS uses a sophisticated symlink-based import system. **Always follow these co
 
 ### ✅ Correct Import Patterns
 
-#### From Repositories (lib/repositories/*.ts)
+#### From Repositories (lib/repositories/\*.ts)
 
 ```typescript
 // Import module's own schema
@@ -230,7 +232,7 @@ import type { Task, TaskStatus } from '../models';
 import { BaseRepository } from './base-repository';
 ```
 
-#### From Models (lib/models/*.ts)
+#### From Models (lib/models/\*.ts)
 
 ```typescript
 // Relative within module
@@ -241,7 +243,7 @@ import { TaskStatus, TaskPriority } from './tasks';
 import { z } from 'zod';
 ```
 
-#### From API Routes (routes/api/*.ts)
+#### From API Routes (routes/api/\*.ts)
 
 ```typescript
 // Import repositories using $lib alias
@@ -254,7 +256,7 @@ import type { Task } from '$lib/modules/MoLOS-Tasks/models';
 import { json, error } from '@sveltejs/kit';
 ```
 
-#### From UI Routes (routes/ui/*.ts)
+#### From UI Routes (routes/ui/\*.ts)
 
 ```typescript
 // Import module components
@@ -267,7 +269,7 @@ import { tasksStore } from '$lib/modules/MoLOS-Tasks/stores';
 import { Button } from '$lib/components/ui/button';
 ```
 
-#### From Components (lib/components/*.svelte)
+#### From Components (lib/components/\*.svelte)
 
 ```typescript
 // Relative imports within components
@@ -310,6 +312,7 @@ src/routes/ui/(modules)/(external_modules)/MoLOS-Tasks → external_modules/MoLO
 ```
 
 This means:
+
 - `$lib/modules/MoLOS-Tasks` resolves to your module's `lib/` directory
 - `$lib/modules/MoLOS-Tasks/models` = `lib/models/`
 - `$lib/modules/MoLOS-Tasks/repositories` = `lib/repositories/`
@@ -326,7 +329,7 @@ This means:
    npm run module:create my-module
 
 2. Edit manifest.yaml with your module details
-   
+
 3. Plan your data model
    - What entities do you need?
    - What are their relationships?
@@ -367,7 +370,7 @@ This means:
 
 ```
 1. Create base repository extending BaseRepository
-   
+
 2. Create specific repositories for each entity
    - Query methods
    - Create/Update/Delete operations
@@ -380,14 +383,14 @@ This means:
 
 ```
 1. Create routes/api/+server.ts for main endpoints
-   
+
 2. Create nested routes for specific operations
    - routes/api/tasks/+server.ts
    - routes/api/tasks/[id]/+server.ts
    - routes/api/settings/+server.ts
 
 3. Handle request validation and errors
-   
+
 4. Return proper HTTP status codes
 ```
 
@@ -395,13 +398,13 @@ This means:
 
 ```
 1. Create routes/ui/+layout.svelte for module layout
-   
+
 2. Create routes/ui/+page.svelte for main view
-   
+
 3. Create nested routes for sub-pages
-   
+
 4. Build reusable components in lib/components/
-   
+
 5. Manage client state with stores in lib/stores/
 ```
 
@@ -421,11 +424,11 @@ This means:
 
 ```
 1. Write unit tests for repositories
-   
+
 2. Test API endpoints
-   
+
 3. Test UI components
-   
+
 4. End-to-end testing
 ```
 
@@ -458,16 +461,15 @@ import { user } from '$lib/server/db/schema/auth-schema';
 
 // Reference core user table
 export const moduleUsers = sqliteTable('module_users', {
-  id: text('id').primaryKey(),
-  userId: text('user_id')
-    .notNull()
-    .references(() => user.id, { onDelete: 'cascade' }),
-  name: text('name').notNull(),
-  createdAt: integer('created_at')
-    .default(sql`(unixepoch())`)
-    .notNull(),
-  updatedAt: integer('updated_at')
-    .$onUpdate(() => sql`(unixepoch())`),
+	id: text('id').primaryKey(),
+	userId: text('user_id')
+		.notNull()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	name: text('name').notNull(),
+	createdAt: integer('created_at')
+		.default(sql`(unixepoch())`)
+		.notNull(),
+	updatedAt: integer('updated_at').$onUpdate(() => sql`(unixepoch())`)
 });
 ```
 
@@ -476,22 +478,21 @@ export const moduleUsers = sqliteTable('module_users', {
 ```typescript
 // One-to-Many: User has many tasks
 export const moduleTasks = sqliteTable('module_tasks', {
-  id: text('id').primaryKey(),
-  userId: text('user_id')
-    .notNull()
-    .references(() => user.id),
-  projectId: text('project_id')
-    .references(() => moduleProjects.id),
+	id: text('id').primaryKey(),
+	userId: text('user_id')
+		.notNull()
+		.references(() => user.id),
+	projectId: text('project_id').references(() => moduleProjects.id)
 });
 
 // Many-to-Many (junction table)
 export const taskTags = sqliteTable('task_tags', {
-  taskId: text('task_id')
-    .notNull()
-    .references(() => moduleTasks.id),
-  tagId: text('tag_id')
-    .notNull()
-    .references(() => moduleTags.id),
+	taskId: text('task_id')
+		.notNull()
+		.references(() => moduleTasks.id),
+	tagId: text('tag_id')
+		.notNull()
+		.references(() => moduleTags.id)
 });
 ```
 
@@ -506,11 +507,11 @@ import { db as defaultDb } from '$lib/server/db';
 import type { Database } from '$lib/server/db';
 
 export abstract class BaseRepository {
-  protected db: Database;
+	protected db: Database;
 
-  constructor(db?: Database) {
-    this.db = db || defaultDb;
-  }
+	constructor(db?: Database) {
+		this.db = db || defaultDb;
+	}
 }
 ```
 
@@ -523,82 +524,60 @@ import { BaseRepository } from './base-repository';
 import type { Task, CreateTaskInput, UpdateTaskInput } from '../models';
 
 export class TaskRepository extends BaseRepository {
-  async getTasksByUserId(userId: string): Promise<Task[]> {
-    const rows = await this.db
-      .select()
-      .from(tasksTasks)
-      .where(eq(tasksTasks.userId, userId));
-    
-    return rows.map(row => this.mapToTask(row));
-  }
+	async getTasksByUserId(userId: string): Promise<Task[]> {
+		const rows = await this.db.select().from(tasksTasks).where(eq(tasksTasks.userId, userId));
 
-  async getTaskById(id: string, userId: string): Promise<Task | null> {
-    const [row] = await this.db
-      .select()
-      .from(tasksTasks)
-      .where(
-        and(
-          eq(tasksTasks.id, id),
-          eq(tasksTasks.userId, userId)
-        )
-      );
-    
-    return row ? this.mapToTask(row) : null;
-  }
+		return rows.map((row) => this.mapToTask(row));
+	}
 
-  async createTask(input: CreateTaskInput, userId: string): Promise<Task> {
-    const [row] = await this.db
-      .insert(tasksTasks)
-      .values({
-        id: generateId(),
-        userId,
-        ...input,
-      })
-      .returning();
-    
-    return this.mapToTask(row);
-  }
+	async getTaskById(id: string, userId: string): Promise<Task | null> {
+		const [row] = await this.db
+			.select()
+			.from(tasksTasks)
+			.where(and(eq(tasksTasks.id, id), eq(tasksTasks.userId, userId)));
 
-  async updateTask(
-    id: string,
-    userId: string,
-    input: UpdateTaskInput
-  ): Promise<Task | null> {
-    const [row] = await this.db
-      .update(tasksTasks)
-      .set(input)
-      .where(
-        and(
-          eq(tasksTasks.id, id),
-          eq(tasksTasks.userId, userId)
-        )
-      )
-      .returning();
-    
-    return row ? this.mapToTask(row) : null;
-  }
+		return row ? this.mapToTask(row) : null;
+	}
 
-  async deleteTask(id: string, userId: string): Promise<boolean> {
-    const result = await this.db
-      .delete(tasksTasks)
-      .where(
-        and(
-          eq(tasksTasks.id, id),
-          eq(tasksTasks.userId, userId)
-        )
-      );
-    
-    return result.changes > 0;
-  }
+	async createTask(input: CreateTaskInput, userId: string): Promise<Task> {
+		const [row] = await this.db
+			.insert(tasksTasks)
+			.values({
+				id: generateId(),
+				userId,
+				...input
+			})
+			.returning();
 
-  private mapToTask(row: Record<string, unknown>): Task {
-    return {
-      id: row.id as string,
-      userId: row.user_id as string,
-      title: row.title as string,
-      // ... map other fields
-    };
-  }
+		return this.mapToTask(row);
+	}
+
+	async updateTask(id: string, userId: string, input: UpdateTaskInput): Promise<Task | null> {
+		const [row] = await this.db
+			.update(tasksTasks)
+			.set(input)
+			.where(and(eq(tasksTasks.id, id), eq(tasksTasks.userId, userId)))
+			.returning();
+
+		return row ? this.mapToTask(row) : null;
+	}
+
+	async deleteTask(id: string, userId: string): Promise<boolean> {
+		const result = await this.db
+			.delete(tasksTasks)
+			.where(and(eq(tasksTasks.id, id), eq(tasksTasks.userId, userId)));
+
+		return result.changes > 0;
+	}
+
+	private mapToTask(row: Record<string, unknown>): Task {
+		return {
+			id: row.id as string,
+			userId: row.user_id as string,
+			title: row.title as string
+			// ... map other fields
+		};
+	}
 }
 ```
 
@@ -640,23 +619,20 @@ import type { RequestHandler } from './$types';
 import { TaskRepository } from '$lib/modules/MoLOS-Tasks/repositories';
 
 export const GET: RequestHandler = async ({ locals }) => {
-  // Check authentication
-  if (!locals.user) {
-    return json({ error: 'Unauthorized' }, { status: 401 });
-  }
+	// Check authentication
+	if (!locals.user) {
+		return json({ error: 'Unauthorized' }, { status: 401 });
+	}
 
-  try {
-    const taskRepo = new TaskRepository();
-    const tasks = await taskRepo.getTasksByUserId(locals.user.id);
-    
-    return json({ data: tasks });
-  } catch (error) {
-    console.error('Error fetching tasks:', error);
-    return json(
-      { error: 'Failed to fetch tasks' },
-      { status: 500 }
-    );
-  }
+	try {
+		const taskRepo = new TaskRepository();
+		const tasks = await taskRepo.getTasksByUserId(locals.user.id);
+
+		return json({ data: tasks });
+	} catch (error) {
+		console.error('Error fetching tasks:', error);
+		return json({ error: 'Failed to fetch tasks' }, { status: 500 });
+	}
 };
 ```
 
@@ -666,28 +642,25 @@ export const GET: RequestHandler = async ({ locals }) => {
 import { z } from 'zod';
 
 const CreateTaskSchema = z.object({
-  title: z.string().min(1, 'Title is required'),
-  description: z.string().optional(),
-  projectId: z.string().optional(),
+	title: z.string().min(1, 'Title is required'),
+	description: z.string().optional(),
+	projectId: z.string().optional()
 });
 
 export const POST: RequestHandler = async ({ request, locals }) => {
-  const data = await request.json();
-  
-  // Validate input
-  const result = CreateTaskSchema.safeParse(data);
-  if (!result.success) {
-    return json(
-      { error: 'Validation failed', details: result.error.errors },
-      { status: 400 }
-    );
-  }
+	const data = await request.json();
 
-  // Process validated data
-  const taskRepo = new TaskRepository();
-  const task = await taskRepo.createTask(result.data, locals.user.id);
-  
-  return json({ data: task }, { status: 201 });
+	// Validate input
+	const result = CreateTaskSchema.safeParse(data);
+	if (!result.success) {
+		return json({ error: 'Validation failed', details: result.error.errors }, { status: 400 });
+	}
+
+	// Process validated data
+	const taskRepo = new TaskRepository();
+	const task = await taskRepo.createTask(result.data, locals.user.id);
+
+	return json({ data: task }, { status: 201 });
 };
 ```
 
@@ -711,7 +684,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       <a href="/ui/my-module/settings">Settings</a>
     </nav>
   </header>
-  
+
   <main>
     <slot />
   </main>
@@ -729,46 +702,36 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 ```svelte
 <!-- lib/components/task-item.svelte -->
 <script lang="ts">
-  import type { Task } from '../models';
-  import { Button } from '$lib/components/ui/button';
+	import type { Task } from '../models';
+	import { Button } from '$lib/components/ui/button';
 
-  export let task: Task;
-  export let onDelete: (id: string) => void;
-  export let onComplete: (id: string) => void;
+	export let task: Task;
+	export let onDelete: (id: string) => void;
+	export let onComplete: (id: string) => void;
 </script>
 
 <div class="task-item">
-  <h3>{task.title}</h3>
-  <p>{task.description}</p>
-  
-  <div class="actions">
-    <Button 
-      variant="outline"
-      on:click={() => onComplete(task.id)}
-    >
-      Complete
-    </Button>
-    <Button 
-      variant="destructive"
-      on:click={() => onDelete(task.id)}
-    >
-      Delete
-    </Button>
-  </div>
+	<h3>{task.title}</h3>
+	<p>{task.description}</p>
+
+	<div class="actions">
+		<Button variant="outline" on:click={() => onComplete(task.id)}>Complete</Button>
+		<Button variant="destructive" on:click={() => onDelete(task.id)}>Delete</Button>
+	</div>
 </div>
 
 <style>
-  .task-item {
-    padding: 1rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-  }
-  
-  .actions {
-    display: flex;
-    gap: 0.5rem;
-    margin-top: 1rem;
-  }
+	.task-item {
+		padding: 1rem;
+		border: 1px solid #ccc;
+		border-radius: 4px;
+	}
+
+	.actions {
+		display: flex;
+		gap: 0.5rem;
+		margin-top: 1rem;
+	}
 </style>
 ```
 
@@ -782,13 +745,12 @@ import type { Task } from '../models';
 export const tasksStore = writable<Task[]>([]);
 
 export const completedTasksCount = derived(
-  tasksStore,
-  $tasks => $tasks.filter(t => t.status === 'completed').length
+	tasksStore,
+	($tasks) => $tasks.filter((t) => t.status === 'completed').length
 );
 
-export const pendingTasks = derived(
-  tasksStore,
-  $tasks => $tasks.filter(t => t.status === 'pending')
+export const pendingTasks = derived(tasksStore, ($tasks) =>
+	$tasks.filter((t) => t.status === 'pending')
 );
 ```
 
@@ -807,7 +769,7 @@ author: Your Name
 icon: 📋
 
 # Minimum MoLOS version required
-minMolosVersion: "1.0.0"
+minMolosVersion: '1.0.0'
 
 # Module dependencies (optional)
 dependencies:
@@ -825,33 +787,27 @@ config:
 import type { ModuleConfig } from '$lib/config/module-types';
 
 export const moduleConfig: ModuleConfig = {
-  id: 'my-feature-module',
-  name: 'My Feature Module',
-  
-  navigation: [
-    {
-      href: '/ui/my-module',
-      label: 'Dashboard',
-      icon: '📋',
-    },
-    {
-      href: '/ui/my-module/settings',
-      label: 'Settings',
-      icon: '⚙️',
-    },
-  ],
-  
-  // API routes exposed by this module
-  apiRoutes: [
-    '/api/my-module/tasks',
-    '/api/my-module/projects',
-  ],
-  
-  // UI routes exposed by this module
-  uiRoutes: [
-    '/ui/my-module',
-    '/ui/my-module/settings',
-  ],
+	id: 'my-feature-module',
+	name: 'My Feature Module',
+
+	navigation: [
+		{
+			href: '/ui/my-module',
+			label: 'Dashboard',
+			icon: '📋'
+		},
+		{
+			href: '/ui/my-module/settings',
+			label: 'Settings',
+			icon: '⚙️'
+		}
+	],
+
+	// API routes exposed by this module
+	apiRoutes: ['/api/my-module/tasks', '/api/my-module/projects'],
+
+	// UI routes exposed by this module
+	uiRoutes: ['/ui/my-module', '/ui/my-module/settings']
 };
 
 export default moduleConfig;
@@ -869,45 +825,39 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { TaskRepository } from './task-repository';
 
 describe('TaskRepository', () => {
-  let taskRepo: TaskRepository;
+	let taskRepo: TaskRepository;
 
-  beforeEach(() => {
-    taskRepo = new TaskRepository();
-  });
+	beforeEach(() => {
+		taskRepo = new TaskRepository();
+	});
 
-  it('should create a task', async () => {
-    const task = await taskRepo.createTask(
-      {
-        title: 'Test Task',
-        description: 'Test Description',
-      },
-      'user-123'
-    );
+	it('should create a task', async () => {
+		const task = await taskRepo.createTask(
+			{
+				title: 'Test Task',
+				description: 'Test Description'
+			},
+			'user-123'
+		);
 
-    expect(task.id).toBeDefined();
-    expect(task.title).toBe('Test Task');
-    expect(task.userId).toBe('user-123');
-  });
+		expect(task.id).toBeDefined();
+		expect(task.title).toBe('Test Task');
+		expect(task.userId).toBe('user-123');
+	});
 
-  it('should retrieve task by id', async () => {
-    const created = await taskRepo.createTask(
-      { title: 'Test Task' },
-      'user-123'
-    );
+	it('should retrieve task by id', async () => {
+		const created = await taskRepo.createTask({ title: 'Test Task' }, 'user-123');
 
-    const retrieved = await taskRepo.getTaskById(created.id, 'user-123');
-    expect(retrieved).toEqual(created);
-  });
+		const retrieved = await taskRepo.getTaskById(created.id, 'user-123');
+		expect(retrieved).toEqual(created);
+	});
 
-  it('should not allow users to access other users tasks', async () => {
-    const created = await taskRepo.createTask(
-      { title: 'Secret Task' },
-      'user-123'
-    );
+	it('should not allow users to access other users tasks', async () => {
+		const created = await taskRepo.createTask({ title: 'Secret Task' }, 'user-123');
 
-    const result = await taskRepo.getTaskById(created.id, 'other-user');
-    expect(result).toBeNull();
-  });
+		const result = await taskRepo.getTaskById(created.id, 'other-user');
+		expect(result).toBeNull();
+	});
 });
 ```
 
@@ -919,23 +869,23 @@ import { describe, it, expect } from 'vitest';
 import { GET, POST } from './+server';
 
 describe('GET /api/my-module/tasks', () => {
-  it('should return 401 without authentication', async () => {
-    const response = await GET({
-      locals: { user: null },
-    } as any);
+	it('should return 401 without authentication', async () => {
+		const response = await GET({
+			locals: { user: null }
+		} as any);
 
-    expect(response.status).toBe(401);
-  });
+		expect(response.status).toBe(401);
+	});
 
-  it('should return user tasks', async () => {
-    const response = await GET({
-      locals: { user: { id: 'user-123' } },
-    } as any);
+	it('should return user tasks', async () => {
+		const response = await GET({
+			locals: { user: { id: 'user-123' } }
+		} as any);
 
-    expect(response.status).toBe(200);
-    const data = await response.json();
-    expect(Array.isArray(data.data)).toBe(true);
-  });
+		expect(response.status).toBe(200);
+		const data = await response.json();
+		expect(Array.isArray(data.data)).toBe(true);
+	});
 });
 ```
 
@@ -986,6 +936,7 @@ npm run build
 ### Q: Can I use external npm packages?
 
 **A**: Yes, add them to your `package.json`. However:
+
 - Keep dependencies minimal
 - Avoid conflicting versions with core app
 - Large packages should be bundled separately
@@ -994,6 +945,7 @@ npm run build
 ### Q: Can I access core app databases?
 
 **A**: Yes, through `$lib/server/db`. You can:
+
 - Read from core tables (user, etc.)
 - Write to core tables only if designed for modules
 - Reference core tables in relationships
@@ -1002,6 +954,7 @@ npm run build
 ### Q: How do I add migrations for my module?
 
 **A**: Place `.sql` files in `drizzle/` or handle via Drizzle schema files:
+
 - Migrations run automatically on module init
 - Must follow naming convention: `0000_name.sql`
 - Test migrations thoroughly before deployment
@@ -1009,18 +962,21 @@ npm run build
 ### Q: Can modules depend on other modules?
 
 **A**: Define in `manifest.yaml`:
+
 ```yaml
 dependencies:
   - other-module-id
 ```
+
 The core will enforce load order, but circular dependencies will fail.
 
 ### Q: How do I handle authentication?
 
 **A**: MoLOS provides authentication via `locals.user`:
+
 ```typescript
 if (!locals.user) {
-  return json({ error: 'Unauthorized' }, { status: 401 });
+	return json({ error: 'Unauthorized' }, { status: 401 });
 }
 
 // Access user data
@@ -1030,6 +986,7 @@ const userId = locals.user.id;
 ### Q: Can I add navigation items to the main menu?
 
 **A**: Yes, through `config.ts`:
+
 ```typescript
 navigation: [
   {
@@ -1043,6 +1000,7 @@ navigation: [
 ### Q: What if my module initialization fails?
 
 **A**: The module will be marked with an error state but NOT deleted:
+
 - `error_manifest` - Validation failed
 - `error_migration` - Migration failed
 - `error_config` - Config loading failed
@@ -1052,6 +1010,7 @@ The module folder is preserved so you can fix and retry.
 ### Q: Can I have submodules within my module?
 
 **A**: Yes, organize complex functionality within your module structure:
+
 ```
 lib/
   ├── features/
@@ -1065,6 +1024,7 @@ lib/
 ### Q: How do I debug my module?
 
 **A**: Use several techniques:
+
 ```typescript
 // Console logging
 console.log('Debug info:', data);
@@ -1083,6 +1043,7 @@ npm run db:inspect  // If available
 ### Q: Can I customize the module discovery?
 
 **A**: No, the core handles this automatically. However:
+
 - Module location: `external_modules/` (required)
 - Manifest file: `manifest.yaml` (required)
 - Config file: `config.ts` (required)
@@ -1090,6 +1051,7 @@ npm run db:inspect  // If available
 ### Q: What's the performance impact of modules?
 
 **A**: Minimal when properly implemented:
+
 - Symlinks are fast
 - Database access is optimized
 - Routes are lazy-loaded
@@ -1104,15 +1066,15 @@ npm run db:inspect  // If available
 ```typescript
 // ✅ Good
 export interface Task {
-  id: string;
-  userId: string;
-  title: string;
-  status: 'pending' | 'completed';
+	id: string;
+	userId: string;
+	title: string;
+	status: 'pending' | 'completed';
 }
 
 // ❌ Bad
 export interface Task {
-  [key: string]: any;
+	[key: string]: any;
 }
 ```
 
@@ -1121,17 +1083,17 @@ export interface Task {
 ```typescript
 // ✅ Good
 const schema = z.object({
-  title: z.string().min(1),
-  dueDate: z.number().optional(),
+	title: z.string().min(1),
+	dueDate: z.number().optional()
 });
 
 const result = schema.safeParse(input);
 if (!result.success) {
-  // Handle validation error
+	// Handle validation error
 }
 
 // ❌ Bad
-const task = input as Task;  // Dangerous!
+const task = input as Task; // Dangerous!
 ```
 
 ### 3. Implement Proper Error Handling
@@ -1139,19 +1101,19 @@ const task = input as Task;  // Dangerous!
 ```typescript
 // ✅ Good
 try {
-  const task = await taskRepo.getTaskById(id, userId);
-  if (!task) {
-    return json({ error: 'Task not found' }, { status: 404 });
-  }
-  return json({ data: task });
+	const task = await taskRepo.getTaskById(id, userId);
+	if (!task) {
+		return json({ error: 'Task not found' }, { status: 404 });
+	}
+	return json({ data: task });
 } catch (error) {
-  console.error('Error fetching task:', error);
-  return json({ error: 'Internal server error' }, { status: 500 });
+	console.error('Error fetching task:', error);
+	return json({ error: 'Internal server error' }, { status: 500 });
 }
 
 // ❌ Bad
 const task = await taskRepo.getTaskById(id, userId);
-return json({ data: task });  // No error handling!
+return json({ data: task }); // No error handling!
 ```
 
 ### 4. Ensure Data Ownership
@@ -1160,7 +1122,7 @@ return json({ data: task });  // No error handling!
 // ✅ Good
 const task = await taskRepo.getTaskById(id, userId);
 if (!task || task.userId !== userId) {
-  return json({ error: 'Unauthorized' }, { status: 403 });
+	return json({ error: 'Unauthorized' }, { status: 403 });
 }
 
 // ❌ Bad
@@ -1214,13 +1176,13 @@ const task = await taskRepo.getTaskById(id);
  * @returns Priority score (higher = more urgent)
  */
 function calculatePriority(dueDate: number, complexity: number): number {
-  const daysUntilDue = (dueDate - Date.now()) / (1000 * 60 * 60 * 24);
-  return Math.max(1, 10 - daysUntilDue) * (complexity / 5);
+	const daysUntilDue = (dueDate - Date.now()) / (1000 * 60 * 60 * 24);
+	return Math.max(1, 10 - daysUntilDue) * (complexity / 5);
 }
 
 // ❌ Bad
 function calcPri(d, c) {
-  return Math.max(1, 10 - (d - Date.now()) / 86400000) * (c / 5);
+	return Math.max(1, 10 - (d - Date.now()) / 86400000) * (c / 5);
 }
 ```
 
@@ -1232,10 +1194,10 @@ async function moveTask(taskId: string, newProjectId: string) {
   return await db.transaction(async (tx) => {
     // Update task
     await tx.update(tasks).set({ projectId: newProjectId });
-    
+
     // Update project statistics
     await tx.update(projects).set({ taskCount: sql`task_count + 1` });
-    
+
     // Log action
     await tx.insert(activityLog).values({ ... });
   });
@@ -1247,19 +1209,18 @@ async function moveTask(taskId: string, newProjectId: string) {
 ```typescript
 // ✅ Good - Single query with join
 const tasks = await db
-  .select({
-    task: tasksTasks,
-    project: tasksProjects,
-  })
-  .from(tasksTasks)
-  .leftJoin(tasksProjects, eq(tasksTasks.projectId, tasksProjects.id))
-  .where(eq(tasksTasks.userId, userId));
+	.select({
+		task: tasksTasks,
+		project: tasksProjects
+	})
+	.from(tasksTasks)
+	.leftJoin(tasksProjects, eq(tasksTasks.projectId, tasksProjects.id))
+	.where(eq(tasksTasks.userId, userId));
 
 // ❌ Bad - N+1 queries
 const tasks = await db.select().from(tasksTasks);
 for (const task of tasks) {
-  task.project = await db.select().from(tasksProjects)
-    .where(eq(tasksProjects.id, task.projectId));
+	task.project = await db.select().from(tasksProjects).where(eq(tasksProjects.id, task.projectId));
 }
 ```
 
@@ -1283,6 +1244,7 @@ it('should clean up on errors', async () => { ... });
 **Symptoms**: Module folder exists but doesn't appear in database
 
 **Solutions**:
+
 1. Check `manifest.yaml` is valid and in root directory
 2. Run `npm run module:validate ./external_modules/my-module`
 3. Check database migrations ran: `npm run db:migrate`
@@ -1294,6 +1256,7 @@ it('should clean up on errors', async () => { ... });
 **Symptoms**: "Cannot find module" errors
 
 **Solutions**:
+
 1. Verify symlinks created: `ls -la src/lib/modules/`
 2. Check import paths match your structure exactly
 3. Ensure files use `.ts` extension, not `.js`
@@ -1305,6 +1268,7 @@ it('should clean up on errors', async () => { ... });
 **Symptoms**: "error_migration" status
 
 **Solutions**:
+
 1. Check migration files in `drizzle/`
 2. Ensure table names follow convention (module_entity)
 3. Run migrations manually: `npm run db:migrate`
@@ -1316,6 +1280,7 @@ it('should clean up on errors', async () => { ... });
 **Symptoms**: Routes not accessible at `/api/my-module/...`
 
 **Solutions**:
+
 1. Verify symlink created: `ls -la src/routes/api/\(external_modules\)/`
 2. Check route file exists: `routes/api/+server.ts`
 3. Ensure correct SvelteKit route syntax
@@ -1327,6 +1292,7 @@ it('should clean up on errors', async () => { ... });
 **Symptoms**: UI loads but styling missing
 
 **Solutions**:
+
 1. Ensure Tailwind classes are in allowed content paths
 2. Check `tailwind.config.js` includes module paths
 3. Use `<style>` blocks for scoped CSS
@@ -1337,6 +1303,7 @@ it('should clean up on errors', async () => { ... });
 **Symptoms**: All endpoints return 401
 
 **Solutions**:
+
 1. Check `locals.user` is being set by auth middleware
 2. Verify auth server file exists and initializes
 3. Check session/JWT token is valid
@@ -1348,15 +1315,17 @@ it('should clean up on errors', async () => { ... });
 **Symptoms**: App slows down over time
 
 **Solutions**:
+
 ```typescript
 // ✅ Cleanup subscriptions
 onDestroy(() => {
-  tasksStore.unsubscribe?.();
+	tasksStore.unsubscribe?.();
 });
 
 // ✅ Use readable/derived stores for computed values
-export const completedCount = derived(tasksStore, $tasks => 
-  $tasks.filter(t => t.status === 'completed').length
+export const completedCount = derived(
+	tasksStore,
+	($tasks) => $tasks.filter((t) => t.status === 'completed').length
 );
 ```
 
@@ -1376,6 +1345,7 @@ export const completedCount = derived(tasksStore, $tasks =>
 ## Support
 
 For issues or questions:
+
 1. Check this guide's FAQ section
 2. Review module examples in `docs/guides/developing-new-modules/`
 3. Check existing modules in `external_modules/`

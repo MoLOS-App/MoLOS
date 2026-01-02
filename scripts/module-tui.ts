@@ -123,7 +123,7 @@ class ModuleTUI {
 			}
 
 			console.table(
-				modules.map(m => ({
+				modules.map((m) => ({
 					ID: m.id,
 					'Repo URL': m.repoUrl,
 					Status: m.status,
@@ -244,7 +244,10 @@ class ModuleTUI {
 			const moduleName = path.basename(localPath);
 
 			// Register the module in DB with local:// prefix (using absolute path)
-			await this.settingsRepo.registerExternalModule(moduleName, `local://${path.resolve(localPath)}`);
+			await this.settingsRepo.registerExternalModule(
+				moduleName,
+				`local://${path.resolve(localPath)}`
+			);
 
 			console.log(`\n📋 Module ${moduleName} registered. Running sync to install...`);
 			execSync('npm run modules:sync', { stdio: 'inherit' });
@@ -269,7 +272,7 @@ class ModuleTUI {
 				type: 'rawlist',
 				name: 'moduleId',
 				message: 'Select module to delete:',
-				choices: modules.map(m => ({
+				choices: modules.map((m) => ({
 					name: `${m.id} (${m.status})`,
 					value: m.id
 				}))
@@ -318,7 +321,7 @@ class ModuleTUI {
 				type: 'rawlist',
 				name: 'moduleId',
 				message: 'Select module:',
-				choices: modules.map(m => ({
+				choices: modules.map((m) => ({
 					name: `${m.id} (${m.status})`,
 					value: m.id
 				}))
@@ -398,7 +401,7 @@ class ModuleTUI {
 			}
 
 			console.table(
-				logs.map(log => ({
+				logs.map((log) => ({
 					Time: new Date(log.createdAt).toLocaleString(),
 					Level: log.level.toUpperCase(),
 					Source: log.source,

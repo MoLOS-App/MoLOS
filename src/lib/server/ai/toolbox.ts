@@ -16,11 +16,17 @@ export class AiToolbox {
 
 		// 2. Discover tools from all registered modules (core and external)
 		const allModules = getAllModules();
-		console.log('[AiToolbox] All modules found:', allModules.map(m => ({ id: m.id, name: m.name, isExternal: m.isExternal })));
+		console.log(
+			'[AiToolbox] All modules found:',
+			allModules.map((m) => ({ id: m.id, name: m.name, isExternal: m.isExternal }))
+		);
 
 		// We include all core modules by default, and external modules only if active
 		const modulesToLoad = allModules.filter((m) => !m.isExternal || activeModuleIds.includes(m.id));
-		console.log('[AiToolbox] Modules to load:', modulesToLoad.map(m => m.id));
+		console.log(
+			'[AiToolbox] Modules to load:',
+			modulesToLoad.map((m) => m.id)
+		);
 
 		for (const module of modulesToLoad) {
 			console.log(`[AiToolbox] Processing module: ${module.id} (external: ${module.isExternal})`);
@@ -30,7 +36,10 @@ export class AiToolbox {
 					console.log(`[AiToolbox] Importing tools for module: ${module.id}`);
 					const importPath = `../../modules/${module.id}/server/ai/ai-tools.ts`;
 					const aiToolsModule = await import(/* @vite-ignore */ importPath);
-					console.log(`[AiToolbox] Import successful for ${module.id}, has getAiTools:`, !!aiToolsModule.getAiTools);
+					console.log(
+						`[AiToolbox] Import successful for ${module.id}, has getAiTools:`,
+						!!aiToolsModule.getAiTools
+					);
 					if (aiToolsModule.getAiTools) {
 						console.log(`[AiToolbox] Loading AI tools for module: ${module.name}`);
 						const moduleTools = await aiToolsModule.getAiTools(userId);

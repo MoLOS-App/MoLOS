@@ -28,8 +28,15 @@ export class TasksRepository {
 		return newTask;
 	}
 
-	async updateTask(id: string, task: Partial<Omit<Task, 'id' | 'userId' | 'createdAt' | 'updatedAt'>>): Promise<Task | undefined> {
-		const [updatedTask] = await db.update(tasksTasks).set(task).where(eq(tasksTasks.id, id)).returning();
+	async updateTask(
+		id: string,
+		task: Partial<Omit<Task, 'id' | 'userId' | 'createdAt' | 'updatedAt'>>
+	): Promise<Task | undefined> {
+		const [updatedTask] = await db
+			.update(tasksTasks)
+			.set(task)
+			.where(eq(tasksTasks.id, id))
+			.returning();
 		return updatedTask;
 	}
 

@@ -4,7 +4,12 @@ import path from 'path';
 
 const EXTERNAL_MODULES_DIR = path.join(process.cwd(), 'external_modules');
 
-async function runCommand(command: string, args: string[], cwd: string, prefix: string): Promise<void> {
+async function runCommand(
+	command: string,
+	args: string[],
+	cwd: string,
+	prefix: string
+): Promise<void> {
 	return new Promise((resolve) => {
 		console.log(`[${prefix}] Starting: ${command} ${args.join(' ')} in ${cwd}`);
 		const child = spawn(command, args, {
@@ -49,7 +54,10 @@ async function main() {
 
 		if (existsSync(pkgJsonPath)) {
 			// 1. Database Sync (Drizzle)
-			if (existsSync(path.join(modulePath, 'drizzle.config.ts')) || existsSync(path.join(modulePath, 'drizzle.config.js'))) {
+			if (
+				existsSync(path.join(modulePath, 'drizzle.config.ts')) ||
+				existsSync(path.join(modulePath, 'drizzle.config.js'))
+			) {
 				console.log(`[${moduleId}] Syncing database...`);
 				tasks.push(runCommand('npm', ['run', 'db:push'], modulePath, `${moduleId}:db`));
 			}

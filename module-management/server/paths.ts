@@ -12,7 +12,10 @@ export class ModulePaths {
 
 	// Internal MoLOS directories
 	static readonly INTERNAL_CONFIG_DIR = path.join(process.cwd(), 'src/lib/config/modules');
-	static readonly UI_ROUTES_DIR = path.join(process.cwd(), 'src/routes/ui/(modules)/(external_modules)');
+	static readonly UI_ROUTES_DIR = path.join(
+		process.cwd(),
+		'src/routes/ui/(modules)/(external_modules)'
+	);
 	static readonly API_ROUTES_DIR = path.join(process.cwd(), 'src/routes/api/(external_modules)');
 	static readonly INTERNAL_MODULES_DIR = path.join(process.cwd(), 'src/lib/modules');
 

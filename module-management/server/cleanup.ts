@@ -1,5 +1,4 @@
 import { existsSync, readdirSync, rmSync } from 'fs';
-import path from 'path';
 import { ModulePaths } from './paths';
 import { cleanupModuleArtifacts, cleanupOrphanedSymlinks, isBrokenSymlink } from './utils';
 
@@ -12,10 +11,7 @@ export class ModuleCleanup {
 	/**
 	 * Process modules marked for deletion
 	 */
-	static async processDeletions(
-		settingsRepo: any,
-		allExternalInDb: any[]
-	): Promise<void> {
+	static async processDeletions(settingsRepo: any, allExternalInDb: any[]): Promise<void> {
 		const toDelete = allExternalInDb.filter((m) => m.status === 'deleting');
 		for (const mod of toDelete) {
 			console.log(`[ModuleManager] Processing pending deletion for module: ${mod.id}`);
@@ -37,16 +33,15 @@ export class ModuleCleanup {
 	/**
 	 * Check for broken symlinks from removed local modules
 	 */
-	static async checkBrokenSymlinks(
-		settingsRepo: any,
-		allExternalInDb: any[]
-	): Promise<void> {
+	static async checkBrokenSymlinks(settingsRepo: any, allExternalInDb: any[]): Promise<void> {
 		for (const mod of allExternalInDb) {
 			if (mod.repoUrl.startsWith('local://') && mod.status !== 'deleting') {
 				const modulePath = ModulePaths.getModulePath(mod.id);
 				try {
 					if (isBrokenSymlink(modulePath)) {
-						console.log(`[ModuleManager] Local module source removed, marking ${mod.id} for deletion.`);
+						console.log(
+							`[ModuleManager] Local module source removed, marking ${mod.id} for deletion.`
+						);
 						await settingsRepo.updateExternalModuleStatus(mod.id, 'deleting');
 					}
 				} catch (e) {
