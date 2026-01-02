@@ -1,8 +1,8 @@
-import { ModuleManager } from '../src/lib/server/modules/module-manager';
+import { ModuleManager } from '../server/module-manager';
 import { existsSync, readFileSync, readdirSync } from 'fs';
 import path from 'path';
 import { parse } from 'yaml';
-import { validateModuleManifest, formatValidationErrors } from '../src/lib/config/module-types';
+import { validateModuleManifest, formatValidationErrors } from '../config/module-types';
 
 // Load .env file manually for CLI
 function loadEnv() {
