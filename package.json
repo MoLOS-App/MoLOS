@@ -8,7 +8,6 @@
 		"build": "vite build",
 		"preview": "vite preview --host --port 4173",
 		"serve": "tsx scripts/supervisor.ts",
-		"dev:all": "tsx scripts/orchestrate-dev.ts",
 		"modules:sync": "tsx scripts/sync-modules.ts",
 		"module:create": "tsx scripts/module-dev-cli.ts create",
 		"module:validate": "tsx scripts/module-dev-cli.ts validate",
