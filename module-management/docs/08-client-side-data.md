@@ -24,15 +24,15 @@ export const dailyLogs = writable<DailyLog[]>([]);
 export const tasksUIState = writable<TasksUIState>({ loading: false, error: null });
 
 export async function loadAllTasksData() {
-	tasksUIState.update(state => ({ ...state, loading: true, error: null }));
+	tasksUIState.update((state) => ({ ...state, loading: true, error: null }));
 	try {
 		// Simulate API call
-		await new Promise(resolve => setTimeout(resolve, 1000));
+		await new Promise((resolve) => setTimeout(resolve, 1000));
 		// const fetchedTasks = await api.get('/ui/MoLOS-Tasks');
 		// tasks.set(fetchedTasks);
-		tasksUIState.update(state => ({ ...state, loading: false }));
+		tasksUIState.update((state) => ({ ...state, loading: false }));
 	} catch (err: any) {
-		tasksUIState.update(state => ({ ...state, loading: false, error: err.message }));
+		tasksUIState.update((state) => ({ ...state, loading: false, error: err.message }));
 	}
 }
 

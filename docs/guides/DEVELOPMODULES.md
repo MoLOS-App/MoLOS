@@ -77,3 +77,4 @@ Count passing tests:
 
 ```bash
 npm run test:unit -- --run "ModuleName" --reporter=verbose | grep -c "✓"
+```

@@ -64,7 +64,9 @@ export class ModuleManager {
 		if (!autoload) {
 			for (const mod of allExternalInDb) {
 				if (mod.repoUrl.startsWith('local://')) {
-					console.log(`[ModuleManager] Autoload disabled. Marking auto-discovered module ${mod.id} for deletion.`);
+					console.log(
+						`[ModuleManager] Autoload disabled. Marking auto-discovered module ${mod.id} for deletion.`
+					);
 					await settingsRepo.updateExternalModuleStatus(mod.id, 'deleting');
 				}
 			}
@@ -94,7 +96,9 @@ export class ModuleManager {
 				const modulePath = path.join(this.EXTERNAL_DIR, mod.id);
 				try {
 					if (this.isBrokenSymlink(modulePath)) {
-						console.log(`[ModuleManager] Local module source removed, marking ${mod.id} for deletion.`);
+						console.log(
+							`[ModuleManager] Local module source removed, marking ${mod.id} for deletion.`
+						);
 						await settingsRepo.updateExternalModuleStatus(mod.id, 'deleting');
 					}
 				} catch (e) {
@@ -151,7 +155,9 @@ export class ModuleManager {
 			// For local modules, if the symlink in external_modules was manually removed, mark for deletion
 			const isLocal = mod.repoUrl.startsWith('local://');
 			if (isLocal && !existsSync(modulePath) && mod.status !== 'pending') {
-				console.log(`[ModuleManager] Local module ${moduleId} symlink removed, marking for deletion.`);
+				console.log(
+					`[ModuleManager] Local module ${moduleId} symlink removed, marking for deletion.`
+				);
 				await settingsRepo.updateExternalModuleStatus(mod.id, 'deleting');
 				continue;
 			}
@@ -164,7 +170,9 @@ export class ModuleManager {
 					if (pathPart === moduleId || pathPart === '') {
 						localSourcePath = path.join(this.PARENT_DIR, moduleId);
 					} else {
-						localSourcePath = path.isAbsolute(pathPart) ? pathPart : path.resolve(this.PARENT_DIR, pathPart);
+						localSourcePath = path.isAbsolute(pathPart)
+							? pathPart
+							: path.resolve(this.PARENT_DIR, pathPart);
 					}
 				}
 
@@ -172,7 +180,9 @@ export class ModuleManager {
 				this.cleanupModuleArtifacts(moduleId);
 
 				if (isLocal && existsSync(modulePath) && !existsSync(localSourcePath || '')) {
-					console.log(`[ModuleManager] Module ${moduleId} is already in external_modules, skipping refresh.`);
+					console.log(
+						`[ModuleManager] Module ${moduleId} is already in external_modules, skipping refresh.`
+					);
 				} else if (isLocal && localSourcePath && existsSync(localSourcePath)) {
 					console.log(`[ModuleManager] Using local source for ${moduleId}`);
 					// Instead of cloning, we symlink the local source to the external_modules dir
@@ -237,25 +247,40 @@ export class ModuleManager {
 					`Module ${moduleId} initialized successfully.`
 				);
 			} catch (error: unknown) {
-				const { category, message, details } = formatErrorForLogging(moduleId, error, 'initialization');
+				const { category, message, details } = formatErrorForLogging(
+					moduleId,
+					error,
+					'initialization'
+				);
 				const moduleError = createModuleError(category, message, { stack: details });
 
 				console.error(`\n[ModuleManager] ⚠️ FAILED TO INITIALIZE MODULE: ${moduleId}`);
 				console.error(`[ModuleManager] Error Type: ${category}`);
 				console.error(`[ModuleManager] Error: ${message}`);
-				console.error(`[ModuleManager] Status: Module marked as "${moduleError.status}" for manual recovery`);
+				console.error(
+					`[ModuleManager] Status: Module marked as "${moduleError.status}" for manual recovery`
+				);
 				console.error(`[ModuleManager] Recovery Steps:`);
 				moduleError.recoverySteps?.forEach((step) => console.error(`  - ${step}`));
 				console.error('');
 
-				await settingsRepo.log('error', 'ModuleManager', `Failed to initialize module ${moduleId}`, {
-					errorType: category,
-					message,
-					stack: details
-				});
+				await settingsRepo.log(
+					'error',
+					'ModuleManager',
+					`Failed to initialize module ${moduleId}`,
+					{
+						errorType: category,
+						message,
+						stack: details
+					}
+				);
 
 				// Mark module in error state instead of deleting it
-				await settingsRepo.updateExternalModuleStatus(moduleId, moduleError.status as any, moduleError);
+				await settingsRepo.updateExternalModuleStatus(
+					moduleId,
+					moduleError.status as any,
+					moduleError
+				);
 
 				console.log(
 					`[ModuleManager] Module ${moduleId} preserved in error state for inspection and recovery.`
@@ -266,7 +291,10 @@ export class ModuleManager {
 					this.cleanupModuleArtifacts(moduleId);
 					console.log(`[ModuleManager] Cleaned up broken symlinks and artifacts for ${moduleId}`);
 				} catch (cleanupError) {
-					console.warn(`[ModuleManager] Failed to cleanup artifacts for ${moduleId}:`, cleanupError);
+					console.warn(
+						`[ModuleManager] Failed to cleanup artifacts for ${moduleId}:`,
+						cleanupError
+					);
 				}
 
 				// Don't trigger reboot - other modules may still be valid
@@ -276,13 +304,12 @@ export class ModuleManager {
 	}
 
 	private static async discoverLocalModules(settingsRepo: SettingsRepository) {
-		console.log(`[ModuleManager] Scanning external_modules directory for modules: ${this.EXTERNAL_DIR}`);
+		console.log(
+			`[ModuleManager] Scanning external_modules directory for modules: ${this.EXTERNAL_DIR}`
+		);
 		try {
 			const items = readdirSync(this.EXTERNAL_DIR, { withFileTypes: true });
-			const molosModules = items.filter(
-				(item) =>
-					item.isDirectory() || item.isSymbolicLink()
-			);
+			const molosModules = items.filter((item) => item.isDirectory() || item.isSymbolicLink());
 
 			const existingModules = await settingsRepo.getExternalModules();
 			const existingIds = new Set(existingModules.map((m) => m.id));
@@ -372,13 +399,19 @@ export class ModuleManager {
 		if (!existsSync(configPath)) return;
 
 		let content = readFileSync(configPath, 'utf-8');
-		
+
 		// Fix common export naming discrepancies
-		if (content.includes('export const ') && !content.includes('export const moduleConfig') && !content.includes('export default')) {
+		if (
+			content.includes('export const ') &&
+			!content.includes('export const moduleConfig') &&
+			!content.includes('export default')
+		) {
 			const match = content.match(/export const (\w+Config)/);
 			if (match) {
 				const configName = match[1];
-				console.log(`[ModuleManager] Standardizing config export for ${moduleId}: ${configName} -> moduleConfig`);
+				console.log(
+					`[ModuleManager] Standardizing config export for ${moduleId}: ${configName} -> moduleConfig`
+				);
 				content += `\n\nexport const moduleConfig = ${configName};\nexport default ${configName};`;
 			}
 		}
@@ -388,7 +421,7 @@ export class ModuleManager {
 		// Match /ui/xxx or /api/xxx
 		const uiHrefRegex = new RegExp(`href:\\s*['"]/ui/([\\w-]+)`, 'g');
 		const apiHrefRegex = new RegExp(`(['"])/api/([\\w-]+)`, 'g');
-				
+
 		if (content.match(uiHrefRegex) || content.match(apiHrefRegex)) {
 			console.log(`[ModuleManager] Standardizing hrefs and API calls for ${moduleId}`);
 			content = content.replace(uiHrefRegex, (match, p1) => {
@@ -396,7 +429,7 @@ export class ModuleManager {
 				const fullMatch = match.match(/href:\s*['"]\/ui\/([\w-/]+)/);
 				if (!fullMatch) return match;
 				const fullPath = fullMatch[1];
-				
+
 				// Check if the path starts with the module ID (e.g., 'health' or 'health/')
 				if (fullPath === p1 || fullPath.startsWith(p1 + '/')) {
 					const subpath = fullPath.substring(p1.length);
@@ -409,7 +442,7 @@ export class ModuleManager {
 				const fullMatch = match.match(new RegExp(`${quote}/api/([\\w-/]+)`));
 				if (!fullMatch) return match;
 				const fullPath = fullMatch[1];
-				
+
 				if (fullPath === p1 || fullPath.startsWith(p1 + '/')) {
 					const subpath = fullPath.substring(p1.length);
 					return `${quote}/api/${normalizedId}${subpath}`;
@@ -477,11 +510,13 @@ export class ModuleManager {
 	}
 
 	/**
-		* Standardizes internal imports within a module to use the new $lib/modules/[id] alias.
-		*/
+	 * Standardizes internal imports within a module to use the new $lib/modules/[id] alias.
+	 */
 	private static standardizeInternalImports(moduleId: string, modulePath: string) {
-		const files = this.getAllFiles(modulePath).filter(f => f.endsWith('.svelte') || f.endsWith('.ts'));
-		
+		const files = this.getAllFiles(modulePath).filter(
+			(f) => f.endsWith('.svelte') || f.endsWith('.ts')
+		);
+
 		for (const file of files) {
 			let content = readFileSync(file, 'utf-8');
 			let changed = false;
@@ -489,7 +524,7 @@ export class ModuleManager {
 			// For routes (api and ui), convert relative imports to $lib/modules aliases
 			// This is critical because symlinked routes have different path depths
 			const isRoute = file.includes('/routes/');
-			
+
 			if (isRoute) {
 				// 1. Replace relative imports to lib from routes
 				// ../../lib/repositories -> $lib/modules/[id]/repositories
@@ -546,11 +581,15 @@ export class ModuleManager {
 			// For module-specific schema tables, redirect to module's own schema
 			// e.g., tasksTasks, tasksProjects -> $lib/modules/MoLOS-Tasks/lib/server/db/schema
 			// This handles imports like: import { tasksTasks } from '$lib/server/db/schema'
-			const modulePrefix = moduleId.toLowerCase().replace(/-tasks$/, '').replace(/-/g, '');
+			const modulePrefix = moduleId
+				.toLowerCase()
+				.replace(/-tasks$/, '')
+				.replace(/-/g, '');
 			const moduleTableRegex = new RegExp(`from\\s+['"]\\$lib/server/db/schema['"]`, 'g');
 			if (moduleTableRegex.test(content)) {
 				// Check if importing any module-specific tables (ones that start with the module prefix)
-				const importRegex = /import\s*\{\s*([^}]+)\s*\}\s*from\s+['"]\\$lib\/server\/db\/schema['"]/g;
+				const importRegex =
+					/import\s*\{\s*([^}]+)\s*\}\s*from\s+['"]\\$lib\/server\/db\/schema['"]/g;
 				const match = importRegex.exec(content);
 				if (match) {
 					const imports = match[1];
@@ -622,14 +661,18 @@ export class ModuleManager {
 				// ../ (MoLOS-xxx)
 				// ../ (external_modules)
 				// ../src/lib/server/db
-				content = content.replace("from '$lib/server/db'", "from '../../../../../src/lib/server/db'");
+				content = content.replace(
+					"from '$lib/server/db'",
+					"from '../../../../../src/lib/server/db'"
+				);
 				changed = true;
 			}
 
 			// 6.1. Fix $lib/server/db/utils in schema files
 			if (file.includes('lib/server/db/schema/')) {
 				// Handle both $lib alias and deep relative paths from standalone modules
-				const dbUtilsRegex = /from\s+['"](\$lib\/server\/db\/utils|\.\.\/\.\.\/\.\.\/\.\.\/\.\.\/\.\.\/src\/lib\/server\/db\/utils)['"]/g;
+				const dbUtilsRegex =
+					/from\s+['"](\$lib\/server\/db\/utils|\.\.\/\.\.\/\.\.\/\.\.\/\.\.\/\.\.\/src\/lib\/server\/db\/utils)['"]/g;
 				if (content.match(dbUtilsRegex)) {
 					// When running in core, we want to use the $lib alias which is correctly resolved
 					content = content.replace(dbUtilsRegex, "from '$lib/server/db/utils'");
@@ -645,7 +688,10 @@ export class ModuleManager {
 
 			// 8. Fix relative imports that are too deep for the core app structure
 			if (content.includes('../../../../lib/modules/')) {
-				content = content.replace(/\.\.\/\.\.\/\.\.\/\.\.\/lib\/modules\/([\w-]+)\/lib\/repositories/g, '$lib/modules/$1/lib/repositories');
+				content = content.replace(
+					/\.\.\/\.\.\/\.\.\/\.\.\/lib\/modules\/([\w-]+)\/lib\/repositories/g,
+					'$lib/modules/$1/lib/repositories'
+				);
 				changed = true;
 			}
 

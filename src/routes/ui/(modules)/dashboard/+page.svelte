@@ -4,11 +4,7 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { goto } from '$app/navigation';
-	import {
-		Search,
-		Bell,
-		Sparkles
-	} from 'lucide-svelte';
+	import { Search, Bell, Sparkles } from 'lucide-svelte';
 	import * as Icons from 'lucide-svelte';
 	import { fade, fly } from 'svelte/transition';
 
@@ -145,7 +141,7 @@
 					</Card.Title>
 				</Card.Header>
 				<Card.Content class="space-y-2.5">
-					<p class="text-xs text-muted-foreground">No stats available</p>
+					<p class="text-muted-foreground text-xs">No stats available</p>
 				</Card.Content>
 			</Card.Root>
 		</div>

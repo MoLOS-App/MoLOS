@@ -23,14 +23,14 @@ For each major entity in your module, you will likely have components responsibl
 	}
 </script>
 
-<div class="flex items-center p-4 space-x-2 border rounded-md">
+<div class="flex items-center space-x-2 rounded-md border p-4">
 	<Checkbox checked={task.isCompleted} onCheckedChange={toggleCompletion} />
 	<div class="flex-1">
 		<h3 class="font-medium">{task.title}</h3>
 		{#if task.description}
-			<p class="text-sm text-muted-foreground">{task.description}</p>
+			<p class="text-muted-foreground text-sm">{task.description}</p>
 		{/if}
-		<div class="flex items-center mt-2 space-x-2">
+		<div class="mt-2 flex items-center space-x-2">
 			<Badge variant="secondary">{task.status}</Badge>
 			<Badge variant="outline">{task.priority}</Badge>
 		</div>

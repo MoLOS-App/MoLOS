@@ -149,20 +149,24 @@ This architecture allows MoLOS to remain lightweight while offering a vast libra
 MoLOS provides commands to manage external modules:
 
 #### Auto-Discovery and Synchronization
+
 - **Auto-Discovery:** When `MOLOS_AUTOLOAD_MODULES=true` (default in development), MoLOS automatically scans the `external_modules` directory for folders starting with `MoLOS-` and registers them as local modules.
 - **Sync Command:** `npm run modules:sync` - Synchronizes all modules, applying migrations, creating symlinks, and cleaning up broken links.
 
 #### Adding a Module
+
 1. Place the module folder (e.g., `MoLOS-Finance`) in the `external_modules` directory.
 2. Run `npm run modules:sync` to register and integrate the module.
 3. The module will be automatically linked into the core application.
 
 #### Removing a Module
+
 1. Remove the module folder from `external_modules`.
 2. Run `npm run modules:sync` to clean up symlinks and database entries.
 3. Alternatively, modules can be disabled/enabled through the UI settings.
 
 #### Development Commands
+
 - **Orchestrated Dev:** `npm run dev:all` - Starts the core application and all active modules simultaneously, keeping databases synchronized.
 - **Standalone Module Dev:** For individual module development, use the module's own `npm run dev` in its directory.
 

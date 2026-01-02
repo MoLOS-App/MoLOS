@@ -125,7 +125,10 @@ class ModuleValidator {
 				}
 			}
 		} catch (error) {
-			this.addError('manifest', `Failed to parse manifest.yaml: ${error instanceof Error ? error.message : String(error)}`);
+			this.addError(
+				'manifest',
+				`Failed to parse manifest.yaml: ${error instanceof Error ? error.message : String(error)}`
+			);
 		}
 	}
 
@@ -147,7 +150,11 @@ class ModuleValidator {
 			}
 
 			// Basic validation that it looks like valid TypeScript
-			if (!content.includes('moduleConfig') && !content.includes('export default') && !content.includes('export const')) {
+			if (
+				!content.includes('moduleConfig') &&
+				!content.includes('export default') &&
+				!content.includes('export const')
+			) {
 				this.addError('config', 'config.ts does not appear to contain module configuration export');
 				return;
 			}
@@ -171,7 +178,10 @@ class ModuleValidator {
 				}
 			}
 		} catch (error) {
-			this.addError('config', `Failed to parse config.ts: ${error instanceof Error ? error.message : String(error)}`);
+			this.addError(
+				'config',
+				`Failed to parse config.ts: ${error instanceof Error ? error.message : String(error)}`
+			);
 		}
 	}
 
@@ -189,7 +199,10 @@ class ModuleValidator {
 		for (const dir of optionalDirs) {
 			const dirPath = path.join(this.modulePath, dir);
 			if (!existsSync(dirPath)) {
-				this.addWarning('structure', `Missing optional directory: ${dir}/ (might be needed for your module)`);
+				this.addWarning(
+					'structure',
+					`Missing optional directory: ${dir}/ (might be needed for your module)`
+				);
 			}
 		}
 
@@ -224,7 +237,10 @@ class ModuleValidator {
 				this.addWarning('package', 'package.json should have "type": "module" for ES modules');
 			}
 		} catch (error) {
-			this.addError('package', `Failed to parse package.json: ${error instanceof Error ? error.message : String(error)}`);
+			this.addError(
+				'package',
+				`Failed to parse package.json: ${error instanceof Error ? error.message : String(error)}`
+			);
 		}
 	}
 
@@ -239,7 +255,10 @@ class ModuleValidator {
 			const files = readdirSync(drizzlePath).filter((f) => f.endsWith('.sql'));
 
 			if (files.length === 0) {
-				this.addWarning('database', 'drizzle/ directory exists but contains no .sql migration files');
+				this.addWarning(
+					'database',
+					'drizzle/ directory exists but contains no .sql migration files'
+				);
 				return;
 			}
 
@@ -252,7 +271,9 @@ class ModuleValidator {
 				const content = readFileSync(filePath, 'utf-8');
 
 				// Check for CREATE TABLE statements
-				const tableMatches = content.match(/CREATE TABLE\s+(?:IF NOT EXISTS\s+)?["'`]?(\w+)["'`]?/gi);
+				const tableMatches = content.match(
+					/CREATE TABLE\s+(?:IF NOT EXISTS\s+)?["'`]?(\w+)["'`]?/gi
+				);
 
 				if (tableMatches) {
 					for (const match of tableMatches) {
@@ -269,7 +290,10 @@ class ModuleValidator {
 				}
 			}
 		} catch (error) {
-			this.addWarning('database', `Failed to validate schema: ${error instanceof Error ? error.message : String(error)}`);
+			this.addWarning(
+				'database',
+				`Failed to validate schema: ${error instanceof Error ? error.message : String(error)}`
+			);
 		}
 	}
 
@@ -306,7 +330,10 @@ class ModuleValidator {
 				}
 			}
 		} catch (error) {
-			this.addWarning('routes', `Failed to validate routes: ${error instanceof Error ? error.message : String(error)}`);
+			this.addWarning(
+				'routes',
+				`Failed to validate routes: ${error instanceof Error ? error.message : String(error)}`
+			);
 		}
 	}
 

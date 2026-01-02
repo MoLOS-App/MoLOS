@@ -45,17 +45,20 @@ src/
 Follow these steps in order to create a new module:
 
 ### 1. **[Database Schema Setup](docs/guides/developing-new-modules/01-database-schema.md)**
+
 - Location and naming conventions
 - Table definitions
 - Key rules for schema design
 - Schema exports
 
 ### 2. **[TypeScript Models](docs/guides/developing-new-modules/02-typescript-models.md)**
+
 - Interface definitions
 - Type aliases
 - Model patterns
 
 ### 3. **[Repository Layer](docs/guides/developing-new-modules/03-repository-layer.md)**
+
 - Base repository
 - Entity-specific repositories
 - CRUD operations
@@ -63,6 +66,7 @@ Follow these steps in order to create a new module:
 - Repository patterns
 
 ### 4. **[API Endpoints](docs/guides/developing-new-modules/04-api-endpoints.md)**
+
 - Main endpoint CRUD operations
 - Sub-entity endpoints
 - Authentication and validation
@@ -70,6 +74,7 @@ Follow these steps in order to create a new module:
 - API patterns
 
 ### 5. **[UI Routes and Layout](docs/guides/developing-new-modules/05-ui-routes.md)**
+
 - Layout server loading
 - Layout structure
 - Dashboard pages
@@ -78,6 +83,7 @@ Follow these steps in order to create a new module:
 - Route patterns
 
 ### 6. **[UI Components](docs/guides/developing-new-modules/06-ui-components.md)**
+
 - Basic entity components
 - Dialog/modal forms
 - Component patterns
@@ -85,18 +91,21 @@ Follow these steps in order to create a new module:
 - Accessibility
 
 ### 7. **[Module Configuration](docs/guides/developing-new-modules/07-module-configuration.md)**
+
 - Configuration structure
 - Navigation definition
 - Registration in module registry
 - Configuration patterns
 
 ### 8. **[Client-Side Data Management](docs/guides/developing-new-modules/08-client-side-data.md)**
+
 - Svelte stores
 - Derived stores
 - Data fetching functions
 - Store patterns
 
 ### 9. **[Testing](docs/guides/developing-new-modules/09-testing.md)**
+
 - Repository tests
 - API tests
 - Component tests
@@ -104,6 +113,7 @@ Follow these steps in order to create a new module:
 - Coverage goals
 
 ### 10. **[Best Practices & Common Patterns](docs/guides/developing-new-modules/10-best-practices.md)**
+
 - Code quality guidelines
 - Performance optimization
 - User experience patterns
@@ -112,6 +122,7 @@ Follow these steps in order to create a new module:
 - Module checklist
 
 ### 11. **[Deployment & Troubleshooting](docs/guides/developing-new-modules/11-deployment-troubleshooting.md)**
+
 - Deployment checklist
 - Common issues
 - Debugging tips

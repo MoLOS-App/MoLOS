@@ -29,7 +29,9 @@ interface ModuleOptions {
 async function createModule(moduleName: string, options: Partial<ModuleOptions> = {}) {
 	// Validate module name
 	if (!/^[a-zA-Z0-9_-]+$/.test(moduleName)) {
-		console.error('❌ Module name must contain only alphanumeric characters, hyphens, and underscores');
+		console.error(
+			'❌ Module name must contain only alphanumeric characters, hyphens, and underscores'
+		);
 		process.exit(1);
 	}
 

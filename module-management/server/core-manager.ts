@@ -44,7 +44,9 @@ export class ModuleManager {
 		if (!autoload) {
 			for (const mod of allExternalInDb) {
 				if (mod.repoUrl.startsWith('local://')) {
-					console.log(`[ModuleManager] Autoload disabled. Marking auto-discovered module ${mod.id} for deletion.`);
+					console.log(
+						`[ModuleManager] Autoload disabled. Marking auto-discovered module ${mod.id} for deletion.`
+					);
 					await settingsRepo.updateExternalModuleStatus(mod.id, 'deleting');
 				}
 			}

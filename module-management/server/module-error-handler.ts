@@ -7,7 +7,12 @@
 
 import type { ModuleError } from '../../config/module-types';
 
-export type ErrorCategory = 'manifest_validation' | 'migration_failed' | 'config_export' | 'symlink_failed' | 'unknown';
+export type ErrorCategory =
+	| 'manifest_validation'
+	| 'migration_failed'
+	| 'config_export'
+	| 'symlink_failed'
+	| 'unknown';
 
 interface ErrorRecoveryMap {
 	[key in ErrorCategory]: string[];
@@ -42,7 +47,11 @@ const recoverySteps: ErrorRecoveryMap = {
 		'Check disk space availability',
 		'Review system symlink support'
 	],
-	unknown: ['Contact module developer for support', 'Check module documentation', 'Review system logs for details']
+	unknown: [
+		'Contact module developer for support',
+		'Check module documentation',
+		'Review system logs for details'
+	]
 };
 
 /**

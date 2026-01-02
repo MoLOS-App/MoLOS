@@ -27,11 +27,12 @@ export const SYMLINK_CONFIG = {
 
 	// Database directories
 	migrationsPattern: 'drizzle',
-	moduleMigrationsDir: (moduleId: string) => path.join(process.cwd(), 'external_modules', moduleId, 'drizzle'),
+	moduleMigrationsDir: (moduleId: string) =>
+		path.join(process.cwd(), 'external_modules', moduleId, 'drizzle'),
 
 	// Module file patterns
 	requiredFiles: ['manifest.yaml', 'config.ts'],
-	optionalDirs: ['routes', 'lib', 'drizzle'],
+	optionalDirs: ['routes', 'lib', 'drizzle']
 };
 
 /**
@@ -52,7 +53,7 @@ export function getModuleSymlinks(moduleId: string): ModuleSymlinks {
 		config: path.join(SYMLINK_CONFIG.internalConfigDir, moduleId),
 		lib: path.join(SYMLINK_CONFIG.internalModulesDir, moduleId),
 		uiRoutes: path.join(SYMLINK_CONFIG.uiRoutesDir, moduleId),
-		apiRoutes: path.join(SYMLINK_CONFIG.apiRoutesDir, moduleId),
+		apiRoutes: path.join(SYMLINK_CONFIG.apiRoutesDir, moduleId)
 	};
 }
 
@@ -69,12 +70,15 @@ export interface ModuleSymlinkSources {
 /**
  * Calculate all symlink sources for a module
  */
-export function getModuleSymlinkSources(moduleId: string, modulePath: string): ModuleSymlinkSources {
+export function getModuleSymlinkSources(
+	moduleId: string,
+	modulePath: string
+): ModuleSymlinkSources {
 	return {
 		config: modulePath,
 		lib: path.join(modulePath, 'lib'),
 		uiRoutes: path.join(modulePath, 'routes/ui'),
-		apiRoutes: path.join(modulePath, 'routes/api'),
+		apiRoutes: path.join(modulePath, 'routes/api')
 	};
 }
 
@@ -87,7 +91,7 @@ export const PATH_ENV_OVERRIDES: Record<string, string> = {
 	MOLOS_INTERNAL_CONFIG_DIR: 'internalConfigDir',
 	MOLOS_INTERNAL_MODULES_DIR: 'internalModulesDir',
 	MOLOS_UI_ROUTES_DIR: 'uiRoutesDir',
-	MOLOS_API_ROUTES_DIR: 'apiRoutesDir',
+	MOLOS_API_ROUTES_DIR: 'apiRoutesDir'
 };
 
 /**
@@ -116,16 +120,18 @@ export function validateSymlinkDirs(): { valid: boolean; errors: string[] } {
 	}
 
 	// Check route directories
-	[SYMLINK_CONFIG.uiRoutesDir, SYMLINK_CONFIG.apiRoutesDir, SYMLINK_CONFIG.internalConfigDir].forEach(
-		(dir) => {
-			if (!fs.existsSync(dir)) {
-				errors.push(`Required directory does not exist: ${dir}`);
-			}
+	[
+		SYMLINK_CONFIG.uiRoutesDir,
+		SYMLINK_CONFIG.apiRoutesDir,
+		SYMLINK_CONFIG.internalConfigDir
+	].forEach((dir) => {
+		if (!fs.existsSync(dir)) {
+			errors.push(`Required directory does not exist: ${dir}`);
 		}
-	);
+	});
 
 	return {
 		valid: errors.length === 0,
-		errors,
+		errors
 	};
 }

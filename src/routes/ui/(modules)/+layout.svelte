@@ -78,14 +78,14 @@
 	let isAiOpen = $state(false);
 </script>
 
-<div class="flex w-screen h-screen bg-background text-foreground">
+<div class="flex h-screen w-screen bg-background text-foreground">
 	<Tooltip.Provider>
 		<!-- Left Sidebar: Module Access & User Settings -->
 		<aside
-			class="fixed top-0 bottom-0 left-0 flex flex-col items-center w-20 py-6 border-r z-100 border-border bg-background"
+			class="fixed top-0 bottom-0 left-0 z-100 flex w-20 flex-col items-center border-r border-border bg-background py-6"
 		>
 			<!-- Module Icons -->
-			<div class="flex flex-col gap-4 mb-auto">
+			<div class="mb-auto flex flex-col gap-4">
 				{#each modules as module}
 					<Tooltip.Root>
 						<Tooltip.Trigger
@@ -97,7 +97,7 @@
 							onclick={() => goto(module.href)}
 						>
 							<module.icon
-								class="w-6 h-6 transition-transform duration-200 group-hover:scale-110"
+								class="h-6 w-6 transition-transform duration-200 group-hover:scale-110"
 							/>
 						</Tooltip.Trigger>
 						<Tooltip.Content side="right" class="ml-2">
@@ -108,17 +108,17 @@
 			</div>
 
 			<!-- Settings & User at Bottom -->
-			<div class="flex flex-col gap-3 mt-auto">
+			<div class="mt-auto flex flex-col gap-3">
 				<!-- Settings -->
 				<Tooltip.Root>
 					<Tooltip.Trigger>
 						<Button
 							variant="ghost"
 							size="icon"
-							class="w-10 h-10 text-muted-foreground hover:bg-muted"
+							class="text-muted-foreground h-10 w-10 hover:bg-muted"
 							onclick={() => goto('/ui/settings')}
 						>
-							<Settings class="w-5 h-5" />
+							<Settings class="h-5 w-5" />
 						</Button>
 					</Tooltip.Trigger>
 					<Tooltip.Content side="right">Settings</Tooltip.Content>
@@ -130,7 +130,7 @@
 						<Button
 							variant="ghost"
 							size="icon"
-							class="w-10 h-10 text-muted-foreground hover:bg-muted"
+							class="text-muted-foreground h-10 w-10 hover:bg-muted"
 							onclick={async () => {
 								await authClient.signOut({
 									fetchOptions: {
@@ -141,7 +141,7 @@
 								});
 							}}
 						>
-							<LogOut class="w-5 h-5" />
+							<LogOut class="h-5 w-5" />
 						</Button>
 					</Tooltip.Trigger>
 					<Tooltip.Content side="right">Logout</Tooltip.Content>
@@ -150,18 +150,18 @@
 		</aside>
 
 		<!-- Main Content Area -->
-		<div class="flex flex-col flex-1 ml-20">
+		<div class="ml-20 flex flex-1 flex-col">
 			<!-- Top Navigation Bar -->
-			<nav class="flex items-center justify-between px-6 border-b h-14 border-border bg-background">
+			<nav class="flex h-14 items-center justify-between border-b border-border bg-background px-6">
 				<!-- Left spacer -->
 				<div></div>
 
 				<!-- Search -->
 				<div class="relative w-full max-w-xl">
-					<Search class="absolute w-4 h-4 -translate-y-1/2 text-muted-foreground top-1/2 left-3" />
+					<Search class="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
 					<Input
 						placeholder="Search..."
-						class="w-full pl-10 pr-4 text-sm border-0 rounded-lg placeholder:text-muted-foreground h-9 bg-muted"
+						class="placeholder:text-muted-foreground h-9 w-full rounded-lg border-0 bg-muted pr-4 pl-10 text-sm"
 					/>
 				</div>
 
@@ -170,10 +170,10 @@
 					<Tooltip.Trigger>
 						<Button
 							variant="ghost"
-							class="w-10 h-10 transition-all duration-300 rounded-2xl bg-primary text-primary-foreground hover:scale-110 hover:shadow-primary/20 active:scale-95"
-							onclick={() => isAiOpen = !isAiOpen}
+							class="h-10 w-10 rounded-2xl bg-primary text-primary-foreground transition-all duration-300 hover:scale-110 hover:shadow-primary/20 active:scale-95"
+							onclick={() => (isAiOpen = !isAiOpen)}
 						>
-							<Bot class="w-8 h-8" />
+							<Bot class="h-8 w-8" />
 						</Button>
 					</Tooltip.Trigger>
 					<Tooltip.Content side="bottom">AI Assistant</Tooltip.Content>
@@ -185,7 +185,7 @@
 				<!-- Module Navigation Bubbles (Hidden under Sidebar) -->
 				<div class="w-24">
 					{#if filteredNavigation.length > 0}
-						<div class="fixed bottom-0 z-50 flex flex-col gap-2 mt-2 top-14 left-15">
+						<div class="fixed top-14 bottom-0 left-15 z-50 mt-2 flex flex-col gap-2">
 							{#each filteredNavigation as item, i (`nav-${i}`)}
 								{@const isActive = item.href && path === item.href}
 								<button
@@ -202,7 +202,7 @@
 											: 'w-0 opacity-0 group-hover:w-fit group-hover:opacity-100'}"
 										>{item.name}</span
 									>
-									<item.icon class="w-4 h-4 ml-2 opacity-100" />
+									<item.icon class="ml-2 h-4 w-4 opacity-100" />
 								</button>
 							{/each}
 						</div>
@@ -210,8 +210,8 @@
 				</div>
 
 				<!-- Main Content -->
-				<div class="flex justify-center w-full overflow-y-auto">
-					<div class="w-full min-h-full px-8 pt-6">
+				<div class="flex w-full justify-center overflow-y-auto">
+					<div class="min-h-full w-full px-8 pt-6">
 						{@render children()}
 					</div>
 				</div>
@@ -242,7 +242,7 @@
 				<Button
 					type="submit"
 					size="lg"
-					class="px-6 border-none rounded-full shadow-2xl h-14 animate-bounce bg-primary text-primary-foreground hover:animate-none hover:bg-accent/90"
+					class="h-14 animate-bounce rounded-full border-none bg-primary px-6 text-primary-foreground shadow-2xl hover:animate-none hover:bg-accent/90"
 					disabled={isRestarting}
 				>
 					<RefreshCw class="mr-2 h-5 w-5 {isRestarting ? 'animate-spin' : ''}" />

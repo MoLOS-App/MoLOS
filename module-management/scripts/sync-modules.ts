@@ -35,7 +35,9 @@ async function preValidateModules(): Promise<{ valid: boolean; errors: Map<strin
 	}
 
 	try {
-		const items = readdirSync(externalModulesDir, { withFileTypes: true }).filter((d) => d.isDirectory());
+		const items = readdirSync(externalModulesDir, { withFileTypes: true }).filter((d) =>
+			d.isDirectory()
+		);
 
 		for (const item of items) {
 			const modulePath = path.join(externalModulesDir, item.name);
@@ -67,7 +69,7 @@ async function preValidateModules(): Promise<{ valid: boolean; errors: Map<strin
 
 	return {
 		valid: errors.size === 0,
-		errors,
+		errors
 	};
 }
 
@@ -107,7 +109,9 @@ async function main() {
 	if (!preValidation.valid) {
 		reportValidationErrors(preValidation.errors);
 		// Continue anyway to allow ModuleManager to handle errors with error states
-		console.log('[SyncModules] Continuing with full synchronization (modules with errors will be marked as errored)...');
+		console.log(
+			'[SyncModules] Continuing with full synchronization (modules with errors will be marked as errored)...'
+		);
 	} else {
 		console.log('[SyncModules] ✓ All module manifests validated successfully');
 	}

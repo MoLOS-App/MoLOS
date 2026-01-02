@@ -130,23 +130,27 @@ const diagnostics = await diagnosticsService.diagnoseModule('my-module');
 ## Module Lifecycle
 
 ### 1. Discovery
+
 - Automatic scanning of `external_modules/` directory
 - Registration in database with metadata
 - Validation of manifest files
 
 ### 2. Initialization
+
 - Manifest validation
 - Database migration execution
 - Symlink creation for integration
 - Import path standardization
 
 ### 3. Runtime Management
+
 - Health monitoring
 - Error state handling
 - Automatic recovery attempts
 - Symlink maintenance
 
 ### 4. Cleanup
+
 - Safe module deletion
 - Artifact cleanup
 - Orphaned symlink removal
@@ -157,6 +161,7 @@ const diagnostics = await diagnosticsService.diagnoseModule('my-module');
 ### Creating a New Module
 
 1. **Use the CLI**:
+
    ```bash
    npm run module:create my-feature --name "My Feature" --description "A new module"
    ```
@@ -167,6 +172,7 @@ const diagnostics = await diagnosticsService.diagnoseModule('my-module');
    - Configure navigation in `config.ts`
 
 3. **Validate and test**:
+
    ```bash
    npm run module:validate ./external_modules/my-feature
    npm run module:test ./external_modules/my-feature
@@ -208,16 +214,16 @@ external_modules/[module-id]/
 Each module must have a `manifest.yaml`:
 
 ```yaml
-id: "my-module"
-name: "My Module"
-version: "1.0.0"
-description: "A description of the module"
-author: "Developer Name"
-icon: "Zap"
-minMolosVersion: "0.1.0"
+id: 'my-module'
+name: 'My Module'
+version: '1.0.0'
+description: 'A description of the module'
+author: 'Developer Name'
+icon: 'Zap'
+minMolosVersion: '0.1.0'
 enabled: true
 dependencies:
-  other-module: "^1.0.0"
+  other-module: '^1.0.0'
 ```
 
 ## Error Handling
@@ -232,6 +238,7 @@ The system provides comprehensive error handling with categorized errors and rec
 ## Best Practices
 
 ### Module Development
+
 - Follow the standardized directory structure
 - Use TypeScript for all code
 - Implement comprehensive tests
@@ -239,12 +246,14 @@ The system provides comprehensive error handling with categorized errors and rec
 - Follow semantic versioning
 
 ### Database Design
+
 - Prefix all tables with module ID (e.g., `my_module_users`)
 - Use foreign key constraints appropriately
 - Include proper indexes for performance
 - Document schema changes in migration comments
 
 ### Error Handling
+
 - Provide meaningful error messages
 - Include recovery steps in error responses
 - Log errors with appropriate severity levels

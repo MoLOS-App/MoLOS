@@ -17,14 +17,13 @@ export class ModuleInitialization {
 	 * Discover and register local modules in the external_modules directory
 	 */
 	static async discoverLocalModules(settingsRepo: any): Promise<void> {
-		console.log(`[ModuleManager] Scanning external_modules directory for modules: ${ModulePaths.EXTERNAL_DIR}`);
+		console.log(
+			`[ModuleManager] Scanning external_modules directory for modules: ${ModulePaths.EXTERNAL_DIR}`
+		);
 		try {
 			const { readdirSync } = require('fs');
 			const items = readdirSync(ModulePaths.EXTERNAL_DIR, { withFileTypes: true });
-			const molosModules = items.filter(
-				(item: any) =>
-					item.isDirectory() || item.isSymbolicLink()
-			);
+			const molosModules = items.filter((item: any) => item.isDirectory() || item.isSymbolicLink());
 
 			const existingModules = await settingsRepo.getExternalModules();
 			const existingIds = new Set(existingModules.map((m: any) => m.id));
@@ -66,7 +65,9 @@ export class ModuleInitialization {
 		// For local modules, if the symlink in external_modules was manually removed, mark for deletion
 		const isLocal = mod.repoUrl.startsWith('local://');
 		if (isLocal && !existsSync(modulePath)) {
-			console.log(`[ModuleManager] Local module ${moduleId} symlink removed, marking for deletion.`);
+			console.log(
+				`[ModuleManager] Local module ${moduleId} symlink removed, marking for deletion.`
+			);
 			await settingsRepo.updateExternalModuleStatus(mod.id, 'deleting');
 			return;
 		}
@@ -80,7 +81,9 @@ export class ModuleInitialization {
 			cleanupModuleArtifacts(moduleId);
 
 			if (isLocal && existsSync(modulePath) && !existsSync(localSourcePath || '')) {
-				console.log(`[ModuleManager] Module ${moduleId} is already in external_modules, skipping refresh.`);
+				console.log(
+					`[ModuleManager] Module ${moduleId} is already in external_modules, skipping refresh.`
+				);
 			} else if (isLocal && localSourcePath && existsSync(localSourcePath)) {
 				console.log(`[ModuleManager] Using local source for ${moduleId}`);
 				// Instead of cloning, we symlink the local source to the external_modules dir
@@ -146,13 +149,19 @@ export class ModuleInitialization {
 				`Module ${moduleId} initialized successfully.`
 			);
 		} catch (error: unknown) {
-			const { category, message, details } = formatErrorForLogging(moduleId, error, 'initialization');
+			const { category, message, details } = formatErrorForLogging(
+				moduleId,
+				error,
+				'initialization'
+			);
 			const moduleError = createModuleError(category, message, { stack: details });
 
 			console.error(`\n[ModuleManager] ⚠️ FAILED TO INITIALIZE MODULE: ${moduleId}`);
 			console.error(`[ModuleManager] Error Type: ${category}`);
 			console.error(`[ModuleManager] Error: ${message}`);
-			console.error(`[ModuleManager] Status: Module marked as "${moduleError.status}" for manual recovery`);
+			console.error(
+				`[ModuleManager] Status: Module marked as "${moduleError.status}" for manual recovery`
+			);
 			console.error(`[ModuleManager] Recovery Steps:`);
 			moduleError.recoverySteps?.forEach((step) => console.error(`  - ${step}`));
 			console.error('');
@@ -164,7 +173,11 @@ export class ModuleInitialization {
 			});
 
 			// Mark module in error state instead of deleting it
-			await settingsRepo.updateExternalModuleStatus(moduleId, moduleError.status as any, moduleError);
+			await settingsRepo.updateExternalModuleStatus(
+				moduleId,
+				moduleError.status as any,
+				moduleError
+			);
 
 			console.log(
 				`[ModuleManager] Module ${moduleId} preserved in error state for inspection and recovery.`
@@ -218,11 +231,17 @@ export class ModuleInitialization {
 		let content = require('fs').readFileSync(configPath, 'utf-8');
 
 		// Fix common export naming discrepancies
-		if (content.includes('export const ') && !content.includes('export const moduleConfig') && !content.includes('export default')) {
+		if (
+			content.includes('export const ') &&
+			!content.includes('export const moduleConfig') &&
+			!content.includes('export default')
+		) {
 			const match = content.match(/export const (\w+Config)/);
 			if (match) {
 				const configName = match[1];
-				console.log(`[ModuleManager] Standardizing config export for ${moduleId}: ${configName} -> moduleConfig`);
+				console.log(
+					`[ModuleManager] Standardizing config export for ${moduleId}: ${configName} -> moduleConfig`
+				);
 				content += `\n\nexport const moduleConfig = ${configName};\nexport default ${configName};`;
 			}
 		}
@@ -282,7 +301,9 @@ export class ModuleInitialization {
 	 * Standardize internal imports within a module
 	 */
 	private static standardizeInternalImports(moduleId: string, modulePath: string): void {
-		const files = getAllFiles(modulePath).filter((f: string) => f.endsWith('.svelte') || f.endsWith('.ts'));
+		const files = getAllFiles(modulePath).filter(
+			(f: string) => f.endsWith('.svelte') || f.endsWith('.ts')
+		);
 
 		for (const file of files) {
 			let content = require('fs').readFileSync(file, 'utf-8');

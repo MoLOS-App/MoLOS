@@ -21,17 +21,15 @@ export const ModuleManifestSchema = z.object({
 	id: z
 		.string()
 		.min(1, 'Module ID is required')
-		.regex(/^[a-zA-Z0-9_-]+$/, 'Module ID must contain only alphanumeric characters, hyphens, and underscores'),
+		.regex(
+			/^[a-zA-Z0-9_-]+$/,
+			'Module ID must contain only alphanumeric characters, hyphens, and underscores'
+		),
 	name: z.string().min(1, 'Module name is required'),
-	version: z
-		.string()
-		.regex(/^\d+\.\d+\.\d+/, 'Version must follow semver format (e.g., 1.0.0)'),
+	version: z.string().regex(/^\d+\.\d+\.\d+/, 'Version must follow semver format (e.g., 1.0.0)'),
 	description: z.string().optional(),
 	author: z.string().optional(),
-	icon: z
-		.string()
-		.optional()
-		.describe('Lucide icon name (e.g., SquareCheck, Zap, Brain)'),
+	icon: z.string().optional().describe('Lucide icon name (e.g., SquareCheck, Zap, Brain)'),
 
 	// Module system requirements
 	minMolosVersion: z
@@ -47,10 +45,7 @@ export const ModuleManifestSchema = z.object({
 		.describe('Map of moduleId to semver requirement (e.g., { "MoLOS-Tasks": "^1.0.0" })'),
 
 	// Runtime behavior
-	enabled: z
-		.boolean()
-		.default(true)
-		.describe('Whether this module is enabled by default'),
+	enabled: z.boolean().default(true).describe('Whether this module is enabled by default')
 });
 
 export type ModuleManifest = z.infer<typeof ModuleManifestSchema>;
@@ -63,7 +58,7 @@ export const NavItemSchema = z.object({
 	icon: z.any().describe('Lucide icon component'),
 	href: z.string().optional().describe('Route path for this nav item'),
 	badge: z.number().optional().describe('Badge count to display'),
-	disabled: z.boolean().optional().describe('Whether this nav item is disabled'),
+	disabled: z.boolean().optional().describe('Whether this nav item is disabled')
 });
 
 export type NavItem = z.infer<typeof NavItemSchema>;
@@ -91,7 +86,7 @@ export const ModuleConfigSchema = z.object({
 	toolDefinitions: z
 		.array(z.custom<ToolDefinition>())
 		.optional()
-		.describe('AI tool definitions this module provides'),
+		.describe('AI tool definitions this module provides')
 });
 
 export type ModuleConfig = z.infer<typeof ModuleConfigSchema>;
@@ -102,7 +97,7 @@ export type ModuleConfig = z.infer<typeof ModuleConfigSchema>;
  */
 export const ModuleExportsSchema = z.object({
 	default: ModuleConfigSchema.optional(),
-	moduleConfig: ModuleConfigSchema.optional(),
+	moduleConfig: ModuleConfigSchema.optional()
 });
 
 export type ModuleExports = z.infer<typeof ModuleExportsSchema>;
@@ -128,7 +123,13 @@ export interface IModule {
  * Database Status for modules
  * Tracks the lifecycle state of a module
  */
-export type ModuleStatus = 'active' | 'disabled' | 'error_manifest' | 'error_migration' | 'error_config' | 'deleting';
+export type ModuleStatus =
+	| 'active'
+	| 'disabled'
+	| 'error_manifest'
+	| 'error_migration'
+	| 'error_config'
+	| 'deleting';
 
 /**
  * Module Error Details
@@ -136,7 +137,12 @@ export type ModuleStatus = 'active' | 'disabled' | 'error_manifest' | 'error_mig
  */
 export interface ModuleError {
 	status: Exclude<ModuleStatus, 'active' | 'disabled' | 'deleting'>;
-	errorType: 'manifest_validation' | 'migration_failed' | 'config_export' | 'symlink_failed' | 'unknown';
+	errorType:
+		| 'manifest_validation'
+		| 'migration_failed'
+		| 'config_export'
+		| 'symlink_failed'
+		| 'unknown';
 	message: string;
 	timestamp: Date;
 	details?: Record<string, any>;
@@ -162,7 +168,9 @@ export interface ModuleRecord {
  * Validation helpers
  */
 
-export function validateModuleManifest(data: unknown): { valid: true; data: ModuleManifest } | { valid: false; error: z.ZodError } {
+export function validateModuleManifest(
+	data: unknown
+): { valid: true; data: ModuleManifest } | { valid: false; error: z.ZodError } {
 	const result = ModuleManifestSchema.safeParse(data);
 	if (result.success) {
 		return { valid: true, data: result.data };
@@ -170,7 +178,9 @@ export function validateModuleManifest(data: unknown): { valid: true; data: Modu
 	return { valid: false, error: result.error };
 }
 
-export function validateModuleConfig(data: unknown): { valid: true; data: ModuleConfig } | { valid: false; error: z.ZodError } {
+export function validateModuleConfig(
+	data: unknown
+): { valid: true; data: ModuleConfig } | { valid: false; error: z.ZodError } {
 	const result = ModuleConfigSchema.safeParse(data);
 	if (result.success) {
 		return { valid: true, data: result.data };
