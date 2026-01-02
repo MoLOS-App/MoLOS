@@ -6,7 +6,10 @@ import { textEnum } from '../../utils';
 export const ExternalModuleStatus = {
 	PENDING: 'pending',
 	ACTIVE: 'active',
-	ERROR: 'error',
+	ERROR_MANIFEST: 'error_manifest',
+	ERROR_MIGRATION: 'error_migration',
+	ERROR_CONFIG: 'error_config',
+	DISABLED: 'disabled',
 	DELETING: 'deleting'
 } as const;
 
@@ -67,6 +70,9 @@ export const settingsExternalModules = sqliteTable('settings_external_modules', 
 	repoUrl: text('repo_url').notNull(),
 	status: textEnum('status', ExternalModuleStatus).notNull().default(ExternalModuleStatus.PENDING),
 	lastError: text('last_error'),
+	errorDetails: text('error_details'), // JSON serialized error info
+	errorType: text('error_type'), // 'manifest_validation', 'migration_failed', 'config_export', etc.
+	recoverySteps: text('recovery_steps'), // JSON array of suggested recovery actions
 	installedAt: integer('installed_at', { mode: 'timestamp_ms' })
 		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
 		.notNull(),

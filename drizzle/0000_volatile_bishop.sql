@@ -86,8 +86,11 @@ CREATE INDEX `verification_identifier_idx` ON `verification` (`identifier`);--> 
 CREATE TABLE `settings_external_modules` (
 	`id` text PRIMARY KEY NOT NULL,
 	`repo_url` text NOT NULL,
-	`status` text CHECK(status IN ('pending', 'active', 'error', 'deleting')) DEFAULT 'pending' NOT NULL,
+	`status` text CHECK(status IN ('pending', 'active', 'error_manifest', 'error_migration', 'error_config', 'disabled', 'deleting')) DEFAULT 'pending' NOT NULL,
 	`last_error` text,
+	`error_details` text,
+	`error_type` text,
+	`recovery_steps` text,
 	`installed_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
 	`updated_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL
 );

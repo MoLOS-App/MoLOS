@@ -7,6 +7,7 @@ import {
 	settingsSystem
 } from '../../server/db/schema';
 import { BaseRepository } from '../base-repository';
+import type { ModuleError } from '../../config/module-types';
 
 export interface ModuleState {
 	moduleId: string;
@@ -84,23 +85,46 @@ export class SettingsRepository extends BaseRepository {
 			.values({ id, repoUrl, status: 'pending' })
 			.onConflictDoUpdate({
 				target: settingsExternalModules.id,
-				set: { repoUrl, status: 'pending', lastError: null, updatedAt: new Date() }
+				set: {
+					repoUrl,
+					status: 'pending',
+					lastError: null,
+					errorDetails: null,
+					errorType: null,
+					recoverySteps: null,
+					updatedAt: new Date()
+				}
 			})
 			.returning();
 	}
 
+	/**
+	 * Update module status with comprehensive error tracking
+	 */
 	async updateExternalModuleStatus(
 		id: string,
-		status: 'active' | 'error' | 'deleting' | 'pending',
-		error?: string
+		status:
+			| 'active'
+			| 'error_manifest'
+			| 'error_migration'
+			| 'error_config'
+			| 'disabled'
+			| 'deleting'
+			| 'pending',
+		error?: ModuleError | null
 	) {
+		const updateData: Record<string, any> = {
+			status,
+			lastError: error?.message || null,
+			errorType: error?.errorType || null,
+			errorDetails: error?.details ? JSON.stringify(error.details) : null,
+			recoverySteps: error?.recoverySteps ? JSON.stringify(error.recoverySteps) : null,
+			updatedAt: new Date()
+		};
+
 		return await this.db
 			.update(settingsExternalModules)
-			.set({
-				status,
-				lastError: error || null,
-				updatedAt: new Date()
-			})
+			.set(updateData)
 			.where(eq(settingsExternalModules.id, id))
 			.returning();
 	}
