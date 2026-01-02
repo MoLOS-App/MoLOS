@@ -13,8 +13,8 @@ import path from 'path';
 import { execSync } from 'child_process';
 import { parse } from 'yaml';
 import { MigrationRunner } from './migration-runner';
-import { db } from '../db';
-import { SettingsRepository } from '../../repositories/settings/settings-repository';
+import { db } from '../../src/lib/server/db';
+import { SettingsRepository } from '../../src/lib/repositories/settings/settings-repository';
 import { categorizeError, createModuleError, formatErrorForLogging } from './module-error-handler';
 import type { ModuleError } from '../../config/module-types';
 
