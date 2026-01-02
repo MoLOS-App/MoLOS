@@ -18,8 +18,15 @@ export const SYMLINK_CONFIG = {
 
 	// Module directories
 	externalModulesDir: path.join(process.cwd(), 'external_modules'),
-	internalConfigDir: path.join(process.cwd(), 'src/lib/config/modules'),
-	internalModulesDir: path.join(process.cwd(), 'src/lib/modules'),
+
+	// Granular Lib Directories
+	componentsDir: path.join(process.cwd(), 'src/lib/components/external_modules'),
+	configDir: path.join(process.cwd(), 'src/lib/config/external_modules'),
+	modelsDir: path.join(process.cwd(), 'src/lib/models/external_modules'),
+	repositoriesDir: path.join(process.cwd(), 'src/lib/repositories/external_modules'),
+	storesDir: path.join(process.cwd(), 'src/lib/stores/external_modules'),
+	serverAiDir: path.join(process.cwd(), 'src/lib/server/ai/external_modules'),
+	dbSchemaDir: path.join(process.cwd(), 'src/lib/server/db/schema/external_modules'),
 
 	// Route directories
 	uiRoutesDir: path.join(process.cwd(), 'src/routes/ui/(modules)/(external_modules)'),
@@ -39,8 +46,13 @@ export const SYMLINK_CONFIG = {
  * Symlink destinations for a specific module
  */
 export interface ModuleSymlinks {
+	components?: string;
 	config: string;
-	lib?: string;
+	models?: string;
+	repositories?: string;
+	stores?: string;
+	serverAi?: string;
+	dbSchema?: string;
 	uiRoutes?: string;
 	apiRoutes?: string;
 }
@@ -50,8 +62,13 @@ export interface ModuleSymlinks {
  */
 export function getModuleSymlinks(moduleId: string): ModuleSymlinks {
 	return {
-		config: path.join(SYMLINK_CONFIG.internalConfigDir, moduleId),
-		lib: path.join(SYMLINK_CONFIG.internalModulesDir, moduleId),
+		components: path.join(SYMLINK_CONFIG.componentsDir, moduleId),
+		config: path.join(SYMLINK_CONFIG.configDir, `${moduleId}.ts`),
+		models: path.join(SYMLINK_CONFIG.modelsDir, moduleId),
+		repositories: path.join(SYMLINK_CONFIG.repositoriesDir, moduleId),
+		stores: path.join(SYMLINK_CONFIG.storesDir, moduleId),
+		serverAi: path.join(SYMLINK_CONFIG.serverAiDir, moduleId),
+		dbSchema: path.join(SYMLINK_CONFIG.dbSchemaDir, moduleId),
 		uiRoutes: path.join(SYMLINK_CONFIG.uiRoutesDir, moduleId),
 		apiRoutes: path.join(SYMLINK_CONFIG.apiRoutesDir, moduleId)
 	};
@@ -61,8 +78,13 @@ export function getModuleSymlinks(moduleId: string): ModuleSymlinks {
  * Symlink sources for a specific module (where to symlink FROM)
  */
 export interface ModuleSymlinkSources {
+	components?: string;
 	config: string;
-	lib?: string;
+	models?: string;
+	repositories?: string;
+	stores?: string;
+	serverAi?: string;
+	dbSchema?: string;
 	uiRoutes?: string;
 	apiRoutes?: string;
 }
@@ -75,8 +97,13 @@ export function getModuleSymlinkSources(
 	modulePath: string
 ): ModuleSymlinkSources {
 	return {
-		config: modulePath,
-		lib: path.join(modulePath, 'lib'),
+		components: path.join(modulePath, 'lib/components'),
+		config: path.join(modulePath, 'config.ts'),
+		models: path.join(modulePath, 'lib/models'),
+		repositories: path.join(modulePath, 'lib/repositories'),
+		stores: path.join(modulePath, 'lib/stores'),
+		serverAi: path.join(modulePath, 'lib/server/ai'),
+		dbSchema: path.join(modulePath, 'lib/server/db/schema'),
 		uiRoutes: path.join(modulePath, 'routes/ui'),
 		apiRoutes: path.join(modulePath, 'routes/api')
 	};
@@ -88,8 +115,13 @@ export function getModuleSymlinkSources(
  */
 export const PATH_ENV_OVERRIDES: Record<string, string> = {
 	MOLOS_EXTERNAL_MODULES_DIR: 'externalModulesDir',
-	MOLOS_INTERNAL_CONFIG_DIR: 'internalConfigDir',
-	MOLOS_INTERNAL_MODULES_DIR: 'internalModulesDir',
+	MOLOS_COMPONENTS_DIR: 'componentsDir',
+	MOLOS_CONFIG_DIR: 'configDir',
+	MOLOS_MODELS_DIR: 'modelsDir',
+	MOLOS_REPOSITORIES_DIR: 'repositoriesDir',
+	MOLOS_STORES_DIR: 'storesDir',
+	MOLOS_SERVER_AI_DIR: 'serverAiDir',
+	MOLOS_DB_SCHEMA_DIR: 'dbSchemaDir',
 	MOLOS_UI_ROUTES_DIR: 'uiRoutesDir',
 	MOLOS_API_ROUTES_DIR: 'apiRoutesDir'
 };
@@ -123,7 +155,13 @@ export function validateSymlinkDirs(): { valid: boolean; errors: string[] } {
 	[
 		SYMLINK_CONFIG.uiRoutesDir,
 		SYMLINK_CONFIG.apiRoutesDir,
-		SYMLINK_CONFIG.internalConfigDir
+		SYMLINK_CONFIG.configDir,
+		SYMLINK_CONFIG.componentsDir,
+		SYMLINK_CONFIG.modelsDir,
+		SYMLINK_CONFIG.repositoriesDir,
+		SYMLINK_CONFIG.storesDir,
+		SYMLINK_CONFIG.serverAiDir,
+		SYMLINK_CONFIG.dbSchemaDir
 	].forEach((dir) => {
 		if (!fs.existsSync(dir)) {
 			errors.push(`Required directory does not exist: ${dir}`);

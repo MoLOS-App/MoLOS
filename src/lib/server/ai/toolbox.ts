@@ -1,5 +1,5 @@
 import { getCoreAiTools } from './core-tools';
-import { getAllModules } from '$lib/config/modules';
+import { getAllModules } from '$lib/config';
 import type { ToolDefinition } from '$lib/models/ai';
 
 export class AiToolbox {

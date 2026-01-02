@@ -1,5 +1,5 @@
 // import { ActivityLogRepository } from '$lib/repositories/health/activity-log-repository';
-import { getAllModules } from '$lib/config/modules';
+import { getAllModules } from '$lib/config';
 // import { TaskRepository } from '$lib/repositories/tasks/task-repository';
 // import { DailyLogRepository } from '$lib/repositories/tasks/daily-log-repository';
 // import { ExpenseRepository } from '$lib/repositories/finance/expense-repository';

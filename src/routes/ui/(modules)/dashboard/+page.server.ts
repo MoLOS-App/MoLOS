@@ -1,5 +1,5 @@
 import type { PageServerLoad } from './$types';
-import { getAllModules } from '$lib/config/modules';
+import { getAllModules } from '$lib/config';
 import { SettingsRepository } from '$lib/repositories/settings/settings-repository';
 
 export const load: PageServerLoad = async ({ locals }) => {

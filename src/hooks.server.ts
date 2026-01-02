@@ -12,7 +12,7 @@ import { redirect, type Handle } from '@sveltejs/kit';
 import { SettingsRepository } from '$lib/repositories/settings/settings-repository';
 import { getThemeClasses, type Theme, type Font, FONTS } from '$lib/theme';
 
-import { ModuleManager } from '$lib/server/modules/module-manager';
+import { ModuleManager } from '../module-management/server/module-manager';
 
 // Load .env file manually to ensure environment variables are available
 function loadEnv() {
