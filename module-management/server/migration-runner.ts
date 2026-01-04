@@ -2,6 +2,7 @@ import { readFileSync, readdirSync, existsSync } from 'fs';
 import path from 'path';
 import { sql } from 'drizzle-orm';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+import { SQLValidator } from '$lib/server/db/sql-security';
 
 export class MigrationRunner {
 	constructor(private db: BetterSQLite3Database<any>) {}
@@ -100,21 +101,40 @@ export class MigrationRunner {
 						`[MigrationRunner] Validating and executing migration ${file} for ${moduleId}...`
 					);
 
+					const validation = SQLValidator.validateSQL(sqlContent, moduleId);
+					if (!validation.valid) {
+						throw new Error(validation.errors.join('; '));
+					}
+					if (validation.warnings.length > 0) {
+						console.warn(
+							`[MigrationRunner] Warnings for ${moduleId}/${file}: ${validation.warnings.join(
+								'; '
+							)}`
+						);
+					}
+
 					// 1. Security Check: Ensure module only touches its own tables
 					this.validateSql(moduleId, sqlContent);
 
 					// 2. Execute the SQL (split by statement-breakpoint if present)
-					const statements = sqlContent.split('--> statement-breakpoint');
-					for (const statement of statements) {
-						const trimmed = statement.trim();
-						if (trimmed) {
-							this.db.run(sql.raw(trimmed));
+					this.db.run(sql.raw('BEGIN'));
+					try {
+						const statements = sqlContent.split('--> statement-breakpoint');
+						for (const statement of statements) {
+							const trimmed = statement.trim();
+							if (trimmed) {
+								this.db.run(sql.raw(trimmed));
+							}
 						}
-					}
 
-					this.db.run(
-						sql`INSERT INTO _module_migrations (module_id, migration_name) VALUES (${moduleId}, ${file})`
-					);
+						this.db.run(
+							sql`INSERT INTO _module_migrations (module_id, migration_name) VALUES (${moduleId}, ${file})`
+						);
+						this.db.run(sql.raw('COMMIT'));
+					} catch (e) {
+						this.db.run(sql.raw('ROLLBACK'));
+						throw e;
+					}
 					console.log(`[MigrationRunner] Migration ${file} completed.`);
 				}
 			} catch (error: any) {
