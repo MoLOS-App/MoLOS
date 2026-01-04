@@ -51,7 +51,17 @@ const ALLOWED_KEYWORDS = [
 	'ACTION'
 ];
 
-const DANGEROUS_KEYWORDS = ['DROP DATABASE', 'DROP SCHEMA', 'PRAGMA', 'ATTACH', 'DETACH'];
+const DANGEROUS_KEYWORDS = [
+	'DROP DATABASE',
+	'DROP SCHEMA',
+	'PRAGMA',
+	'ATTACH',
+	'DETACH',
+	'VACUUM',
+	'CREATE TRIGGER',
+	'CREATE VIEW',
+	'CREATE VIRTUAL TABLE'
+];
 
 /**
  * SQL Security Validator
@@ -111,10 +121,12 @@ export class SQLValidator {
 				tables.push(tableName);
 
 				// Validate table naming convention
+				const normalizedModuleId = moduleId.toLowerCase().replace(/-/g, '_');
+				const normalizedTableName = tableName.toLowerCase().replace(/-/g, '_');
 				const isValidPrefix =
-					tableName.startsWith('molos_') ||
-					tableName.startsWith(moduleId + '_') ||
-					tableName === moduleId;
+					normalizedTableName.startsWith('molos_') ||
+					normalizedTableName.startsWith(normalizedModuleId + '_') ||
+					normalizedTableName === normalizedModuleId;
 
 				if (!isValidPrefix) {
 					errors.push(

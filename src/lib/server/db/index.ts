@@ -31,4 +31,13 @@ const dbPath = rawDbPath.startsWith('file:') ? rawDbPath.slice(5) : rawDbPath;
 // We use a dummy database or skip initialization if possible.
 const client = isBuilding ? new Database(':memory:') : new Database(dbPath);
 
+try {
+	client.pragma('journal_mode = WAL');
+	client.pragma('busy_timeout = 5000');
+	client.pragma('synchronous = NORMAL');
+	client.pragma('foreign_keys = ON');
+} catch {
+	// Non-fatal: keep defaults if pragmas cannot be applied.
+}
+
 export const db = drizzle(client, { schema });

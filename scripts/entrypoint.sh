@@ -12,7 +12,15 @@ echo "[Entrypoint] Refreshing external modules..."
 
 # 2. Run Database Migrations
 echo "[Entrypoint] Running database migrations..."
-npm run db:push
+DB_PATH="${DATABASE_URL#file:}"
+if [ -z "$DB_PATH" ]; then
+  echo "[Entrypoint] DATABASE_URL is not set; skipping migrations."
+elif [ ! -f "$DB_PATH" ]; then
+  echo "[Entrypoint] Database not found. Running schema push..."
+  npm run db:push
+else
+  npm run db:migrate || echo "[Entrypoint] Migrations failed or none available; continuing."
+fi
 
 # 3. Start the application
 echo "[Entrypoint] Starting MoLOS server..."
