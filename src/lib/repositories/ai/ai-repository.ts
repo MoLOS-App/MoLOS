@@ -60,6 +60,7 @@ export class AiRepository extends BaseRepository {
 			const result = await this.db
 				.insert(aiSettings)
 				.values({
+					id: crypto.randomUUID(),
 					userId,
 					provider: settings.provider || 'openai',
 					modelName: settings.modelName || 'gpt-4o',
@@ -86,6 +87,7 @@ export class AiRepository extends BaseRepository {
 		const result = await this.db
 			.insert(aiSessions)
 			.values({
+				id: crypto.randomUUID(),
 				userId,
 				title,
 				createdAt: new Date(),
@@ -121,6 +123,7 @@ export class AiRepository extends BaseRepository {
 		const result = await this.db
 			.insert(aiMessages)
 			.values({
+				id: crypto.randomUUID(),
 				userId,
 				...rest,
 				toolCallId,
@@ -157,6 +160,7 @@ export class AiRepository extends BaseRepository {
 		const result = await this.db
 			.insert(aiMemories)
 			.values({
+				id: crypto.randomUUID(),
 				userId,
 				content,
 				importance,

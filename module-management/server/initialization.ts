@@ -1,10 +1,12 @@
-import { existsSync, execSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync, rmSync, symlinkSync, readdirSync } from 'fs';
+import { execSync } from 'child_process';
 import path from 'path';
 import { parse } from 'yaml';
 import { MigrationRunner } from './migration-runner';
 import { ModulePaths } from './paths';
-import { createSymlink, ensureSymlinkDirectories, getAllFiles } from './utils';
-import { categorizeError, createModuleError, formatErrorForLogging } from './module-error-handler';
+import { createSymlink, ensureSymlinkDirectories, getAllFiles, cleanupModuleArtifacts } from './utils';
+import { getModuleSymlinks, getModuleSymlinkSources } from '../config/symlink-config';
+import { createModuleError, formatErrorForLogging } from './module-error-handler';
 import type { ModuleManifest } from '../config/module-types';
 
 /**
@@ -13,6 +15,22 @@ import type { ModuleManifest } from '../config/module-types';
  */
 
 export class ModuleInitialization {
+	private static resolveLocalSourcePath(repoUrl: string, moduleId: string): string | null {
+		const prefix = 'local://';
+		if (!repoUrl.startsWith(prefix)) {
+			return null;
+		}
+
+		const pathPart = repoUrl.substring(prefix.length);
+		if (!pathPart || pathPart === moduleId) {
+			return path.join(ModulePaths.PARENT_DIR, moduleId);
+		}
+
+		return path.isAbsolute(pathPart)
+			? pathPart
+			: path.resolve(ModulePaths.PARENT_DIR, pathPart);
+	}
+
 	/**
 	 * Discover and register local modules in the external_modules directory
 	 */
@@ -21,7 +39,6 @@ export class ModuleInitialization {
 			`[ModuleManager] Scanning external_modules directory for modules: ${ModulePaths.EXTERNAL_DIR}`
 		);
 		try {
-			const { readdirSync } = require('fs');
 			const items = readdirSync(ModulePaths.EXTERNAL_DIR, { withFileTypes: true });
 			const molosModules = items.filter((item: any) => item.isDirectory() || item.isSymbolicLink());
 
@@ -57,7 +74,6 @@ export class ModuleInitialization {
 		if (mod.status.startsWith('error_') || mod.status === 'disabled') {
 			console.log(`[ModuleManager] Skipping module ${moduleId} (status: ${mod.status}).`);
 			// Clean up any broken symlinks
-			const { cleanupModuleArtifacts } = require('./utils');
 			cleanupModuleArtifacts(moduleId);
 			return;
 		}
@@ -74,10 +90,11 @@ export class ModuleInitialization {
 
 		try {
 			// 0. Clean Refresh: Remove and re-clone (unless it's a local module already in place)
-			const localSourcePath = isLocal ? path.join(ModulePaths.PARENT_DIR, moduleId) : null;
+			const localSourcePath = isLocal
+				? this.resolveLocalSourcePath(mod.repoUrl, moduleId)
+				: null;
 
 			console.log(`[ModuleManager] Refreshing module ${moduleId} from ${mod.repoUrl}...`);
-			const { cleanupModuleArtifacts } = require('./utils');
 			cleanupModuleArtifacts(moduleId);
 
 			if (isLocal && existsSync(modulePath) && !existsSync(localSourcePath || '')) {
@@ -88,13 +105,11 @@ export class ModuleInitialization {
 				console.log(`[ModuleManager] Using local source for ${moduleId}`);
 				// Instead of cloning, we symlink the local source to the external_modules dir
 				// to keep the rest of the logic (migrations, etc.) consistent
-				const { rmSync, symlinkSync } = require('fs');
 				if (existsSync(modulePath)) {
 					rmSync(modulePath, { recursive: true, force: true });
 				}
 				symlinkSync(localSourcePath, modulePath, 'dir');
 			} else {
-				const { rmSync } = require('fs');
 				if (existsSync(modulePath)) {
 					rmSync(modulePath, { recursive: true, force: true });
 				}
@@ -111,7 +126,7 @@ export class ModuleInitialization {
 				throw new Error(`Missing manifest.yaml in ${moduleId}`);
 			}
 
-			const manifestContent = require('fs').readFileSync(manifestPath, 'utf-8');
+			const manifestContent = readFileSync(manifestPath, 'utf-8');
 			const manifest = parse(manifestContent) as ModuleManifest;
 
 			if (manifest.id !== moduleId) {
@@ -185,7 +200,6 @@ export class ModuleInitialization {
 
 			// Cleanup symlinks and build artifacts so the module isn't partially loaded
 			try {
-				const { cleanupModuleArtifacts } = require('./utils');
 				cleanupModuleArtifacts(moduleId);
 				console.log(`[ModuleManager] Cleaned up broken symlinks and artifacts for ${moduleId}`);
 			} catch (cleanupError) {
@@ -201,7 +215,6 @@ export class ModuleInitialization {
 	 * Run basic validation tests on a module
 	 */
 	private static runBasicTests(moduleId: string, modulePath: string): void {
-		const { existsSync } = require('fs');
 		// 1. Check for required files
 		const required = ['manifest.yaml', 'config.ts'];
 		for (const file of required) {
@@ -228,7 +241,11 @@ export class ModuleInitialization {
 		const configPath = ModulePaths.getConfigPath(moduleId);
 		if (!existsSync(configPath)) return;
 
-		let content = require('fs').readFileSync(configPath, 'utf-8');
+		let content = readFileSync(configPath, 'utf-8');
+		const modulePrefix = moduleId
+			.replace(/^MoLOS-/i, '')
+			.toLowerCase()
+			.replace(/-/g, '');
 
 		// Fix common export naming discrepancies
 		if (
@@ -281,17 +298,30 @@ export class ModuleInitialization {
 			});
 		}
 
-		// Fix $lib paths (simplified version - full implementation in original)
-		const storeRegex = /\$lib\/stores\/modules\/([\w-]+)/g;
-		if (content.match(storeRegex)) {
-			content = content.replace(storeRegex, (match, p1) => {
-				if (match.includes(`$lib/modules/${moduleId}`)) return match;
-				const subpath = match.substring(`$lib/stores/modules/${p1}`.length);
-				return `$lib/modules/${moduleId}/stores${subpath}`;
+		// Fix legacy $lib paths to match external module layout
+		const replaceIfModuleMatch = (regex: RegExp, basePath: string) => {
+			if (!content.match(regex)) return;
+			content = content.replace(regex, (match, p1) => {
+				const normalized = p1?.toLowerCase();
+				if (
+					p1 === moduleId ||
+					normalized === moduleId.toLowerCase() ||
+					normalized === modulePrefix
+				) {
+					return `${basePath}/external_modules/${moduleId}`;
+				}
+				return match;
 			});
-		}
+		};
 
-		require('fs').writeFileSync(configPath, content);
+		replaceIfModuleMatch(/\$lib\/stores\/modules\/([\w-]+)/g, '$lib/stores');
+		replaceIfModuleMatch(/\$lib\/components\/modules\/([\w-]+)/g, '$lib/components');
+		replaceIfModuleMatch(/\$lib\/repositories\/([\w-]+)/g, '$lib/repositories');
+		replaceIfModuleMatch(/\$lib\/models\/([\w-]+)/g, '$lib/models');
+		replaceIfModuleMatch(/\$lib\/server\/db\/schema\/([\w-]+)/g, '$lib/server/db/schema');
+		replaceIfModuleMatch(/\$lib\/server\/ai\/([\w-]+)/g, '$lib/server/ai');
+
+		writeFileSync(configPath, content);
 
 		// Also fix internal imports in all .svelte and .ts files within the module
 		this.standardizeInternalImports(moduleId, modulePath);
@@ -304,44 +334,114 @@ export class ModuleInitialization {
 		const files = getAllFiles(modulePath).filter(
 			(f: string) => f.endsWith('.svelte') || f.endsWith('.ts')
 		);
+		const modulePrefix = moduleId
+			.replace(/^MoLOS-/i, '')
+			.toLowerCase()
+			.replace(/-/g, '');
 
 		for (const file of files) {
-			let content = require('fs').readFileSync(file, 'utf-8');
+			let content = readFileSync(file, 'utf-8');
 			let changed = false;
 
 			// Fix corrupted external_modules paths (handle repeated module names)
-			const corruptedRegex = /(MoLOS-Tasks\/){2,}/g;
-			if (content.match(corruptedRegex)) {
-				content = content.replaceAll(corruptedRegex, 'MoLOS-Tasks/');
+			const duplicatedModuleRegex = new RegExp(`(${moduleId}/){2,}`, 'g');
+			if (content.match(duplicatedModuleRegex)) {
+				content = content.replaceAll(duplicatedModuleRegex, `${moduleId}/`);
+				changed = true;
+			}
+			const duplicatedExternalModuleRegex = new RegExp(
+				`\\$lib/(models|repositories|stores|components|server/ai|server/db/schema)/external_modules/${moduleId}/${moduleId}`,
+				'g'
+			);
+			if (content.match(duplicatedExternalModuleRegex)) {
+				content = content.replace(
+					duplicatedExternalModuleRegex,
+					`$lib/$1/external_modules/${moduleId}`
+				);
 				changed = true;
 			}
 
-			// Fix legacy module paths
-			const storeRegex = /\$lib\/stores\/modules\/[\w-]+/g;
-			if (content.match(storeRegex)) {
-				content = content.replace(storeRegex, `$lib/modules/${moduleId}/stores`);
+			// Fix legacy module paths to match the external module layout
+			const replaceIfModuleMatch = (regex: RegExp, basePath: string) => {
+				if (!content.match(regex)) return;
+				content = content.replace(regex, (match, p1) => {
+					const normalized = p1?.toLowerCase();
+					if (
+						p1 === moduleId ||
+						normalized === moduleId.toLowerCase() ||
+						normalized === modulePrefix
+					) {
+						return `${basePath}/external_modules/${moduleId}`;
+					}
+					return match;
+				});
 				changed = true;
+			};
+
+			replaceIfModuleMatch(/\$lib\/stores\/modules\/([\w-]+)/g, '$lib/stores');
+			replaceIfModuleMatch(/\$lib\/components\/modules\/([\w-]+)/g, '$lib/components');
+			replaceIfModuleMatch(/\$lib\/repositories\/([\w-]+)/g, '$lib/repositories');
+			replaceIfModuleMatch(/\$lib\/models\/([\w-]+)/g, '$lib/models');
+			replaceIfModuleMatch(/\$lib\/server\/ai\/([\w-]+)/g, '$lib/server/ai');
+			replaceIfModuleMatch(/\$lib\/server\/db\/schema\/([\w-]+)/g, '$lib/server/db/schema');
+
+			const legacyModulePatterns: Array<[RegExp, string]> = [
+				[
+					new RegExp(`\\$lib/modules/${moduleId}/lib/repositories`, 'g'),
+					`$lib/repositories/external_modules/${moduleId}`
+				],
+				[
+					new RegExp(`\\$lib/modules/${moduleId}/lib/models`, 'g'),
+					`$lib/models/external_modules/${moduleId}`
+				],
+				[
+					new RegExp(`\\$lib/modules/${moduleId}/lib/stores`, 'g'),
+					`$lib/stores/external_modules/${moduleId}`
+				],
+				[
+					new RegExp(`\\$lib/modules/${moduleId}/lib/components`, 'g'),
+					`$lib/components/external_modules/${moduleId}`
+				],
+				[
+					new RegExp(`\\$lib/modules/${moduleId}/lib/server/db/schema`, 'g'),
+					`$lib/server/db/schema/external_modules/${moduleId}`
+				],
+				[
+					new RegExp(`\\$lib/modules/${moduleId}/lib/server/ai`, 'g'),
+					`$lib/server/ai/external_modules/${moduleId}`
+				]
+			];
+
+			for (const [regex, replacement] of legacyModulePatterns) {
+				if (content.match(regex)) {
+					content = content.replace(regex, replacement);
+					changed = true;
+				}
 			}
 
-			const componentRegex = /\$lib\/components\/modules\/[\w-]+/g;
-			if (content.match(componentRegex)) {
-				content = content.replace(componentRegex, `$lib/modules/${moduleId}/components`);
-				changed = true;
-			}
-
-			// Convert relative imports to absolute for symlinked files
-			// This handles the case where API routes need to import from the symlinked lib
-			const relativeImportRegex = /from ['"](\.\.\/)+(lib|server|models|repositories|stores|components)/g;
-			if (content.match(relativeImportRegex)) {
-				content = content.replace(relativeImportRegex, (match, dots, target) => {
-					// Map lib subdirectories to their new granular aliases if they exist
-					if (target === 'repositories') return `from '$lib/repositories/external_modules/${moduleId}`;
-					if (target === 'models') return `from '$lib/models/external_modules/${moduleId}`;
-					if (target === 'stores') return `from '$lib/stores/external_modules/${moduleId}`;
-					if (target === 'components') return `from '$lib/components/external_modules/${moduleId}`;
-					
-					// Fallback to generic module lib path
-					return `from '$lib/modules/${moduleId}/${target}`;
+			// Convert relative imports from routes to absolute $lib aliases
+			const relativeLibRegex = /from\s+['"]\.\.\/\.\.\/lib\/([^'"]+)['"]/g;
+			if (content.match(relativeLibRegex)) {
+				content = content.replace(relativeLibRegex, (match, p1) => {
+					if (p1.startsWith('repositories')) {
+						return `from '$lib/repositories/external_modules/${moduleId}${p1.substring(12)}'`;
+					}
+					if (p1.startsWith('models')) {
+						return `from '$lib/models/external_modules/${moduleId}${p1.substring(6)}'`;
+					}
+					if (p1.startsWith('stores')) {
+						return `from '$lib/stores/external_modules/${moduleId}${p1.substring(6)}'`;
+					}
+					if (p1.startsWith('components')) {
+						return `from '$lib/components/external_modules/${moduleId}${p1.substring(10)}'`;
+					}
+					if (p1.startsWith('server/ai')) {
+						return `from '$lib/server/ai/external_modules/${moduleId}${p1.substring(9)}'`;
+					}
+					if (p1.startsWith('server/db/schema')) {
+						return `from '$lib/server/db/schema/external_modules/${moduleId}${p1.substring(16)}'`;
+					}
+					return match;
 				});
 				changed = true;
 			}
@@ -356,9 +456,24 @@ export class ModuleInitialization {
 				changed = true;
 			}
 
+			// Redirect module-specific schema imports to module schema symlink
+			const moduleSchemaImportRegex =
+				/import\s*\{\s*([^}]+)\s*\}\s*from\s+['"]\$lib\/server\/db\/schema['"]/g;
+			const schemaMatch = moduleSchemaImportRegex.exec(content);
+			if (schemaMatch) {
+				const imports = schemaMatch[1];
+				if (imports.match(new RegExp(`\\b${modulePrefix}\\w+\\b`))) {
+					content = content.replace(
+						/from\s+['"]\$lib\/server\/db\/schema['"]/g,
+						`from '$lib/server/db/schema/external_modules/${moduleId}'`
+					);
+					changed = true;
+				}
+			}
+
 			if (changed) {
 				console.log(`[ModuleManager] Standardized imports in ${path.relative(modulePath, file)}`);
-				require('fs').writeFileSync(file, content);
+				writeFileSync(file, content);
 			}
 		}
 	}
@@ -367,32 +482,16 @@ export class ModuleInitialization {
 	 * Setup symlinks for a module
 	 */
 	private static setupSymlinks(moduleId: string, modulePath: string): void {
-		// Ensure parent directories exist
 		ensureSymlinkDirectories();
 
-		// Link config.ts to src/lib/config/modules/[id]
-		const configDest = ModulePaths.getConfigSymlinkDest(moduleId);
-		createSymlink(modulePath, configDest);
+		const destinations = getModuleSymlinks(moduleId);
+		const sources = getModuleSymlinkSources(moduleId, modulePath);
 
-		// Link lib to src/lib/modules/[id]
-		const libSource = ModulePaths.getLibPath(moduleId);
-		if (existsSync(libSource)) {
-			const libDest = ModulePaths.getLibSymlinkDest(moduleId);
-			createSymlink(libSource, libDest);
-		}
-
-		// Link UI routes
-		const uiSource = ModulePaths.getUIRoutesPath(moduleId);
-		if (existsSync(uiSource)) {
-			const uiDest = ModulePaths.getUIRoutesSymlinkDest(moduleId);
-			createSymlink(uiSource, uiDest);
-		}
-
-		// Link API routes
-		const apiSource = ModulePaths.getAPIRoutesPath(moduleId);
-		if (existsSync(apiSource)) {
-			const apiDest = ModulePaths.getAPIRoutesSymlinkDest(moduleId);
-			createSymlink(apiSource, apiDest);
-		}
+		Object.entries(destinations).forEach(([key, dest]) => {
+			const source = (sources as any)[key];
+			if (source && dest && existsSync(source)) {
+				createSymlink(source, dest);
+			}
+		});
 	}
 }
