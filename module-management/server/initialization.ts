@@ -309,7 +309,14 @@ export class ModuleInitialization {
 			let content = require('fs').readFileSync(file, 'utf-8');
 			let changed = false;
 
-			// Simplified import standardization (full implementation in original)
+			// Fix corrupted external_modules paths (handle repeated module names)
+			const corruptedRegex = /(MoLOS-Tasks\/){2,}/g;
+			if (content.match(corruptedRegex)) {
+				content = content.replaceAll(corruptedRegex, 'MoLOS-Tasks/');
+				changed = true;
+			}
+
+			// Fix legacy module paths
 			const storeRegex = /\$lib\/stores\/modules\/[\w-]+/g;
 			if (content.match(storeRegex)) {
 				content = content.replace(storeRegex, `$lib/modules/${moduleId}/stores`);
@@ -319,6 +326,33 @@ export class ModuleInitialization {
 			const componentRegex = /\$lib\/components\/modules\/[\w-]+/g;
 			if (content.match(componentRegex)) {
 				content = content.replace(componentRegex, `$lib/modules/${moduleId}/components`);
+				changed = true;
+			}
+
+			// Convert relative imports to absolute for symlinked files
+			// This handles the case where API routes need to import from the symlinked lib
+			const relativeImportRegex = /from ['"](\.\.\/)+(lib|server|models|repositories|stores|components)/g;
+			if (content.match(relativeImportRegex)) {
+				content = content.replace(relativeImportRegex, (match, dots, target) => {
+					// Map lib subdirectories to their new granular aliases if they exist
+					if (target === 'repositories') return `from '$lib/repositories/external_modules/${moduleId}`;
+					if (target === 'models') return `from '$lib/models/external_modules/${moduleId}`;
+					if (target === 'stores') return `from '$lib/stores/external_modules/${moduleId}`;
+					if (target === 'components') return `from '$lib/components/external_modules/${moduleId}`;
+					
+					// Fallback to generic module lib path
+					return `from '$lib/modules/${moduleId}/${target}`;
+				});
+				changed = true;
+			}
+
+			// Fix relative imports that are missing the 'lib' part but are trying to reach it
+			// e.g. import { ... } from '../../../repositories/task-repository'
+			const relativeRepoRegex = /from ['"](\.\.\/)+(repositories|models|stores|components)/g;
+			if (content.match(relativeRepoRegex)) {
+				content = content.replace(relativeRepoRegex, (match, dots, target) => {
+					return `from '$lib/${target}/external_modules/${moduleId}`;
+				});
 				changed = true;
 			}
 

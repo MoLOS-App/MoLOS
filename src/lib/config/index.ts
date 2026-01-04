@@ -28,8 +28,8 @@ export const MODULE_REGISTRY: Record<string, ModuleConfig> = Object.entries(allC
 		// './dashboard/config.ts' -> 'dashboard'
 		// './external_modules/MoLOS-Tasks' -> 'MoLOS-Tasks'
 		const parts = path.split('/');
-		const moduleId =
-			parts[parts.length - 1] === 'config.ts' ? parts[parts.length - 2] : parts[parts.length - 1];
+		const lastPart = parts[parts.length - 1];
+		const moduleId = lastPart === 'config.ts' ? parts[parts.length - 2] : lastPart.replace(/\.ts$/, '');
 
 		// Find the config object in the module exports (either default or named like 'xxxConfig')
 		const config =
@@ -39,7 +39,10 @@ export const MODULE_REGISTRY: Record<string, ModuleConfig> = Object.entries(allC
 			);
 
 		if (moduleId && config && config.id) {
-			// We'll handle isExternal marking in the load functions to avoid DB dependency here
+			// Mark as external if it's in the external_modules directory
+			if (path.includes('external_modules')) {
+				config.isExternal = true;
+			}
 			acc[config.id] = config;
 		}
 		return acc;
