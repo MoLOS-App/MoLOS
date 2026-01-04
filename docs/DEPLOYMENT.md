@@ -28,6 +28,8 @@ The easiest way to deploy MoLOS is using Docker Compose.
 
     ```bash
     BETTER_AUTH_SECRET=your_generated_secret
+    # Or use a secret file (Docker/K8s):
+    # BETTER_AUTH_SECRET_FILE=/run/secrets/better_auth_secret
     ```
 
 3.  **Start the application**:

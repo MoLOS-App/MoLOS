@@ -73,6 +73,8 @@ services:
     environment:
       - DATABASE_URL=file:/data/molos.db
       - BETTER_AUTH_SECRET=<Just run "openssl rand -base64 32" to generate one>
+      # Or mount a Docker secret and point to it:
+      # - BETTER_AUTH_SECRET_FILE=/run/secrets/better_auth_secret
       # Add other env vars as needed
 ```
 

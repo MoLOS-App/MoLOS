@@ -7,9 +7,33 @@ import * as schema from '$lib/server/db/schema';
 import { env } from '$env/dynamic/private';
 import { admin, apiKey } from 'better-auth/plugins';
 import { sql } from 'drizzle-orm';
+import { existsSync, readFileSync } from 'fs';
+
+function resolveAuthSecret(): string | undefined {
+	const direct = env.BETTER_AUTH_SECRET || process.env.BETTER_AUTH_SECRET;
+	if (direct) return direct;
+
+	const secretFile = env.BETTER_AUTH_SECRET_FILE || process.env.BETTER_AUTH_SECRET_FILE;
+	if (secretFile && existsSync(secretFile)) {
+		return readFileSync(secretFile, 'utf-8').trim();
+	}
+
+	return undefined;
+}
+
+const authSecret = resolveAuthSecret();
+if (!authSecret) {
+	const message =
+		'BETTER_AUTH_SECRET is required. Set BETTER_AUTH_SECRET or BETTER_AUTH_SECRET_FILE.';
+	if (process.env.NODE_ENV === 'production') {
+		throw new Error(message);
+	} else {
+		console.warn(`[Auth] ${message}`);
+	}
+}
 
 export const auth = betterAuth({
-	secret: env.BETTER_AUTH_SECRET,
+	secret: authSecret,
 	database: drizzleAdapter(db, {
 		provider: 'sqlite', // or "mysql", "sqlite"
 		schema
