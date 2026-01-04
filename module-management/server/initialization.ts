@@ -78,22 +78,23 @@ export class ModuleInitialization {
 			return;
 		}
 
-		// For local modules, if the symlink in external_modules was manually removed, mark for deletion
+		// For local modules, if the source path is missing, mark for deletion
 		const isLocal = mod.repoUrl.startsWith('local://');
+		const localSourcePath = isLocal
+			? this.resolveLocalSourcePath(mod.repoUrl, moduleId)
+			: null;
 		if (isLocal && !existsSync(modulePath)) {
-			console.log(
-				`[ModuleManager] Local module ${moduleId} symlink removed, marking for deletion.`
-			);
-			await settingsRepo.updateExternalModuleStatus(mod.id, 'deleting');
-			return;
+			if (!localSourcePath || !existsSync(localSourcePath)) {
+				console.log(
+					`[ModuleManager] Local module ${moduleId} source missing, marking for deletion.`
+				);
+				await settingsRepo.updateExternalModuleStatus(mod.id, 'deleting');
+				return;
+			}
 		}
 
 		try {
 			// 0. Clean Refresh: Remove and re-clone (unless it's a local module already in place)
-			const localSourcePath = isLocal
-				? this.resolveLocalSourcePath(mod.repoUrl, moduleId)
-				: null;
-
 			console.log(`[ModuleManager] Refreshing module ${moduleId} from ${mod.repoUrl}...`);
 			cleanupModuleArtifacts(moduleId);
 
