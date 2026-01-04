@@ -1,5 +1,5 @@
 import { execSync } from 'child_process';
-import { existsSync, readFileSync } from 'fs';
+import { existsSync } from 'fs';
 import path from 'path';
 
 /**
@@ -20,14 +20,22 @@ export class ValidateCommand {
 
 		console.log(`🔍 Validating module at: ${absolutePath}`);
 
+		const validatorPath = path.resolve(process.cwd(), 'scripts', 'validate-module.ts');
+
+		if (!existsSync(validatorPath)) {
+			console.error(`❌ Validation script not found: ${validatorPath}`);
+			process.exit(1);
+		}
+
 		try {
-			const result = execSync(`npx ts-node ${__dirname}/../validate-module.ts "${absolutePath}"`, {
+			execSync(`tsx "${validatorPath}" "${absolutePath}"`, {
 				stdio: 'inherit',
 				cwd: process.cwd()
 			});
 			console.log('✅ Module validation passed');
 		} catch (error) {
-			console.error('❌ Module validation failed');
+			const message = error instanceof Error ? error.message : String(error);
+			console.error(`❌ Module validation failed: ${message}`);
 			process.exit(1);
 		}
 	}

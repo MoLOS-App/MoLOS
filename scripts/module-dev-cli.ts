@@ -1,1 +1,4 @@
-/home/eduardez/Workspace/MoLOS-org/MoLOS/module-management/scripts/module-dev-cli.ts
+#!/usr/bin/env tsx
+
+// Thin wrapper to keep existing npm scripts working.
+import './base-cli.ts';
