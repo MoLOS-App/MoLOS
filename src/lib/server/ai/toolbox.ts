@@ -2,6 +2,8 @@ import { getCoreAiTools } from './core-tools';
 import { getAllModules } from '$lib/config';
 import type { ToolDefinition } from '$lib/models/ai';
 
+const externalToolLoaders = import.meta.glob('./external_modules/*/ai-tools.ts');
+
 export class AiToolbox {
 	/**
 	 * Dynamically discover and return all available tools for the user.
@@ -33,9 +35,20 @@ export class AiToolbox {
 			try {
 				// Try to load AI tools from module
 				try {
+					if (!module.isExternal) {
+						continue;
+					}
+
 					console.log(`[AiToolbox] Importing tools for module: ${module.id}`);
-					const importPath = `../../modules/${module.id}/server/ai/ai-tools.ts`;
-					const aiToolsModule = await import(/* @vite-ignore */ importPath);
+					const loaderPath = `./external_modules/${module.id}/ai-tools.ts`;
+					const loader = externalToolLoaders[loaderPath];
+
+					if (!loader) {
+						console.log(`[AiToolbox] No AI tools found at ${loaderPath}`);
+						continue;
+					}
+
+					const aiToolsModule = await loader();
 					console.log(
 						`[AiToolbox] Import successful for ${module.id}, has getAiTools:`,
 						!!aiToolsModule.getAiTools

@@ -3,8 +3,8 @@ import { MigrationRunner } from './migration-runner';
 import { ModuleCleanup } from './cleanup';
 import { ModuleInitialization } from './initialization';
 import { ModulePaths } from './paths';
-import { db } from '../../../src/lib/server/db';
-import { SettingsRepository } from '../../../src/lib/repositories/settings/settings-repository';
+import { db } from '$lib/server/db';
+import { SettingsRepository } from '$lib/repositories/settings/settings-repository';
 
 /**
  * Core Module Manager
@@ -29,6 +29,7 @@ export class ModuleManager {
 		// 0. Discover modules in external_modules directory and register them if not in DB
 		// Only if MOLOS_AUTOLOAD_MODULES is set to true
 		const autoload = process.env.MOLOS_AUTOLOAD_MODULES === 'true';
+		console.log('[ModuleManager] MOLOS_AUTOLOAD_MODULES env var:', process.env.MOLOS_AUTOLOAD_MODULES, 'autoload:', autoload);
 		if (autoload) {
 			await ModuleInitialization.discoverLocalModules(settingsRepo);
 		} else {

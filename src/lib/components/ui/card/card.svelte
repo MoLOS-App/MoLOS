@@ -5,7 +5,6 @@
 	let {
 		ref = $bindable(null),
 		class: className,
-		children,
 		...restProps
 	}: WithElementRef<HTMLAttributes<HTMLDivElement>> = $props();
 </script>
@@ -19,5 +18,5 @@
 	)}
 	{...restProps}
 >
-	{@render children?.()}
+	<slot />
 </div>

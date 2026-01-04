@@ -1,4 +1,5 @@
 import path from 'path';
+import { SYMLINK_CONFIG } from '../config/symlink-config';
 
 /**
  * Centralized path configuration for module management
@@ -7,17 +8,8 @@ import path from 'path';
  */
 export class ModulePaths {
 	// Base directories
-	static readonly EXTERNAL_DIR = path.join(process.cwd(), 'external_modules');
-	static readonly PARENT_DIR = path.join(process.cwd(), '..');
-
-	// Internal MoLOS directories
-	static readonly INTERNAL_CONFIG_DIR = path.join(process.cwd(), 'src/lib/config/modules');
-	static readonly UI_ROUTES_DIR = path.join(
-		process.cwd(),
-		'src/routes/ui/(modules)/(external_modules)'
-	);
-	static readonly API_ROUTES_DIR = path.join(process.cwd(), 'src/routes/api/(external_modules)');
-	static readonly INTERNAL_MODULES_DIR = path.join(process.cwd(), 'src/lib/modules');
+	static readonly EXTERNAL_DIR = SYMLINK_CONFIG.externalModulesDir;
+	static readonly PARENT_DIR = SYMLINK_CONFIG.parentDir;
 
 	/**
 	 * Get the path to a module's directory in external_modules
@@ -73,33 +65,5 @@ export class ModulePaths {
 	 */
 	static getAPIRoutesPath(moduleId: string): string {
 		return path.join(this.getRoutesPath(moduleId), 'api');
-	}
-
-	/**
-	 * Get the symlink destination for a module's config
-	 */
-	static getConfigSymlinkDest(moduleId: string): string {
-		return path.join(this.INTERNAL_CONFIG_DIR, moduleId);
-	}
-
-	/**
-	 * Get the symlink destination for a module's lib
-	 */
-	static getLibSymlinkDest(moduleId: string): string {
-		return path.join(this.INTERNAL_MODULES_DIR, moduleId);
-	}
-
-	/**
-	 * Get the symlink destination for a module's UI routes
-	 */
-	static getUIRoutesSymlinkDest(moduleId: string): string {
-		return path.join(this.UI_ROUTES_DIR, moduleId);
-	}
-
-	/**
-	 * Get the symlink destination for a module's API routes
-	 */
-	static getAPIRoutesSymlinkDest(moduleId: string): string {
-		return path.join(this.API_ROUTES_DIR, moduleId);
 	}
 }

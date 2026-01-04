@@ -60,7 +60,7 @@ export class ModuleCleanup {
 		);
 		try {
 			const folders = readdirSync(ModulePaths.EXTERNAL_DIR, { withFileTypes: true })
-				.filter((dirent) => dirent.isDirectory())
+				.filter((dirent) => dirent.isDirectory() || dirent.isSymbolicLink())
 				.map((dirent) => dirent.name);
 
 			for (const folder of folders) {
