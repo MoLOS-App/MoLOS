@@ -4,7 +4,12 @@ import path from 'path';
 import { parse } from 'yaml';
 import { MigrationRunner } from './migration-runner';
 import { ModulePaths } from './paths';
-import { createSymlink, ensureSymlinkDirectories, getAllFiles, cleanupModuleArtifacts } from './utils';
+import {
+	createSymlink,
+	ensureSymlinkDirectories,
+	getAllFiles,
+	cleanupModuleArtifacts
+} from './utils';
 import { getModuleSymlinks, getModuleSymlinkSources } from '../config/symlink-config';
 import { createModuleError, formatErrorForLogging } from './module-error-handler';
 import type { ModuleManifest } from '../config/module-types';
@@ -26,9 +31,7 @@ export class ModuleInitialization {
 			return path.join(ModulePaths.PARENT_DIR, moduleId);
 		}
 
-		return path.isAbsolute(pathPart)
-			? pathPart
-			: path.resolve(ModulePaths.PARENT_DIR, pathPart);
+		return path.isAbsolute(pathPart) ? pathPart : path.resolve(ModulePaths.PARENT_DIR, pathPart);
 	}
 
 	/**
@@ -80,9 +83,7 @@ export class ModuleInitialization {
 
 		// For local modules, if the source path is missing, mark for deletion
 		const isLocal = mod.repoUrl.startsWith('local://');
-		const localSourcePath = isLocal
-			? this.resolveLocalSourcePath(mod.repoUrl, moduleId)
-			: null;
+		const localSourcePath = isLocal ? this.resolveLocalSourcePath(mod.repoUrl, moduleId) : null;
 		if (isLocal && !existsSync(modulePath)) {
 			if (!localSourcePath || !existsSync(localSourcePath)) {
 				console.log(

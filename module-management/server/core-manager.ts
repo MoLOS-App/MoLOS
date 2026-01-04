@@ -29,7 +29,12 @@ export class ModuleManager {
 		// 0. Discover modules in external_modules directory and register them if not in DB
 		// Only if MOLOS_AUTOLOAD_MODULES is set to true
 		const autoload = process.env.MOLOS_AUTOLOAD_MODULES === 'true';
-		console.log('[ModuleManager] MOLOS_AUTOLOAD_MODULES env var:', process.env.MOLOS_AUTOLOAD_MODULES, 'autoload:', autoload);
+		console.log(
+			'[ModuleManager] MOLOS_AUTOLOAD_MODULES env var:',
+			process.env.MOLOS_AUTOLOAD_MODULES,
+			'autoload:',
+			autoload
+		);
 		if (autoload) {
 			await ModuleInitialization.discoverLocalModules(settingsRepo);
 		} else {
