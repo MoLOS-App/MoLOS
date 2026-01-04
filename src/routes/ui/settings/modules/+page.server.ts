@@ -2,9 +2,9 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
 import { getAllModules } from '$lib/config/modules';
 import { SettingsRepository } from '$lib/repositories/settings/settings-repository';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import path from 'path';
-import { utimesSync, rmSync } from 'fs';
+import { existsSync, rmSync, utimesSync } from 'fs';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.user) {
@@ -109,9 +109,7 @@ export const actions: Actions = {
 	},
 
 	install: async ({ request, locals }) => {
-		if (!locals.user) {
-			throw error(401, 'Unauthorized');
-		}
+		await verifyAccess(locals);
 
 		const formData = await request.formData();
 		const repoUrl = formData.get('repoUrl');
@@ -121,15 +119,34 @@ export const actions: Actions = {
 		}
 
 		try {
-			// Extract folder name from URL
-			const folderName = repoUrl.split('/').pop()?.replace('.git', '') || 'new-module';
-			const targetPath = path.join(process.cwd(), 'external_modules', folderName);
+			const trimmedRepoUrl = repoUrl.trim();
+			if (!isAllowedRepoUrl(trimmedRepoUrl)) {
+				return fail(400, {
+					message: 'Invalid repository URL. Only HTTPS or SSH Git URLs are allowed.'
+				});
+			}
 
-			console.log(`Cloning ${repoUrl} into ${targetPath}...`);
-			execSync(`git clone ${repoUrl} ${targetPath}`, { stdio: 'inherit' });
+			const folderName = getRepoFolderName(trimmedRepoUrl);
+			if (!folderName || !isValidModuleId(folderName)) {
+				return fail(400, { message: 'Invalid module repository name.' });
+			}
+
+			const externalModulesDir = path.resolve(process.cwd(), 'external_modules');
+			const targetPath = path.resolve(externalModulesDir, folderName);
+			if (!targetPath.startsWith(externalModulesDir + path.sep)) {
+				return fail(400, { message: 'Invalid module path.' });
+			}
+			if (existsSync(targetPath)) {
+				return fail(409, { message: 'Module already exists at target path.' });
+			}
+
+			console.log(`Cloning ${trimmedRepoUrl} into ${targetPath}...`);
+			execFileSync('git', ['clone', '--depth', '1', trimmedRepoUrl, targetPath], {
+				stdio: 'inherit'
+			});
 
 			const settingsRepo = new SettingsRepository();
-			await settingsRepo.registerExternalModule(folderName, repoUrl);
+			await settingsRepo.registerExternalModule(folderName, trimmedRepoUrl);
 
 			// We no longer trigger restart automatically here to allow multiple installs
 			console.log(`[System] Module ${folderName} installed. Waiting for manual restart.`);
@@ -150,9 +167,7 @@ export const actions: Actions = {
 	},
 
 	delete: async ({ request, locals }) => {
-		if (!locals.user) {
-			throw error(401, 'Unauthorized');
-		}
+		await verifyAccess(locals);
 
 		const formData = await request.formData();
 		const moduleId = formData.get('moduleId');
@@ -183,9 +198,7 @@ export const actions: Actions = {
 	},
 
 	cancel: async ({ request, locals }) => {
-		if (!locals.user) {
-			throw error(401, 'Unauthorized');
-		}
+		await verifyAccess(locals);
 
 		const formData = await request.formData();
 		const moduleId = formData.get('moduleId');
@@ -226,9 +239,7 @@ export const actions: Actions = {
 	},
 
 	restart: async ({ locals }) => {
-		if (!locals.user) {
-			throw error(401, 'Unauthorized');
-		}
+		await verifyAccess(locals);
 
 		console.log('[System] Vite server reboot requested...');
 
@@ -266,3 +277,64 @@ export const actions: Actions = {
 		return redirect(303, '/ui/system/restarting');
 	}
 };
+
+async function verifyAccess(locals: App.Locals): Promise<void> {
+	if (!locals.user) {
+		throw error(401, 'Unauthorized');
+	}
+
+	// Admins can always manage modules; optionally allow non-admins via system setting.
+	if (locals.user.role === 'admin') {
+		return;
+	}
+
+	const settingsRepo = new SettingsRepository();
+	const allowUserInstallPlugins =
+		(await settingsRepo.getSystemSetting('ALLOW_USER_INSTALL_PLUGINS')) === 'true';
+	if (!allowUserInstallPlugins) {
+		throw error(403, 'Insufficient permissions to manage modules');
+	}
+}
+
+function isAllowedRepoUrl(repoUrl: string): boolean {
+	if (/\s/.test(repoUrl)) return false;
+	if (repoUrl.startsWith('-')) return false;
+	if (repoUrl.startsWith('git@')) return true;
+
+	try {
+		const parsed = new URL(repoUrl);
+		return parsed.protocol === 'https:' || parsed.protocol === 'ssh:';
+	} catch {
+		return false;
+	}
+}
+
+function getRepoFolderName(repoUrl: string): string | null {
+	if (repoUrl.startsWith('git@')) {
+		const parts = repoUrl.split(':');
+		if (parts.length < 2) return null;
+		const pathPart = parts[1];
+		return (
+			pathPart
+				.split('/')
+				.pop()
+				?.replace(/\.git$/i, '') ?? null
+		);
+	}
+
+	try {
+		const parsed = new URL(repoUrl);
+		return (
+			parsed.pathname
+				.split('/')
+				.pop()
+				?.replace(/\.git$/i, '') ?? null
+		);
+	} catch {
+		return null;
+	}
+}
+
+function isValidModuleId(moduleId: string): boolean {
+	return /^[a-zA-Z0-9_-]+$/.test(moduleId);
+}

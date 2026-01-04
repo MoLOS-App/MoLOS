@@ -2,7 +2,15 @@ import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
 import { playwright } from '@vitest/browser-playwright';
 import { sveltekit } from '@sveltejs/kit/vite';
-import { existsSync, readdirSync, symlinkSync, mkdirSync, rmSync, lstatSync } from 'fs';
+import {
+	existsSync,
+	lstatSync,
+	mkdirSync,
+	readdirSync,
+	realpathSync,
+	rmSync,
+	symlinkSync
+} from 'fs';
 import path from 'path';
 
 /**
@@ -12,6 +20,12 @@ import path from 'path';
  */
 function linkExternalModules() {
 	const EXTERNAL_DIR = path.resolve('external_modules');
+	const allowParentModules =
+		process.env.MOLOS_ALLOW_PARENT_MODULES === 'true' || process.env.NODE_ENV !== 'production';
+	const allowedRoots = [EXTERNAL_DIR];
+	if (allowParentModules) {
+		allowedRoots.push(path.resolve('..'));
+	}
 	const INTERNAL_CONFIG_DIR = path.resolve('src/lib/config/external_modules');
 	const LEGACY_CONFIG_DIR = path.resolve('src/lib/config/modules');
 	const UI_ROUTES_DIR = path.resolve('src/routes/ui/(modules)/(external_modules)');
@@ -68,7 +82,16 @@ function linkExternalModules() {
 	console.log(`[Vite] Linking ${modules.length} external modules...`);
 
 	for (const moduleId of modules) {
+		if (!/^[a-zA-Z0-9_-]+$/.test(moduleId)) {
+			console.warn(`[Vite] Skipping module with invalid ID: ${moduleId}`);
+			continue;
+		}
+
 		const modulePath = path.join(EXTERNAL_DIR, moduleId);
+		if (!isPathWithinRoots(modulePath, allowedRoots)) {
+			console.warn(`[Vite] Skipping module outside allowed roots: ${moduleId}`);
+			continue;
+		}
 
 		// We only link if a manifest exists (basic validation)
 		if (!existsSync(path.join(modulePath, 'manifest.yaml'))) continue;
@@ -108,6 +131,26 @@ function linkExternalModules() {
 	}
 }
 
+function isPathWithinRoots(targetPath: string, roots: string[]): boolean {
+	let realTarget: string;
+	try {
+		realTarget = realpathSync(targetPath);
+	} catch {
+		return false;
+	}
+
+	return roots.some((root) => {
+		let realRoot: string;
+		try {
+			realRoot = realpathSync(root);
+		} catch {
+			realRoot = path.resolve(root);
+		}
+		const relative = path.relative(realRoot, realTarget);
+		return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
+	});
+}
+
 // Execute linking immediately
 linkExternalModules();
 
@@ -120,11 +163,20 @@ export default defineConfig({
 
 	server: {
 		fs: {
-			allow: ['external_modules', '..']
+			allow: [
+				process.cwd(),
+				path.resolve('external_modules'),
+				...(process.env.MOLOS_ALLOW_PARENT_MODULES === 'true' ||
+				process.env.NODE_ENV !== 'production'
+					? [path.resolve('..')]
+					: [])
+			]
 		},
 		watch: {
+			followSymlinks: false,
 			ignored: [
 				'**/external_modules/**/svelte.config.js',
+				'**/external_modules/**/.git/**',
 				'**/external_modules/**/tsconfig.json',
 				'**/external_modules/**/tsconfig.*.json'
 			]

@@ -1,5 +1,14 @@
-import { existsSync, readFileSync, writeFileSync, rmSync, symlinkSync, readdirSync } from 'fs';
-import { execSync } from 'child_process';
+import {
+	existsSync,
+	readFileSync,
+	writeFileSync,
+	rmSync,
+	symlinkSync,
+	readdirSync,
+	realpathSync,
+	lstatSync
+} from 'fs';
+import { execFileSync } from 'child_process';
 import path from 'path';
 import { parse } from 'yaml';
 import { MigrationRunner } from './migration-runner';
@@ -20,6 +29,30 @@ import type { ModuleManifest } from '../config/module-types';
  */
 
 export class ModuleInitialization {
+	private static isValidModuleId(moduleId: string): boolean {
+		return /^[a-zA-Z0-9_-]+$/.test(moduleId);
+	}
+
+	private static isPathWithinRoots(targetPath: string, roots: string[]): boolean {
+		let realTarget: string;
+		try {
+			realTarget = realpathSync(targetPath);
+		} catch {
+			return false;
+		}
+
+		return roots.some((root) => {
+			let realRoot: string;
+			try {
+				realRoot = realpathSync(root);
+			} catch {
+				realRoot = path.resolve(root);
+			}
+			const relative = path.relative(realRoot, realTarget);
+			return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
+		});
+	}
+
 	private static resolveLocalSourcePath(repoUrl: string, moduleId: string): string | null {
 		const prefix = 'local://';
 		if (!repoUrl.startsWith(prefix)) {
@@ -49,6 +82,12 @@ export class ModuleInitialization {
 			const existingIds = new Set(existingModules.map((m: any) => m.id));
 
 			for (const mod of molosModules) {
+				if (!this.isValidModuleId(mod.name)) {
+					console.warn(
+						`[ModuleManager] Skipping module with invalid ID in external_modules: ${mod.name}`
+					);
+					continue;
+				}
 				if (!existingIds.has(mod.name)) {
 					console.log(`[ModuleManager] Auto-registering local module: ${mod.name}`);
 					// For local modules, we use a dummy repo URL or a local path indicator
@@ -72,6 +111,9 @@ export class ModuleInitialization {
 		migrationRunner: MigrationRunner
 	): Promise<void> {
 		const modulePath = ModulePaths.getModulePath(moduleId);
+		if (!this.isValidModuleId(moduleId)) {
+			throw new Error(`Invalid module ID: ${moduleId}`);
+		}
 
 		// Check if module is in an error state - skip initialization but keep in DB
 		if (mod.status.startsWith('error_') || mod.status === 'disabled') {
@@ -84,6 +126,10 @@ export class ModuleInitialization {
 		// For local modules, if the source path is missing, mark for deletion
 		const isLocal = mod.repoUrl.startsWith('local://');
 		const localSourcePath = isLocal ? this.resolveLocalSourcePath(mod.repoUrl, moduleId) : null;
+		const allowedRoots = [ModulePaths.EXTERNAL_DIR, ModulePaths.PARENT_DIR];
+		if (isLocal && localSourcePath && !this.isPathWithinRoots(localSourcePath, allowedRoots)) {
+			throw new Error(`Local module path is outside allowed roots: ${localSourcePath}`);
+		}
 		if (isLocal && !existsSync(modulePath)) {
 			if (!localSourcePath || !existsSync(localSourcePath)) {
 				console.log(
@@ -112,14 +158,24 @@ export class ModuleInitialization {
 				}
 				symlinkSync(localSourcePath, modulePath, 'dir');
 			} else {
+				if (mod.repoUrl.trim().startsWith('-')) {
+					throw new Error(`Invalid repository URL for ${moduleId}`);
+				}
 				if (existsSync(modulePath)) {
 					rmSync(modulePath, { recursive: true, force: true });
 				}
 				try {
-					execSync(`git clone ${mod.repoUrl} ${modulePath}`, { stdio: 'inherit' });
+					execFileSync('git', ['clone', '--depth', '1', mod.repoUrl, modulePath], {
+						stdio: 'inherit'
+					});
 				} catch (cloneError) {
 					throw new Error(`Failed to clone repository: ${cloneError}`);
 				}
+			}
+
+			const moduleRoots = isLocal ? allowedRoots : [ModulePaths.EXTERNAL_DIR];
+			if (!this.isPathWithinRoots(modulePath, moduleRoots)) {
+				throw new Error(`Module path resolves outside allowed roots: ${modulePath}`);
 			}
 
 			// 1. Validate Manifest
@@ -242,6 +298,9 @@ export class ModuleInitialization {
 	private static standardizeModuleExports(moduleId: string, modulePath: string): void {
 		const configPath = ModulePaths.getConfigPath(moduleId);
 		if (!existsSync(configPath)) return;
+		if (lstatSync(configPath).isSymbolicLink()) {
+			throw new Error(`Refusing to modify symlinked config: ${configPath}`);
+		}
 
 		let content = readFileSync(configPath, 'utf-8');
 		const modulePrefix = moduleId
@@ -486,13 +545,14 @@ export class ModuleInitialization {
 	private static setupSymlinks(moduleId: string, modulePath: string): void {
 		ensureSymlinkDirectories();
 
+		const moduleRoot = realpathSync(modulePath);
 		const destinations = getModuleSymlinks(moduleId);
 		const sources = getModuleSymlinkSources(moduleId, modulePath);
 
 		Object.entries(destinations).forEach(([key, dest]) => {
 			const source = (sources as any)[key];
 			if (source && dest && existsSync(source)) {
-				createSymlink(source, dest);
+				createSymlink(source, dest, moduleRoot);
 			}
 		});
 	}
