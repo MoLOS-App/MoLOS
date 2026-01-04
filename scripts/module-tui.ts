@@ -143,8 +143,9 @@ class ModuleTUI {
 		try {
 			execSync('npm run modules:sync', { stdio: 'inherit' });
 			console.log('\n✅ Modules synced successfully!');
-		} catch {
-			console.error('\n❌ Failed to sync modules');
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error);
+			console.error(`\n❌ Failed to sync modules: ${message}`);
 		}
 	}
 
@@ -195,8 +196,9 @@ class ModuleTUI {
 
 			execSync(`npm run module:create ${args}`, { stdio: 'inherit' });
 			console.log('\n✅ Module created successfully!');
-		} catch {
-			console.error('\n❌ Failed to create module');
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error);
+			console.error(`\n❌ Failed to create module: ${message}`);
 		}
 	}
 
@@ -223,8 +225,9 @@ class ModuleTUI {
 			execSync('npm run modules:sync', { stdio: 'inherit' });
 
 			console.log('\n✅ Module installed successfully!');
-		} catch {
-			console.error('\n❌ Failed to install module');
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error);
+			console.error(`\n❌ Failed to install module: ${message}`);
 		}
 	}
 
@@ -253,8 +256,9 @@ class ModuleTUI {
 			execSync('npm run modules:sync', { stdio: 'inherit' });
 
 			console.log('\n✅ Module installed successfully!');
-		} catch {
-			console.error('\n❌ Failed to install module');
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error);
+			console.error(`\n❌ Failed to install module: ${message}`);
 		}
 	}
 
@@ -302,8 +306,9 @@ class ModuleTUI {
 			execSync('npm run modules:sync', { stdio: 'inherit' });
 
 			console.log('\n✅ Module deleted successfully!');
-		} catch {
-			console.error('\n❌ Failed to delete module');
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error);
+			console.error(`\n❌ Failed to delete module: ${message}`);
 		}
 	}
 
@@ -344,8 +349,9 @@ class ModuleTUI {
 		try {
 			await this.settingsRepo.updateExternalModuleStatus(moduleId, newStatus);
 			console.log(`\n✅ Module ${moduleId} status updated to ${newStatus}!`);
-		} catch {
-			console.error('\n❌ Failed to update module status');
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error);
+			console.error(`\n❌ Failed to update module status: ${message}`);
 		}
 	}
 
@@ -364,8 +370,9 @@ class ModuleTUI {
 		try {
 			execSync(`npm run module:validate "${modulePath}"`, { stdio: 'inherit' });
 			console.log('\n✅ Module validation completed!');
-		} catch {
-			console.error('\n❌ Module validation failed');
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error);
+			console.error(`\n❌ Module validation failed: ${message}`);
 		}
 	}
 
@@ -384,8 +391,9 @@ class ModuleTUI {
 		try {
 			execSync(`npm run module:test "${modulePath}"`, { stdio: 'inherit' });
 			console.log('\n✅ Module tests completed!');
-		} catch {
-			console.error('\n❌ Module tests failed');
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error);
+			console.error(`\n❌ Module tests failed: ${message}`);
 		}
 	}
 
@@ -408,8 +416,9 @@ class ModuleTUI {
 					Message: log.message.length > 50 ? log.message.substring(0, 50) + '...' : log.message
 				}))
 			);
-		} catch {
-			console.error('Failed to fetch logs');
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error);
+			console.error(`Failed to fetch logs: ${message}`);
 		}
 	}
 }

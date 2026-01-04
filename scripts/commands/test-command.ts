@@ -42,7 +42,8 @@ export class TestCommand {
 
 			console.log('✅ Tests completed');
 		} catch (error) {
-			console.error('❌ Tests failed');
+			const message = error instanceof Error ? error.message : String(error);
+			console.error(`❌ Tests failed: ${message}`);
 			process.exit(1);
 		}
 	}
