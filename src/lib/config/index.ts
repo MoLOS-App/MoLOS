@@ -29,7 +29,8 @@ export const MODULE_REGISTRY: Record<string, ModuleConfig> = Object.entries(allC
 		// './external_modules/MoLOS-Tasks' -> 'MoLOS-Tasks'
 		const parts = path.split('/');
 		const lastPart = parts[parts.length - 1];
-		const moduleId = lastPart === 'config.ts' ? parts[parts.length - 2] : lastPart.replace(/\.ts$/, '');
+		const moduleId =
+			lastPart === 'config.ts' ? parts[parts.length - 2] : lastPart.replace(/\.ts$/, '');
 
 		// Find the config object in the module exports (either default or named like 'xxxConfig')
 		const config =

@@ -233,9 +233,9 @@ class ModuleValidator {
 			if (!pkg.version) {
 				this.addError('package', 'package.json missing "version" field');
 			}
-		if (pkg.type !== 'module') {
-			this.addWarning('package', 'package.json should have "type": "module" for ES modules');
-		}
+			if (pkg.type !== 'module') {
+				this.addWarning('package', 'package.json should have "type": "module" for ES modules');
+			}
 		} catch (error) {
 			this.addError(
 				'package',
@@ -271,13 +271,13 @@ class ModuleValidator {
 				const content = readFileSync(filePath, 'utf-8');
 
 				// Check for CREATE TABLE statements
-			const tableMatches = content.match(
-				/CREATE TABLE\s+(?:IF NOT EXISTS\s+)?["'`]?([\w-]+)["'`]?/gi
-			);
+				const tableMatches = content.match(
+					/CREATE TABLE\s+(?:IF NOT EXISTS\s+)?["'`]?([\w-]+)["'`]?/gi
+				);
 
-			if (tableMatches) {
-				for (const match of tableMatches) {
-					const tableName = match.match(/["'`]?([\w-]+)["'`]?$/)?.[1] || '';
+				if (tableMatches) {
+					for (const match of tableMatches) {
+						const tableName = match.match(/["'`]?([\w-]+)["'`]?$/)?.[1] || '';
 
 						// Check for proper prefix
 						if (!tableName.startsWith(moduleId) && !tableName.startsWith('molos_')) {

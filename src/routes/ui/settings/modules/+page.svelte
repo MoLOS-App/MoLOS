@@ -209,29 +209,29 @@
 </script>
 
 <Tooltip.Provider>
-	<div class="min-h-screen pb-20 bg-background">
-		<div class="max-w-4xl p-6 mx-auto space-y-8">
+	<div class="min-h-screen bg-background pb-20">
+		<div class="mx-auto max-w-4xl space-y-8 p-6">
 			<!-- Header -->
-			<div class="pt-4 space-y-4">
+			<div class="space-y-4 pt-4">
 				<Button
 					variant="ghost"
 					size="sm"
 					onclick={() => goto('/ui/settings')}
 					class="text-muted-foreground -ml-2 h-8 rounded-full px-3 text-[10px] font-bold tracking-widest uppercase hover:text-foreground"
 				>
-					<ArrowLeft class="w-3 h-3 mr-2" />
+					<ArrowLeft class="mr-2 h-3 w-3" />
 					Back to Settings
 				</Button>
 				<div class="space-y-1">
 					<h1 class="text-3xl font-black tracking-tighter">Module Manager</h1>
-					<p class="text-xs font-bold tracking-widest uppercase text-muted-foreground">
+					<p class="text-muted-foreground text-xs font-bold tracking-widest uppercase">
 						Configure active functionalities
 					</p>
 				</div>
 			</div>
 
 			<div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-				<div class="flex p-1 w-fit rounded-xl bg-muted/20">
+				<div class="flex w-fit rounded-xl bg-muted/20 p-1">
 					<Button
 						variant={activeTab === 'builtin' ? 'secondary' : 'ghost'}
 						size="sm"
@@ -276,7 +276,7 @@
 					/>
 					<Input
 						placeholder="Search modules..."
-						class="text-xs border-none shadow-xs h-9 rounded-xl bg-muted/10 pl-9 focus-visible:ring-1"
+						class="h-9 rounded-xl border-none bg-muted/10 pl-9 text-xs shadow-xs focus-visible:ring-1"
 						bind:value={searchQuery}
 						autocomplete="off"
 						spellcheck="false"
@@ -286,10 +286,10 @@
 
 			{#if hasPendingModules}
 				<div
-					class="flex items-center justify-between p-4 border rounded-lg border-accent/20 bg-accent/10 text-accent"
+					class="flex items-center justify-between rounded-lg border border-accent/20 bg-accent/10 p-4 text-accent"
 				>
 					<div class="flex items-center gap-3">
-						<RefreshCw class="w-5 h-5 animate-spin" />
+						<RefreshCw class="h-5 w-5 animate-spin" />
 						<div>
 							<p class="font-medium">Restart Required</p>
 							<p class="text-sm opacity-90">
@@ -331,7 +331,7 @@
 								>
 									<Accordion.Item
 										value={mod.id}
-										class="px-0 overflow-hidden border-none shadow-sm rounded-2xl bg-muted/20"
+										class="overflow-hidden rounded-2xl border-none bg-muted/20 px-0 shadow-sm"
 									>
 										<div class="flex items-center gap-4 px-4">
 											<div class="flex items-center gap-1">
@@ -340,7 +340,7 @@
 														<div
 															class="text-muted-foreground/50 cursor-grab p-1.5 transition-colors hover:text-primary active:cursor-grabbing"
 														>
-															<GripVertical class="w-4 h-4" />
+															<GripVertical class="h-4 w-4" />
 														</div>
 													</Tooltip.Trigger>
 													<Tooltip.Content
@@ -353,41 +353,41 @@
 													<Button
 														variant="ghost"
 														size="icon"
-														class="w-5 h-5 text-muted-foreground/40 hover:text-primary"
+														class="text-muted-foreground/40 h-5 w-5 hover:text-primary"
 														disabled={i === 0}
 														onclick={(e) => {
 															e.stopPropagation();
 															moveModule(mod.id, 'up');
 														}}
 													>
-														<ChevronUp class="w-3 h-3" />
+														<ChevronUp class="h-3 w-3" />
 													</Button>
 													<Button
 														variant="ghost"
 														size="icon"
-														class="w-5 h-5 text-muted-foreground/40 hover:text-primary"
+														class="text-muted-foreground/40 h-5 w-5 hover:text-primary"
 														disabled={i === builtInModules.length - 1}
 														onclick={(e) => {
 															e.stopPropagation();
 															moveModule(mod.id, 'down');
 														}}
 													>
-														<ChevronDown class="w-3 h-3" />
+														<ChevronDown class="h-3 w-3" />
 													</Button>
 												</div>
 											</div>
 
-											<div class="flex items-center flex-1 gap-4 py-4">
+											<div class="flex flex-1 items-center gap-4 py-4">
 												<div class="rounded-xl bg-background p-2.5 text-primary shadow-xs">
 													{#if mod.icon}
-														<mod.icon class="w-4 h-4" />
+														<mod.icon class="h-4 w-4" />
 													{:else}
-														<LayoutGrid class="w-4 h-4" />
+														<LayoutGrid class="h-4 w-4" />
 													{/if}
 												</div>
 												<div class="min-w-0">
 													<div class="flex items-center gap-2">
-														<span class="text-sm font-bold truncate">{mod.name}</span>
+														<span class="truncate text-sm font-bold">{mod.name}</span>
 														{#if !moduleStates[mod.id].enabled}
 															<Badge
 																variant="outline"
@@ -423,29 +423,29 @@
 													</Tooltip.Content>
 												</Tooltip.Root>
 												<Accordion.Trigger
-													class="p-2 transition-colors rounded-xl hover:bg-background/50 hover:no-underline"
+													class="rounded-xl p-2 transition-colors hover:bg-background/50 hover:no-underline"
 												></Accordion.Trigger>
 											</div>
 										</div>
 
 										<Accordion.Content class="px-4 pt-0 pb-4">
-											<div class="pl-12 space-y-5">
+											<div class="space-y-5 pl-12">
 												<Separator class="bg-muted-foreground/10" />
 												{#if mod.navigation && mod.navigation.length > 0}
 													<div class="space-y-3">
 														<h4
 															class="text-muted-foreground flex items-center gap-2 text-[10px] font-black tracking-widest uppercase"
 														>
-															<Settings2 class="w-3 h-3" />
+															<Settings2 class="h-3 w-3" />
 															Submodules & Features
 														</h4>
 														<div class="grid gap-2 sm:grid-cols-2">
 															{#each mod.navigation as sub}
 																<div
-																	class="flex items-center justify-between p-3 transition-colors border border-transparent rounded-xl bg-background/40 hover:border-primary/10"
+																	class="flex items-center justify-between rounded-xl border border-transparent bg-background/40 p-3 transition-colors hover:border-primary/10"
 																>
 																	<Label
-																		class="text-xs font-bold cursor-pointer"
+																		class="cursor-pointer text-xs font-bold"
 																		for="{mod.id}-{sub.name}"
 																	>
 																		{sub.name}
@@ -494,11 +494,11 @@
 					</section>
 				{:else}
 					<section class="space-y-6">
-						<Card class="overflow-hidden border-none shadow-sm rounded-2xl">
+						<Card class="overflow-hidden rounded-2xl border-none shadow-sm">
 							<CardHeader class="pb-3">
 								<div class="flex items-center gap-3">
-									<div class="p-2 shadow-xs rounded-xl bg-background text-primary">
-										<Download class="w-4 h-4" />
+									<div class="rounded-xl bg-background p-2 text-primary shadow-xs">
+										<Download class="h-4 w-4" />
 									</div>
 									<div>
 										<CardTitle class="font-bold">Install New Module</CardTitle>
@@ -539,7 +539,7 @@
 										<Input
 											name="repoUrl"
 											placeholder="https://github.com/user/repo.git"
-											class="text-xs border-none shadow-xs h-9 rounded-xl bg-background/50 pl-9 focus-visible:ring-1"
+											class="h-9 rounded-xl border-none bg-background/50 pl-9 text-xs shadow-xs focus-visible:ring-1"
 											required
 											autocomplete="off"
 											spellcheck="false"
@@ -548,7 +548,7 @@
 									<Button
 										type="submit"
 										disabled={isInstalling}
-										class="px-6 text-xs font-bold h-9 rounded-xl"
+										class="h-9 rounded-xl px-6 text-xs font-bold"
 									>
 										{isInstalling ? 'Cloning...' : 'Install'}
 									</Button>
@@ -556,7 +556,7 @@
 								<p
 									class="text-muted-foreground/60 mt-3 flex items-center gap-1.5 text-[9px] font-bold tracking-widest uppercase"
 								>
-									<Info class="w-3 h-3" />
+									<Info class="h-3 w-3" />
 									Server restart required after installation
 								</p>
 							</CardContent>
@@ -573,10 +573,10 @@
 											? 'opacity-60 grayscale'
 											: 'hover:scale-[1.01]'}"
 									>
-										<CardHeader class="flex flex-row items-center justify-between py-4 space-y-0">
+										<CardHeader class="flex flex-row items-center justify-between space-y-0 py-4">
 											<div class="flex items-center gap-4">
 												<div class="rounded-xl bg-background p-2.5 text-primary shadow-xs">
-													<LayoutGrid class="w-4 h-4" />
+													<LayoutGrid class="h-4 w-4" />
 												</div>
 												<div class="space-y-0.5">
 													<CardTitle class="flex items-center gap-2 font-bold">
@@ -640,7 +640,7 @@
 															variant="ghost"
 															size="icon"
 															type="submit"
-															class="w-8 h-8 rounded-lg text-muted-foreground/40 hover:bg-destructive/10 hover:text-destructive"
+															class="text-muted-foreground/40 h-8 w-8 rounded-lg hover:bg-destructive/10 hover:text-destructive"
 															disabled={isDeleting === mod.id}
 														>
 															<Trash2
@@ -673,7 +673,7 @@
 																	variant="ghost"
 																	size="icon"
 																	type="submit"
-																	class="w-8 h-8 rounded-lg text-muted-foreground/40 hover:bg-primary/10 hover:text-primary"
+																	class="text-muted-foreground/40 h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary"
 																	disabled={isCancelling === mod.id}
 																>
 																	<Undo2
@@ -700,9 +700,9 @@
 							</div>
 						{:else}
 							<div
-								class="flex flex-col items-center justify-center p-12 border-2 border-dashed text-muted-foreground rounded-xl border-muted"
+								class="text-muted-foreground flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-muted p-12"
 							>
-								<FolderGit2 class="w-12 h-12 mb-4 opacity-20" />
+								<FolderGit2 class="mb-4 h-12 w-12 opacity-20" />
 								<p class="text-lg font-medium">No external modules installed</p>
 								<p class="text-sm">Install a module from a git repository to extend MoLOS.</p>
 							</div>
@@ -713,11 +713,11 @@
 		</div>
 
 		<div
-			class="fixed bottom-0 left-0 right-0 z-50 w-full border-t shadow-2xl border-muted-foreground/5 bg-background/80 backdrop-blur-md"
+			class="border-muted-foreground/5 fixed right-0 bottom-0 left-0 z-50 w-full border-t bg-background/80 shadow-2xl backdrop-blur-md"
 		>
-			<div class="flex items-center justify-between max-w-4xl gap-3 px-6 py-4 mx-auto">
+			<div class="mx-auto flex max-w-4xl items-center justify-between gap-3 px-6 py-4">
 				<div class="flex items-center gap-4">
-					<div class="hidden h-6 border-l border-muted-foreground/10 md:block"></div>
+					<div class="border-muted-foreground/10 hidden h-6 border-l md:block"></div>
 					<p
 						class="text-muted-foreground/60 hidden text-[10px] font-bold tracking-widest uppercase md:block"
 					>
