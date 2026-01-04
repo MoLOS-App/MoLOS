@@ -12,7 +12,8 @@ import path from 'path';
  */
 function linkExternalModules() {
 	const EXTERNAL_DIR = path.resolve('external_modules');
-	const INTERNAL_CONFIG_DIR = path.resolve('src/lib/config/modules');
+	const INTERNAL_CONFIG_DIR = path.resolve('src/lib/config/external_modules');
+	const LEGACY_CONFIG_DIR = path.resolve('src/lib/config/modules');
 	const UI_ROUTES_DIR = path.resolve('src/routes/ui/(modules)/(external_modules)');
 	const API_ROUTES_DIR = path.resolve('src/routes/api/(external_modules)');
 
@@ -27,7 +28,7 @@ function linkExternalModules() {
 
 	// 0. Cleanup broken or stale symlinks in the target directories first
 	// This prevents ENOENT errors when Vite tries to stat broken links
-	[INTERNAL_CONFIG_DIR, UI_ROUTES_DIR, API_ROUTES_DIR].forEach((dir) => {
+	[INTERNAL_CONFIG_DIR, UI_ROUTES_DIR, API_ROUTES_DIR, LEGACY_CONFIG_DIR].forEach((dir) => {
 		if (existsSync(dir)) {
 			const entries = readdirSync(dir, { withFileTypes: true });
 			for (const entry of entries) {
@@ -38,6 +39,9 @@ function linkExternalModules() {
 					if (stats.isSymbolicLink()) {
 						if (!existsSync(fullPath)) {
 							console.log(`[Vite] Removing broken symlink: ${fullPath}`);
+							safeRemove(fullPath);
+						} else if (dir === LEGACY_CONFIG_DIR) {
+							console.log(`[Vite] Removing legacy module config symlink: ${fullPath}`);
 							safeRemove(fullPath);
 						}
 					}
@@ -54,7 +58,7 @@ function linkExternalModules() {
 	let modules: string[] = [];
 	try {
 		modules = readdirSync(EXTERNAL_DIR, { withFileTypes: true })
-			.filter((dirent) => dirent.isDirectory())
+			.filter((dirent) => dirent.isDirectory() || dirent.isSymbolicLink())
 			.map((dirent) => dirent.name);
 	} catch (e) {
 		console.error('[Vite] Failed to read external modules directory:', e);
@@ -71,11 +75,14 @@ function linkExternalModules() {
 
 		try {
 			// 1. Link to config registry
-			const configDest = path.join(INTERNAL_CONFIG_DIR, moduleId);
-			safeRemove(configDest);
-			if (!existsSync(path.dirname(configDest)))
-				mkdirSync(path.dirname(configDest), { recursive: true });
-			symlinkSync(modulePath, configDest, 'dir');
+			const configSource = path.join(modulePath, 'config.ts');
+			if (existsSync(configSource)) {
+				const configDest = path.join(INTERNAL_CONFIG_DIR, `${moduleId}.ts`);
+				safeRemove(configDest);
+				if (!existsSync(path.dirname(configDest)))
+					mkdirSync(path.dirname(configDest), { recursive: true });
+				symlinkSync(configSource, configDest, 'file');
+			}
 
 			// 2. Link UI routes
 			const uiSource = path.join(modulePath, 'routes/ui');
@@ -114,6 +121,13 @@ export default defineConfig({
 	server: {
 		fs: {
 			allow: ['external_modules', '..']
+		},
+		watch: {
+			ignored: [
+				'**/external_modules/**/svelte.config.js',
+				'**/external_modules/**/tsconfig.json',
+				'**/external_modules/**/tsconfig.*.json'
+			]
 		}
 	},
 
