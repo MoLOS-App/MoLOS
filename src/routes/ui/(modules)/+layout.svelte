@@ -47,8 +47,8 @@
 
 				// A module is visible if:
 				// 1. It's builtin OR it's an active external module
-				// 2. AND it's enabled in the user settings (defaults to true for builtin, false for external)
-				const isEnabled = state ? state.enabled : isBuiltin;
+				// 2. AND it's enabled in the user settings (defaults to true)
+				const isEnabled = state ? state.enabled : true;
 
 				return (isBuiltin || isActiveExternal) && isEnabled;
 			})
@@ -96,9 +96,13 @@
 							}`}
 							onclick={() => goto(module.href)}
 						>
-							<module.icon
-								class="w-6 h-6 transition-transform duration-200 group-hover:scale-110"
-							/>
+							{#if module.icon}
+								<module.icon
+									class="w-6 h-6 transition-transform duration-200 group-hover:scale-110"
+								/>
+							{:else}
+								<LayoutGrid class="w-6 h-6 transition-transform duration-200 group-hover:scale-110" />
+							{/if}
 						</Tooltip.Trigger>
 						<Tooltip.Content side="right" class="ml-2">
 							{module.name}
