@@ -4,11 +4,19 @@ services:
     image: ghcr.io/${GITHUB_REPOSITORY:-molos/molos}:latest
     container_name: molos
     restart: always
+    user: 'node'
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp
     ports:
       - '4173:4173'
     environment:
       - NODE_ENV=production
       - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
+      - BETTER_AUTH_SECRET_FILE=${BETTER_AUTH_SECRET_FILE}
       - DATABASE_URL=/data/molos.db
     volumes:
       - ./molos_data:/data
