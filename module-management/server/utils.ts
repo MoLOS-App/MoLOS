@@ -1,4 +1,12 @@
-import { existsSync, readdirSync, lstatSync, rmSync, mkdirSync, symlinkSync } from 'fs';
+import {
+	existsSync,
+	lstatSync,
+	mkdirSync,
+	readdirSync,
+	realpathSync,
+	rmSync,
+	symlinkSync
+} from 'fs';
 import path from 'path';
 import { SYMLINK_CONFIG, getModuleSymlinks } from '../config/symlink-config';
 
@@ -18,6 +26,9 @@ export function getAllFiles(dir: string): string[] {
 	list.forEach((file) => {
 		file = path.join(dir, file);
 		const stat = lstatSync(file);
+		if (stat.isSymbolicLink()) {
+			return;
+		}
 		if (stat && stat.isDirectory()) {
 			results = results.concat(getAllFiles(file));
 		} else {
@@ -46,7 +57,7 @@ export function isBrokenSymlink(p: string): boolean {
 /**
  * Create a symlink with proper error handling
  */
-export function createSymlink(source: string, dest: string): void {
+export function createSymlink(source: string, dest: string, allowedRoot?: string): void {
 	try {
 		// Use rmSync with force to remove existing file/dir/symlink (even if broken)
 		rmSync(dest, { recursive: true, force: true });
@@ -59,6 +70,19 @@ export function createSymlink(source: string, dest: string): void {
 		const absoluteSource = path.resolve(source);
 		const absoluteDest = path.resolve(dest);
 		const stats = lstatSync(absoluteSource);
+		if (stats.isSymbolicLink()) {
+			throw new Error(`Refusing to create symlink from symlinked source: ${absoluteSource}`);
+		}
+
+		if (allowedRoot) {
+			const realRoot = realpathSync(allowedRoot);
+			const realSource = realpathSync(absoluteSource);
+			const relative = path.relative(realRoot, realSource);
+			if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) {
+				throw new Error(`Source path escapes allowed root: ${realSource}`);
+			}
+		}
+
 		const type = stats.isDirectory() ? 'dir' : 'file';
 
 		symlinkSync(absoluteSource, absoluteDest, type);
