@@ -174,7 +174,15 @@ npm run module:create my-module --name "My Module"
 npm run module:validate ./external_modules/my-module
 
 # Run module tests
-npm run module:test ./external_modules/my-module
+  npm run module:test ./external_modules/my-module
+```
+
+### Module Management TUI
+
+The interactive TUI lives under `module-management/tui/` and can be launched with:
+
+```bash
+npm run module:tui
 ```
 
 ### Configuration System (`config/`)

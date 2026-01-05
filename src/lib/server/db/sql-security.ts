@@ -126,6 +126,7 @@ export class SQLValidator {
 				const isValidPrefix =
 					normalizedTableName.startsWith('molos_') ||
 					normalizedTableName.startsWith(normalizedModuleId + '_') ||
+					tableName.startsWith(moduleId + '_') ||
 					normalizedTableName === normalizedModuleId;
 
 				if (!isValidPrefix) {

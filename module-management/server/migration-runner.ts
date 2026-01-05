@@ -55,10 +55,12 @@ export class MigrationRunner {
 			// SQLite tables usually use underscores, but git repos often use hyphens.
 			const normalizedModuleId = moduleId.toLowerCase().replace(/-/g, '_');
 			const normalizedTableName = tableName.replace(/-/g, '_');
+			const exactPrefix = moduleId.toLowerCase() + '_';
 
 			// Allow common system tables if needed, but for now strictly enforce prefix
 			if (
 				!normalizedTableName.startsWith(normalizedModuleId + '_') &&
+				!tableName.startsWith(exactPrefix) &&
 				!normalizedTableName.startsWith('molos_')
 			) {
 				throw new Error(

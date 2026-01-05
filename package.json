@@ -28,6 +28,7 @@
 		"db:studio": "drizzle-kit studio"
 	},
 	"devDependencies": {
+		"@types/blessed": "^0.1.21",
 		"@eslint/compat": "^1.4.0",
 		"@eslint/js": "^9.39.1",
 		"@internationalized/date": "^3.10.0",
@@ -76,6 +77,7 @@
 		"vitest-browser-svelte": "^2.0.1"
 	},
 	"dependencies": {
+		"blessed": "^0.1.81",
 		"@radix-ui/react-select": "^2.2.6",
 		"better-auth": "^1.4.7",
 		"better-sqlite3": "^12.5.0",
