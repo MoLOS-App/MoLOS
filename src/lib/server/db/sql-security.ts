@@ -106,7 +106,7 @@ export class SQLValidator {
 
 		// Extract and validate table names
 		const tableMatches = normalized.match(
-			/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?["'`]?(\w+)["'`]?/gi
+			/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?["'`]?([a-zA-Z0-9_-]+)["'`]?/gi
 		);
 
 		if (tableMatches) {
@@ -175,6 +175,7 @@ export class SQLValidator {
 		for (const statement of statements) {
 			const trimmed = statement.trim();
 			if (!trimmed) continue;
+			if (trimmed.startsWith('--') || trimmed.startsWith('/*')) continue;
 
 			if (!this.isValidStatement(trimmed)) {
 				errors.push(`Invalid or incomplete SQL statement: ${trimmed.substring(0, 50)}...`);
