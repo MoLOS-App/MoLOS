@@ -307,7 +307,7 @@
 
 {#if isOpen}
 	<aside
-		class="flex flex-col border-l border-border/50 bg-background/95 shadow-[0_0_40px_rgba(0,0,0,0.1)] backdrop-blur-xl transition-all duration-500"
+		class="ai-shell flex flex-col border-l border-border/40 bg-background/90 shadow-[0_0_60px_rgba(15,23,42,0.12)] backdrop-blur-2xl transition-all duration-500"
 		style="width: {width}px"
 	>
 		<!-- Resize Handle -->
@@ -337,18 +337,23 @@
 			/>
 		{:else}
 			<!-- Chat View -->
-			<div class="flex-1 overflow-y-auto scroll-smooth p-6" bind:this={scrollViewport}>
-				<div class="space-y-8">
+			<div class="ai-scroll flex-1 overflow-y-auto scroll-smooth p-4" bind:this={scrollViewport}>
+				<div class="space-y-6">
 					{#each messages.filter((m) => m.role === 'user' || (m.role === 'assistant' && (m.content?.trim() !== '' || m.contextMetadata || m.parts || m.attachments))) as msg (msg.id)}
 						<ChatMessage message={msg} />
 					{/each}
 					{#if isLoading}
 						<div class="flex items-start">
 							<div
-								class="text-muted-foreground flex items-center gap-2 rounded-2xl bg-muted px-4 py-2 text-sm"
+								class="text-muted-foreground flex items-center gap-3 rounded-2xl border border-border/40 bg-background/70 px-3 py-2 text-[10px] uppercase tracking-[0.2em] shadow-sm"
 							>
-								<Loader2 class="h-3 w-3 animate-spin" />
-								Thinking...
+								<Loader2 class="h-3.5 w-3.5 animate-spin" />
+								Thinking
+								<span class="ai-dots">
+									<span></span>
+									<span></span>
+									<span></span>
+								</span>
 							</div>
 						</div>
 					{/if}
@@ -383,3 +388,53 @@
 		</AlertDialog.Footer>
 	</AlertDialog.Content>
 </AlertDialog.Root>
+
+<style>
+	.ai-shell {
+		font-family: 'Google Sans', 'Product Sans', 'SF Pro Text', 'Segoe UI', sans-serif;
+		background-image: radial-gradient(
+				circle at top left,
+				rgba(56, 189, 248, 0.08),
+				transparent 45%
+			),
+			radial-gradient(circle at bottom right, rgba(59, 130, 246, 0.08), transparent 55%);
+	}
+
+	.ai-scroll {
+		background-image: linear-gradient(120deg, rgba(15, 23, 42, 0.02), transparent 40%);
+	}
+
+	.ai-dots {
+		display: inline-flex;
+		gap: 4px;
+	}
+
+	.ai-dots span {
+		width: 4px;
+		height: 4px;
+		border-radius: 9999px;
+		background: currentColor;
+		opacity: 0.4;
+		animation: pulse-dot 1.2s infinite ease-in-out;
+	}
+
+	.ai-dots span:nth-child(2) {
+		animation-delay: 0.2s;
+	}
+
+	.ai-dots span:nth-child(3) {
+		animation-delay: 0.4s;
+	}
+
+	@keyframes pulse-dot {
+		0%,
+		100% {
+			transform: translateY(0);
+			opacity: 0.4;
+		}
+		50% {
+			transform: translateY(-2px);
+			opacity: 1;
+		}
+	}
+</style>

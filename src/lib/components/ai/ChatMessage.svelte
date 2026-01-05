@@ -1,18 +1,19 @@
 <script lang="ts">
 	import type { AiMessage, AiAction } from '$lib/models/ai';
 	import { fade, slide } from 'svelte/transition';
-	import { Sparkles, Clock } from 'lucide-svelte';
+	import { Sparkles, Clock, Copy, Check, User, Bot, ListChecks } from 'lucide-svelte';
 	import SvelteMarkdown from 'svelte-marked';
 	import CodeBlock from './CodeBlock.svelte';
 
 	const { message } = $props();
 
 	const renderers = {
-		code: CodeBlock
+		code: CodeBlock as any
 	};
 
 	const expandedThoughts = $state<Record<string, boolean>>({});
 	const expandedPlans = $state<Record<string, boolean>>({});
+	let copied = $state(false);
 
 	const processed = $derived(processMessage(message));
 
@@ -56,59 +57,87 @@
 	function togglePlan(msgId: string) {
 		expandedPlans[msgId] = !expandedPlans[msgId];
 	}
+
+	function formatTime(value: Date | string) {
+		const date = typeof value === 'string' ? new Date(value) : value;
+		if (Number.isNaN(date.getTime())) return '';
+		return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+	}
+
+	async function copyToClipboard() {
+		try {
+			await navigator.clipboard.writeText(processed.content);
+			copied = true;
+			setTimeout(() => (copied = false), 2000);
+		} catch (err) {
+			console.error('Failed to copy:', err);
+		}
+	}
 </script>
 
 {#if message.role === 'user' || processed.content.trim() !== '' || processed.thought || processed.plan || processed.attachments || processed.parts}
 	<div
-		class="group/msg flex flex-col {message.role === 'user' ? 'items-end' : 'items-start'}"
+		class="group/msg flex w-full flex-col gap-2 {message.role === 'user' ? 'items-end' : 'items-start'}"
 		transition:fade={{ duration: 200 }}
 	>
+		<div class="flex items-center gap-2 px-1">
+			{#if message.role === 'assistant'}
+				<div class="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary">
+					<Bot class="h-3.5 w-3.5" />
+				</div>
+				<span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">Assistant</span>
+			{:else}
+				<span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">You</span>
+				<div class="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-muted-foreground">
+					<User class="h-3.5 w-3.5" />
+				</div>
+			{/if}
+		</div>
+
 		<div
-			class="bubble-container max-w-[88%] min-w-0 px-5 py-3.5 text-[14.5px] leading-relaxed shadow-sm transition-all duration-300 {message.role ===
+			class="bubble-container relative max-w-[90%] min-w-0 rounded-2xl px-4 py-3 text-[14px] leading-relaxed shadow-sm transition-all duration-300 {message.role ===
 			'user'
 				? 'user-bubble bg-primary text-primary-foreground'
-				: 'assistant-bubble border border-border/30 bg-muted/40 text-foreground backdrop-blur-md'}"
+				: 'assistant-bubble border border-border/40 bg-background/50 text-foreground backdrop-blur-sm'}"
 		>
 			{#if message.role === 'user'}
 				<div class="overflow-wrap-anywhere flex flex-col gap-2">
-					{#if processed.attachments}
+					{#if processed.attachments.length > 0}
 						<div class="mb-1 flex flex-wrap gap-1">
 							{#each processed.attachments as att, i (i)}
 								<div
-									class="rounded border border-primary-foreground/20 bg-primary-foreground/10 px-2 py-1 text-[10px]"
+									class="rounded-full border border-primary-foreground/20 bg-primary-foreground/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.2em]"
 								>
 									📎 {att.name || 'Attachment'}
 								</div>
 							{/each}
 						</div>
 					{/if}
-					{message.content}
+					<p class="whitespace-pre-wrap">{message.content}</p>
 				</div>
 			{:else}
-				<div class="prose-sm prose prose-custom dark:prose-invert max-w-none">
-					<SvelteMarkdown source={processed.content} {renderers} />
-				</div>
+				{#if processed.content.trim() !== ''}
+					<div class="prose prose-sm prose-custom dark:prose-invert max-w-none">
+						<SvelteMarkdown source={processed.content} {renderers} />
+					</div>
+				{/if}
 
 				{#if processed.thought || processed.plan}
-					<div class="mt-3 flex flex-col gap-2 border-t border-border/20 pt-3">
+					<div class="flex flex-col gap-3 {processed.content.trim() !== '' ? 'mt-4 border-t border-border/10 pt-3' : ''}">
 						{#if processed.thought}
-							<div>
+							<div class="space-y-2">
 								<button
-									class="text-muted-foreground/70 group/thought flex items-center gap-2 text-[10px] font-bold tracking-widest uppercase transition-all duration-200 hover:text-primary"
+									class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70 transition-colors hover:text-primary"
 									onclick={() => toggleThought(message.id)}
 								>
-									<div
-										class="rounded-md bg-muted p-1 transition-colors group-hover/thought:bg-primary/10"
-									>
-										<Sparkles class="h-3 w-3" />
-									</div>
+									<Sparkles class="h-3 w-3" />
 									{expandedThoughts[message.id] ? 'Hide Reasoning' : 'Show Reasoning'}
 								</button>
 
 								{#if expandedThoughts[message.id]}
 									<div
-										class="text-muted-foreground/80 mt-3 rounded-xl border border-border/10 bg-background/40 p-3 text-[12px] leading-relaxed font-bold italic shadow-inner"
-										transition:slide={{ duration: 300 }}
+										class="rounded-xl bg-muted/30 p-3 text-[12px] italic text-muted-foreground/90"
+										transition:slide
 									>
 										{processed.thought}
 									</div>
@@ -117,23 +146,19 @@
 						{/if}
 
 						{#if processed.plan}
-							<div>
+							<div class="space-y-2">
 								<button
-									class="text-muted-foreground/70 group/plan flex items-center gap-2 text-[10px] font-bold tracking-widest uppercase transition-all duration-200 hover:text-primary"
+									class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70 transition-colors hover:text-primary"
 									onclick={() => togglePlan(message.id)}
 								>
-									<div
-										class="rounded-md bg-muted p-1 transition-colors group-hover/plan:bg-primary/10"
-									>
-										<Clock class="h-3 w-3" />
-									</div>
+									<ListChecks class="h-3 w-3" />
 									{expandedPlans[message.id] ? 'Hide Plan' : 'Show Plan'}
 								</button>
 
 								{#if expandedPlans[message.id]}
 									<div
-										class="text-muted-foreground/80 mt-3 rounded-xl border border-border/10 bg-background/40 p-3 font-mono text-[12px] leading-relaxed whitespace-pre-wrap shadow-inner"
-										transition:slide={{ duration: 300 }}
+										class="rounded-xl bg-muted/30 p-3 font-mono text-[12px] text-muted-foreground/90"
+										transition:slide
 									>
 										{processed.plan}
 									</div>
@@ -143,17 +168,31 @@
 					</div>
 				{/if}
 			{/if}
+
+			<!-- Message Actions -->
+			<div class="absolute -right-12 top-0 flex flex-col gap-1 opacity-0 transition-opacity group-hover/msg:opacity-100">
+				<button
+					class="flex h-8 w-8 items-center justify-center rounded-full border border-border/40 bg-background/80 text-muted-foreground shadow-sm hover:bg-muted hover:text-primary"
+					onclick={copyToClipboard}
+					title="Copy message"
+				>
+					{#if copied}
+						<Check class="h-3.5 w-3.5 text-green-500" />
+					{:else}
+						<Copy class="h-3.5 w-3.5" />
+					{/if}
+				</button>
+			</div>
 		</div>
-		{#if processed.actions}
-			<div class="mt-3 flex flex-wrap gap-2">
+
+		{#if processed.actions.length > 0}
+			<div class="mt-1 flex flex-wrap gap-2">
 				{#each processed.actions as action, i (i)}
 					<div
-						class="flex cursor-default items-center gap-2 rounded-full border border-border/40 bg-background/50 px-3 py-1 text-[10px] font-bold tracking-widest uppercase shadow-sm transition-colors hover:bg-background"
+						class="flex items-center gap-2 rounded-full border border-border/40 bg-muted/20 px-3 py-1 text-[10px] font-bold uppercase tracking-wider shadow-sm"
 					>
 						<span
-							class="h-2 w-2 rounded-full {action.type === 'write'
-								? 'bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.4)]'
-								: 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]'}"
+							class="h-1.5 w-1.5 rounded-full {action.type === 'write' ? 'bg-orange-500' : 'bg-blue-500'}"
 						></span>
 						<span class="text-muted-foreground/80">{action.type}:</span>
 						<span class="text-foreground">{action.entity}</span>
@@ -164,6 +203,10 @@
 				{/each}
 			</div>
 		{/if}
+
+		<span class="px-1 text-[9px] font-medium uppercase tracking-widest text-muted-foreground/40">
+			{formatTime(message.createdAt)}
+		</span>
 	</div>
 {/if}
 
@@ -174,11 +217,11 @@
 	}
 
 	.user-bubble {
-		border-radius: 20px 20px 4px 20px;
+		border-radius: 1.25rem 1.25rem 0.25rem 1.25rem;
 	}
 
 	.assistant-bubble {
-		border-radius: 20px 20px 20px 4px;
+		border-radius: 1.25rem 1.25rem 1.25rem 0.25rem;
 	}
 
 	:global(.prose-custom) {
@@ -200,26 +243,20 @@
 	}
 
 	:global(.prose-custom h1, .prose-custom h2, .prose-custom h3) {
-		margin-top: 1.5em;
+		margin-top: 1em;
 		margin-bottom: 0.5em;
 		font-weight: 700;
-		letter-spacing: -0.01em;
 	}
 
 	:global(.prose-custom p) {
-		margin-top: 0.75em;
-		margin-bottom: 0.75em;
+		margin-top: 0.5em;
+		margin-bottom: 0.5em;
 	}
 
 	:global(.prose-custom ul, .prose-custom ol) {
-		margin-top: 0.75em;
-		margin-bottom: 0.75em;
+		margin-top: 0.5em;
+		margin-bottom: 0.5em;
 		padding-left: 1.25em;
-	}
-
-	:global(.prose-custom li) {
-		margin-top: 0.25em;
-		margin-bottom: 0.25em;
 	}
 
 	.overflow-wrap-anywhere {

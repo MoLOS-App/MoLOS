@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { Button } from '$lib/components/ui/button';
-	import { Send } from 'lucide-svelte';
+	import { Send, Paperclip, StopCircle } from 'lucide-svelte';
 
 	let {
 		input = $bindable(''),
@@ -28,20 +28,26 @@
 	});
 </script>
 
-<div class="border-t border-border/40 bg-background/50 p-6 backdrop-blur-md">
+<div class="ai-input-container relative">
 	<form
 		onsubmit={(e) => {
 			e.preventDefault();
 			onSendMessage();
 		}}
-		class="group relative"
+		class="relative flex items-end gap-2 rounded-2xl border border-border/60 bg-background/50 p-2 shadow-sm transition-all focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/20"
 	>
-		<div
-			class="absolute -inset-0.5 rounded-[20px] bg-gradient-to-r from-primary/20 to-primary/10 opacity-0 blur transition duration-500 group-focus-within:opacity-100"
-		></div>
-		<div class="relative">
+		<Button
+			variant="ghost"
+			size="icon"
+			class="h-9 w-9 shrink-0 rounded-xl text-muted-foreground hover:text-foreground"
+			type="button"
+			title="Attach files"
+		>
+			<Paperclip class="h-5 w-5" />
+		</Button>
+
+		<div class="relative flex-1">
 			<Textarea
-				placeholder="Message AI Assistant..."
 				bind:value={input}
 				bind:ref={textareaElement}
 				onkeydown={onKeydown}
@@ -49,20 +55,36 @@
 					autoResize();
 					onInput(input);
 				}}
-				class="max-h-[200px] min-h-[56px] resize-none overflow-y-auto rounded-[18px] border-border/60 bg-background/80 py-4 pr-14 shadow-inner transition-all duration-300 focus-visible:ring-primary/20"
+				class="max-h-50 min-h-10 w-full resize-none border-none bg-transparent text-[14px] leading-relaxed shadow-none focus-visible:ring-0"
 				disabled={isLoading || !!pendingAction}
 			/>
+		</div>
+
+		{#if isLoading}
+			<Button
+				type="button"
+				size="icon"
+				variant="ghost"
+				class="h-9 w-9 shrink-0 rounded-xl text-destructive hover:bg-destructive/10"
+				title="Stop generating"
+			>
+				<StopCircle class="h-5 w-5" />
+			</Button>
+		{:else}
 			<Button
 				type="submit"
 				size="icon"
-				class="absolute right-2 bottom-2 h-10 w-10 rounded-xl shadow-lg transition-all duration-200 hover:scale-105 active:scale-95"
-				disabled={!input.trim() || isLoading || !!pendingAction}
+				class="h-9 w-9 shrink-0 rounded-xl bg-primary text-primary-foreground shadow-sm transition-transform active:scale-95 disabled:opacity-20"
+				disabled={!input.trim() || !!pendingAction}
 			>
-				<Send class="h-4.5 w-4.5" />
+				<Send class="h-4 w-4" />
 			</Button>
-		</div>
+		{/if}
 	</form>
-	<p class="text-muted-foreground/50 mt-3 text-center text-[10px] font-medium">
-		AI can make mistakes. Check important info.
-	</p>
 </div>
+
+<style>
+	:global(.ai-input-container textarea) {
+		scrollbar-width: thin;
+	}
+</style>

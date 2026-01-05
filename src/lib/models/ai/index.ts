@@ -64,6 +64,8 @@ export interface AiMessage {
 export interface AiChatResponse {
 	message: string;
 	actions?: AiAction[];
+	events?: AiAgentEvent[];
+	telemetry?: AiAgentTelemetry;
 }
 
 export interface ToolDefinition {
@@ -84,6 +86,35 @@ export interface AiAction {
 	description: string;
 	status: 'pending' | 'confirmed' | 'executed' | 'failed';
 	data?: unknown;
+}
+
+export type AiAgentEventType =
+	| 'run_start'
+	| 'iteration'
+	| 'llm_call'
+	| 'llm_retry'
+	| 'tool_call_start'
+	| 'tool_call_end'
+	| 'guardrail'
+	| 'error'
+	| 'run_end';
+
+export interface AiAgentEvent {
+	type: AiAgentEventType;
+	timestamp: number;
+	detail?: Record<string, unknown>;
+}
+
+export interface AiAgentTelemetry {
+	runId: string;
+	startMs: number;
+	durationMs?: number;
+	llmCalls: number;
+	toolCalls: number;
+	retries: number;
+	errors: number;
+	tokenEstimateIn: number;
+	tokenEstimateOut: number;
 }
 
 export const PREDEFINED_MODELS = {
