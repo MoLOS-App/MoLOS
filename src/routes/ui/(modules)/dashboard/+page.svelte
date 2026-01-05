@@ -28,40 +28,40 @@
 	}
 </script>
 
-<div class="flex min-h-screen flex-col items-center bg-background p-6 md:p-8">
+<div class="flex flex-col items-center min-h-screen p-6 bg-background md:p-8">
 	<!-- Main Content -->
-	<div class="flex w-full max-w-4xl flex-col items-center gap-10 pt-12" in:fade={{ duration: 800 }}>
+	<div class="flex flex-col items-center w-full max-w-4xl gap-10 pt-12" in:fade={{ duration: 800 }}>
 		<!-- Hero Section -->
 		<div class="space-y-3 text-center">
 			<div
 				class="mb-2 inline-flex items-center gap-2 rounded-full border border-primary/10 bg-primary/5 px-3 py-1 text-[10px] font-bold tracking-widest text-primary uppercase"
 			>
-				<Sparkles class="h-3 w-3" />
+				<Sparkles class="w-3 h-3" />
 				Intelligence Active
 			</div>
 			<h1 class="text-4xl font-black tracking-tighter text-foreground md:text-5xl">
 				{greeting}, {data.user.name}
 			</h1>
-			<p class="text-muted-foreground mx-auto max-w-lg text-lg font-medium">
+			<p class="max-w-lg mx-auto text-lg font-medium text-muted-foreground">
 				What's on your mind today?
 			</p>
 		</div>
 
 		<!-- Search Bar (ChatGPT/Google Style) -->
-		<div class="group relative w-full max-w-2xl" in:fly={{ y: 20, delay: 200 }}>
+		<div class="relative w-full max-w-2xl group" in:fly={{ y: 20, delay: 200 }}>
 			<div
-				class="text-muted-foreground pointer-events-none absolute inset-y-0 left-4 flex items-center transition-colors group-focus-within:text-primary"
+				class="absolute inset-y-0 flex items-center transition-colors pointer-events-none text-muted-foreground left-4 group-focus-within:text-primary"
 			>
-				<Search class="h-5 w-5" />
+				<Search class="w-5 h-5" />
 			</div>
 			<Input
 				type="text"
 				placeholder="Search anything..."
-				class="h-14 w-full rounded-2xl border-none bg-muted/30 pr-4 pl-12 text-base shadow-lg transition-all focus-visible:ring-2 focus-visible:ring-primary/20"
+				class="w-full pl-12 pr-4 text-base transition-all border-none shadow-lg h-14 rounded-2xl bg-muted/30 focus-visible:ring-2 focus-visible:ring-primary/20"
 				bind:value={searchQuery}
 				onkeydown={handleSearch}
 			/>
-			<div class="absolute inset-y-0 right-4 flex items-center gap-2">
+			<div class="absolute inset-y-0 flex items-center gap-2 right-4">
 				<kbd
 					class="text-muted-foreground hidden h-6 items-center gap-1 rounded border bg-background px-1.5 font-mono text-[10px] font-medium opacity-100 md:inline-flex"
 				>
@@ -87,7 +87,7 @@
 			<div class="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-5">
 				{#each modules as module}
 					<Card.Root
-						class="group cursor-pointer overflow-hidden border-none shadow-sm transition-all duration-300 hover:bg-muted/40 hover:shadow-md"
+						class="overflow-hidden transition-all duration-300 border-none shadow-sm cursor-pointer group hover:bg-muted/40 hover:shadow-md"
 						onclick={() => goto(module.href)}
 					>
 						<Card.Content class="flex flex-col items-center gap-2 p-4">
@@ -107,17 +107,17 @@
 
 		<!-- Quick Insights / Notifications -->
 		<div class="grid w-full gap-4 md:grid-cols-2" in:fly={{ y: 20, delay: 600 }}>
-			<Card.Root class="rounded-2xl border-none shadow-none">
+			<Card.Root class="border-none shadow-none rounded-2xl">
 				<Card.Header class="pb-2">
 					<Card.Title class="flex items-center gap-2 font-black tracking-widest uppercase">
-						<Bell class="h-3 w-3 text-primary" />
+						<Bell class="w-3 h-3 text-primary" />
 						Notifications
 					</Card.Title>
 				</Card.Header>
 				<Card.Content class="space-y-2">
 					{#each notifications as note}
 						<div
-							class="flex cursor-pointer items-start gap-3 rounded-xl p-2 transition-colors hover:bg-background/50"
+							class="flex items-start gap-3 p-2 transition-colors cursor-pointer rounded-xl hover:bg-background/50"
 						>
 							<div
 								class="mt-1.5 h-1.5 w-1.5 rounded-full {note.type === 'warning'
@@ -133,15 +133,15 @@
 				</Card.Content>
 			</Card.Root>
 
-			<Card.Root class="rounded-2xl border-none shadow-none">
+			<Card.Root class="border-none shadow-none rounded-2xl">
 				<Card.Header class="pb-2">
 					<Card.Title class="flex items-center gap-2 font-black tracking-widest uppercase">
-						<Sparkles class="h-3 w-3 text-primary" />
+						<Sparkles class="w-3 h-3 text-primary" />
 						Summary
 					</Card.Title>
 				</Card.Header>
 				<Card.Content class="space-y-2.5">
-					<p class="text-muted-foreground text-xs">No stats available</p>
+					<p class="text-xs text-muted-foreground">No stats available</p>
 				</Card.Content>
 			</Card.Root>
 		</div>
