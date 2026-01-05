@@ -3,10 +3,11 @@ import {
 	readFileSync,
 	writeFileSync,
 	rmSync,
-	symlinkSync,
 	readdirSync,
 	realpathSync,
-	lstatSync
+	lstatSync,
+	copyFileSync,
+	mkdirSync
 } from 'fs';
 import { execFileSync } from 'child_process';
 import path from 'path';
@@ -67,6 +68,24 @@ export class ModuleInitialization {
 		return path.isAbsolute(pathPart) ? pathPart : path.resolve(ModulePaths.PARENT_DIR, pathPart);
 	}
 
+	private static copyLocalModule(source: string, target: string) {
+		if (!existsSync(target)) {
+			mkdirSync(target, { recursive: true });
+		}
+		const entries = readdirSync(source, { withFileTypes: true });
+		for (const entry of entries) {
+			if (entry.name === '.git' || entry.name === 'node_modules') continue;
+			const srcPath = path.join(source, entry.name);
+			const destPath = path.join(target, entry.name);
+			if (entry.isDirectory()) {
+				mkdirSync(destPath, { recursive: true });
+				this.copyLocalModule(srcPath, destPath);
+				continue;
+			}
+			copyFileSync(srcPath, destPath);
+		}
+	}
+
 	/**
 	 * Discover and register local modules in the external_modules directory
 	 */
@@ -93,7 +112,11 @@ export class ModuleInitialization {
 					// For local modules, we use a dummy repo URL or a local path indicator
 					// Since the current logic expects a repoUrl for cloning, we'll provide a placeholder
 					// but we'll need to adjust the init logic to skip cloning if it's already there
-					await settingsRepo.registerExternalModule(mod.name, `local://${mod.name}`);
+					const relativePath = path
+						.relative(ModulePaths.PARENT_DIR, ModulePaths.getModulePath(mod.name))
+						.split(path.sep)
+						.join(path.posix.sep);
+					await settingsRepo.registerExternalModule(mod.name, `local://${relativePath}`);
 				}
 			}
 		} catch (e) {
@@ -151,12 +174,21 @@ export class ModuleInitialization {
 				);
 			} else if (isLocal && localSourcePath && existsSync(localSourcePath)) {
 				console.log(`[ModuleManager] Using local source for ${moduleId}`);
-				// Instead of cloning, we symlink the local source to the external_modules dir
-				// to keep the rest of the logic (migrations, etc.) consistent
-				if (existsSync(modulePath)) {
-					rmSync(modulePath, { recursive: true, force: true });
+				// Instead of symlinking, copy local source into external_modules.
+				const isSymlink = lstatSync(localSourcePath).isSymbolicLink();
+				const sourcePath = isSymlink ? realpathSync(localSourcePath) : localSourcePath;
+				const resolvedSource = path.resolve(sourcePath);
+				const resolvedTarget = path.resolve(modulePath);
+				if (!isSymlink && resolvedSource === resolvedTarget) {
+					console.log(
+						`[ModuleManager] Module ${moduleId} already in external_modules, skipping copy.`
+					);
+				} else {
+					if (existsSync(modulePath)) {
+						rmSync(modulePath, { recursive: true, force: true });
+					}
+					this.copyLocalModule(sourcePath, modulePath);
 				}
-				symlinkSync(localSourcePath, modulePath, 'dir');
 			} else {
 				if (mod.repoUrl.trim().startsWith('-')) {
 					throw new Error(`Invalid repository URL for ${moduleId}`);
@@ -327,33 +359,36 @@ export class ModuleInitialization {
 		// Also fix hrefs to match the moduleId (folder name)
 		const normalizedId = moduleId;
 		// Match /ui/xxx or /api/xxx
-		const uiHrefRegex = new RegExp(`href:\\s*['"]/ui/([\\w-]+)`, 'g');
-		const apiHrefRegex = new RegExp(`(['"])/api/([\\w-]+)`, 'g');
+		const uiHrefRegex = /href:\s*(['"])(\/ui\/[\w-/]+)\1/g;
+		const apiHrefRegex = /(['"])(\/api\/[\w-/]+)\1/g;
 
 		if (content.match(uiHrefRegex) || content.match(apiHrefRegex)) {
 			console.log(`[ModuleManager] Standardizing hrefs and API calls for ${moduleId}`);
-			content = content.replace(uiHrefRegex, (match, p1) => {
-				if (p1.startsWith('MoLOS-')) return match;
-				const fullMatch = match.match(/href:\s*['"]\/ui\/([\w-/]+)/);
-				if (!fullMatch) return match;
-				const fullPath = fullMatch[1];
-
-				// Check if the path starts with the module ID (e.g., 'health' or 'health/')
-				if (fullPath === p1 || fullPath.startsWith(p1 + '/')) {
-					const subpath = fullPath.substring(p1.length);
-					return `href: '/ui/${normalizedId}${subpath}`;
+			content = content.replace(uiHrefRegex, (match, quote, full) => {
+				const pathPart = full.replace('/ui/', '');
+				const [first, ...rest] = pathPart.split('/');
+				if (first.startsWith('MoLOS-')) return match;
+				if (
+					first === normalizedId ||
+					first.toLowerCase() === normalizedId.toLowerCase() ||
+					first.toLowerCase() === modulePrefix
+				) {
+					const subpath = rest.length ? `/${rest.join('/')}` : '';
+					return `href: ${quote}/ui/${normalizedId}${subpath}${quote}`;
 				}
 				return match;
 			});
-			content = content.replace(apiHrefRegex, (match, quote, p1) => {
-				if (p1.startsWith('MoLOS-')) return match;
-				const fullMatch = match.match(new RegExp(`${quote}/api/([\\w-/]+)`));
-				if (!fullMatch) return match;
-				const fullPath = fullMatch[1];
-
-				if (fullPath === p1 || fullPath.startsWith(p1 + '/')) {
-					const subpath = fullPath.substring(p1.length);
-					return `${quote}/api/${normalizedId}${subpath}`;
+			content = content.replace(apiHrefRegex, (match, quote, full) => {
+				const pathPart = full.replace('/api/', '');
+				const [first, ...rest] = pathPart.split('/');
+				if (first.startsWith('MoLOS-')) return match;
+				if (
+					first === normalizedId ||
+					first.toLowerCase() === normalizedId.toLowerCase() ||
+					first.toLowerCase() === modulePrefix
+				) {
+					const subpath = rest.length ? `/${rest.join('/')}` : '';
+					return `${quote}/api/${normalizedId}${subpath}${quote}`;
 				}
 				return match;
 			});
