@@ -1,8 +1,10 @@
 import blessed from 'blessed';
 import { spawn } from 'child_process';
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'fs';
 import path from 'path';
+import { parse, stringify } from 'yaml';
 import type { SettingsRepository } from '../../src/lib/repositories/settings/settings-repository';
+import { EXTERNAL_MODULES_DIR } from './constants';
 import { listTablesWithCounts, runSqlQuery } from './db';
 import { listModulesFromFilesystem } from './fs';
 import { mergeModuleData } from './merge';
@@ -231,7 +233,10 @@ export class ModuleTUI {
 			this.layout.modules.setItems(
 				this.modules.map((module) => this.formatModuleLabel(module))
 			);
-			if (!this.selectedModuleId && this.modules.length > 0) {
+			if (this.modules.length === 0) {
+				this.selectedModuleId = null;
+				await this.refreshActions();
+			} else if (!this.selectedModuleId) {
 				this.selectedModuleId = this.modules[0].id;
 				this.layout.modules.select(0);
 				await this.refreshActions();
@@ -414,19 +419,154 @@ export class ModuleTUI {
 		if (!version) return;
 		const syncAfter = await this.promptConfirm('Run sync after creation?', true);
 
-		const args = [
-			name,
-			`--name "${displayName}"`,
-			`--author "${author}"`,
-			`--description "${description}"`,
-			`--version "${version}"`
-		].join(' ');
+		const targetPath = path.join(EXTERNAL_MODULES_DIR, name);
+		if (existsSync(targetPath)) {
+			this.logError(`Target path already exists: ${targetPath}`);
+			return;
+		}
 
-		await this.runProcess(`npm run module:create ${args}`, process.cwd());
+		await this.cloneTemplateModule(targetPath);
+		this.removeGitFolders(targetPath);
+		this.replaceModuleName(targetPath, name);
+		this.normalizeModuleUiRoutes(targetPath, name);
+		this.updateModuleMetadata(targetPath, {
+			id: name,
+			name: displayName,
+			author,
+			description,
+			version
+		});
+		await this.settingsRepo.registerExternalModule(name, this.toLocalRepoUrl(name));
+
 		if (syncAfter) {
 			await this.syncModules();
 		}
 		await this.refreshModules();
+	}
+
+	private toLocalRepoUrl(moduleName: string) {
+		const workspaceName = path.basename(process.cwd());
+		const relative = path.posix.join(workspaceName, 'external_modules', moduleName);
+		return `local://${relative}`;
+	}
+
+	private async cloneTemplateModule(targetPath: string) {
+		const repo = 'https://github.com/MoLOS-App/MoLOS-Sample-Module.git';
+		await this.runProcess(`git clone ${repo} "${targetPath}"`, process.cwd());
+	}
+
+	private removeGitFolders(root: string) {
+		const entries = readdirSync(root, { withFileTypes: true });
+		for (const entry of entries) {
+			const entryPath = path.join(root, entry.name);
+			if (entry.name === '.git') {
+				rmSync(entryPath, { recursive: true, force: true });
+				continue;
+			}
+			if (entry.isDirectory()) {
+				this.removeGitFolders(entryPath);
+			}
+		}
+	}
+
+	private replaceModuleName(root: string, moduleName: string) {
+		const originalName = 'MoLOS-Sample-Module';
+		const ignore = new Set(['node_modules', '.git']);
+		const files = this.collectFiles(root, ignore);
+
+		files.forEach((filePath) => {
+			let content: string;
+			try {
+				content = readFileSync(filePath, 'utf-8');
+			} catch {
+				return;
+			}
+			if (!content.includes(originalName)) return;
+			const updated = content.split(originalName).join(moduleName);
+			writeFileSync(filePath, updated, 'utf-8');
+		});
+	}
+
+	private normalizeModuleUiRoutes(root: string, moduleName: string) {
+		const target = `/ui/${moduleName}`;
+		const ignore = new Set(['node_modules', '.git']);
+		const files = this.collectFiles(root, ignore);
+
+		files.forEach((filePath) => {
+			let content: string;
+			try {
+				content = readFileSync(filePath, 'utf-8');
+			} catch {
+				return;
+			}
+
+			const fixed = content
+				.split(`'${target}"`)
+				.join(`'${target}'`)
+				.split(`"${target}'`)
+				.join(`"${target}"`);
+
+			if (fixed !== content) {
+				writeFileSync(filePath, fixed, 'utf-8');
+			}
+		});
+	}
+
+	private updateModuleMetadata(
+		root: string,
+		metadata: {
+			id: string;
+			name: string;
+			author: string;
+			description: string;
+			version: string;
+		}
+	) {
+		const manifestPath = path.join(root, 'manifest.yaml');
+		if (existsSync(manifestPath)) {
+			try {
+				const manifest = parse(readFileSync(manifestPath, 'utf-8')) as Record<string, unknown>;
+				manifest.id = metadata.id;
+				manifest.name = metadata.name;
+				manifest.author = metadata.author;
+				manifest.description = metadata.description;
+				manifest.version = metadata.version;
+				writeFileSync(manifestPath, stringify(manifest), 'utf-8');
+			} catch {
+				this.logError('Failed to update manifest.yaml metadata.');
+			}
+		}
+
+		const packagePath = path.join(root, 'package.json');
+		if (existsSync(packagePath)) {
+			try {
+				const pkg = JSON.parse(readFileSync(packagePath, 'utf-8')) as Record<string, unknown>;
+				pkg.name = metadata.id;
+				pkg.version = metadata.version;
+				pkg.description = metadata.description;
+				pkg.author = metadata.author;
+				writeFileSync(packagePath, JSON.stringify(pkg, null, '\t') + '\n', 'utf-8');
+			} catch {
+				this.logError('Failed to update package.json metadata.');
+			}
+		}
+	}
+
+	private collectFiles(root: string, ignore: Set<string>) {
+		const files: string[] = [];
+		const entries = readdirSync(root, { withFileTypes: true });
+		for (const entry of entries) {
+			if (ignore.has(entry.name)) continue;
+			const entryPath = path.join(root, entry.name);
+			if (entry.isDirectory()) {
+				files.push(...this.collectFiles(entryPath, ignore));
+				continue;
+			}
+			if (entry.isFile()) {
+				files.push(entryPath);
+			}
+		}
+		return files;
 	}
 
 	private async runSelectedAction() {
