@@ -1,8 +1,20 @@
 import { getCoreAiTools } from './core-tools';
 import { getAllModules } from '$lib/config';
 import type { ToolDefinition } from '$lib/models/ai';
+import { TtlCache } from './agent-utils';
 
 const externalToolLoaders = import.meta.glob('./external_modules/*/ai-tools.ts');
+const TOOLBOX_CACHE_TTL_MS = Number(process.env.AI_AGENT_TOOLBOX_CACHE_TTL_MS || 15_000);
+const TOOLBOX_CACHE_SIZE = Number(process.env.AI_AGENT_TOOLBOX_CACHE_SIZE || 64);
+const toolCache = new TtlCache<ToolDefinition[]>(TOOLBOX_CACHE_SIZE);
+const promptCache = new TtlCache<string>(TOOLBOX_CACHE_SIZE);
+const debugEnabled =
+	process.env.AI_AGENT_DEBUG === '1' || process.env.AI_AGENT_DEBUG?.toLowerCase() === 'true';
+
+function logDebug(message: string, ...args: unknown[]) {
+	if (!debugEnabled) return;
+	console.log(message, ...args);
+}
 
 export class AiToolbox {
 	/**
@@ -10,28 +22,30 @@ export class AiToolbox {
 	 * This includes core tools and tools from active external modules.
 	 */
 	async getTools(userId: string, activeModuleIds: string[] = []): Promise<ToolDefinition[]> {
-		console.log('[AiToolbox] getTools called with activeModuleIds:', activeModuleIds);
+		const cacheKey = `${userId}:${[...activeModuleIds].sort().join(',') || 'core'}`;
+		const cached = toolCache.get(cacheKey);
+		if (cached) return cached;
 
 		// 1. Start with core tools (global/system level)
 		let tools = getCoreAiTools(userId);
-		console.log('[AiToolbox] Core tools loaded:', tools.length);
+		logDebug('[AiToolbox] Core tools loaded:', tools.length);
 
 		// 2. Discover tools from all registered modules (core and external)
 		const allModules = getAllModules();
-		console.log(
+		logDebug(
 			'[AiToolbox] All modules found:',
 			allModules.map((m) => ({ id: m.id, name: m.name, isExternal: m.isExternal }))
 		);
 
 		// We include all core modules by default, and external modules only if active
 		const modulesToLoad = allModules.filter((m) => !m.isExternal || activeModuleIds.includes(m.id));
-		console.log(
+		logDebug(
 			'[AiToolbox] Modules to load:',
 			modulesToLoad.map((m) => m.id)
 		);
 
 		for (const module of modulesToLoad) {
-			console.log(`[AiToolbox] Processing module: ${module.id} (external: ${module.isExternal})`);
+			logDebug(`[AiToolbox] Processing module: ${module.id} (external: ${module.isExternal})`);
 			try {
 				// Try to load AI tools from module
 				try {
@@ -39,35 +53,37 @@ export class AiToolbox {
 						continue;
 					}
 
-					console.log(`[AiToolbox] Importing tools for module: ${module.id}`);
+					logDebug(`[AiToolbox] Importing tools for module: ${module.id}`);
 					const loaderPath = `./external_modules/${module.id}/ai-tools.ts`;
 					const loader = externalToolLoaders[loaderPath];
 
 					if (!loader) {
-						console.log(`[AiToolbox] No AI tools found at ${loaderPath}`);
+						logDebug(`[AiToolbox] No AI tools found at ${loaderPath}`);
 						continue;
 					}
 
-					const aiToolsModule = await loader() as { getAiTools?: (userId: string) => Promise<ToolDefinition[]> | ToolDefinition[] };
-					console.log(
+					const aiToolsModule = (await loader()) as {
+						getAiTools?: (userId: string) => Promise<ToolDefinition[]> | ToolDefinition[];
+					};
+					logDebug(
 						`[AiToolbox] Import successful for ${module.id}, has getAiTools:`,
 						!!aiToolsModule.getAiTools
 					);
 					if (aiToolsModule.getAiTools) {
-						console.log(`[AiToolbox] Loading AI tools for module: ${module.name}`);
+						logDebug(`[AiToolbox] Loading AI tools for module: ${module.name}`);
 						const moduleTools = await aiToolsModule.getAiTools(userId);
 						// Prefix tool names with module ID to avoid duplicates
-						const prefixedTools = moduleTools.map(tool => ({
+						const prefixedTools = moduleTools.map((tool) => ({
 							...tool,
 							name: `${module.id}_${tool.name}`
 						}));
-						console.log(`[AiToolbox] Module ${module.id} provided ${prefixedTools.length} tools`);
+						logDebug(`[AiToolbox] Module ${module.id} provided ${prefixedTools.length} tools`);
 						tools = [...tools, ...prefixedTools];
 					} else {
-						console.log(`[AiToolbox] Module ${module.id} has no getAiTools function`);
+						logDebug(`[AiToolbox] Module ${module.id} has no getAiTools function`);
 					}
 				} catch (importError) {
-					console.log(`[AiToolbox] Import failed for module ${module.id}:`, importError);
+					logDebug(`[AiToolbox] Import failed for module ${module.id}:`, importError);
 					// No AI tools for this module
 				}
 			} catch (e) {
@@ -75,7 +91,8 @@ export class AiToolbox {
 			}
 		}
 
-		console.log('[AiToolbox] Total tools returned:', tools.length);
+		toolCache.set(cacheKey, tools, TOOLBOX_CACHE_TTL_MS);
+		logDebug('[AiToolbox] Total tools returned:', tools.length);
 		return tools;
 	}
 
@@ -83,6 +100,10 @@ export class AiToolbox {
 	 * Generate a dynamic system prompt based on available tools and modules.
 	 */
 	async getDynamicSystemPrompt(userId: string, activeModuleIds: string[] = []): Promise<string> {
+		const cacheKey = `${userId}:${[...activeModuleIds].sort().join(',') || 'core'}`;
+		const cached = promptCache.get(cacheKey);
+		if (cached) return cached;
+
 		const allModules = getAllModules();
 		const activeModules = allModules.filter((m) => activeModuleIds.includes(m.id) || !m.isExternal);
 
@@ -175,6 +196,7 @@ Use the provided tools to interact with the database. Your goal is to make the u
 - If the user provides an image or a file, analyze its content and incorporate it into your reasoning.
 - When responding, you can refer to specific parts of the input if necessary.`;
 
+		promptCache.set(cacheKey, prompt, TOOLBOX_CACHE_TTL_MS);
 		return prompt;
 	}
 }
