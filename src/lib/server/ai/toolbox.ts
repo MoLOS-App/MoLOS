@@ -48,7 +48,7 @@ export class AiToolbox {
 						continue;
 					}
 
-					const aiToolsModule = await loader();
+					const aiToolsModule = await loader() as { getAiTools?: (userId: string) => Promise<ToolDefinition[]> | ToolDefinition[] };
 					console.log(
 						`[AiToolbox] Import successful for ${module.id}, has getAiTools:`,
 						!!aiToolsModule.getAiTools
@@ -56,8 +56,13 @@ export class AiToolbox {
 					if (aiToolsModule.getAiTools) {
 						console.log(`[AiToolbox] Loading AI tools for module: ${module.name}`);
 						const moduleTools = await aiToolsModule.getAiTools(userId);
-						console.log(`[AiToolbox] Module ${module.id} provided ${moduleTools.length} tools`);
-						tools = [...tools, ...moduleTools];
+						// Prefix tool names with module ID to avoid duplicates
+						const prefixedTools = moduleTools.map(tool => ({
+							...tool,
+							name: `${module.id}_${tool.name}`
+						}));
+						console.log(`[AiToolbox] Module ${module.id} provided ${prefixedTools.length} tools`);
+						tools = [...tools, ...prefixedTools];
 					} else {
 						console.log(`[AiToolbox] Module ${module.id} has no getAiTools function`);
 					}

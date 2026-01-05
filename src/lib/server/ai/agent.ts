@@ -453,14 +453,18 @@ export class AiAgent {
 		}
 
 		try {
+			console.log('[AiAgent] Making LLM call to:', endpoint);
+			console.log('[AiAgent] Provider:', provider, 'Model:', modelName);
 			const res = await fetch(endpoint, {
 				method: 'POST',
 				headers,
 				body: JSON.stringify(body)
 			});
 
+			console.log('[AiAgent] Response status:', res.status);
 			if (!res.ok) {
 				const errorData = await res.json();
+				console.log('[AiAgent] Error data from provider:', errorData);
 				throw new Error(errorData.error?.message || errorData.error || 'API Request failed');
 			}
 
