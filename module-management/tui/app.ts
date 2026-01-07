@@ -400,7 +400,7 @@ export class ModuleTUI {
 	}
 
 	private async syncModules() {
-		await this.runProcess('npm run modules:sync', process.cwd());
+		await this.runProcess('npm run module:sync', process.cwd());
 	}
 
 	private async createModuleWizard() {

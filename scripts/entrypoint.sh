@@ -15,9 +15,6 @@ echo "[Entrypoint] Running database migrations..."
 DB_PATH="${DATABASE_URL#file:}"
 if [ -z "$DB_PATH" ]; then
   echo "[Entrypoint] DATABASE_URL is not set; skipping migrations."
-elif [ ! -f "$DB_PATH" ]; then
-  echo "[Entrypoint] Database not found. Running schema push..."
-  npm run db:push
 else
   npm run db:migrate || echo "[Entrypoint] Migrations failed or none available; continuing."
 fi

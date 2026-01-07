@@ -59,7 +59,8 @@ async function main() {
 				existsSync(path.join(modulePath, 'drizzle.config.js'))
 			) {
 				console.log(`[${moduleId}] Syncing database...`);
-				tasks.push(runCommand('npm', ['run', 'db:push'], modulePath, `${moduleId}:db`));
+				tasks.push(runCommand('npm', ['run', 'db:generate'], modulePath, `${moduleId}:db`));
+				tasks.push(runCommand('npm', ['run', 'db:migrate'], modulePath, `${moduleId}:db`));
 			}
 
 			// 2. Dev Server (if standalone dev is supported)

@@ -65,7 +65,7 @@ Quick overview:
 2. **Create file**: `schema/your-module/tables.ts` with table definitions
 3. **Add exports**: Include both modern and legacy exports
 4. **Register**: Add export to `schema/index.ts`
-5. **Migrate**: Run `npm run db:push`
+5. **Migrate**: Run `npm run db:generate` and `npm run db:migrate`
 
 Example:
 
@@ -137,7 +137,8 @@ After making changes:
 npm run build
 
 # Run database migration (if schema changed)
-npm run db:push
+npm run db:generate
+npm run db:migrate
 
 # View schema in browser (if using studio)
 npm run db:studio
