@@ -183,7 +183,8 @@ const records = await db.select().from(yourModuleTable);
 ### 5. Run Database Migration
 
 ```bash
-npm run db:push  # or: bunx drizzle-kit push
+npm run db:generate
+npm run db:migrate
 ```
 
 ## Naming Guidelines
@@ -262,7 +263,7 @@ Before deploying a new module schema:
 - [ ] Relations are properly defined
 - [ ] Comments document table purpose
 - [ ] Exported from `schema/index.ts`
-- [ ] Database migration runs successfully (`npm run db:push`)
+- [ ] Database migration runs successfully (`npm run db:generate;npm run db:migrate`)
 
 ## Related Documentation
 
