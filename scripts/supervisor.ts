@@ -19,7 +19,7 @@ async function start() {
 	while (true) {
 		// 0. Sync/Cleanup modules before build
 		console.log('\n[Supervisor] Phase 0: Synchronizing modules...');
-		const syncCode = await runCommand('npm', ['run', 'modules:sync']);
+		const syncCode = await runCommand('npm', ['run', 'module:sync']);
 
 		if (syncCode !== 0) {
 			console.error(`[Supervisor] Module sync failed with code ${syncCode}. Exiting.`);

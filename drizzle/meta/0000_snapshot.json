@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "12ea528f-61d2-4ae9-938c-bc3e7d15f9df",
+  "id": "4081b3f8-3546-4173-8771-d78274eb16e9",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "account": {
@@ -927,7 +927,7 @@
           "name": "importance",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false,
           "default": 1
         },
@@ -944,12 +944,25 @@
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(cast(unixepoch('subsecond') * 1000 as integer))"
+          "autoincrement": false
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "ai_memories_user_id_user_id_fk": {
+          "name": "ai_memories_user_id_user_id_fk",
+          "tableFrom": "ai_memories",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}
@@ -992,6 +1005,13 @@
           "notNull": true,
           "autoincrement": false
         },
+        "context_metadata": {
+          "name": "context_metadata",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "tool_call_id": {
           "name": "tool_call_id",
           "type": "text",
@@ -1020,13 +1040,6 @@
           "notNull": false,
           "autoincrement": false
         },
-        "context_metadata": {
-          "name": "context_metadata",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
         "created_at": {
           "name": "created_at",
           "type": "integer",
@@ -1038,6 +1051,19 @@
       },
       "indexes": {},
       "foreignKeys": {
+        "ai_messages_user_id_user_id_fk": {
+          "name": "ai_messages_user_id_user_id_fk",
+          "tableFrom": "ai_messages",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
         "ai_messages_session_id_ai_sessions_id_fk": {
           "name": "ai_messages_session_id_ai_sessions_id_fk",
           "tableFrom": "ai_messages",
@@ -1078,8 +1104,7 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "'New Chat'"
+          "autoincrement": false
         },
         "created_at": {
           "name": "created_at",
@@ -1094,12 +1119,25 @@
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(cast(unixepoch('subsecond') * 1000 as integer))"
+          "autoincrement": false
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "ai_sessions_user_id_user_id_fk": {
+          "name": "ai_sessions_user_id_user_id_fk",
+          "tableFrom": "ai_sessions",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}
@@ -1126,7 +1164,8 @@
           "type": "text CHECK(provider IN ('openai', 'anthropic', 'ollama', 'openrouter'))",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false
+          "autoincrement": false,
+          "default": "'openai'"
         },
         "api_key": {
           "name": "api_key",
@@ -1140,7 +1179,8 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false
+          "autoincrement": false,
+          "default": "'gpt-4o'"
         },
         "system_prompt": {
           "name": "system_prompt",
@@ -1158,14 +1198,14 @@
         },
         "temperature": {
           "name": "temperature",
-          "type": "integer",
+          "type": "real",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
         "top_p": {
           "name": "top_p",
-          "type": "integer",
+          "type": "real",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -1190,12 +1230,25 @@
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "(cast(unixepoch('subsecond') * 1000 as integer))"
+          "autoincrement": false
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "ai_settings_user_id_user_id_fk": {
+          "name": "ai_settings_user_id_user_id_fk",
+          "tableFrom": "ai_settings",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}

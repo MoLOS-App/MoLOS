@@ -136,9 +136,10 @@ CREATE TABLE `ai_memories` (
 	`id` text PRIMARY KEY NOT NULL,
 	`user_id` text NOT NULL,
 	`content` text NOT NULL,
-	`importance` integer DEFAULT 1,
+	`importance` integer DEFAULT 1 NOT NULL,
 	`created_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
-	`updated_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL
+	`updated_at` integer NOT NULL,
+	FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
 CREATE TABLE `ai_messages` (
@@ -147,34 +148,37 @@ CREATE TABLE `ai_messages` (
 	`session_id` text NOT NULL,
 	`role` text CHECK(role IN ('user', 'assistant', 'system', 'tool')) NOT NULL,
 	`content` text NOT NULL,
+	`context_metadata` text,
 	`tool_call_id` text,
 	`tool_calls` text,
 	`attachments` text,
 	`parts` text,
-	`context_metadata` text,
 	`created_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
+	FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade,
 	FOREIGN KEY (`session_id`) REFERENCES `ai_sessions`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
 CREATE TABLE `ai_sessions` (
 	`id` text PRIMARY KEY NOT NULL,
 	`user_id` text NOT NULL,
-	`title` text DEFAULT 'New Chat' NOT NULL,
+	`title` text NOT NULL,
 	`created_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
-	`updated_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL
+	`updated_at` integer NOT NULL,
+	FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
 CREATE TABLE `ai_settings` (
 	`id` text PRIMARY KEY NOT NULL,
 	`user_id` text NOT NULL,
-	`provider` text CHECK(provider IN ('openai', 'anthropic', 'ollama', 'openrouter')) NOT NULL,
+	`provider` text CHECK(provider IN ('openai', 'anthropic', 'ollama', 'openrouter')) DEFAULT 'openai' NOT NULL,
 	`api_key` text,
-	`model_name` text NOT NULL,
+	`model_name` text DEFAULT 'gpt-4o' NOT NULL,
 	`system_prompt` text,
 	`base_url` text,
-	`temperature` integer,
-	`top_p` integer,
+	`temperature` real,
+	`top_p` real,
 	`max_tokens` integer,
 	`created_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
-	`updated_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL
+	`updated_at` integer NOT NULL,
+	FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade
 );

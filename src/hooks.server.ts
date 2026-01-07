@@ -46,7 +46,8 @@ async function setupDatabase() {
 	if (!dbExists) {
 		console.log('Database does not exist, running drizzle-kit push...');
 		try {
-			execSync('npm run db:push', { stdio: 'inherit' });
+			execSync('npm run db:generate', { stdio: 'inherit' });
+			execSync('npm run db:migrate', { stdio: 'inherit' });
 			console.log('Database schema pushed successfully');
 		} catch (error) {
 			console.error('Failed to push database schema:', error);
