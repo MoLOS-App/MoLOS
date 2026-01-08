@@ -9,41 +9,36 @@
 <div class="flex-1 space-y-5 overflow-y-auto p-4">
 	<div class="space-y-2">
 		<Button
-			variant="outline"
-			class="group mb-5 w-full justify-start gap-3 rounded-[24px] border-dashed bg-gradient-to-br from-muted/40 to-background py-6 transition-all duration-300 hover:bg-muted/50 hover:shadow-[0_18px_50px_rgba(15,23,42,0.1)]"
+			variant="secondary"
+			class="group mb-5 w-full gap-3 border-none transition-all duration-200 hover:bg-primary hover:text-primary-foreground"
 			onclick={onNewChat}
 		>
-			<div
-				class="rounded-2xl bg-background p-2 shadow-sm transition-transform group-hover:scale-110"
-			>
-				<Plus class="h-4 w-4 text-primary" />
+			<div class="rounded-xl p-2">
+				<Plus class="h-4 w-4" />
 			</div>
 			<div class="flex flex-col items-start">
 				<span class="text-sm font-semibold">New conversation</span>
-				<span class="text-muted-foreground text-[11px]">Start a focused session</span>
 			</div>
 		</Button>
 
 		<div class="mb-2 px-2">
-			<h3 class="text-muted-foreground/60 text-[10px] font-bold uppercase tracking-[0.3em]">
-				Recent Chats
-			</h3>
+			<h3 class="text-xs font-semibold text-muted-foreground/70">Recent chats</h3>
 		</div>
 
 		{#each sessions as session (session.id)}
 			<div class="group relative">
 				<button
-					class="flex w-full items-start gap-3 rounded-2xl border border-transparent bg-background/70 p-3 text-left transition-all duration-200 hover:border-border/50 hover:bg-muted/40 hover:shadow-[0_16px_40px_rgba(15,23,42,0.08)]"
+					class="flex w-full items-start gap-3 rounded-2xl border border-border/40 bg-background/70 p-3 text-left transition-all duration-200 hover:border-border/60 hover:bg-muted/40"
 					onclick={() => onLoadSession(session.id)}
 				>
 					<div class="mt-1 flex-shrink-0">
-						<div class="flex h-8 w-8 items-center justify-center rounded-2xl bg-primary/10">
+						<div class="flex h-8 w-8 items-center justify-center rounded-2xl bg-muted/60 text-primary">
 							<MessageSquare class="h-4 w-4 text-primary" />
 						</div>
 					</div>
 					<div class="min-w-0 flex-1">
 						<h4 class="mb-1 truncate text-sm font-semibold">{session.title}</h4>
-						<p class="text-muted-foreground flex items-center gap-2 text-[10px] uppercase tracking-[0.2em]">
+						<p class="text-muted-foreground flex items-center gap-2 text-xs">
 							<Clock class="h-3 w-3" />
 							{new Date(session.updatedAt).toLocaleDateString()} at {new Date(
 								session.updatedAt

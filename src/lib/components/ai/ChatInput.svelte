@@ -34,7 +34,7 @@
 			e.preventDefault();
 			onSendMessage();
 		}}
-		class="relative flex items-end gap-2 rounded-2xl border border-border/60 bg-background/50 p-2 shadow-sm transition-all focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/20"
+		class="relative flex items-end gap-2 rounded-2xl border border-border/60 bg-muted/30 p-2 transition-all focus-within:border-primary/40 focus-within:ring-1 focus-within:ring-primary/20"
 	>
 		<Button
 			variant="ghost"
@@ -74,7 +74,7 @@
 			<Button
 				type="submit"
 				size="icon"
-				class="h-9 w-9 shrink-0 rounded-xl bg-primary text-primary-foreground shadow-sm transition-transform active:scale-95 disabled:opacity-20"
+				class="h-9 w-9 shrink-0 rounded-xl bg-primary text-primary-foreground transition-transform active:scale-95 disabled:opacity-20"
 				disabled={!input.trim() || !!pendingAction}
 			>
 				<Send class="h-4 w-4" />

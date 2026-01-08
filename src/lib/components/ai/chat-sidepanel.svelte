@@ -1,11 +1,10 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
-	import { slide } from 'svelte/transition';
 	import type { AiMessage, AiAction, AiSession } from '$lib/models/ai';
 	import { toast } from 'svelte-sonner';
 	import { page } from '$app/stores';
 	import { invalidateAll } from '$app/navigation';
-	import { Bot, ChevronRight, Loader2 } from 'lucide-svelte';
+	import { Loader2 } from 'lucide-svelte';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 
 	import ChatHeader from './ChatHeader.svelte';
@@ -307,8 +306,8 @@
 
 {#if isOpen}
 	<aside
-		class="ai-shell flex flex-col border-l border-border/40 bg-background/90 shadow-[0_0_60px_rgba(15,23,42,0.12)] backdrop-blur-2xl transition-all duration-500"
-		style="width: {width}px"
+		class="ai-shell flex flex-col border-l border-border/60 bg-background/95 shadow-sm backdrop-blur transition-all duration-300"
+		style="width: min({width}px, 100vw)"
 	>
 		<!-- Resize Handle -->
 		<button
@@ -322,7 +321,6 @@
 
 		<ChatHeader
 			{view}
-			{isOpen}
 			onBack={() => (view = 'sessions')}
 			onNewChat={startNewChat}
 			onClose={() => (isOpen = false)}
@@ -391,17 +389,11 @@
 
 <style>
 	.ai-shell {
-		font-family: 'Google Sans', 'Product Sans', 'SF Pro Text', 'Segoe UI', sans-serif;
-		background-image: radial-gradient(
-				circle at top left,
-				rgba(56, 189, 248, 0.08),
-				transparent 45%
-			),
-			radial-gradient(circle at bottom right, rgba(59, 130, 246, 0.08), transparent 55%);
+		background-color: transparent;
 	}
 
 	.ai-scroll {
-		background-image: linear-gradient(120deg, rgba(15, 23, 42, 0.02), transparent 40%);
+		background-color: transparent;
 	}
 
 	.ai-dots {

@@ -2,12 +2,12 @@
 	import { onMount, tick } from 'svelte';
 	import { fade } from 'svelte/transition';
 	import { page } from '$app/stores';
-	import { Button } from '$lib/components/ui/button/index.js';
 	import type { AiAction, AiMessage, AiSession } from '$lib/models/ai';
-	import { Bot, MessageSquare, Loader2, Plus, Menu, ArrowDown } from 'lucide-svelte';
+	import { Bot, Loader2, Menu, ArrowDown } from 'lucide-svelte';
 	import ChatMessage from '$lib/components/ai/ChatMessage.svelte';
 	import ChatInput from '$lib/components/ai/ChatInput.svelte';
 	import ReviewChangesOverlay from '$lib/components/ai/ReviewChangesOverlay.svelte';
+	import ChatSidebar from '$lib/components/ai/ChatSidebar.svelte';
 
 	let { userName } = $props<{ userName?: string }>();
 
@@ -171,110 +171,92 @@
 	});
 </script>
 
-<div class="ai-page flex h-[calc(100vh-56px)] flex-col overflow-hidden bg-background">
-	<div
-		class="ai-shell mx-auto flex h-full w-full max-w-6xl flex-col overflow-hidden p-3 sm:p-6"
-		in:fade={{ duration: 500 }}
-	>
-		<div class="ai-layout flex h-full gap-4 overflow-hidden lg:gap-6">
+<div class="ai-page flex h-full flex-col overflow-hidden">
+	<div class="ai-shell flex h-full w-full flex-col overflow-hidden" in:fade={{ duration: 500 }}>
+		<div class="ai-layout flex h-full min-h-0 overflow-hidden max-h-screen pb-26 md:pb-8 ">
 			<!-- Mobile Sidebar Overlay -->
 			{#if isSidebarOpen}
 				<button
-					class="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden"
+					class="fixed inset-0 z-40 bg-background/70 backdrop-blur-sm md:hidden"
 					onclick={() => (isSidebarOpen = false)}
 					aria-label="Close sidebar"
 				></button>
 			{/if}
 
 			<aside
-				class="ai-sidebar fixed inset-y-0 left-0 z-50 flex w-[280px] flex-col gap-4 border-r border-border/40 bg-background p-4 transition-transform duration-300 lg:static lg:z-0 lg:flex lg:w-[260px] lg:rounded-2xl lg:border lg:bg-background/70 lg:shadow-sm lg:backdrop-blur {isSidebarOpen
+				class="ai-sidebar fixed inset-y-0 left-0 z-50 flex w-80 flex-col border-r border-border/30 bg-background shadow-lg transition-transform duration-300 md:static md:z-0 md:flex md:rounded-2xl md:border md:shadow-sm {isSidebarOpen
 					? 'translate-x-0'
-					: '-translate-x-full lg:translate-x-0'}"
+					: '-translate-x-full md:translate-x-0'}"
 			>
-				<div class="flex items-center justify-between">
-					<h2 class="text-[11px] font-bold uppercase tracking-[0.3em] text-muted-foreground">
-						Conversations
-					</h2>
-					<div class="flex items-center gap-2">
-						<Button
-							variant="ghost"
-							size="icon"
-							class="h-8 w-8 rounded-xl border border-border/40 bg-background/70 hover:bg-muted"
-							onclick={startNewChat}
-						>
-							<Plus class="h-4 w-4" />
-						</Button>
-					</div>
-				</div>
-				<div class="flex flex-1 flex-col gap-3 overflow-y-auto pr-1">
-					{#if sessions.length === 0}
-						<div
-							class="rounded-2xl border border-dashed border-border/40 bg-muted/10 px-4 py-6 text-center"
-						>
-							<MessageSquare class="mx-auto mb-3 h-5 w-5 text-muted-foreground/50" />
-							<p class="text-xs font-semibold text-muted-foreground">No chats yet</p>
-							<p class="text-[10px] text-muted-foreground/60">Start one to see it here.</p>
-						</div>
-					{:else}
-						{#each sessions as session (session.id)}
-							<button
-								class="w-full rounded-2xl border border-transparent bg-background/60 px-3 py-3 text-left text-xs font-semibold transition-all hover:border-border/60 hover:bg-muted/40 {currentSessionId ===
-								session.id
-									? 'border-primary/40 bg-primary/10'
-									: ''}"
-								onclick={() => {
-									loadMessages(session.id);
-									isSidebarOpen = false;
-								}}
-							>
-								<div class="truncate text-sm font-semibold">{session.title}</div>
-								<div
-									class="text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground/60"
-								>
-									{new Date(session.updatedAt).toLocaleDateString()}
-								</div>
-							</button>
-						{/each}
-					{/if}
-				</div>
+				<ChatSidebar
+					{sessions}
+					{currentSessionId}
+					onNewChat={startNewChat}
+					onLoadSession={loadMessages}
+					onCloseSidebar={() => (isSidebarOpen = false)}
+				/>
 			</aside>
 
 			<section
-				class="relative flex flex-1 flex-col overflow-hidden rounded-2xl border border-border/50 bg-background/80 shadow-sm backdrop-blur"
+				class="relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border/40 bg-background"
+				role="main"
 			>
+				<header
+					class="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-border/40 bg-background/95 px-4 py-3 backdrop-blur md:px-6"
+				>
+					<div class="flex items-center gap-3">
+						<button
+							class="md:hidden flex h-9 w-9 items-center justify-center rounded-full border border-border/50 bg-background text-foreground shadow-sm transition hover:bg-muted"
+							onclick={() => (isSidebarOpen = !isSidebarOpen)}
+							aria-label="Toggle sidebar"
+							aria-expanded={isSidebarOpen}
+						>
+							<Menu class="h-4 w-4" />
+						</button>
+						<div class="flex items-center gap-2 text-sm font-semibold">
+							<Bot class="h-5 w-5 text-muted-foreground" />
+							<span>ChatGPT</span>
+						</div>
+					</div>
+					<div class="text-xs text-muted-foreground hidden sm:block">
+						{currentSessionId ? 'Chat in progress' : 'New chat'}
+					</div>
+				</header>
+
 				<div
-					class="flex-1 overflow-y-auto scroll-smooth p-4"
+					class="flex-1 overflow-y-auto scroll-smooth px-4 py-6 md:px-6 md:py-8"
 					bind:this={scrollViewport}
 					onscroll={handleScroll}
 					role="log"
 					aria-live="polite"
 					aria-label="Chat messages"
 				>
-					<div class="mx-auto max-w-3xl space-y-8">
+					<div class="mx-auto max-w-3xl space-y-6 md:space-y-8 min-w-0">
 						{#if messages.length === 0}
-							<div
-								class="flex min-h-[40vh] flex-col items-center justify-center gap-5 text-center mx-auto"
-							>
-								<div class="rounded-2xl bg-primary/10 p-3 text-primary shadow-sm">
-									<Bot class="h-6 w-6" />
+							<div class="flex min-h-[50vh] flex-col items-center justify-center gap-6 text-center">
+								<div class="rounded-full border border-border/40 bg-muted/30 p-4">
+									<Bot class="h-8 w-8 text-muted-foreground" />
 								</div>
 								<div class="space-y-2">
-									<p class="text-base font-semibold">Ask anything</p>
-									<p class="text-xs text-muted-foreground">
-										Summarize tasks, plan a week, or get a quick status update.
+									<p class="text-xl font-semibold">
+										{greeting}{userName ? `, ${userName}` : ''}
+									</p>
+									<p class="text-sm text-muted-foreground max-w-md">
+										Ask a question, generate content, or explore ideas. Here are a few
+										starting points.
 									</p>
 								</div>
-								<div class="grid w-full gap-3 text-left text-xs text-muted-foreground sm:grid-cols-2">
-									<div class="rounded-xl border border-border/40 bg-muted/20 px-3 py-3">
+								<div class="grid w-full max-w-2xl gap-3 text-left text-sm text-muted-foreground grid-cols-1 md:grid-cols-2">
+									<div class="rounded-xl border border-border/40 bg-muted/20 px-4 py-4">
 										"Plan my week around deep work and workouts."
 									</div>
-									<div class="rounded-xl border border-border/40 bg-muted/20 px-3 py-3">
+									<div class="rounded-xl border border-border/40 bg-muted/20 px-4 py-4">
 										"Summarize my tasks and deadlines."
 									</div>
-									<div class="rounded-xl border border-border/40 bg-muted/20 px-3 py-3">
+									<div class="rounded-xl border border-border/40 bg-muted/20 px-4 py-4">
 										"Draft a status update for leadership."
 									</div>
-									<div class="rounded-xl border border-border/40 bg-muted/20 px-3 py-3">
+									<div class="rounded-xl border border-border/40 bg-muted/20 px-4 py-4">
 										"Turn meeting notes into action items."
 									</div>
 								</div>
@@ -286,10 +268,8 @@
 								{/each}
 								{#if isLoading}
 									<div class="flex items-start" in:fade>
-										<div
-											class="flex items-center gap-2 rounded-2xl border border-border/40 bg-muted/30 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.1em] text-muted-foreground"
-										>
-											<Loader2 class="h-3.5 w-3.5 animate-spin" />
+										<div class="flex items-center gap-3 rounded-2xl border border-border/40 bg-muted/30 px-4 py-3 text-sm font-bold uppercase tracking-wide text-muted-foreground">
+											<Loader2 class="h-4 w-4 animate-spin" />
 											Thinking
 											<span class="ai-dots">
 												<span></span>
@@ -306,19 +286,18 @@
 
 				{#if showScrollButton}
 					<button
-						class="absolute right-8 bottom-32 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-border/50 bg-background/80 text-foreground shadow-lg backdrop-blur-md transition-all hover:bg-muted active:scale-90"
+						class="absolute right-4 md:right-6 bottom-36 z-20 flex h-11 w-11 items-center justify-center rounded-full border border-border/50 bg-background/90 text-foreground shadow-lg backdrop-blur transition-all hover:bg-muted active:scale-95 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
 						onclick={scrollToBottom}
 						transition:fade
+						aria-label="Scroll to bottom"
 					>
 						<ArrowDown class="h-5 w-5" />
 					</button>
 				{/if}
 
-				<div
-					class="sticky bottom-0 z-10 flex flex-col border-t border-border/40 bg-background/95 backdrop-blur-md"
-				>
+				<div class="sticky bottom-0 z-10 flex flex-col border-t border-border/40 bg-background/95 backdrop-blur">
 					<ReviewChangesOverlay {pendingAction} {actionTimer} onCancelAction={cancelAction} />
-					<div class="p-4">
+					<div class="px-4 pb-5 pt-4 md:px-6">
 						<ChatInput
 							bind:input
 							{isLoading}
@@ -327,6 +306,9 @@
 							onInput={(value: string) => (input = value)}
 							onKeydown={handleKeydown}
 						/>
+						<p class="mt-3 text-center text-xs text-muted-foreground">
+							ChatGPT can make mistakes. Consider checking important information.
+						</p>
 					</div>
 				</div>
 			</section>
