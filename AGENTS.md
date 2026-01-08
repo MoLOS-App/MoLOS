@@ -18,9 +18,9 @@
 - `npm run lint` runs Prettier in check mode; `npm run eslint` runs ESLint.
 - `npm run format` formats the repo with Prettier.
 - `npm run test` runs unit tests once; `npm run test:unit` runs Vitest in watch mode.
-- `npm run modules:sync` discovers and wires `external_modules/` into the core app.
+- `npm run module:sync` discovers and wires `external_modules/` into the core app.
 - `npm run module:create|validate|test` manage module scaffolding and checks.
-- `npm run db:push|migrate|generate|reset|studio` manage Drizzle schemas and migrations.
+- `npm run db:migrate|generate|reset|studio` manage Drizzle schemas and migrations.
 
 ## Coding Style & Naming Conventions
 
