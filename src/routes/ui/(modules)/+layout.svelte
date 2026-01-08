@@ -637,7 +637,7 @@
 							</aside>
 						</div>
 						<div class="flex justify-center flex-1 min-w-0 overflow-y-auto">
-							<div class="w-full max-w-6xl min-h-full px-2 pt-2 pb-12 sm:px-4 md:pb-10 lg:px-6">
+							<div class="w-full min-h-full px-2 pt-2 pb-12 sm:px-4 md:pb-10 lg:px-6">
 								{@render children()}
 							</div>
 						</div>
