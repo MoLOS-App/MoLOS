@@ -14,7 +14,7 @@ export const aiConfig: ModuleConfig = {
 	description: 'Conversational workspace for the MoLOS agent',
 	navigation: [
 		{
-			name: 'dashboard',
+			name: 'Dashboard',
 			icon: Bot,
 			href: '/ui/ai/dashboard'
 		}
