@@ -77,6 +77,7 @@
 	},
 	"dependencies": {
 		"@radix-ui/react-select": "^2.2.6",
+		"animejs": "^4.2.2",
 		"better-auth": "^1.4.7",
 		"better-sqlite3": "^12.5.0",
 		"blessed": "^0.1.81",

@@ -25,10 +25,7 @@
 	);
 </script>
 
-<section
-	aria-labelledby={labelId}
-	class={cn('flex flex-col', isSidebar ? 'gap-3' : 'gap-2')}
->
+<section aria-labelledby={labelId} class={cn('flex flex-col', isSidebar ? 'gap-3' : 'gap-2')}>
 	{#if title && !isCompact}
 		<h3
 			id={labelId}
@@ -60,8 +57,12 @@
 					title={isCompact ? item.name : undefined}
 					data-submenu-link
 					class={cn(
-						'group flex min-w-0 items-center justify-between text-sm font-medium transition-all duration-200 ease-out outline-none focus-visible:ring-2 focus-visible:ring-primary/30 motion-reduce:transition-none hover:-translate-y-0.5 active:translate-y-0',
-						isSidebar ? (isCompact ? 'h-10 w-10 justify-center rounded-2xl' : 'rounded-2xl px-3 py-2.5') : 'rounded-xl px-3 py-2',
+						'group flex min-w-0 items-center justify-between text-sm font-medium transition-all duration-200 ease-out outline-none hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-primary/30 active:translate-y-0 motion-reduce:transition-none',
+						isSidebar
+							? isCompact
+								? 'h-10 w-10 justify-center rounded-2xl'
+								: 'rounded-2xl px-3 py-2.5'
+							: 'rounded-xl px-3 py-2',
 						isSidebar
 							? isCompact
 								? isActive
@@ -76,9 +77,9 @@
 					)}
 					onclick={() => onSelect?.()}
 				>
-					<span class="flex items-center min-w-0 gap-2">
+					<span class="flex min-w-0 items-center gap-2">
 						<item.icon
-							class="w-4 h-4 shrink-0 opacity-80 transition-transform duration-200 group-hover:scale-110"
+							class="h-4 w-4 shrink-0 opacity-80 transition-transform duration-200 group-hover:scale-110"
 						/>
 						{#if !isCompact}
 							<span class="truncate">{item.name}</span>
@@ -91,8 +92,8 @@
 								isSidebar
 									? isActive
 										? 'bg-foreground text-background'
-										: 'bg-muted/80 text-muted-foreground'
-									: 'bg-muted text-muted-foreground'
+										: 'text-muted-foreground bg-muted/80'
+									: 'text-muted-foreground bg-muted'
 							)}
 						>
 							{item.badge}
@@ -113,8 +114,8 @@
 						item.disabled && 'cursor-not-allowed'
 					)}
 				>
-					<span class="flex items-center min-w-0 gap-2">
-						<item.icon class="w-4 h-4 opacity-50 shrink-0 transition-transform duration-200" />
+					<span class="flex min-w-0 items-center gap-2">
+						<item.icon class="h-4 w-4 shrink-0 opacity-50 transition-transform duration-200" />
 						{#if !isCompact}
 							<span class="truncate">{item.name}</span>
 						{/if}
