@@ -95,21 +95,21 @@
 	});
 </script>
 
-<div class="flex w-screen h-screen bg-background text-foreground">
+<div class="flex h-screen w-screen bg-background text-foreground">
 	<Tooltip.Provider>
 		<!-- Left Sidebar: Module Access & User Settings -->
 		<aside
-			class="fixed top-0 bottom-0 left-0 z-50 flex-col items-center hidden w-20 py-6 border-r border-border/60 bg-background/90 backdrop-blur md:flex"
+			class="fixed top-0 bottom-0 left-0 z-50 hidden w-20 flex-col items-center border-r border-border/60 bg-background/90 py-6 backdrop-blur md:flex"
 		>
 			<!-- Module Icons -->
-			<div class="flex flex-col gap-4 mb-auto">
+			<div class="mb-auto flex flex-col gap-4">
 				{#each modules as module}
 					<Tooltip.Root>
 						<Tooltip.Trigger
 							type="button"
 							aria-label={module.name}
 							aria-current={path.startsWith(module.href) ? 'page' : undefined}
-							class={`flex h-12 w-12 cursor-pointer items-center justify-center rounded-xl transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 ${
+							class={`flex h-12 w-12 cursor-pointer items-center justify-center rounded-xl transition-all duration-200 focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:outline-none ${
 								path.startsWith(module.href)
 									? 'bg-primary text-primary-foreground shadow-md ring-2 ring-primary/20'
 									: 'text-muted-foreground hover:text-accent-foreground hover:bg-accent/10 hover:ring-1 hover:ring-accent/10'
@@ -118,10 +118,12 @@
 						>
 							{#if module.icon}
 								<module.icon
-									class="w-6 h-6 transition-transform duration-200 group-hover:scale-110"
+									class="h-6 w-6 transition-transform duration-200 group-hover:scale-110"
 								/>
 							{:else}
-							<LayoutGrid class="w-6 h-6 transition-transform duration-200 group-hover:scale-110" />
+								<LayoutGrid
+									class="h-6 w-6 transition-transform duration-200 group-hover:scale-110"
+								/>
 							{/if}
 						</Tooltip.Trigger>
 						<Tooltip.Content side="right" class="ml-2">
@@ -132,17 +134,17 @@
 			</div>
 
 			<!-- Settings & User at Bottom -->
-			<div class="flex flex-col gap-3 mt-auto">
+			<div class="mt-auto flex flex-col gap-3">
 				<!-- Settings -->
 				<Tooltip.Root>
 					<Tooltip.Trigger>
 						<Button
 							variant="ghost"
 							size="icon"
-							class="w-10 h-10 text-muted-foreground hover:bg-muted"
+							class="text-muted-foreground h-10 w-10 hover:bg-muted"
 							onclick={() => goto('/ui/settings')}
 						>
-							<Settings class="w-5 h-5" />
+							<Settings class="h-5 w-5" />
 						</Button>
 					</Tooltip.Trigger>
 					<Tooltip.Content side="right">Settings</Tooltip.Content>
@@ -154,7 +156,7 @@
 						<Button
 							variant="ghost"
 							size="icon"
-							class="w-10 h-10 text-muted-foreground hover:bg-muted"
+							class="text-muted-foreground h-10 w-10 hover:bg-muted"
 							onclick={async () => {
 								await authClient.signOut({
 									fetchOptions: {
@@ -165,7 +167,7 @@
 								});
 							}}
 						>
-							<LogOut class="w-5 h-5" />
+							<LogOut class="h-5 w-5" />
 						</Button>
 					</Tooltip.Trigger>
 					<Tooltip.Content side="right">Logout</Tooltip.Content>
@@ -178,11 +180,11 @@
 							<Button
 								variant="ghost"
 								size="icon"
-								class="w-10 h-10 text-muted-foreground hover:bg-muted"
+								class="text-muted-foreground h-10 w-10 hover:bg-muted"
 								aria-label="AI Assistant"
 								onclick={() => (isAiOpen = !isAiOpen)}
 							>
-								<Bot class="w-5 h-5" />
+								<Bot class="h-5 w-5" />
 							</Button>
 						</Tooltip.Trigger>
 						<Tooltip.Content side="right">AI Assistant</Tooltip.Content>
@@ -192,13 +194,13 @@
 		</aside>
 
 		<!-- Main Content Area -->
-		<div class="flex flex-col flex-1 min-w-0 md:ml-20">
+		<div class="flex min-w-0 flex-1 flex-col md:ml-20">
 			<!-- Mobile Bottom Navigation -->
 			<div class="fixed inset-x-0 bottom-0 z-40 md:hidden">
 				<div class="mx-auto w-[min(100%-1.5rem,28rem)] pb-4">
 					<nav
 						aria-label="Primary"
-						class="flex items-center justify-between gap-1 px-3 py-2 border rounded-full shadow-xl border-border/60 bg-background/95 backdrop-blur"
+						class="flex items-center justify-between gap-1 rounded-full border border-border/60 bg-background/95 px-3 py-2 shadow-xl backdrop-blur"
 					>
 						<button
 							type="button"
@@ -207,22 +209,22 @@
 							onclick={() => goto('/ui/dashboard')}
 							class={`flex min-w-0 flex-1 items-center justify-center rounded-2xl px-2 py-2 text-[10px] font-semibold transition-colors ${path.startsWith('/ui/dashboard') ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
 						>
-							<Home class="w-5 h-5" />
+							<Home class="h-5 w-5" />
 						</button>
 
 						<AppNavDrawer
-							modules={modules}
-							currentModule={currentModule}
+							{modules}
+							{currentModule}
 							sections={submenuSections}
 							currentPath={path}
 							triggerLabel="Open sections"
 							triggerClass={`flex min-w-0 w-full h-auto flex-1 items-center justify-center rounded-2xl px-2 py-2 text-[10px] font-semibold transition-colors border-transparent bg-transparent shadow-none ${hasSubmenu ? 'text-muted-foreground hover:text-foreground' : 'text-muted-foreground/60'}`}
 						>
 							<svelte:fragment slot="trigger">
-								<Compass class="w-5 h-5" />
+								<Compass class="h-5 w-5" />
 							</svelte:fragment>
 							<svelte:fragment slot="footer" let:close>
-								<div class="pt-4 mt-6 border-t border-border/60">
+								<div class="mt-6 border-t border-border/60 pt-4">
 									<div class="grid grid-cols-2 gap-2">
 										<button
 											type="button"
@@ -231,9 +233,9 @@
 												close();
 												goto('/ui/settings');
 											}}
-											class="flex items-center justify-center gap-2 text-sm font-medium transition-colors border h-11 rounded-xl border-border/60 text-muted-foreground hover:text-foreground"
+											class="text-muted-foreground flex h-11 items-center justify-center gap-2 rounded-xl border border-border/60 text-sm font-medium transition-colors hover:text-foreground"
 										>
-											<Settings class="w-4 h-4" />
+											<Settings class="h-4 w-4" />
 											<span>Settings</span>
 										</button>
 										<button
@@ -249,9 +251,9 @@
 													}
 												});
 											}}
-											class="flex items-center justify-center gap-2 text-sm font-medium transition-colors border h-11 rounded-xl border-border/60 text-muted-foreground hover:text-foreground"
+											class="text-muted-foreground flex h-11 items-center justify-center gap-2 rounded-xl border border-border/60 text-sm font-medium transition-colors hover:text-foreground"
 										>
-											<LogOut class="w-4 h-4" />
+											<LogOut class="h-4 w-4" />
 											<span>Logout</span>
 										</button>
 									</div>
@@ -263,9 +265,9 @@
 												close();
 												isAiOpen = !isAiOpen;
 											}}
-											class="flex items-center justify-center w-full gap-2 mt-3 text-sm font-semibold transition-colors h-11 rounded-xl bg-primary text-primary-foreground"
+											class="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-primary-foreground transition-colors"
 										>
-											<Bot class="w-4 h-4" />
+											<Bot class="h-4 w-4" />
 											<span>AI Assistant</span>
 										</button>
 									{/if}
@@ -280,16 +282,16 @@
 							onclick={() => goto('/ui/ai')}
 							class={`flex min-w-0 flex-1 items-center justify-center rounded-2xl px-2 py-2 text-[10px] font-semibold transition-colors ${path.startsWith('/ui/ai') ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
 						>
-							<Sparkles class="w-5 h-5" />
+							<Sparkles class="h-5 w-5" />
 						</button>
 
 						<button
 							type="button"
 							aria-label="Notifications"
 							onclick={() => goto('/ui/dashboard#notifications')}
-							class="flex min-w-0 flex-1 items-center justify-center rounded-2xl px-2 py-2 text-[10px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
+							class="text-muted-foreground flex min-w-0 flex-1 items-center justify-center rounded-2xl px-2 py-2 text-[10px] font-semibold transition-colors hover:text-foreground"
 						>
-							<Bell class="w-5 h-5" />
+							<Bell class="h-5 w-5" />
 						</button>
 
 						<button
@@ -299,52 +301,47 @@
 							onclick={() => goto('/ui/settings')}
 							class={`flex min-w-0 flex-1 items-center justify-center rounded-2xl px-2 py-2 text-[10px] font-semibold transition-colors ${path.startsWith('/ui/settings') ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
 						>
-							<Settings class="w-5 h-5" />
+							<Settings class="h-5 w-5" />
 						</button>
 					</nav>
 				</div>
 			</div>
 
 			<!-- Content -->
-			<div class="flex flex-1 min-w-0 overflow-hidden">
+			<div class="flex min-w-0 flex-1 overflow-hidden">
 				{#if hasSubmenu && !isMobileViewport}
-					<div class="flex flex-1 min-w-0">
-						<aside class="w-64 px-5 py-6 border-r shrink-0 border-border/60 lg:w-72">
+					<div class="flex min-w-0 flex-1">
+						<aside class="w-64 shrink-0 border-r border-border/60 px-5 py-6 lg:w-72">
 							<nav aria-label="Submenu sections" class="flex flex-col gap-6">
 								{#each submenuSections as section}
-									<SubmenuSection
-										title={section.label}
-										items={section.items}
-										currentPath={path}
-									/>
+									<SubmenuSection title={section.label} items={section.items} currentPath={path} />
 								{/each}
 								{#if submenuSections.length === 0}
-									<div class="px-3 py-4 text-sm border border-dashed rounded-xl border-border/70 text-muted-foreground">
+									<div
+										class="text-muted-foreground rounded-xl border border-dashed border-border/70 px-3 py-4 text-sm"
+									>
 										No sections yet.
 									</div>
 								{/if}
 							</nav>
 						</aside>
-						<div
-							class="flex justify-center flex-1 min-w-0 overflow-y-auto"
-						>
-							<div class="w-full max-w-6xl min-h-full px-4 pt-6 pb-12 md:pb-10 sm:px-6 lg:px-8">
+						<div class="flex min-w-0 flex-1 justify-center overflow-y-auto">
+							<div class="min-h-full w-full max-w-6xl px-4 pt-6 pb-12 sm:px-6 md:pb-10 lg:px-8">
 								{@render children()}
 							</div>
 						</div>
 					</div>
 				{:else}
-					<div
-						class="flex justify-center w-full overflow-y-auto"
-					>
-						<div class="w-full max-w-6xl min-h-full px-4 pt-6 pb-16 overflow-y-auto bg-transparent md:pb-10 sm:px-6 lg:px-8">
+					<div class="flex w-full justify-center overflow-y-auto">
+						<div
+							class="min-h-full w-full max-w-6xl overflow-y-auto bg-transparent px-4 pt-6 pb-16 sm:px-6 md:pb-10 lg:px-8"
+						>
 							{@render children()}
 						</div>
 					</div>
 				{/if}
 			</div>
 		</div>
-
 	</Tooltip.Provider>
 
 	<ChatSidepanel bind:isOpen={isAiOpen} />
@@ -370,7 +367,7 @@
 				<Button
 					type="submit"
 					size="lg"
-					class="px-6 border-none rounded-full shadow-2xl h-14 animate-bounce bg-primary text-primary-foreground hover:animate-none hover:bg-accent/90"
+					class="h-14 animate-bounce rounded-full border-none bg-primary px-6 text-primary-foreground shadow-2xl hover:animate-none hover:bg-accent/90"
 					disabled={isRestarting}
 				>
 					<RefreshCw class="mr-2 h-5 w-5 {isRestarting ? 'animate-spin' : ''}" />

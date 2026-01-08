@@ -285,9 +285,7 @@
 			</div>
 
 			{#if hasPendingModules}
-				<div
-					class="flex items-center justify-between rounded-lg border bg-accent p-4"
-				>
+				<div class="flex items-center justify-between rounded-lg border bg-accent p-4">
 					<div class="flex items-center gap-3">
 						<RefreshCw class="h-5 w-5 animate-spin" />
 						<div>

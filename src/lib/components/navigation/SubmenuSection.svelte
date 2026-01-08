@@ -19,7 +19,10 @@
 
 <section aria-labelledby={labelId} class="flex flex-col gap-2">
 	{#if title}
-		<h3 id={labelId} class="px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+		<h3
+			id={labelId}
+			class="text-muted-foreground px-2 text-xs font-semibold tracking-wide uppercase"
+		>
 			{title}
 		</h3>
 	{/if}
@@ -32,7 +35,7 @@
 					aria-current={isActive ? 'page' : undefined}
 					data-submenu-link
 					class={cn(
-					'group flex min-w-0 items-center justify-between rounded-xl px-3 py-2 text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary/30 motion-reduce:transition-none',
+						'group flex min-w-0 items-center justify-between rounded-xl px-3 py-2 text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary/30 motion-reduce:transition-none',
 						isActive
 							? 'bg-primary/10 text-primary shadow-sm ring-1 ring-primary/20'
 							: 'text-muted-foreground hover:bg-muted/70 hover:text-foreground'
@@ -44,7 +47,7 @@
 						<span class="truncate">{item.name}</span>
 					</span>
 					{#if item.badge != null}
-						<span class="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+						<span class="text-muted-foreground rounded-full bg-muted px-2 py-0.5 text-xs">
 							{item.badge}
 						</span>
 					{/if}
@@ -53,7 +56,7 @@
 				<span
 					aria-disabled="true"
 					class={cn(
-					'flex min-w-0 items-center justify-between rounded-xl px-3 py-2 text-sm font-medium text-muted-foreground/50 motion-reduce:transition-none',
+						'text-muted-foreground/50 flex min-w-0 items-center justify-between rounded-xl px-3 py-2 text-sm font-medium motion-reduce:transition-none',
 						item.disabled && 'cursor-not-allowed'
 					)}
 				>

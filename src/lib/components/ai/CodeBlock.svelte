@@ -21,10 +21,8 @@
 	class="group relative my-3 overflow-hidden rounded-2xl border border-border/50 bg-background/70 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur-xl"
 >
 	{#if lang}
-		<div
-			class="flex items-center justify-between border-b border-border/50 bg-muted/40 px-3 py-2"
-		>
-			<span class="text-muted-foreground/70 text-[10px] font-bold uppercase tracking-[0.3em]"
+		<div class="flex items-center justify-between border-b border-border/50 bg-muted/40 px-3 py-2">
+			<span class="text-muted-foreground/70 text-[10px] font-bold tracking-[0.3em] uppercase"
 				>{lang}</span
 			>
 			<button
