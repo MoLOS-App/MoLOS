@@ -58,6 +58,6 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 		allExternalIds,
 		hasPendingRestart,
 		publicRegistration: publicRegistration === 'true',
-		userId: locals.user?.id || null
+		userId: locals.user?.id || null,
 	};
 };
