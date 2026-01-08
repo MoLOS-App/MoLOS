@@ -173,7 +173,7 @@ export default defineConfig({
 			]
 		},
 		watch: {
-			followSymlinks: false,
+			followSymlinks: true,
 			ignored: [
 				'**/external_modules/**/svelte.config.js',
 				'**/external_modules/**/.git/**',

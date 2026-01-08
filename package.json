@@ -27,7 +27,6 @@
 		"db:studio": "drizzle-kit studio"
 	},
 	"devDependencies": {
-		"@types/blessed": "^0.1.21",
 		"@eslint/compat": "^1.4.0",
 		"@eslint/js": "^9.39.1",
 		"@internationalized/date": "^3.10.0",
@@ -41,6 +40,7 @@
 		"@tailwindcss/vite": "^4.1.17",
 		"@tanstack/table-core": "^8.21.3",
 		"@types/better-sqlite3": "^7.6.13",
+		"@types/blessed": "^0.1.21",
 		"@types/inquirer": "^9.0.9",
 		"@types/node": "^20",
 		"@vitest/browser-playwright": "^4.0.15",
@@ -76,10 +76,10 @@
 		"vitest-browser-svelte": "^2.0.1"
 	},
 	"dependencies": {
-		"blessed": "^0.1.81",
 		"@radix-ui/react-select": "^2.2.6",
 		"better-auth": "^1.4.7",
 		"better-sqlite3": "^12.5.0",
+		"blessed": "^0.1.81",
 		"class-variance-authority": "^0.7.1",
 		"date-fns": "^4.1.0",
 		"drizzle-kit": "^0.31.8",

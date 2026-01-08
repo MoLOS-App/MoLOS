@@ -31,7 +31,6 @@ vite.config.ts.timestamp-*
 *.db-shm
 *.db-wal
 src/lib/config/modules/MoLOS-sample-module
-src/routes/ui/(modules)/(external_modules)/
 docs/system-prompts-and-models-of-ai-tools/
 docs/ai-chatbot-svelte/
 docs/guides/MoLOS-sample-module/.git
