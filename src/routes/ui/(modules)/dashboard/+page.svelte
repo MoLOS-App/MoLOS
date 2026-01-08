@@ -28,9 +28,9 @@
 	}
 </script>
 
-<div class="flex flex-col items-center min-h-screen p-6 bg-background md:p-8">
+<div class="flex flex-col items-center min-h-screen p-6 pt-0s bg-background pb-24 md:p-8">
 	<!-- Main Content -->
-	<div class="flex flex-col items-center w-full max-w-4xl gap-10 pt-12" in:fade={{ duration: 800 }}>
+	<div class="flex flex-col items-center w-full max-w-4xl gap-10 pt-0 md:pt-12" in:fade={{ duration: 800 }}>
 		<!-- Hero Section -->
 		<div class="space-y-3 text-center">
 			<div
@@ -107,7 +107,7 @@
 
 		<!-- Quick Insights / Notifications -->
 		<div class="grid w-full gap-4 md:grid-cols-2" in:fly={{ y: 20, delay: 600 }}>
-			<Card.Root class="border-none shadow-none rounded-2xl">
+			<Card.Root id="notifications" class="border-none shadow-none rounded-2xl">
 				<Card.Header class="pb-2">
 					<Card.Title class="flex items-center gap-2 font-black tracking-widest uppercase">
 						<Bell class="w-3 h-3 text-primary" />

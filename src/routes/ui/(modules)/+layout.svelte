@@ -1,27 +1,28 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
-	import * as Avatar from '$lib/components/ui/avatar/index.js';
-	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import { Input } from '$lib/components/ui/input/index.js';
 	import {
-		LayoutDashboard,
-		List,
-		User,
 		Settings,
-		Bell,
-		Search,
 		LogOut,
 		RefreshCw,
-		Bot
+		Bot,
+		LayoutGrid,
+		Home,
+		Compass,
+		Sparkles,
+		Bell
 	} from 'lucide-svelte';
 	import { authClient } from '$lib/auth-client';
 	import { getAllModules } from '$lib/config';
 	import { enhance } from '$app/forms';
 	import { toast } from 'svelte-sonner';
 	import ChatSidepanel from '$lib/components/ai/chat-sidepanel.svelte';
+	import AppNavDrawer from '$lib/components/navigation/AppNavDrawer.svelte';
+	import SubmenuSection from '$lib/components/navigation/SubmenuSection.svelte';
+	import { groupSubmenuItems, getActiveSubmenuItem } from '$lib/navigation/submenu';
 
 	let { children, data } = $props();
 
@@ -74,22 +75,41 @@
 			return state ? state.enabled : true;
 		}) || []
 	);
+	let submenuSections = $derived(groupSubmenuItems(filteredNavigation));
+	let activeSubmenuItem = $derived(getActiveSubmenuItem(filteredNavigation, path));
+	let hasSubmenu = $derived(filteredNavigation.length > 0);
 	let isRestarting = $state(false);
 	let isAiOpen = $state(false);
+	let isMobileViewport = $state(false);
+
+	onMount(() => {
+		const mediaQuery = window.matchMedia('(max-width: 767px)');
+		const updateViewport = () => {
+			isMobileViewport = mediaQuery.matches;
+		};
+		updateViewport();
+		mediaQuery.addEventListener('change', updateViewport);
+		return () => {
+			mediaQuery.removeEventListener('change', updateViewport);
+		};
+	});
 </script>
 
-<div class="flex h-screen w-screen bg-background text-foreground">
+<div class="flex w-screen h-screen bg-background text-foreground">
 	<Tooltip.Provider>
 		<!-- Left Sidebar: Module Access & User Settings -->
 		<aside
-			class="fixed top-0 bottom-0 left-0 z-100 flex w-20 flex-col items-center border-r border-border bg-background py-6"
+			class="fixed top-0 bottom-0 left-0 z-50 flex-col items-center hidden w-20 py-6 border-r border-border/60 bg-background/90 backdrop-blur md:flex"
 		>
 			<!-- Module Icons -->
-			<div class="mb-auto flex flex-col gap-4">
+			<div class="flex flex-col gap-4 mb-auto">
 				{#each modules as module}
 					<Tooltip.Root>
 						<Tooltip.Trigger
-							class={`flex h-12 w-12 cursor-pointer items-center justify-center rounded-lg transition-all duration-200 ${
+							type="button"
+							aria-label={module.name}
+							aria-current={path.startsWith(module.href) ? 'page' : undefined}
+							class={`flex h-12 w-12 cursor-pointer items-center justify-center rounded-xl transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 ${
 								path.startsWith(module.href)
 									? 'bg-primary text-primary-foreground shadow-md ring-2 ring-primary/20'
 									: 'text-muted-foreground hover:text-accent-foreground hover:bg-accent/10 hover:ring-1 hover:ring-accent/10'
@@ -98,12 +118,10 @@
 						>
 							{#if module.icon}
 								<module.icon
-									class="h-6 w-6 transition-transform duration-200 group-hover:scale-110"
+									class="w-6 h-6 transition-transform duration-200 group-hover:scale-110"
 								/>
 							{:else}
-								<LayoutGrid
-									class="h-6 w-6 transition-transform duration-200 group-hover:scale-110"
-								/>
+							<LayoutGrid class="w-6 h-6 transition-transform duration-200 group-hover:scale-110" />
 							{/if}
 						</Tooltip.Trigger>
 						<Tooltip.Content side="right" class="ml-2">
@@ -114,17 +132,17 @@
 			</div>
 
 			<!-- Settings & User at Bottom -->
-			<div class="mt-auto flex flex-col gap-3">
+			<div class="flex flex-col gap-3 mt-auto">
 				<!-- Settings -->
 				<Tooltip.Root>
 					<Tooltip.Trigger>
 						<Button
 							variant="ghost"
 							size="icon"
-							class="text-muted-foreground h-10 w-10 hover:bg-muted"
+							class="w-10 h-10 text-muted-foreground hover:bg-muted"
 							onclick={() => goto('/ui/settings')}
 						>
-							<Settings class="h-5 w-5" />
+							<Settings class="w-5 h-5" />
 						</Button>
 					</Tooltip.Trigger>
 					<Tooltip.Content side="right">Settings</Tooltip.Content>
@@ -136,7 +154,7 @@
 						<Button
 							variant="ghost"
 							size="icon"
-							class="text-muted-foreground h-10 w-10 hover:bg-muted"
+							class="w-10 h-10 text-muted-foreground hover:bg-muted"
 							onclick={async () => {
 								await authClient.signOut({
 									fetchOptions: {
@@ -147,82 +165,186 @@
 								});
 							}}
 						>
-							<LogOut class="h-5 w-5" />
+							<LogOut class="w-5 h-5" />
 						</Button>
 					</Tooltip.Trigger>
 					<Tooltip.Content side="right">Logout</Tooltip.Content>
 				</Tooltip.Root>
+
+				<!-- AI Assistant -->
+				{#if !isAiOpen}
+					<Tooltip.Root>
+						<Tooltip.Trigger>
+							<Button
+								variant="ghost"
+								size="icon"
+								class="w-10 h-10 text-muted-foreground hover:bg-muted"
+								aria-label="AI Assistant"
+								onclick={() => (isAiOpen = !isAiOpen)}
+							>
+								<Bot class="w-5 h-5" />
+							</Button>
+						</Tooltip.Trigger>
+						<Tooltip.Content side="right">AI Assistant</Tooltip.Content>
+					</Tooltip.Root>
+				{/if}
 			</div>
 		</aside>
 
 		<!-- Main Content Area -->
-		<div class="ml-20 flex flex-1 flex-col">
-			<!-- Top Navigation Bar -->
-			<nav class="flex h-14 items-center justify-between border-b border-border bg-background px-6">
-				<!-- Left spacer -->
-				<div></div>
-
-				<!-- Search -->
-				<div class="relative w-full max-w-xl">
-					<Search class="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-					<Input
-						placeholder="Search..."
-						class="placeholder:text-muted-foreground h-9 w-full rounded-lg border-0 bg-muted pr-4 pl-10 text-sm"
-					/>
-				</div>
-
-				<!-- AI Chat Button -->
-				<Tooltip.Root>
-					<Tooltip.Trigger>
-						<Button
-							variant="ghost"
-							class="h-10 w-10 rounded-2xl bg-primary text-primary-foreground transition-all duration-300 hover:scale-110 hover:shadow-primary/20 active:scale-95"
-							onclick={() => (isAiOpen = !isAiOpen)}
+		<div class="flex flex-col flex-1 min-w-0 md:ml-20">
+			<!-- Mobile Bottom Navigation -->
+			<div class="fixed inset-x-0 bottom-0 z-40 md:hidden">
+				<div class="mx-auto w-[min(100%-1.5rem,28rem)] pb-4">
+					<nav
+						aria-label="Primary"
+						class="flex items-center justify-between gap-1 px-3 py-2 border rounded-full shadow-xl border-border/60 bg-background/95 backdrop-blur"
+					>
+						<button
+							type="button"
+							aria-label="Home"
+							aria-current={path.startsWith('/ui/dashboard') ? 'page' : undefined}
+							onclick={() => goto('/ui/dashboard')}
+							class={`flex min-w-0 flex-1 items-center justify-center rounded-2xl px-2 py-2 text-[10px] font-semibold transition-colors ${path.startsWith('/ui/dashboard') ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
 						>
-							<Bot class="h-8 w-8" />
-						</Button>
-					</Tooltip.Trigger>
-					<Tooltip.Content side="bottom">AI Assistant</Tooltip.Content>
-				</Tooltip.Root>
-			</nav>
+							<Home class="w-5 h-5" />
+						</button>
 
-			<!-- Content with Module Navigation Bubbles -->
-			<div class="relative flex flex-1 overflow-hidden">
-				<!-- Module Navigation Bubbles (Hidden under Sidebar) -->
-				<div class="w-24">
-					{#if filteredNavigation.length > 0}
-						<div class="fixed top-14 bottom-0 left-15 z-50 mt-2 flex flex-col gap-2">
-							{#each filteredNavigation as item, i (`nav-${i}`)}
-								{@const isActive = item.href && path === item.href}
-								<button
-									onclick={() => item.href && goto(item.href)}
-									disabled={item.disabled}
-									class="group left-0 flex w-12 cursor-pointer items-end justify-end rounded-full px-3 py-2 text-xs font-medium whitespace-nowrap transition-all duration-300 hover:w-32 hover:translate-x-2 hover:bg-accent/90 hover:shadow-sm hover:ring-1 hover:ring-accent/20 active:scale-95 {isActive
-										? 'w-32 bg-primary font-semibold text-primary-foreground shadow-md ring-2 ring-primary/30 hover:bg-primary'
-										: 'text-muted-foreground bg-muted'}"
-									style="top: {i * 48}px"
-								>
-									<span
-										class="transition-opacity duration-300 {isActive
-											? 'w-fit opacity-100'
-											: 'w-0 opacity-0 group-hover:w-fit group-hover:opacity-100'}"
-										>{item.name}</span
-									>
-									<item.icon class="ml-2 h-4 w-4 opacity-100" />
-								</button>
-							{/each}
-						</div>
-					{/if}
-				</div>
+						<AppNavDrawer
+							modules={modules}
+							currentModule={currentModule}
+							sections={submenuSections}
+							currentPath={path}
+							triggerLabel="Open sections"
+							triggerClass={`flex min-w-0 w-full h-auto flex-1 items-center justify-center rounded-2xl px-2 py-2 text-[10px] font-semibold transition-colors border-transparent bg-transparent shadow-none ${hasSubmenu ? 'text-muted-foreground hover:text-foreground' : 'text-muted-foreground/60'}`}
+						>
+							<svelte:fragment slot="trigger">
+								<Compass class="w-5 h-5" />
+							</svelte:fragment>
+							<svelte:fragment slot="footer" let:close>
+								<div class="pt-4 mt-6 border-t border-border/60">
+									<div class="grid grid-cols-2 gap-2">
+										<button
+											type="button"
+											aria-label="Settings"
+											onclick={() => {
+												close();
+												goto('/ui/settings');
+											}}
+											class="flex items-center justify-center gap-2 text-sm font-medium transition-colors border h-11 rounded-xl border-border/60 text-muted-foreground hover:text-foreground"
+										>
+											<Settings class="w-4 h-4" />
+											<span>Settings</span>
+										</button>
+										<button
+											type="button"
+											aria-label="Logout"
+											onclick={async () => {
+												close();
+												await authClient.signOut({
+													fetchOptions: {
+														onSuccess: () => {
+															goto('/ui/login');
+														}
+													}
+												});
+											}}
+											class="flex items-center justify-center gap-2 text-sm font-medium transition-colors border h-11 rounded-xl border-border/60 text-muted-foreground hover:text-foreground"
+										>
+											<LogOut class="w-4 h-4" />
+											<span>Logout</span>
+										</button>
+									</div>
+									{#if !isAiOpen}
+										<button
+											type="button"
+											aria-label="AI Assistant"
+											onclick={() => {
+												close();
+												isAiOpen = !isAiOpen;
+											}}
+											class="flex items-center justify-center w-full gap-2 mt-3 text-sm font-semibold transition-colors h-11 rounded-xl bg-primary text-primary-foreground"
+										>
+											<Bot class="w-4 h-4" />
+											<span>AI Assistant</span>
+										</button>
+									{/if}
+								</div>
+							</svelte:fragment>
+						</AppNavDrawer>
 
-				<!-- Main Content -->
-				<div class="flex w-full justify-center overflow-y-auto">
-					<div class="min-h-full w-full px-8 pt-6">
-						{@render children()}
-					</div>
+						<button
+							type="button"
+							aria-label="AI"
+							aria-current={path.startsWith('/ui/ai') ? 'page' : undefined}
+							onclick={() => goto('/ui/ai')}
+							class={`flex min-w-0 flex-1 items-center justify-center rounded-2xl px-2 py-2 text-[10px] font-semibold transition-colors ${path.startsWith('/ui/ai') ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+						>
+							<Sparkles class="w-5 h-5" />
+						</button>
+
+						<button
+							type="button"
+							aria-label="Notifications"
+							onclick={() => goto('/ui/dashboard#notifications')}
+							class="flex min-w-0 flex-1 items-center justify-center rounded-2xl px-2 py-2 text-[10px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
+						>
+							<Bell class="w-5 h-5" />
+						</button>
+
+						<button
+							type="button"
+							aria-label="Settings"
+							aria-current={path.startsWith('/ui/settings') ? 'page' : undefined}
+							onclick={() => goto('/ui/settings')}
+							class={`flex min-w-0 flex-1 items-center justify-center rounded-2xl px-2 py-2 text-[10px] font-semibold transition-colors ${path.startsWith('/ui/settings') ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+						>
+							<Settings class="w-5 h-5" />
+						</button>
+					</nav>
 				</div>
 			</div>
+
+			<!-- Content -->
+			<div class="flex flex-1 min-w-0 overflow-hidden">
+				{#if hasSubmenu && !isMobileViewport}
+					<div class="flex flex-1 min-w-0">
+						<aside class="w-64 px-5 py-6 border-r shrink-0 border-border/60 lg:w-72">
+							<nav aria-label="Submenu sections" class="flex flex-col gap-6">
+								{#each submenuSections as section}
+									<SubmenuSection
+										title={section.label}
+										items={section.items}
+										currentPath={path}
+									/>
+								{/each}
+								{#if submenuSections.length === 0}
+									<div class="px-3 py-4 text-sm border border-dashed rounded-xl border-border/70 text-muted-foreground">
+										No sections yet.
+									</div>
+								{/if}
+							</nav>
+						</aside>
+						<div
+							class="flex justify-center flex-1 min-w-0 overflow-y-auto"
+						>
+							<div class="w-full max-w-6xl min-h-full px-4 pt-6 pb-12 md:pb-10 sm:px-6 lg:px-8">
+								{@render children()}
+							</div>
+						</div>
+					</div>
+				{:else}
+					<div
+						class="flex justify-center w-full overflow-y-auto"
+					>
+						<div class="w-full max-w-6xl min-h-full px-4 pt-6 pb-16 overflow-y-auto bg-transparent md:pb-10 sm:px-6 lg:px-8">
+							{@render children()}
+						</div>
+					</div>
+				{/if}
+			</div>
 		</div>
+
 	</Tooltip.Provider>
 
 	<ChatSidepanel bind:isOpen={isAiOpen} />
@@ -248,7 +370,7 @@
 				<Button
 					type="submit"
 					size="lg"
-					class="h-14 animate-bounce rounded-full border-none bg-primary px-6 text-primary-foreground shadow-2xl hover:animate-none hover:bg-accent/90"
+					class="px-6 border-none rounded-full shadow-2xl h-14 animate-bounce bg-primary text-primary-foreground hover:animate-none hover:bg-accent/90"
 					disabled={isRestarting}
 				>
 					<RefreshCw class="mr-2 h-5 w-5 {isRestarting ? 'animate-spin' : ''}" />
