@@ -68,40 +68,40 @@
 	}
 </script>
 
-<div class="min-h-screen pb-20 bg-background">
-	<div class="max-w-4xl p-6 mx-auto space-y-8">
+<div class="min-h-screen bg-background pb-20">
+	<div class="mx-auto max-w-4xl space-y-8 p-6">
 		<!-- Header -->
-		<div class="pt-4 space-y-4">
+		<div class="space-y-4 pt-4">
 			<Button
 				variant="ghost"
 				size="sm"
 				onclick={() => goto('/ui/settings')}
 				class="text-muted-foreground -ml-2 h-8 rounded-full px-3 text-[10px] font-bold tracking-widest uppercase hover:text-foreground"
 			>
-				<ArrowLeft class="w-3 h-3 mr-2" />
+				<ArrowLeft class="mr-2 h-3 w-3" />
 				Back to Settings
 			</Button>
 			<div class="space-y-1">
 				<h1 class="text-3xl font-black tracking-tighter">Profile</h1>
-				<p class="text-xs font-bold tracking-widest uppercase text-muted-foreground">
+				<p class="text-muted-foreground text-xs font-bold tracking-widest uppercase">
 					Manage your identity
 				</p>
 			</div>
 		</div>
 
 		<Card class="overflow-hidden border-none shadow-sm">
-			<CardContent class="p-8 space-y-10">
+			<CardContent class="space-y-10 p-8">
 				<!-- Avatar Section -->
 				<div class="flex flex-col items-center gap-4">
-					<div class="relative group">
-						<Avatar.Root class="w-24 h-24 border-4 shadow-sm border-background">
+					<div class="group relative">
+						<Avatar.Root class="h-24 w-24 border-4 border-background shadow-sm">
 							<Avatar.Image src="" alt="Avatar" />
-							<Avatar.Fallback class="text-3xl font-black bg-primary/10 text-primary">
+							<Avatar.Fallback class="bg-primary/10 text-3xl font-black text-primary">
 								{data.user?.name?.[0]?.toUpperCase() || 'U'}
 							</Avatar.Fallback>
 						</Avatar.Root>
 						<button
-							class="absolute bottom-0 right-0 p-2 transition-colors border rounded-full shadow-xs bg-background hover:bg-muted"
+							class="absolute right-0 bottom-0 rounded-full border bg-background p-2 shadow-xs transition-colors hover:bg-muted"
 						>
 							<Camera class="text-muted-foreground h-3.5 w-3.5" />
 						</button>
@@ -136,7 +136,7 @@
 								id="name"
 								name="name"
 								value={data.user?.name}
-								class="px-4 text-sm font-medium border-none shadow-xs h-11 rounded-xl bg-background/50 focus-visible:ring-1"
+								class="h-11 rounded-xl border-none bg-background/50 px-4 text-sm font-medium shadow-xs focus-visible:ring-1"
 								required
 							/>
 						</div>
@@ -152,7 +152,7 @@
 								name="email"
 								type="email"
 								value={data.user?.email}
-								class="px-4 text-sm font-medium border-none shadow-xs h-11 rounded-xl bg-background/50 focus-visible:ring-1"
+								class="h-11 rounded-xl border-none bg-background/50 px-4 text-sm font-medium shadow-xs focus-visible:ring-1"
 								required
 							/>
 						</div>
@@ -160,7 +160,7 @@
 
 					<Button
 						type="submit"
-						class="w-full font-bold shadow-xs h-11 rounded-xl"
+						class="h-11 w-full rounded-xl font-bold shadow-xs"
 						disabled={loading}
 					>
 						{#if loading}
@@ -172,7 +172,7 @@
 				</form>
 
 				<!-- Meta Info -->
-				<div class="grid grid-cols-2 gap-8 pt-8 border-t border-muted-foreground/10">
+				<div class="border-muted-foreground/10 grid grid-cols-2 gap-8 border-t pt-8">
 					<div class="space-y-1.5">
 						<p class="text-muted-foreground text-[9px] font-black tracking-widest uppercase">
 							Account Status
@@ -198,18 +198,18 @@
 		<!-- Danger Zone Section -->
 		<Card class="overflow-hidden border-none shadow-sm">
 			<CardContent class="p-6">
-				<div class="flex items-center gap-3 mb-4">
-					<div class="p-2 shadow-xs rounded-xl bg-background text-destructive">
-						<Trash2 class="w-4 h-4" />
+				<div class="mb-4 flex items-center gap-3">
+					<div class="rounded-xl bg-background p-2 text-destructive shadow-xs">
+						<Trash2 class="h-4 w-4" />
 					</div>
 					<h2 class="text-lg font-bold text-destructive">Danger Zone</h2>
 				</div>
 				<div
-					class="flex items-center justify-between p-4 border rounded-2xl border-destructive/10 bg-background/50"
+					class="flex items-center justify-between rounded-2xl border border-destructive/10 bg-background/50 p-4"
 				>
 					<div class="space-y-0.5">
 						<p class="text-sm font-bold">Delete Account</p>
-						<p class="text-xs text-muted-foreground">
+						<p class="text-muted-foreground text-xs">
 							Permanently remove your account and all data
 						</p>
 					</div>
@@ -224,36 +224,36 @@
 						}}
 					>
 						<AlertDialogTrigger>
-							<Button variant="destructive" size="sm" class="font-bold rounded-xl">
+							<Button variant="destructive" size="sm" class="rounded-xl font-bold">
 								Delete Account
 							</Button>
 						</AlertDialogTrigger>
-						<AlertDialogContent class="border-none shadow-2xl rounded-3xl">
+						<AlertDialogContent class="rounded-3xl border-none shadow-2xl">
 							<AlertDialogHeader>
 								<AlertDialogTitle class="text-2xl font-black tracking-tight"
 									>Are you absolutely sure?</AlertDialogTitle
 								>
-								<AlertDialogDescription class="text-sm font-medium text-muted-foreground">
+								<AlertDialogDescription class="text-muted-foreground text-sm font-medium">
 									This action cannot be undone. This will permanently delete your account and remove
 									your data from our servers.
 									<div class="mt-4 space-y-2">
-										<p class="text-xs font-bold tracking-widest uppercase text-foreground">
+										<p class="text-xs font-bold tracking-widest text-foreground uppercase">
 											Type <span class="text-destructive">{requiredSentence}</span> to confirm
 										</p>
 										<Input
 											bind:value={deleteConfirmText}
 											placeholder={requiredSentence}
-											class="px-4 text-sm font-medium border-none shadow-xs h-11 rounded-xl bg-muted/20 focus-visible:ring-1"
+											class="h-11 rounded-xl border-none bg-muted/20 px-4 text-sm font-medium shadow-xs focus-visible:ring-1"
 										/>
 									</div>
 								</AlertDialogDescription>
 							</AlertDialogHeader>
 							<AlertDialogFooter class="mt-6">
-								<AlertDialogCancel class="font-bold border-muted-foreground/20 rounded-2xl"
+								<AlertDialogCancel class="border-muted-foreground/20 rounded-2xl font-bold"
 									>Cancel</AlertDialogCancel
 								>
 								<AlertDialogAction
-									class="font-bold rounded-2xl bg-destructive text-destructive-foreground hover:bg-destructive/90"
+									class="rounded-2xl bg-destructive font-bold text-destructive-foreground hover:bg-destructive/90"
 									disabled={deleteConfirmText !== requiredSentence}
 									onclick={handleDeleteAccount}
 								>

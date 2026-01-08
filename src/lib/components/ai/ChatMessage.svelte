@@ -77,7 +77,9 @@
 
 {#if message.role === 'user' || processed.content.trim() !== '' || processed.thought || processed.plan || processed.attachments || processed.parts}
 	<div
-		class="group/msg flex w-full flex-col gap-2 {message.role === 'user' ? 'items-end' : 'items-start'}"
+		class="group/msg flex w-full flex-col gap-2 {message.role === 'user'
+			? 'items-end'
+			: 'items-start'}"
 		transition:fade={{ duration: 200 }}
 	>
 		<div class="flex items-center gap-2 px-1">
@@ -85,10 +87,12 @@
 				<div class="flex h-6 w-6 items-center justify-center rounded-full bg-muted/60 text-primary">
 					<Bot class="h-3.5 w-3.5" />
 				</div>
-				<span class="text-[11px] font-medium text-muted-foreground/80">Assistant</span>
+				<span class="text-muted-foreground/80 text-[11px] font-medium">Assistant</span>
 			{:else}
-				<span class="text-[11px] font-medium text-muted-foreground/80">You</span>
-				<div class="flex h-6 w-6 items-center justify-center rounded-full bg-muted/60 text-muted-foreground">
+				<span class="text-muted-foreground/80 text-[11px] font-medium">You</span>
+				<div
+					class="text-muted-foreground flex h-6 w-6 items-center justify-center rounded-full bg-muted/60"
+				>
 					<User class="h-3.5 w-3.5" />
 				</div>
 			{/if}
@@ -123,11 +127,15 @@
 				{/if}
 
 				{#if processed.thought || processed.plan}
-					<div class="flex flex-col gap-3 {processed.content.trim() !== '' ? 'mt-4 border-t border-border/40 pt-3' : ''}">
+					<div
+						class="flex flex-col gap-3 {processed.content.trim() !== ''
+							? 'mt-4 border-t border-border/40 pt-3'
+							: ''}"
+					>
 						{#if processed.thought}
 							<div class="space-y-2">
 								<button
-									class="flex items-center gap-2 text-[11px] font-medium text-muted-foreground/70 transition-colors hover:text-foreground"
+									class="text-muted-foreground/70 flex items-center gap-2 text-[11px] font-medium transition-colors hover:text-foreground"
 									onclick={() => toggleThought(message.id)}
 								>
 									<Sparkles class="h-3 w-3" />
@@ -136,7 +144,7 @@
 
 								{#if expandedThoughts[message.id]}
 									<div
-										class="rounded-xl bg-muted/40 p-3 text-[12px] italic text-muted-foreground/90"
+										class="text-muted-foreground/90 rounded-xl bg-muted/40 p-3 text-[12px] italic"
 										transition:slide
 									>
 										{processed.thought}
@@ -148,7 +156,7 @@
 						{#if processed.plan}
 							<div class="space-y-2">
 								<button
-									class="flex items-center gap-2 text-[11px] font-medium text-muted-foreground/70 transition-colors hover:text-foreground"
+									class="text-muted-foreground/70 flex items-center gap-2 text-[11px] font-medium transition-colors hover:text-foreground"
 									onclick={() => togglePlan(message.id)}
 								>
 									<ListChecks class="h-3 w-3" />
@@ -157,7 +165,7 @@
 
 								{#if expandedPlans[message.id]}
 									<div
-										class="rounded-xl bg-muted/40 p-3 font-mono text-[12px] text-muted-foreground/90"
+										class="text-muted-foreground/90 rounded-xl bg-muted/40 p-3 font-mono text-[12px]"
 										transition:slide
 									>
 										{processed.plan}
@@ -170,9 +178,11 @@
 			{/if}
 
 			<!-- Message Actions -->
-			<div class="absolute -right-12 top-0 flex flex-col gap-1 opacity-0 transition-opacity group-hover/msg:opacity-100">
+			<div
+				class="absolute top-0 -right-12 flex flex-col gap-1 opacity-0 transition-opacity group-hover/msg:opacity-100"
+			>
 				<button
-					class="flex h-8 w-8 items-center justify-center rounded-full border border-border/60 bg-background/80 text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+					class="text-muted-foreground flex h-8 w-8 items-center justify-center rounded-full border border-border/60 bg-background/80 hover:bg-muted/60 hover:text-foreground"
 					onclick={copyToClipboard}
 					title="Copy message"
 				>
@@ -189,10 +199,12 @@
 			<div class="mt-1 flex flex-wrap gap-2">
 				{#each processed.actions as action, i (i)}
 					<div
-						class="flex items-center gap-2 rounded-full border border-border/40 bg-muted/30 px-3 py-1 text-[11px] font-medium text-muted-foreground"
+						class="text-muted-foreground flex items-center gap-2 rounded-full border border-border/40 bg-muted/30 px-3 py-1 text-[11px] font-medium"
 					>
 						<span
-							class="h-1.5 w-1.5 rounded-full {action.type === 'write' ? 'bg-orange-500' : 'bg-blue-500'}"
+							class="h-1.5 w-1.5 rounded-full {action.type === 'write'
+								? 'bg-orange-500'
+								: 'bg-blue-500'}"
 						></span>
 						<span class="text-muted-foreground/80">{action.type}:</span>
 						<span class="text-foreground">{action.entity}</span>
@@ -204,7 +216,7 @@
 			</div>
 		{/if}
 
-		<span class="px-1 text-[10px] text-muted-foreground/60">
+		<span class="text-muted-foreground/60 px-1 text-[10px]">
 			{formatTime(message.createdAt)}
 		</span>
 	</div>

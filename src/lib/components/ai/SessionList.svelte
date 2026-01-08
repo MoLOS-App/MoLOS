@@ -22,7 +22,7 @@
 		</Button>
 
 		<div class="mb-2 px-2">
-			<h3 class="text-xs font-semibold text-muted-foreground/70">Recent chats</h3>
+			<h3 class="text-muted-foreground/70 text-xs font-semibold">Recent chats</h3>
 		</div>
 
 		{#each sessions as session (session.id)}
@@ -32,7 +32,9 @@
 					onclick={() => onLoadSession(session.id)}
 				>
 					<div class="mt-1 flex-shrink-0">
-						<div class="flex h-8 w-8 items-center justify-center rounded-2xl bg-muted/60 text-primary">
+						<div
+							class="flex h-8 w-8 items-center justify-center rounded-2xl bg-muted/60 text-primary"
+						>
 							<MessageSquare class="h-4 w-4 text-primary" />
 						</div>
 					</div>

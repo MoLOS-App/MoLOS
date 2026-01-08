@@ -67,7 +67,8 @@ export class ModuleTUI {
 			left: 0,
 			height: 1,
 			width: '100%',
-			content: ' Tab: switch | Enter: select | x: delete | t: toggle | r: run | s: SQL | f: logs | q: quit ',
+			content:
+				' Tab: switch | Enter: select | x: delete | t: toggle | r: run | s: SQL | f: logs | q: quit ',
 			style: { fg: 'black', bg: 'white' }
 		});
 
@@ -230,9 +231,7 @@ export class ModuleTUI {
 				Promise.resolve(listModulesFromFilesystem())
 			]);
 			this.modules = mergeModuleData(dbModules, fsModules);
-			this.layout.modules.setItems(
-				this.modules.map((module) => this.formatModuleLabel(module))
-			);
+			this.layout.modules.setItems(this.modules.map((module) => this.formatModuleLabel(module)));
 			if (this.modules.length === 0) {
 				this.selectedModuleId = null;
 				await this.refreshActions();
@@ -323,8 +322,7 @@ export class ModuleTUI {
 		scriptEntries.forEach((script) => {
 			actions.push({
 				label: `{green-fg}script{/} ${script}`,
-				run: async () =>
-					this.runProcess(`npm run ${script}`, modulePath || process.cwd(), script)
+				run: async () => this.runProcess(`npm run ${script}`, modulePath || process.cwd(), script)
 			});
 		});
 
@@ -404,9 +402,8 @@ export class ModuleTUI {
 	}
 
 	private async createModuleWizard() {
-		const name = await this.promptInput(
-			'Module id (alphanumeric, hyphen, underscore)',
-			(input) => /^[a-zA-Z0-9_-]+$/.test(input)
+		const name = await this.promptInput('Module id (alphanumeric, hyphen, underscore)', (input) =>
+			/^[a-zA-Z0-9_-]+$/.test(input)
 		);
 		if (!name) return;
 		const displayName = await this.promptInput('Display name', () => true, name);
@@ -611,9 +608,7 @@ export class ModuleTUI {
 			child.on('close', (code) => {
 				const status = code === 0 ? 'PASS' : 'FAIL';
 				const indicator =
-					scriptName && /test|vitest|playwright/i.test(scriptName)
-						? `{bold}${status}{/}`
-						: 'done';
+					scriptName && /test|vitest|playwright/i.test(scriptName) ? `{bold}${status}{/}` : 'done';
 				this.logInfo(`Process exited (${code ?? 'unknown'}) ${indicator}.`);
 				this.activeProcess = null;
 				this.screen.render();
@@ -695,7 +690,9 @@ export class ModuleTUI {
 					resolve(false);
 					return;
 				}
-				const input = String(value ?? '').trim().toLowerCase();
+				const input = String(value ?? '')
+					.trim()
+					.toLowerCase();
 				if (input === '') {
 					resolve(initial);
 					return;

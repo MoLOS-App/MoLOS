@@ -66,7 +66,10 @@ export function normalizeToolParams(params: unknown): Record<string, unknown> {
 	return params as Record<string, unknown>;
 }
 
-export function validateToolParams(tool: ToolDefinition, params: Record<string, unknown>): {
+export function validateToolParams(
+	tool: ToolDefinition,
+	params: Record<string, unknown>
+): {
 	ok: boolean;
 	missing: string[];
 } {

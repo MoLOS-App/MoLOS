@@ -39,7 +39,7 @@
 		<Button
 			variant="ghost"
 			size="icon"
-			class="h-9 w-9 shrink-0 rounded-xl text-muted-foreground hover:text-foreground"
+			class="text-muted-foreground h-9 w-9 shrink-0 rounded-xl hover:text-foreground"
 			type="button"
 			title="Attach files"
 		>

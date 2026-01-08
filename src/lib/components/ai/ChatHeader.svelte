@@ -5,15 +5,14 @@
 	let { view, onBack, onNewChat, onClose } = $props();
 </script>
 
-<div class="flex items-center justify-between bg-accent border-b border-border/60 px-4 py-3">
+<div class="flex items-center justify-between border-b border-border/60 bg-accent px-4 py-3">
 	<div class="flex items-center gap-4">
-
 		<div class="grid h-9 w-9 place-items-center rounded-2xl bg-muted/60 text-primary">
 			<Bot class="h-5 w-5" />
 		</div>
 		<div class="flex flex-col">
 			<span class="text-sm font-semibold tracking-tight">MoLOS Assistant</span>
-			<span class="text-[11px] text-muted-foreground">
+			<span class="text-muted-foreground text-[11px]">
 				{view === 'sessions' ? 'Sessions' : 'Workspace'}
 			</span>
 		</div>

@@ -173,7 +173,7 @@
 
 <div class="ai-page flex h-full flex-col overflow-hidden">
 	<div class="ai-shell flex h-full w-full flex-col overflow-hidden" in:fade={{ duration: 500 }}>
-		<div class="ai-layout flex h-full min-h-0 overflow-hidden max-h-screen pb-26 md:pb-8 ">
+		<div class="ai-layout flex h-full max-h-screen min-h-0 overflow-hidden pb-26 md:pb-8">
 			<!-- Mobile Sidebar Overlay -->
 			{#if isSidebarOpen}
 				<button
@@ -206,7 +206,7 @@
 				>
 					<div class="flex items-center gap-3">
 						<button
-							class="md:hidden flex h-9 w-9 items-center justify-center rounded-full border border-border/50 bg-background text-foreground shadow-sm transition hover:bg-muted"
+							class="flex h-9 w-9 items-center justify-center rounded-full border border-border/50 bg-background text-foreground shadow-sm transition hover:bg-muted md:hidden"
 							onclick={() => (isSidebarOpen = !isSidebarOpen)}
 							aria-label="Toggle sidebar"
 							aria-expanded={isSidebarOpen}
@@ -214,11 +214,11 @@
 							<Menu class="h-4 w-4" />
 						</button>
 						<div class="flex items-center gap-2 text-sm font-semibold">
-							<Bot class="h-5 w-5 text-muted-foreground" />
+							<Bot class="text-muted-foreground h-5 w-5" />
 							<span>ChatGPT</span>
 						</div>
 					</div>
-					<div class="text-xs text-muted-foreground hidden sm:block">
+					<div class="text-muted-foreground hidden text-xs sm:block">
 						{currentSessionId ? 'Chat in progress' : 'New chat'}
 					</div>
 				</header>
@@ -231,22 +231,24 @@
 					aria-live="polite"
 					aria-label="Chat messages"
 				>
-					<div class="mx-auto max-w-3xl space-y-6 md:space-y-8 min-w-0">
+					<div class="mx-auto max-w-3xl min-w-0 space-y-6 md:space-y-8">
 						{#if messages.length === 0}
 							<div class="flex min-h-[50vh] flex-col items-center justify-center gap-6 text-center">
 								<div class="rounded-full border border-border/40 bg-muted/30 p-4">
-									<Bot class="h-8 w-8 text-muted-foreground" />
+									<Bot class="text-muted-foreground h-8 w-8" />
 								</div>
 								<div class="space-y-2">
 									<p class="text-xl font-semibold">
 										{greeting}{userName ? `, ${userName}` : ''}
 									</p>
-									<p class="text-sm text-muted-foreground max-w-md">
-										Ask a question, generate content, or explore ideas. Here are a few
-										starting points.
+									<p class="text-muted-foreground max-w-md text-sm">
+										Ask a question, generate content, or explore ideas. Here are a few starting
+										points.
 									</p>
 								</div>
-								<div class="grid w-full max-w-2xl gap-3 text-left text-sm text-muted-foreground grid-cols-1 md:grid-cols-2">
+								<div
+									class="text-muted-foreground grid w-full max-w-2xl grid-cols-1 gap-3 text-left text-sm md:grid-cols-2"
+								>
 									<div class="rounded-xl border border-border/40 bg-muted/20 px-4 py-4">
 										"Plan my week around deep work and workouts."
 									</div>
@@ -268,7 +270,9 @@
 								{/each}
 								{#if isLoading}
 									<div class="flex items-start" in:fade>
-										<div class="flex items-center gap-3 rounded-2xl border border-border/40 bg-muted/30 px-4 py-3 text-sm font-bold uppercase tracking-wide text-muted-foreground">
+										<div
+											class="text-muted-foreground flex items-center gap-3 rounded-2xl border border-border/40 bg-muted/30 px-4 py-3 text-sm font-bold tracking-wide uppercase"
+										>
 											<Loader2 class="h-4 w-4 animate-spin" />
 											Thinking
 											<span class="ai-dots">
@@ -286,7 +290,7 @@
 
 				{#if showScrollButton}
 					<button
-						class="absolute right-4 md:right-6 bottom-36 z-20 flex h-11 w-11 items-center justify-center rounded-full border border-border/50 bg-background/90 text-foreground shadow-lg backdrop-blur transition-all hover:bg-muted active:scale-95 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+						class="focus-visible:ring-ring absolute right-4 bottom-36 z-20 flex h-11 w-11 items-center justify-center rounded-full border border-border/50 bg-background/90 text-foreground shadow-lg backdrop-blur transition-all hover:bg-muted focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 md:right-6"
 						onclick={scrollToBottom}
 						transition:fade
 						aria-label="Scroll to bottom"
@@ -295,9 +299,11 @@
 					</button>
 				{/if}
 
-				<div class="sticky bottom-0 z-10 flex flex-col border-t border-border/40 bg-background/95 backdrop-blur">
+				<div
+					class="sticky bottom-0 z-10 flex flex-col border-t border-border/40 bg-background/95 backdrop-blur"
+				>
 					<ReviewChangesOverlay {pendingAction} {actionTimer} onCancelAction={cancelAction} />
-					<div class="px-4 pb-5 pt-4 md:px-6">
+					<div class="px-4 pt-4 pb-5 md:px-6">
 						<ChatInput
 							bind:input
 							{isLoading}
@@ -306,7 +312,7 @@
 							onInput={(value: string) => (input = value)}
 							onKeydown={handleKeydown}
 						/>
-						<p class="mt-3 text-center text-xs text-muted-foreground">
+						<p class="text-muted-foreground mt-3 text-center text-xs">
 							ChatGPT can make mistakes. Consider checking important information.
 						</p>
 					</div>

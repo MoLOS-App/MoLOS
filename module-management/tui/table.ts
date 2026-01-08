@@ -24,10 +24,7 @@ export function renderModulesTable(modules: ModuleRecord[]) {
 
 	const headers = ['ID', 'Name', 'Source', 'Status', 'Version', 'Path', 'Repo'];
 	const widths = headers.map((header, index) =>
-		Math.max(
-			header.length,
-			...rows.map((row) => stripAnsi(row[index]).length)
-		)
+		Math.max(header.length, ...rows.map((row) => stripAnsi(row[index]).length))
 	);
 
 	const pad = (value: string, width: number) => {

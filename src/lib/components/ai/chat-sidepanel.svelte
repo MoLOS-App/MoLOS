@@ -343,7 +343,7 @@
 					{#if isLoading}
 						<div class="flex items-start">
 							<div
-								class="text-muted-foreground flex items-center gap-3 rounded-2xl border border-border/40 bg-background/70 px-3 py-2 text-[10px] uppercase tracking-[0.2em] shadow-sm"
+								class="text-muted-foreground flex items-center gap-3 rounded-2xl border border-border/40 bg-background/70 px-3 py-2 text-[10px] tracking-[0.2em] uppercase shadow-sm"
 							>
 								<Loader2 class="h-3.5 w-3.5 animate-spin" />
 								Thinking

@@ -19,11 +19,7 @@ import {
 	validateToolParams,
 	type ToolCall
 } from './agent-utils';
-import {
-	createTelemetry,
-	estimateTokensFromMessages,
-	estimateTokensFromText
-} from './telemetry';
+import { createTelemetry, estimateTokensFromMessages, estimateTokensFromText } from './telemetry';
 import { getAgentRuntimeConfig, type AgentRuntimeConfig } from './runtime-config';
 
 type LlmResponse = {
@@ -45,9 +41,7 @@ class AiAgentError extends Error {
 	}
 }
 
-const toolResultCache = new TtlCache<unknown>(
-	Number(process.env.AI_AGENT_TOOL_CACHE_SIZE || 256)
-);
+const toolResultCache = new TtlCache<unknown>(Number(process.env.AI_AGENT_TOOL_CACHE_SIZE || 256));
 
 export class AiAgent {
 	private aiRepo: AiRepository;

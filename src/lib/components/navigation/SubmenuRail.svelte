@@ -30,7 +30,7 @@
 <nav
 	bind:this={railRef}
 	aria-label={label}
-	class="flex items-center gap-2 overflow-x-auto px-4 py-3 sm:px-6 snap-x snap-mandatory"
+	class="flex snap-x snap-mandatory items-center gap-2 overflow-x-auto px-4 py-3 sm:px-6"
 	onkeydown={handleKeydown}
 >
 	{#each items as item}
@@ -41,17 +41,19 @@
 				aria-current={isActive ? 'page' : undefined}
 				data-submenu-link
 				class={cn(
-					'flex h-11 snap-start items-center gap-2 rounded-full px-4 text-xs font-semibold uppercase tracking-wide transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary/30 motion-reduce:transition-none',
+					'flex h-11 snap-start items-center gap-2 rounded-full px-4 text-xs font-semibold tracking-wide uppercase transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary/30 motion-reduce:transition-none',
 					isActive
 						? 'bg-primary text-primary-foreground shadow-sm'
-						: 'bg-muted text-muted-foreground hover:text-foreground'
-					)}
+						: 'text-muted-foreground bg-muted hover:text-foreground'
+				)}
 			>
 				<item.icon class="h-4 w-4" />
 				<span class="whitespace-nowrap">{item.name}</span>
 			</a>
 		{:else}
-			<span class="flex h-11 items-center gap-2 rounded-full bg-muted/60 px-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground/60">
+			<span
+				class="text-muted-foreground/60 flex h-11 items-center gap-2 rounded-full bg-muted/60 px-4 text-xs font-semibold tracking-wide uppercase"
+			>
 				<item.icon class="h-4 w-4" />
 				<span class="whitespace-nowrap">{item.name}</span>
 			</span>

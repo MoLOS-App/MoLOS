@@ -8,10 +8,7 @@
 </script>
 
 {#if pendingAction}
-	<div
-		class="border-t border-border/60 bg-muted/30 px-3 py-2 shadow-sm"
-		transition:slide
-	>
+	<div class="border-t border-border/60 bg-muted/30 px-3 py-2 shadow-sm" transition:slide>
 		<div class="flex items-center justify-between gap-4">
 			<div class="flex min-w-0 items-center gap-3">
 				<div class="flex-shrink-0 rounded-2xl bg-orange-500/15 p-1.5 text-orange-500">
