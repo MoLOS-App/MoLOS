@@ -26,18 +26,28 @@ async function start() {
 			process.exit(syncCode || 1);
 		}
 
-		// 1. Build the project
-		console.log('\n[Supervisor] Phase 1: Building project...');
-		const buildCode = await runCommand('npm', ['run', 'build']);
+		// 1. Build the project (skip in production)
+		if (process.env.NODE_ENV === 'production') {
+			console.log('\n[Supervisor] Phase 1: Skipping build in production environment.');
+		} else {
+			console.log('\n[Supervisor] Phase 1: Building project...');
+			const buildCode = await runCommand('npm', ['run', 'build']);
 
-		if (buildCode !== 0) {
-			console.error(`[Supervisor] Build failed with code ${buildCode}. Exiting.`);
-			process.exit(buildCode || 1);
+			if (buildCode !== 0) {
+				console.error(`[Supervisor] Build failed with code ${buildCode}. Exiting.`);
+				process.exit(buildCode || 1);
+			}
 		}
 
-		// 2. Run the preview server
-		console.log('\n[Supervisor] Phase 2: Starting preview server...');
-		const exitCode = await runCommand('npm', ['run', 'preview']);
+		// 2. Run the server
+		let exitCode: number | null;
+		if (process.env.NODE_ENV === 'production') {
+			console.log('\n[Supervisor] Phase 2: Starting production server...');
+			exitCode = await runCommand('node', ['build/index.js']);
+		} else {
+			console.log('\n[Supervisor] Phase 2: Starting preview server...');
+			exitCode = await runCommand('npm', ['run', 'preview']);
+		}
 
 		if (exitCode === REBUILD_EXIT_CODE) {
 			console.log('\n[Supervisor] 🔄 Rebuild requested (Exit Code 10). Restarting loop...');

@@ -10,7 +10,7 @@
 import { existsSync, readFileSync, readdirSync } from 'fs';
 import path from 'path';
 import { parse } from 'yaml';
-import { validateModuleManifest, formatValidationErrors } from '../src/lib/config/module-types';
+import { validateModuleManifest, formatValidationErrors } from '../src/lib/config/module-types.ts';
 
 interface ValidationResult {
 	valid: boolean;

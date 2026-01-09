@@ -5,7 +5,7 @@
  * with suggested recovery steps.
  */
 
-import type { ModuleError } from '../../config/module-types';
+import type { ModuleError } from '../config/module-types.ts';
 
 export type ErrorCategory =
 	| 'manifest_validation'
@@ -14,9 +14,9 @@ export type ErrorCategory =
 	| 'symlink_failed'
 	| 'unknown';
 
-interface ErrorRecoveryMap {
+type ErrorRecoveryMap = {
 	[key in ErrorCategory]: string[];
-}
+};
 
 const recoverySteps: ErrorRecoveryMap = {
 	manifest_validation: [
@@ -60,7 +60,7 @@ const recoverySteps: ErrorRecoveryMap = {
 export function createModuleError(
 	category: ErrorCategory,
 	message: string,
-	details?: Record<string, any>
+	details?: Record<string, unknown>
 ): ModuleError {
 	return {
 		status:
