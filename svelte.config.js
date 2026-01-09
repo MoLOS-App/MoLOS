@@ -11,7 +11,16 @@ const config = {
 	kit: {
 		adapter: adapter(),
 		csrf: {
-			trustedOrigins: process.env.CSRF_TRUSTED_ORIGINS ? process.env.CSRF_TRUSTED_ORIGINS.split(',') : ['http://localhost:4173', 'http://127.0.0.1:4173']
+			trustedOrigins: (() => {
+				const defaults = ['http://localhost:4173', 'http://127.0.0.1:4173'];
+				const raw = process.env.CSRF_TRUSTED_ORIGINS;
+				if (!raw) return defaults;
+				const parsed = raw
+					.split(',')
+					.map((origin) => origin.trim())
+					.filter(Boolean);
+				return parsed.length > 0 ? parsed : defaults;
+			})()
 		}
 	},
 	extensions: ['.svelte', '.svx']
