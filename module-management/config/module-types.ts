@@ -40,7 +40,7 @@ export const ModuleManifestSchema = z.object({
 
 	// Module dependencies (other modules this module requires)
 	dependencies: z
-		.record(z.string(), 'Semantic version string')
+		.record(z.string(), z.string())
 		.optional()
 		.describe('Map of moduleId to semver requirement (e.g., { "MoLOS-Tasks": "^1.0.0" })'),
 

@@ -7,7 +7,7 @@ import {
 	settingsSystem
 } from '../../server/db/schema';
 import { BaseRepository } from '../base-repository';
-import type { ModuleError } from '../../config/module-types';
+import type { ModuleError } from '../../config/module-types.ts';
 
 export interface ModuleState {
 	moduleId: string;

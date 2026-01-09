@@ -18,7 +18,7 @@
 		now.getHours() < 12 ? 'Good Morning' : now.getHours() < 18 ? 'Good Afternoon' : 'Good Evening';
 
 	// Mock notifications for the UI
-	const notifications = [];
+	const notifications: Array<{ title: string; description: string; type: string }> = [];
 
 	function handleSearch(e: KeyboardEvent) {
 		if (e.key === 'Enter' && searchQuery.trim()) {

@@ -16,6 +16,8 @@ async function runCommand(command: string, args: string[]): Promise<number | nul
 async function start() {
 	console.log('[Supervisor] Starting MoLOS Automated Supervisor...');
 
+	let rebuildRequested = false;
+
 	while (true) {
 		// 0. Sync/Cleanup modules before build
 		console.log('\n[Supervisor] Phase 0: Synchronizing modules...');
@@ -27,20 +29,34 @@ async function start() {
 		}
 
 		// 1. Build the project
-		console.log('\n[Supervisor] Phase 1: Building project...');
-		const buildCode = await runCommand('npm', ['run', 'build']);
+		const allowProdBuild =
+			process.env.MOLOS_ENABLE_PROD_BUILD === 'true' || process.env.FORCE_REBUILD === 'true';
+		if (process.env.NODE_ENV === 'production' && !allowProdBuild && !rebuildRequested) {
+			console.log('\n[Supervisor] Phase 1: Skipping build in production environment.');
+		} else {
+			console.log('\n[Supervisor] Phase 1: Building project...');
+			const buildCode = await runCommand('npm', ['run', 'build']);
 
-		if (buildCode !== 0) {
-			console.error(`[Supervisor] Build failed with code ${buildCode}. Exiting.`);
-			process.exit(buildCode || 1);
+			if (buildCode !== 0) {
+				console.error(`[Supervisor] Build failed with code ${buildCode}. Exiting.`);
+				process.exit(buildCode || 1);
+			}
+			rebuildRequested = false;
 		}
 
-		// 2. Run the preview server
-		console.log('\n[Supervisor] Phase 2: Starting preview server...');
-		const exitCode = await runCommand('npm', ['run', 'preview']);
+		// 2. Run the server
+		let exitCode: number | null;
+		if (process.env.NODE_ENV === 'production') {
+			console.log('\n[Supervisor] Phase 2: Starting production server...');
+			exitCode = await runCommand('node', ['build/index.js']);
+		} else {
+			console.log('\n[Supervisor] Phase 2: Starting preview server...');
+			exitCode = await runCommand('npm', ['run', 'preview']);
+		}
 
 		if (exitCode === REBUILD_EXIT_CODE) {
 			console.log('\n[Supervisor] 🔄 Rebuild requested (Exit Code 10). Restarting loop...');
+			rebuildRequested = true;
 			continue;
 		} else {
 			console.log(`\n[Supervisor] Server exited with code ${exitCode}. Stopping supervisor.`);

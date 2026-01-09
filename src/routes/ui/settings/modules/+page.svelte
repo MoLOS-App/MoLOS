@@ -377,8 +377,8 @@
 
 											<div class="flex flex-1 items-center gap-4 py-4">
 												<div class="rounded-xl bg-background p-2.5 text-primary shadow-xs">
-													{#if mod.icon}
-														<mod.icon class="h-4 w-4" />
+													{#if (mod as any).icon}
+														<svelte:component this={(mod as any).icon} class="h-4 w-4" />
 													{:else}
 														<LayoutGrid class="h-4 w-4" />
 													{/if}
@@ -595,13 +595,13 @@
 																class="h-4 border-destructive/20 bg-destructive/10 px-1.5 text-[8px] font-black tracking-widest text-destructive uppercase"
 																>Deleting</Badge
 															>
-														{:else if mod.status === 'error'}
+														{:else if mod.status.startsWith('error_')}
 															<CircleX class="h-3.5 w-3.5 text-destructive" />
 														{/if}
 													</CardTitle>
 													<CardDescription class="font-medium tracking-wider uppercase">
 														{mod.description || 'External module.'}
-														{#if mod.status === 'error' && mod.lastError}
+														{#if mod.status.startsWith('error_') && mod.lastError}
 															<div
 																class="mt-2 flex items-start gap-2 rounded-lg border border-destructive/10 bg-destructive/5 p-2 text-[9px] text-destructive"
 															>

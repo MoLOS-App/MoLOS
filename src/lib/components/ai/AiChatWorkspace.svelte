@@ -231,7 +231,7 @@
 					aria-live="polite"
 					aria-label="Chat messages"
 				>
-					<div class="mx-auto max-w-3xl min-w-0 space-y-6 md:space-y-8">
+					<div class="mx-auto min-w-0 space-y-6 md:space-y-8">
 						{#if messages.length === 0}
 							<div class="flex min-h-[50vh] flex-col items-center justify-center gap-6 text-center">
 								<div class="rounded-full border border-border/40 bg-muted/30 p-4">

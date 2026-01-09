@@ -2,7 +2,7 @@ import { ModuleManager } from '../module-management/server/module-manager';
 import { existsSync, readFileSync, readdirSync } from 'fs';
 import path from 'path';
 import { parse } from 'yaml';
-import { validateModuleManifest, formatValidationErrors } from '../src/lib/config/module-types';
+import { validateModuleManifest, formatValidationErrors } from '../src/lib/config/module-types.ts';
 
 // Load .env file manually for CLI
 function loadEnv() {

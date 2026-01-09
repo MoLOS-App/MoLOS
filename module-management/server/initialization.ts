@@ -22,7 +22,7 @@ import {
 } from './utils';
 import { getModuleSymlinks, getModuleSymlinkSources } from '../config/symlink-config';
 import { createModuleError, formatErrorForLogging } from './module-error-handler';
-import type { ModuleManifest } from '../config/module-types';
+import type { ModuleManifest } from '../config/module-types.ts';
 
 /**
  * Module initialization operations
@@ -268,7 +268,7 @@ export class ModuleInitialization {
 				`[ModuleManager] Status: Module marked as "${moduleError.status}" for manual recovery`
 			);
 			console.error(`[ModuleManager] Recovery Steps:`);
-			moduleError.recoverySteps?.forEach((step) => console.error(`  - ${step}`));
+			moduleError.recoverySteps?.forEach((step: string) => console.error(`  - ${step}`));
 			console.error('');
 
 			await settingsRepo.log('error', 'ModuleManager', `Failed to initialize module ${moduleId}`, {
