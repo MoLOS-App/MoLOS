@@ -1,4 +1,4 @@
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and } from 'drizzle-orm';
 import { aiSettings, aiMessages, aiSessions, aiMemories } from '$lib/server/db/schema';
 import type { AiSettings, AiMessage, AiSession } from '$lib/models/ai';
 import { BaseRepository } from '../base-repository';
@@ -107,7 +107,7 @@ export class AiRepository extends BaseRepository {
 		const result = await this.db
 			.select()
 			.from(aiMessages)
-			.where(eq(aiMessages.sessionId, sessionId))
+			.where(and(eq(aiMessages.sessionId, sessionId), eq(aiMessages.userId, userId)))
 			.orderBy(desc(aiMessages.createdAt))
 			.limit(limit);
 
