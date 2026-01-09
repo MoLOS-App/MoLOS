@@ -760,7 +760,9 @@ export class AiAgent {
 
 		if (provider === 'anthropic') {
 			const anthropicData = data as { content: unknown[] };
-			const contentParts = Array.isArray(anthropicData.content) ? anthropicData.content as Array<{ type: string; text?: string }> : [];
+			const contentParts = Array.isArray(anthropicData.content)
+				? (anthropicData.content as Array<{ type: string; text?: string }>)
+				: [];
 			const content = contentParts.find((c) => c.type === 'text')?.text || '';
 			const toolCalls = contentParts
 				.filter((c: any) => c.type === 'tool_use')
@@ -791,7 +793,9 @@ export class AiAgent {
 						: undefined
 			};
 		} else {
-			const openaiData = data as { choices?: Array<{ message?: { content?: string; tool_calls?: unknown[] } }> };
+			const openaiData = data as {
+				choices?: Array<{ message?: { content?: string; tool_calls?: unknown[] } }>;
+			};
 			const choice = openaiData.choices?.[0];
 			const message = choice?.message || {};
 

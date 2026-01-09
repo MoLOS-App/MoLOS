@@ -58,7 +58,7 @@
 		{#if trigger}
 			{@render trigger()}
 		{:else}
-			<Menu class="w-5 h-5" />
+			<Menu class="h-5 w-5" />
 		{/if}
 	</Drawer.Trigger>
 
@@ -69,9 +69,9 @@
 			<Drawer.Title class="text-sm font-semibold tracking-wide">Navigation</Drawer.Title>
 			<Drawer.Close
 				aria-label="Close navigation"
-				class="flex items-center justify-center transition-colors border rounded-full text-muted-foreground h-9 w-9 border-border/60 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:outline-none"
+				class="text-muted-foreground flex h-9 w-9 items-center justify-center rounded-full border border-border/60 transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:outline-none"
 			>
-				<X class="w-4 h-4" />
+				<X class="h-4 w-4" />
 			</Drawer.Close>
 		</Drawer.Header>
 
@@ -94,7 +94,7 @@
 							)}
 							onclick={closeDrawer}
 						>
-							<module.icon class="w-4 h-4" />
+							<module.icon class="h-4 w-4" />
 							<span class="truncate">{module.name}</span>
 						</a>
 					{/each}
@@ -119,7 +119,7 @@
 				</section>
 			{:else if currentModule}
 				<section
-					class="px-3 py-4 text-sm border border-dashed text-muted-foreground rounded-xl border-border/70"
+					class="text-muted-foreground rounded-xl border border-dashed border-border/70 px-3 py-4 text-sm"
 				>
 					No sections available yet.
 				</section>
