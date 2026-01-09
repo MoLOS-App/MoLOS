@@ -759,8 +759,9 @@ export class AiAgent {
 		const data = await callOnce(0);
 
 		if (provider === 'anthropic') {
-			const contentParts = Array.isArray(data.content) ? data.content : [];
-			const content = contentParts.find((c: any) => c.type === 'text')?.text || '';
+			const anthropicData = data as { content: unknown[] };
+			const contentParts = Array.isArray(anthropicData.content) ? anthropicData.content as Array<{ type: string; text?: string }> : [];
+			const content = contentParts.find((c) => c.type === 'text')?.text || '';
 			const toolCalls = contentParts
 				.filter((c: any) => c.type === 'tool_use')
 				.map((tc: any) => ({
@@ -790,7 +791,8 @@ export class AiAgent {
 						: undefined
 			};
 		} else {
-			const choice = data.choices?.[0];
+			const openaiData = data as { choices?: Array<{ message?: { content?: string; tool_calls?: unknown[] } }> };
+			const choice = openaiData.choices?.[0];
 			const message = choice?.message || {};
 
 			const toolCalls = (message.tool_calls as Record<string, unknown>[])?.map(

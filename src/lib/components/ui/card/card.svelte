@@ -5,8 +5,9 @@
 	let {
 		ref = $bindable(null),
 		class: className,
+		children,
 		...restProps
-	}: WithElementRef<HTMLAttributes<HTMLDivElement>> = $props();
+	}: WithElementRef<HTMLAttributes<HTMLDivElement>> & { children: import('svelte').Snippet } = $props();
 </script>
 
 <div
@@ -18,5 +19,5 @@
 	)}
 	{...restProps}
 >
-	<slot />
+	{@render children()}
 </div>

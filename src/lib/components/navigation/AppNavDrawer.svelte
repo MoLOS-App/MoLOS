@@ -13,7 +13,9 @@
 		currentPath,
 		onNavigate,
 		triggerClass = '',
-		triggerLabel = 'Open navigation'
+		triggerLabel = 'Open navigation',
+		trigger,
+		footer
 	}: {
 		modules: ModuleConfig[];
 		currentModule?: ModuleConfig;
@@ -22,6 +24,8 @@
 		onNavigate?: () => void;
 		triggerClass?: string;
 		triggerLabel?: string;
+		trigger?: import('svelte').Snippet;
+		footer?: import('svelte').Snippet<[{ close: () => void }]>;
 	} = $props();
 
 	let open = $state(false);
@@ -51,9 +55,11 @@
 			triggerClass
 		)}
 	>
-		<slot name="trigger">
-			<Menu class="h-5 w-5" />
-		</slot>
+		{#if trigger}
+			{@render trigger()}
+		{:else}
+			<Menu class="w-5 h-5" />
+		{/if}
 	</Drawer.Trigger>
 
 	<Drawer.Content
@@ -63,9 +69,9 @@
 			<Drawer.Title class="text-sm font-semibold tracking-wide">Navigation</Drawer.Title>
 			<Drawer.Close
 				aria-label="Close navigation"
-				class="text-muted-foreground flex h-9 w-9 items-center justify-center rounded-full border border-border/60 transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:outline-none"
+				class="flex items-center justify-center transition-colors border rounded-full text-muted-foreground h-9 w-9 border-border/60 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:outline-none"
 			>
-				<X class="h-4 w-4" />
+				<X class="w-4 h-4" />
 			</Drawer.Close>
 		</Drawer.Header>
 
@@ -88,7 +94,7 @@
 							)}
 							onclick={closeDrawer}
 						>
-							<module.icon class="h-4 w-4" />
+							<module.icon class="w-4 h-4" />
 							<span class="truncate">{module.name}</span>
 						</a>
 					{/each}
@@ -113,13 +119,13 @@
 				</section>
 			{:else if currentModule}
 				<section
-					class="text-muted-foreground rounded-xl border border-dashed border-border/70 px-3 py-4 text-sm"
+					class="px-3 py-4 text-sm border border-dashed text-muted-foreground rounded-xl border-border/70"
 				>
 					No sections available yet.
 				</section>
 			{/if}
 		</div>
 
-		<slot name="footer" close={closeDrawer} />
+		{@render footer?.({ close: closeDrawer })}
 	</Drawer.Content>
 </Drawer.Root>
