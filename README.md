@@ -97,6 +97,7 @@ For production deployments and development environments, MoLOS provides optimize
 ### Quick Setup
 
 1. **Clone and configure:**
+
    ```bash
    git clone https://github.com/MoLOS-App/MoLOS.git
    cd MoLOS
@@ -105,12 +106,14 @@ For production deployments and development environments, MoLOS provides optimize
    ```
 
 2. **Generate authentication secret:**
+
    ```bash
    openssl rand -base64 32
    # Add this to BETTER_AUTH_SECRET in .env
    ```
 
 3. **Start the application:**
+
    ```bash
    docker compose up -d
    ```
@@ -154,6 +157,7 @@ The compose file mounts two volumes:
 - `./external_modules:/app/external_modules` - External modules directory
 
 **Permission Setup:**
+
 ```bash
 # Ensure host directories have correct permissions
 sudo chown -R 1000:1000 ./molos_data ./external_modules
@@ -181,6 +185,7 @@ docker compose --env-file .env.prod up -d
 #### Resource Limits
 
 Default limits (configurable in compose):
+
 - CPU: 1 core limit, 0.5 reserved
 - Memory: 1GB limit, 512MB reserved
 
@@ -212,10 +217,13 @@ MoLOS can rebuild itself for module updates:
 #### Common Issues
 
 **Permission Denied on Database:**
+
 ```
 Error: touch: cannot touch '/data/molos.db': Permission denied
 ```
+
 **Solution:**
+
 ```bash
 # Fix host directory permissions
 sudo chown -R 1000:1000 ./molos_data
@@ -224,10 +232,13 @@ docker compose up -d
 ```
 
 **Container Name Conflict:**
+
 ```
 Error: container name "molos" is already in use
 ```
+
 **Solution:**
+
 ```bash
 # Remove old container
 docker rm -f molos
@@ -236,6 +247,7 @@ podman-compose up --replace
 ```
 
 **Health Check Failing:**
+
 ```bash
 # Check logs
 docker compose logs molos
@@ -245,6 +257,7 @@ docker exec molos curl -f http://localhost:4173/api/health
 ```
 
 **Module Sync Issues:**
+
 ```bash
 # Check module logs
 docker compose exec molos npm run module:sync

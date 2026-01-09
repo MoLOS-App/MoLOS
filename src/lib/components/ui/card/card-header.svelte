@@ -7,7 +7,9 @@
 		class: className,
 		children,
 		...restProps
-	}: WithElementRef<HTMLAttributes<HTMLDivElement>> & { children: import('svelte').Snippet } = $props();
+	}: WithElementRef<HTMLAttributes<HTMLDivElement>> & {
+		children: import('svelte').Snippet;
+	} = $props();
 </script>
 
 <div

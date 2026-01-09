@@ -7,7 +7,6 @@ import type { ToolDefinition } from '$lib/models/ai';
  */
 
 export function getCoreAiTools(userId: string): ToolDefinition[] {
-
 	return [
 		{
 			name: 'get_active_modules',
