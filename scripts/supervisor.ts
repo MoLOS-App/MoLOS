@@ -16,6 +16,8 @@ async function runCommand(command: string, args: string[]): Promise<number | nul
 async function start() {
 	console.log('[Supervisor] Starting MoLOS Automated Supervisor...');
 
+	let rebuildRequested = false;
+
 	while (true) {
 		// 0. Sync/Cleanup modules before build
 		console.log('\n[Supervisor] Phase 0: Synchronizing modules...');
@@ -26,8 +28,10 @@ async function start() {
 			process.exit(syncCode || 1);
 		}
 
-		// 1. Build the project (skip in production)
-		if (process.env.NODE_ENV === 'production') {
+		// 1. Build the project
+		const allowProdBuild =
+			process.env.MOLOS_ENABLE_PROD_BUILD === 'true' || process.env.FORCE_REBUILD === 'true';
+		if (process.env.NODE_ENV === 'production' && !allowProdBuild && !rebuildRequested) {
 			console.log('\n[Supervisor] Phase 1: Skipping build in production environment.');
 		} else {
 			console.log('\n[Supervisor] Phase 1: Building project...');
@@ -37,6 +41,7 @@ async function start() {
 				console.error(`[Supervisor] Build failed with code ${buildCode}. Exiting.`);
 				process.exit(buildCode || 1);
 			}
+			rebuildRequested = false;
 		}
 
 		// 2. Run the server
@@ -51,6 +56,7 @@ async function start() {
 
 		if (exitCode === REBUILD_EXIT_CODE) {
 			console.log('\n[Supervisor] 🔄 Rebuild requested (Exit Code 10). Restarting loop...');
+			rebuildRequested = true;
 			continue;
 		} else {
 			console.log(`\n[Supervisor] Server exited with code ${exitCode}. Stopping supervisor.`);

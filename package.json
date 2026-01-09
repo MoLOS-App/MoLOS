@@ -22,7 +22,7 @@
 		"test:unit": "vitest",
 		"test": "npm run test:unit -- --run",
 		"db:generate": "drizzle-kit generate",
-		"db:migrate": "drizzle-kit migrate",
+		"db:migrate": "drizzle-kit migrate --config drizzle.config.ts",
 		"db:reset": "drizzle-kit reset",
 		"db:studio": "drizzle-kit studio"
 	},
