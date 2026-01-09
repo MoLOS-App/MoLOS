@@ -2,22 +2,53 @@ services:
   molos:
     build: .
     image: ghcr.io/${GITHUB_REPOSITORY:-molos/molos}:latest
-    container_name: molos
-    restart: always
-    user: 'node'
+    restart: unless-stopped
     security_opt:
       - no-new-privileges:true
     cap_drop:
       - ALL
     tmpfs:
       - /tmp
+      - /app/.svelte-kit # Allow writes for rebuilds
     ports:
       - '4173:4173'
     environment:
       - NODE_ENV=production
-      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
-      - BETTER_AUTH_SECRET_FILE=${BETTER_AUTH_SECRET_FILE}
       - DATABASE_URL=/data/molos.db
+      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET:-}
+      - BETTER_AUTH_SECRET_FILE=${BETTER_AUTH_SECRET_FILE:-}
+      - BETTER_AUTH_URL=http://127.0.0.1:4173
+      - ORIGIN=http://127.0.0.1:4173
+      - GITHUB_REPOSITORY=${GITHUB_REPOSITORY:-molos/molos}
+      - PORT=4173
+      - CSRF_TRUSTED_ORIGINS=http://127.0.0.1:4173,http://localhost:4173
+      - MOLOS_AUTOLOAD_MODULES=true
+      - MOLOS_ENABLE_PROD_BUILD=true
     volumes:
-      - ./molos_data:/data
-      - ./external_modules:/app/external_modules
+      - ./molos_data:/data:rw
+      - ./external_modules:/app/external_modules:rw
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "require('http').get('http://localhost:4173/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))"
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '0.5'
+          memory: 512M

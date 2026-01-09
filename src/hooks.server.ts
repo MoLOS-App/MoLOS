@@ -7,7 +7,7 @@ import { auth } from '$lib/server/auth';
 import { db } from '$lib/server/db';
 import { sql } from 'drizzle-orm';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
-import { building } from '$app/environment';
+import { building, dev } from '$app/environment';
 import { redirect, type Handle } from '@sveltejs/kit';
 import { SettingsRepository } from '$lib/repositories/settings/settings-repository';
 import { getThemeClasses, type Theme, type Font, FONTS } from '$lib/theme';
@@ -26,7 +26,10 @@ function loadEnv() {
 					.join('=')
 					.trim()
 					.replace(/^["']|["']$/g, '');
-				process.env[key.trim()] = value;
+				const trimmedKey = key.trim();
+				if (!process.env[trimmedKey]) {
+					process.env[trimmedKey] = value;
+				}
 			}
 		});
 	}
@@ -60,7 +63,7 @@ async function setupDatabase() {
 	// Check if migrations folder exists and run migrate if it does (only in development)
 	const migrationsFolder = './drizzle';
 	const migrationsExist = existsSync(migrationsFolder);
-	const isDevelopment = process.env.NODE_ENV === 'development';
+	const isDevelopment = dev;
 
 	if (migrationsExist && isDevelopment && !building) {
 		console.log('Running database migrations in development mode...');

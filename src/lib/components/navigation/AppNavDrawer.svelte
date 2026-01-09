@@ -13,7 +13,9 @@
 		currentPath,
 		onNavigate,
 		triggerClass = '',
-		triggerLabel = 'Open navigation'
+		triggerLabel = 'Open navigation',
+		trigger,
+		footer
 	}: {
 		modules: ModuleConfig[];
 		currentModule?: ModuleConfig;
@@ -22,6 +24,8 @@
 		onNavigate?: () => void;
 		triggerClass?: string;
 		triggerLabel?: string;
+		trigger?: import('svelte').Snippet;
+		footer?: import('svelte').Snippet<[{ close: () => void }]>;
 	} = $props();
 
 	let open = $state(false);
@@ -51,9 +55,11 @@
 			triggerClass
 		)}
 	>
-		<slot name="trigger">
+		{#if trigger}
+			{@render trigger()}
+		{:else}
 			<Menu class="h-5 w-5" />
-		</slot>
+		{/if}
 	</Drawer.Trigger>
 
 	<Drawer.Content
@@ -120,6 +126,6 @@
 			{/if}
 		</div>
 
-		<slot name="footer" close={closeDrawer} />
+		{@render footer?.({ close: closeDrawer })}
 	</Drawer.Content>
 </Drawer.Root>

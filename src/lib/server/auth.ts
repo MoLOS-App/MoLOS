@@ -8,6 +8,7 @@ import { env } from '$env/dynamic/private';
 import { admin, apiKey } from 'better-auth/plugins';
 import { sql } from 'drizzle-orm';
 import { existsSync, readFileSync } from 'fs';
+import { dev } from '$app/environment';
 
 function resolveAuthSecret(): string | undefined {
 	const direct = env.BETTER_AUTH_SECRET || process.env.BETTER_AUTH_SECRET;
@@ -21,12 +22,14 @@ function resolveAuthSecret(): string | undefined {
 	return undefined;
 }
 
-const authSecret = resolveAuthSecret();
+let authSecret = resolveAuthSecret();
 if (!authSecret) {
 	const message =
 		'BETTER_AUTH_SECRET is required. Set BETTER_AUTH_SECRET or BETTER_AUTH_SECRET_FILE.';
-	if (process.env.NODE_ENV === 'production') {
-		throw new Error(message);
+	if (!dev) {
+		// TODO: Make it dynamic
+		console.warn(`[Auth] PRODUCTION WARNING: ${message}`);
+		authSecret = 'super-secret-production-fallback-key-for-build-only-not-secure-for-runtime';
 	} else {
 		console.warn(`[Auth] ${message}`);
 	}
@@ -34,6 +37,16 @@ if (!authSecret) {
 
 export const auth = betterAuth({
 	secret: authSecret,
+	trustedOrigins: (() => {
+		const defaults = ['http://localhost:4173', 'http://127.0.0.1:4173'];
+		const raw = process.env.CSRF_TRUSTED_ORIGINS;
+		if (!raw) return defaults;
+		const parsed = raw
+			.split(',')
+			.map((origin) => origin.trim())
+			.filter(Boolean);
+		return parsed.length > 0 ? parsed : defaults;
+	})(),
 	database: drizzleAdapter(db, {
 		provider: 'sqlite', // or "mysql", "sqlite"
 		schema

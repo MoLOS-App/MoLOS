@@ -6,8 +6,9 @@ const dbPath =
 
 export default defineConfig({
 	schema: './src/lib/server/db/schema/index.ts',
+	out: './drizzle',
 	dialect: 'sqlite',
-	dbCredentials: { url: dbPath },
+	dbCredentials: { url: dbPath.startsWith('file:') ? dbPath : `file:${dbPath}` },
 	verbose: true,
 	strict: true
 });
