@@ -21,13 +21,12 @@ If you want a calm, private place to build your own system, try it. If you don't
 - Full ownership of your data and workflow
 - Built for long-term use
 
-
 ## What people build with it
 
 MoLOS is a base, not a box. A few real examples:
 
 - [MoLOS-Tasks](https://github.com): Simple tasks and project management. The first module created
-- [MoLOS-CRM](https://github.com): Mini CRM for clients and follow-ups 
+- [MoLOS-CRM](https://github.com): Mini CRM for clients and follow-ups
 - [MoLOS-AI Hub](https://github.com): Centralized AI prompt store
 - [MoLOS-Docustore](https://github.com): Personal knowledge docs hub
 - [MoLOS-Homeboard](https://github.com): Self-hosted dashboard for home or work
@@ -54,7 +53,6 @@ mkdir -p ./molos_data/external_modules
 ```
 
 Then start MoLOS:
-
 
 ```bash
 podman run -d \
