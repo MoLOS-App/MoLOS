@@ -3,6 +3,7 @@ import { AiRepository } from './ai-repository';
 import { createTestDb } from '$lib/test-utils';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import type { AiSettings, AiSession, AiMessage } from '$lib/models/ai';
+import { user } from '$lib/server/db/schema';
 
 describe('AiRepository', () => {
 	let db: BetterSQLite3Database<Record<string, unknown>>;
@@ -13,6 +14,10 @@ describe('AiRepository', () => {
 	beforeEach(async () => {
 		db = (await createTestDb()) as unknown as BetterSQLite3Database<Record<string, unknown>>;
 		repository = new AiRepository(db);
+		await db.insert(user).values([
+			{ id: userId, name: 'Test User 1', email: 'test1@example.com' },
+			{ id: otherUserId, name: 'Test User 2', email: 'test2@example.com' }
+		]);
 	});
 
 	describe('Settings', () => {
@@ -50,6 +55,11 @@ describe('AiRepository', () => {
 	});
 
 	describe('Sessions', () => {
+		it('should use the default title when none is provided', async () => {
+			const session = await repository.createSession(userId);
+			expect(session.title).toBe('New Chat');
+		});
+
 		it('should create and retrieve sessions', async () => {
 			const session = await repository.createSession(userId, 'Test Session');
 			expect(session.id).toBeDefined();
@@ -73,6 +83,21 @@ describe('AiRepository', () => {
 
 			const sessions = await repository.getSessions(userId);
 			expect(sessions.length).toBe(0);
+		});
+
+		it('should update session activity when adding messages', async () => {
+			const session = await repository.createSession(userId, 'Active Session');
+			const originalUpdatedAt = session.updatedAt.getTime();
+
+			await new Promise((resolve) => setTimeout(resolve, 2));
+			await repository.addMessage(userId, {
+				sessionId: session.id,
+				role: 'user',
+				content: 'Ping'
+			});
+
+			const sessions = await repository.getSessions(userId);
+			expect(sessions[0].updatedAt.getTime()).toBeGreaterThan(originalUpdatedAt);
 		});
 	});
 
@@ -98,6 +123,17 @@ describe('AiRepository', () => {
 			const messages = await repository.getMessages(session.id, userId);
 			expect(messages.length).toBe(1);
 			expect(messages[0].content).toBe('Hello AI');
+		});
+
+		it('should not return messages for other users', async () => {
+			await repository.addMessage(userId, {
+				sessionId: session.id,
+				role: 'user',
+				content: 'Private'
+			});
+
+			const messages = await repository.getMessages(session.id, otherUserId);
+			expect(messages.length).toBe(0);
 		});
 
 		it('should handle complex message data', async () => {
@@ -130,6 +166,18 @@ describe('AiRepository', () => {
 			const messages = await repository.getMessages(session.id, userId, 3);
 			expect(messages.length).toBe(3);
 		});
+
+		it('should remove messages when a session is deleted', async () => {
+			await repository.addMessage(userId, {
+				sessionId: session.id,
+				role: 'user',
+				content: 'To be removed'
+			});
+
+			await repository.deleteSession(session.id);
+			const messages = await repository.getMessages(session.id, userId);
+			expect(messages.length).toBe(0);
+		});
 	});
 
 	describe('History', () => {
@@ -144,6 +192,19 @@ describe('AiRepository', () => {
 
 			sessions = await repository.getSessions(userId);
 			expect(sessions.length).toBe(0);
+		});
+
+		it('should clear session messages when history is cleared', async () => {
+			const session = await repository.createSession(userId, 'Session with messages');
+			await repository.addMessage(userId, {
+				sessionId: session.id,
+				role: 'user',
+				content: 'History message'
+			});
+
+			await repository.clearHistory(userId);
+			const messages = await repository.getMessages(session.id, userId);
+			expect(messages.length).toBe(0);
 		});
 	});
 
