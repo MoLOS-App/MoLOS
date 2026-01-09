@@ -11,7 +11,7 @@ const config = {
 	kit: {
 		adapter: adapter(),
 		csrf: {
-			trustedOrigins: ['http://localhost:4173']
+			trustedOrigins: process.env.CSRF_TRUSTED_ORIGINS ? process.env.CSRF_TRUSTED_ORIGINS.split(',') : ['http://localhost:4173', 'http://127.0.0.1:4173']
 		}
 	},
 	extensions: ['.svelte', '.svx']

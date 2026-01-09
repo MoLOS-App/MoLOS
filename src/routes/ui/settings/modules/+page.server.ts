@@ -1,4 +1,5 @@
 import { error, fail, redirect } from '@sveltejs/kit';
+import { dev } from '$app/environment';
 import type { PageServerLoad, Actions } from './$types';
 import { getAllModules } from '$lib/config/modules';
 import { SettingsRepository } from '$lib/repositories/settings/settings-repository';
@@ -246,16 +247,18 @@ export const actions: Actions = {
 		// 1. Touch vite.config.ts to trigger Vite's internal restart logic
 		// This is the most reliable way to "reboot" the Vite dev server programmatically
 		// We delay this to allow the redirect to reach the client
-		setTimeout(() => {
-			try {
-				const configPath = path.resolve('vite.config.ts');
-				const now = new Date();
-				utimesSync(configPath, now, now);
-				console.log('[System] vite.config.ts touched. Vite should restart.');
-			} catch (e) {
-				console.error('[System] Failed to touch vite.config.ts:', e);
-			}
-		}, 1000);
+		if (dev) {
+			setTimeout(() => {
+				try {
+					const configPath = path.resolve('vite.config.ts');
+					const now = new Date();
+					utimesSync(configPath, now, now);
+					console.log('[System] vite.config.ts touched. Vite should restart.');
+				} catch (e) {
+					console.error('[System] Failed to touch vite.config.ts:', e);
+				}
+			}, 1000);
+		}
 
 		// 2. Also initiate a process exit after a short delay.
 		// If running in Docker or with PM2, this will trigger a full container/process reboot.
@@ -263,7 +266,7 @@ export const actions: Actions = {
 		// We use a slightly longer delay to ensure Vite has time to pick up the file change.
 		// IMPORTANT: In development mode, Vite handles the restart when vite.config.ts is touched.
 		// We only exit the process if we are NOT in development mode or if we want a hard reboot.
-		if (process.env.NODE_ENV !== 'development') {
+		if (!dev) {
 			setTimeout(() => {
 				console.log('[System] Exiting process for full rebuild/reboot...');
 				process.exit(10);

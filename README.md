@@ -84,6 +84,225 @@ Then run:
 docker compose up -d
 ```
 
+## 🐳 Docker Deployment Guide
+
+For production deployments and development environments, MoLOS provides optimized Docker support with security hardening, health checks, and efficient rebuild handling.
+
+### Prerequisites
+
+- Docker Engine 20.10+ or Podman 4.0+
+- docker-compose plugin or standalone docker-compose
+- At least 1GB RAM and 2GB disk space
+
+### Quick Setup
+
+1. **Clone and configure:**
+   ```bash
+   git clone https://github.com/MoLOS-App/MoLOS.git
+   cd MoLOS
+   cp .env.example .env
+   # Edit .env with your settings
+   ```
+
+2. **Generate authentication secret:**
+   ```bash
+   openssl rand -base64 32
+   # Add this to BETTER_AUTH_SECRET in .env
+   ```
+
+3. **Start the application:**
+   ```bash
+   docker compose up -d
+   ```
+
+4. **Check health:**
+   ```bash
+   curl http://localhost:4173/api/health
+   ```
+
+### Configuration
+
+#### Environment Variables
+
+Copy `.env.example` to `.env` and configure:
+
+```bash
+# Database
+DATABASE_URL=file:./molos_data/molos.db
+
+# Authentication (required)
+BETTER_AUTH_SECRET=your_generated_secret_here
+
+# Optional: Use Docker secrets
+# BETTER_AUTH_SECRET_FILE=/run/secrets/better_auth_secret
+
+# Port configuration
+PORT=4173
+
+# Module auto-loading
+MOLOS_AUTOLOAD_MODULES=true
+
+# Development: Force rebuild on startup
+FORCE_REBUILD=false
+```
+
+#### Volume Management
+
+The compose file mounts two volumes:
+
+- `./molos_data:/data` - SQLite database and persistent data
+- `./external_modules:/app/external_modules` - External modules directory
+
+**Permission Setup:**
+```bash
+# Ensure host directories have correct permissions
+sudo chown -R 1000:1000 ./molos_data ./external_modules
+```
+
+### Production Deployment
+
+For production, use the provided `docker-compose.yml`:
+
+```yaml
+# Production profile (default)
+docker compose --profile production up -d
+
+# With custom environment
+docker compose --env-file .env.prod up -d
+```
+
+#### Security Features
+
+- **Non-root user:** Runs as `molos` user (UID 1000)
+- **Read-only filesystem:** With tmpfs for necessary writes
+- **Capability dropping:** No unnecessary Linux capabilities
+- **Security options:** `no-new-privileges`
+
+#### Resource Limits
+
+Default limits (configurable in compose):
+- CPU: 1 core limit, 0.5 reserved
+- Memory: 1GB limit, 512MB reserved
+
+### Health Checks & Monitoring
+
+The container includes built-in health checks:
+
+```bash
+# Check container health
+docker compose ps
+
+# View logs
+docker compose logs -f molos
+
+# Health endpoint
+curl http://localhost:4173/api/health
+```
+
+### Rebuild Scenarios
+
+MoLOS can rebuild itself for module updates:
+
+- **Automatic:** On container restart if modules changed
+- **Manual trigger:** Set `FORCE_REBUILD=true` in environment
+- **Development:** Use `--profile development` for rebuild-enabled mode
+
+### Troubleshooting
+
+#### Common Issues
+
+**Permission Denied on Database:**
+```
+Error: touch: cannot touch '/data/molos.db': Permission denied
+```
+**Solution:**
+```bash
+# Fix host directory permissions
+sudo chown -R 1000:1000 ./molos_data
+docker compose down
+docker compose up -d
+```
+
+**Container Name Conflict:**
+```
+Error: container name "molos" is already in use
+```
+**Solution:**
+```bash
+# Remove old container
+docker rm -f molos
+# Or use podman-compose with --replace
+podman-compose up --replace
+```
+
+**Health Check Failing:**
+```bash
+# Check logs
+docker compose logs molos
+
+# Manual health check
+docker exec molos curl -f http://localhost:4173/api/health
+```
+
+**Module Sync Issues:**
+```bash
+# Check module logs
+docker compose exec molos npm run module:sync
+
+# Rebuild with modules
+docker compose down
+docker compose up --build
+```
+
+#### Podman Compatibility
+
+MoLOS works with Podman:
+
+```bash
+# Use podman-compose
+podman-compose up -d
+
+# Or podman directly
+podman play kube kubernetes/deployment.yaml
+```
+
+Note: Podman may require SELinux adjustments for volumes.
+
+#### Performance Tuning
+
+- **Database:** SQLite performs best with SSD storage
+- **Memory:** Increase limits for large module sets
+- **CPU:** Add cores for rebuild-heavy operations
+
+#### Backup & Recovery
+
+```bash
+# Backup data
+tar -czf backup.tar.gz ./molos_data
+
+# Restore
+tar -xzf backup.tar.gz
+docker compose down
+# Fix permissions if needed
+docker compose up -d
+```
+
+### Development with Docker
+
+For development with hot reload:
+
+```yaml
+# Add to docker-compose.override.yml
+services:
+  molos:
+    volumes:
+      - .:/app:ro
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    command: npm run dev
+```
+
 ---
 
 ## 🏗️ For Developers
