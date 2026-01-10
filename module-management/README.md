@@ -54,22 +54,7 @@ module-management/
 │   ├── module-error-handler.ts # Error categorization and recovery
 │   ├── paths.ts                # Centralized path configuration
 │   └── utils.ts                # Utility functions
-├── docs/                       # Documentation and guides
-│   ├── INDEX.md                # Module development index
-│   ├── 01-database-schema.md   # Database schema guide
-│   ├── 02-typescript-models.md # TypeScript models guide
-│   ├── 03-repository-layer.md  # Repository pattern guide
-│   ├── 04-api-endpoints.md     # API development guide
-│   ├── 05-ui-routes.md         # UI routing guide
-│   ├── 06-ui-components.md     # Component development guide
-│   ├── 07-module-configuration.md # Configuration guide
-│   ├── 08-client-side-data.md  # Client-side data management
-│   ├── 09-ai-tools.md          # AI tool integration
-│   ├── 10-best-practices.md    # Development best practices
-│   ├── 11-deployment-troubleshooting.md # Deployment and troubleshooting
-│   ├── 12-testing.md           # Testing guide
-│   ├── LAYOUT_GUIDE.md         # Layout configuration guide
-│   ├── MODULE_DEVELOPMENT_GUIDE.md # Comprehensive development guide
+guide
 │   └── config-README.md        # Configuration overview
 └── utils/                      # Shared utilities (future use)
 ```
@@ -379,9 +364,3 @@ If migrating from the old scattered module management files:
 3. Update configuration references to new locations
 4. Test thoroughly before deployment
 
-## Related Documentation
-
-- [Module Development Guide](./docs/MODULE_DEVELOPMENT_GUIDE.md)
-- [Layout Configuration Guide](./docs/LAYOUT_GUIDE.md)
-- [Database Schema Guide](./docs/01-database-schema.md)
-- [API Development Guide](./docs/04-api-endpoints.md)
