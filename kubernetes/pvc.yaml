@@ -3,6 +3,8 @@ kind: PersistentVolumeClaim
 metadata:
   name: molos-data-pvc
 spec:
+  storageClassName: local-storage
+  volumeName: molos-data-pv
   accessModes:
     - ReadWriteOnce
   resources:
