@@ -7,6 +7,7 @@ spec:
     app: molos
   ports:
     - protocol: TCP
-      port: 80
-      targetPort: 3000
-  type: ClusterIP
+      port: 4173
+      targetPort: 4173
+      nodePort: 30173
+  type: NodePort
