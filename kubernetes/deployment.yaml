@@ -38,7 +38,7 @@ spec:
             - name: FORCE_REBUILD
               value: 'false'
             - name: CSRF_TRUSTED_ORIGINS
-              value: ['http://localhost:4173','http://127.0.0.1:4173']
+              value: ['http://localhost:4173', 'http://127.0.0.1:4173']
 
           volumeMounts:
             - name: molos-data
