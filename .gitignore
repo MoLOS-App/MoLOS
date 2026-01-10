@@ -3,6 +3,7 @@ node_modules
 .vscode/
 internal_documentation/
 devtools/
+docs/
 
 # Output
 .output
