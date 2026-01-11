@@ -12,6 +12,7 @@
 	import ChatMessage from './ChatMessage.svelte';
 	import ChatInput from './ChatInput.svelte';
 	import ReviewChangesOverlay from './ReviewChangesOverlay.svelte';
+	import { uuid } from '$lib/utils/uuid';
 
 	let { isOpen = $bindable(false) } = $props();
 
@@ -75,7 +76,7 @@
 
 		// Optimistic update
 		const tempUserMsg: AiMessage = {
-			id: crypto.randomUUID(),
+			id: uuid(),
 			userId: '',
 			sessionId: currentSessionId || '',
 			role: 'user',

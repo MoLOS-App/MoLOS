@@ -2,6 +2,7 @@ import { eq, desc, and } from 'drizzle-orm';
 import { aiSettings, aiMessages, aiSessions, aiMemories } from '$lib/server/db/schema';
 import type { AiSettings, AiMessage, AiSession } from '$lib/models/ai';
 import { BaseRepository } from '../base-repository';
+import { uuid } from '$lib/utils/uuid';
 
 export class AiRepository extends BaseRepository {
 	private mapToSettings(row: Record<string, unknown>): AiSettings {
@@ -60,7 +61,7 @@ export class AiRepository extends BaseRepository {
 			const result = await this.db
 				.insert(aiSettings)
 				.values({
-					id: crypto.randomUUID(),
+					id: uuid(),
 					userId,
 					provider: settings.provider || 'openai',
 					modelName: settings.modelName || 'gpt-4o',
@@ -87,7 +88,7 @@ export class AiRepository extends BaseRepository {
 		const result = await this.db
 			.insert(aiSessions)
 			.values({
-				id: crypto.randomUUID(),
+				id: uuid(),
 				userId,
 				title,
 				createdAt: new Date(),
@@ -123,7 +124,7 @@ export class AiRepository extends BaseRepository {
 		const result = await this.db
 			.insert(aiMessages)
 			.values({
-				id: crypto.randomUUID(),
+				id: uuid(),
 				userId,
 				...rest,
 				toolCallId,
@@ -160,7 +161,7 @@ export class AiRepository extends BaseRepository {
 		const result = await this.db
 			.insert(aiMemories)
 			.values({
-				id: crypto.randomUUID(),
+				id: uuid(),
 				userId,
 				content,
 				importance,
