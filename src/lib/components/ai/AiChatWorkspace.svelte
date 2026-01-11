@@ -8,6 +8,7 @@
 	import ChatInput from '$lib/components/ai/ChatInput.svelte';
 	import ReviewChangesOverlay from '$lib/components/ai/ReviewChangesOverlay.svelte';
 	import ChatSidebar from '$lib/components/ai/ChatSidebar.svelte';
+	import { uuid } from '$lib/utils/uuid';
 
 	let { userName } = $props<{ userName?: string }>();
 
@@ -105,7 +106,7 @@
 		isLoading = true;
 
 		const tempUserMsg: AiMessage = {
-			id: crypto.randomUUID(),
+			id: uuid(),
 			userId: '',
 			sessionId: currentSessionId || '',
 			role: 'user',
