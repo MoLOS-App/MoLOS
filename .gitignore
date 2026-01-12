@@ -35,6 +35,8 @@ src/lib/config/modules/MoLOS-sample-module
 docs/system-prompts-and-models-of-ai-tools/
 docs/ai-chatbot-svelte/
 docs/guides/MoLOS-sample-module/.git
-# external_modules/
+external_modules/
 documentation/
 
+src/routes/api/(external_modules)/
+src/routes/ui/(modules)/(external_modules)/
