@@ -5,10 +5,19 @@ import path from 'path';
 import { parse, stringify } from 'yaml';
 import type { SettingsRepository } from '../../src/lib/repositories/settings/settings-repository';
 import { EXTERNAL_MODULES_DIR } from './constants';
-import { listTablesWithCounts, runSqlQuery } from './db';
+import {
+	findUserByIdentifier as findUserByIdentifierInDb,
+	listTablesWithCounts,
+	listUsers as listUsersFromDb,
+	removeUser as removeUserFromDb,
+	resetUserPassword as resetUserPasswordInDb,
+	runSqlQuery,
+	updateUserRole as updateUserRoleInDb
+} from './db';
 import { listModulesFromFilesystem } from './fs';
 import { mergeModuleData, moduleStructureSummary } from './merge';
 import type { ModuleRecord } from './types';
+import type { UserRecord } from './db';
 
 type ActionItem = {
 	label: string;
@@ -420,6 +429,12 @@ export class ModuleTUI {
 		addAction('Open MoLOS root in editor', async () => this.openInEditor(process.cwd()), 'm');
 		addAction('Stop running process', async () => this.stopActiveProcess(), 'k');
 		addAction('Show workflow checklist', async () => this.renderWorkflowHelp(), '?');
+
+		addHeading('User Admin');
+		addAction('List users', async () => this.listUsers());
+		addAction('Reset user password', async () => this.resetUserPassword());
+		addAction('Change user role', async () => this.changeUserRole());
+		addAction('Remove user', async () => this.removeUser());
 
 		const scripts = this.readPackageScripts();
 		const scriptEntries = Object.keys(scripts).sort();
@@ -946,6 +961,92 @@ export class ModuleTUI {
 			}
 		} catch (error) {
 			this.logError(`SQL error: ${this.stringifyError(error)}`);
+		}
+	}
+
+	private logUserSummary(user: UserRecord) {
+		const role = user.role ?? 'none';
+		this.layout.logs.log(`{gray-fg}user{/} ${user.name} <${user.email}> (${user.id}) role=${role}`);
+	}
+
+	private async listUsers() {
+		try {
+			const users = listUsersFromDb(50);
+			if (users.length === 0) {
+				this.logInfo('No users found.');
+				return;
+			}
+			this.logInfo(`Users (${users.length}):`);
+			users.forEach((user) => this.logUserSummary(user));
+		} catch (error) {
+			this.logError(`Failed to list users: ${this.stringifyError(error)}`);
+		}
+	}
+
+	private async promptForUser(): Promise<UserRecord | null> {
+		const identifier = await this.promptInput('User email or id', (input) => input.length > 0);
+		if (!identifier) return null;
+		const user = findUserByIdentifierInDb(identifier);
+		if (!user) {
+			this.logError('User not found.');
+			return null;
+		}
+		this.logUserSummary(user);
+		return user;
+	}
+
+	private async resetUserPassword() {
+		const user = await this.promptForUser();
+		if (!user) return;
+		const newPassword = await this.promptInput('New password', (input) => input.length > 0);
+		if (!newPassword) return;
+		const confirmed = await this.promptConfirm(
+			`Reset password for ${user.email}?`,
+			false
+		);
+		if (!confirmed) return;
+		const revokeSessions = await this.promptConfirm('Revoke active sessions?', true);
+		try {
+			await resetUserPasswordInDb(user.id, newPassword, { revokeSessions });
+			this.logInfo(`Password reset for ${user.email}.`);
+		} catch (error) {
+			this.logError(`Failed to reset password: ${this.stringifyError(error)}`);
+		}
+	}
+
+	private async changeUserRole() {
+		const user = await this.promptForUser();
+		if (!user) return;
+		const role = await this.promptInput(
+			'New role (blank clears role)',
+			() => true,
+			user.role ?? ''
+		);
+		if (role === null) return;
+		const confirmed = await this.promptConfirm(
+			`Set role for ${user.email} to "${role || 'none'}"?`,
+			false
+		);
+		if (!confirmed) return;
+		try {
+			const updated = updateUserRoleInDb(user.id, role);
+			this.logInfo(`Role updated for ${updated.email}.`);
+			this.logUserSummary(updated);
+		} catch (error) {
+			this.logError(`Failed to update role: ${this.stringifyError(error)}`);
+		}
+	}
+
+	private async removeUser() {
+		const user = await this.promptForUser();
+		if (!user) return;
+		const confirmed = await this.promptConfirm(`Remove user ${user.email}?`, false);
+		if (!confirmed) return;
+		try {
+			const removed = removeUserFromDb(user.id);
+			this.logInfo(`Removed user ${removed.email}.`);
+		} catch (error) {
+			this.logError(`Failed to remove user: ${this.stringifyError(error)}`);
 		}
 	}
 
