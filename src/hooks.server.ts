@@ -36,15 +36,15 @@ function loadEnv() {
 }
 
 async function setupDatabase() {
-	const dbPath = env.DATABASE_URL;
-
-	if (!dbPath) {
-		console.error('DATABASE_URL is not set');
-		return;
-	}
+	const rawDbPath =
+		env.DATABASE_URL ||
+		process.env.DATABASE_URL ||
+		(process.env.NODE_ENV === 'production' ? '/data/molos.db' : 'molos.db');
+	const dbPath = rawDbPath.replace(/^sqlite:\/\//, '').replace(/^sqlite:|^file:/, '');
+	const resolvedDbPath = path.isAbsolute(dbPath) ? dbPath : path.resolve(process.cwd(), dbPath);
 
 	// Check if database file exists
-	const dbExists = existsSync(dbPath);
+	const dbExists = existsSync(resolvedDbPath);
 
 	if (!dbExists) {
 		console.log('Database does not exist, running drizzle-kit push...');
