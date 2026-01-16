@@ -311,10 +311,11 @@
 			<div class="space-y-6">
 				{#if activeTab === 'builtin'}
 					<section>
-						<Accordion.Root type="multiple" class="w-full space-y-4">
-							{#each builtInModules as mod, i (mod.id)}
-								<div
-									draggable="true"
+					<Accordion.Root type="multiple" class="w-full space-y-4">
+						{#each builtInModules as mod, i (mod.id)}
+							{@const Icon = (mod as any).icon}
+							<div
+								draggable="true"
 									role="listitem"
 									ondragstart={(e) => handleDragStart(e, mod.id)}
 									ondragover={(e) => handleDragOver(e, mod.id)}
@@ -375,14 +376,14 @@
 												</div>
 											</div>
 
-											<div class="flex flex-1 items-center gap-4 py-4">
-												<div class="rounded-xl bg-background p-2.5 text-primary shadow-xs">
-													{#if (mod as any).icon}
-														<svelte:component this={(mod as any).icon} class="h-4 w-4" />
-													{:else}
-														<LayoutGrid class="h-4 w-4" />
-													{/if}
-												</div>
+					<div class="flex flex-1 items-center gap-4 py-4">
+						<div class="rounded-xl bg-background p-2.5 text-primary shadow-xs">
+							{#if Icon}
+								<Icon class="h-4 w-4" />
+							{:else}
+								<LayoutGrid class="h-4 w-4" />
+							{/if}
+						</div>
 												<div class="min-w-0">
 													<div class="flex items-center gap-2">
 														<span class="truncate text-sm font-bold">{mod.name}</span>

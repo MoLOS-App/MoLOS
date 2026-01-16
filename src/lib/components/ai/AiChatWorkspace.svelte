@@ -278,18 +278,18 @@
 											class="text-muted-foreground flex animate-pulse items-center gap-3 rounded-2xl border border-border/60 bg-muted/35 px-4 py-3 text-sm font-bold tracking-wide uppercase shadow-sm"
 										>
 											<LoaderCircle class="h-4 w-4 animate-spin" />
-											Thinking
-											<span class="inline-flex gap-1">
-												<span
-													class="h-1 w-1 animate-[pulse_1.2s_ease-in-out_infinite] rounded-full bg-current opacity-40"
-												/>
-												<span
-													class="h-1 w-1 animate-[pulse_1.2s_ease-in-out_infinite] rounded-full bg-current opacity-40 [animation-delay:0.2s]"
-												/>
-												<span
-													class="h-1 w-1 animate-[pulse_1.2s_ease-in-out_infinite] rounded-full bg-current opacity-40 [animation-delay:0.4s]"
-												/>
-											</span>
+						Thinking
+						<span class="inline-flex gap-1">
+							<span
+								class="h-1 w-1 animate-[pulse_1.2s_ease-in-out_infinite] rounded-full bg-current opacity-40"
+							></span>
+							<span
+								class="h-1 w-1 animate-[pulse_1.2s_ease-in-out_infinite] rounded-full bg-current opacity-40 [animation-delay:0.2s]"
+							></span>
+							<span
+								class="h-1 w-1 animate-[pulse_1.2s_ease-in-out_infinite] rounded-full bg-current opacity-40 [animation-delay:0.4s]"
+							></span>
+						</span>
 										</div>
 									</div>
 								{/if}
