@@ -319,7 +319,7 @@
 					<div class="rounded-3xl border border-border/60 bg-background/95 shadow-xl backdrop-blur">
 						<div
 							bind:this={mobileRailEl}
-							class={`overflow-hidden transition-colors ${mobileRailVisible ? 'border-b border-border/60' : ''}`}
+							class={`overflow-hidden transition-colors`}
 							style={`height: ${mobileRailHeight}px;`}
 						>
 							<div bind:this={mobileRailContentEl} class="px-3 py-2">
