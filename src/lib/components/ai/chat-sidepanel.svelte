@@ -307,7 +307,7 @@
 
 {#if isOpen}
 	<aside
-		class="ai-shell flex flex-col border-l border-border/60 bg-background/95 shadow-sm backdrop-blur transition-all duration-300"
+		class="flex flex-col border-l border-border/60 bg-background/95 shadow-sm backdrop-blur transition-all duration-300"
 		style="width: min({width}px, 100vw)"
 	>
 		<!-- Resize Handle -->
@@ -336,7 +336,7 @@
 			/>
 		{:else}
 			<!-- Chat View -->
-			<div class="ai-scroll flex-1 overflow-y-auto scroll-smooth p-4" bind:this={scrollViewport}>
+			<div class="flex-1 overflow-y-auto scroll-smooth bg-muted/10 p-4" bind:this={scrollViewport}>
 				<div class="space-y-6">
 					{#each messages.filter((m) => m.role === 'user' || (m.role === 'assistant' && (m.content?.trim() !== '' || m.contextMetadata || m.parts || m.attachments))) as msg (msg.id)}
 						<ChatMessage message={msg} />
@@ -344,7 +344,7 @@
 					{#if isLoading}
 						<div class="flex items-start">
 							<div
-								class="text-muted-foreground flex items-center gap-3 rounded-2xl border border-border/40 bg-background/70 px-3 py-2 text-[10px] tracking-[0.2em] uppercase shadow-sm"
+								class="text-muted-foreground flex items-center gap-3 rounded-2xl border border-border/60 bg-muted/20 px-3 py-2 text-[10px] tracking-[0.2em] uppercase shadow-sm"
 							>
 								<Loader2 class="h-3.5 w-3.5 animate-spin" />
 								Thinking
@@ -389,14 +389,6 @@
 </AlertDialog.Root>
 
 <style>
-	.ai-shell {
-		background-color: transparent;
-	}
-
-	.ai-scroll {
-		background-color: transparent;
-	}
-
 	.ai-dots {
 		display: inline-flex;
 		gap: 4px;

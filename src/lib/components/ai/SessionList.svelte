@@ -10,7 +10,7 @@
 	<div class="space-y-2">
 		<Button
 			variant="secondary"
-			class="group mb-5 w-full gap-3 border-none transition-all duration-200 hover:bg-primary hover:text-primary-foreground"
+			class="group mb-5 w-full gap-3 border border-border/60 bg-background/90 transition-all duration-200 hover:bg-muted/30 hover:text-foreground"
 			onclick={onNewChat}
 		>
 			<div class="rounded-xl p-2">
@@ -28,12 +28,12 @@
 		{#each sessions as session (session.id)}
 			<div class="group relative">
 				<button
-					class="flex w-full items-start gap-3 rounded-2xl border border-border/40 bg-background/70 p-3 text-left transition-all duration-200 hover:border-border/60 hover:bg-muted/40"
+					class="flex w-full items-start gap-3 rounded-2xl border border-border/60 bg-background/90 p-3 text-left transition-all duration-200 hover:bg-muted/30"
 					onclick={() => onLoadSession(session.id)}
 				>
 					<div class="mt-1 flex-shrink-0">
 						<div
-							class="flex h-8 w-8 items-center justify-center rounded-2xl bg-muted/60 text-primary"
+							class="flex h-8 w-8 items-center justify-center rounded-2xl bg-muted/40 text-foreground"
 						>
 							<MessageSquare class="h-4 w-4 text-primary" />
 						</div>
