@@ -310,11 +310,9 @@ export class ModuleTUI {
 			this.layout.moduleActions,
 			this.layout.logs,
 			this.layout.db
-		].forEach(
-			(panel) => {
-				panel.on('focus', () => this.updateFocusBorders(panel));
-			}
-		);
+		].forEach((panel) => {
+			panel.on('focus', () => this.updateFocusBorders(panel));
+		});
 	}
 
 	private cycleFocus(direction: number) {
@@ -620,9 +618,7 @@ export class ModuleTUI {
 	}
 
 	private copyLocalTemplateModule(targetPath: string) {
-		const candidates = [
-			path.resolve(process.cwd(), 'external_modules', 'MoLOS-Sample-Module')
-		];
+		const candidates = [path.resolve(process.cwd(), 'external_modules', 'MoLOS-Sample-Module')];
 		const source = candidates.find((candidate) => existsSync(candidate));
 		if (!source) return false;
 		try {
@@ -1000,10 +996,7 @@ export class ModuleTUI {
 		if (!user) return;
 		const newPassword = await this.promptInput('New password', (input) => input.length > 0);
 		if (!newPassword) return;
-		const confirmed = await this.promptConfirm(
-			`Reset password for ${user.email}?`,
-			false
-		);
+		const confirmed = await this.promptConfirm(`Reset password for ${user.email}?`, false);
 		if (!confirmed) return;
 		const revokeSessions = await this.promptConfirm('Revoke active sessions?', true);
 		try {
