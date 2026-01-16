@@ -31,7 +31,6 @@
 	bind:this={railRef}
 	aria-label={label}
 	class="flex snap-x snap-mandatory items-center gap-2 overflow-x-auto px-4 py-3 sm:px-6"
-	onkeydown={handleKeydown}
 >
 	{#each items as item}
 		{@const isActive = item.href && currentPath === item.href}
@@ -46,6 +45,7 @@
 						? 'bg-primary text-primary-foreground shadow-sm'
 						: 'text-muted-foreground bg-muted hover:text-foreground'
 				)}
+				onkeydown={handleKeydown}
 			>
 				<item.icon class="h-4 w-4" />
 				<span class="whitespace-nowrap">{item.name}</span>
