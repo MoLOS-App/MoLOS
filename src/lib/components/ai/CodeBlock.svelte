@@ -18,16 +18,16 @@
 </script>
 
 <div
-	class="group relative my-3 overflow-hidden rounded-2xl border border-border/50 bg-background/70 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur-xl"
+	class="group relative my-3 overflow-hidden rounded-2xl border border-border/60 bg-background/90 shadow-md backdrop-blur"
 >
 	{#if lang}
-		<div class="flex items-center justify-between border-b border-border/50 bg-muted/40 px-3 py-2">
+		<div class="flex items-center justify-between border-b border-border/60 bg-muted/20 px-3 py-2">
 			<span class="text-muted-foreground/70 text-[10px] font-bold tracking-[0.3em] uppercase"
 				>{lang}</span
 			>
 			<button
 				onclick={copyToClipboard}
-				class="text-muted-foreground flex h-7 w-7 items-center justify-center rounded-lg border border-border/50 bg-background/80 backdrop-blur-sm transition-all hover:bg-background hover:text-primary active:scale-90"
+				class="text-muted-foreground flex h-7 w-7 items-center justify-center rounded-lg border border-border/60 bg-background/90 backdrop-blur-sm transition-all hover:bg-muted/20 hover:text-primary active:scale-90"
 				title="Copy code"
 			>
 				{#if copied}
@@ -53,7 +53,7 @@
 			<div class="absolute top-2 right-2 opacity-0 transition-opacity group-hover:opacity-100">
 				<button
 					onclick={copyToClipboard}
-					class="text-muted-foreground flex h-8 w-8 items-center justify-center rounded-lg border border-border/50 bg-background/80 backdrop-blur-sm transition-all hover:bg-background hover:text-primary active:scale-90"
+					class="text-muted-foreground flex h-8 w-8 items-center justify-center rounded-lg border border-border/60 bg-background/90 backdrop-blur-sm transition-all hover:bg-muted/20 hover:text-primary active:scale-90"
 					title="Copy code"
 				>
 					{#if copied}
