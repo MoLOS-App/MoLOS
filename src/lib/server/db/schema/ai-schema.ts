@@ -34,6 +34,7 @@ export const aiSettings = sqliteTable('ai_settings', {
 	temperature: real('temperature'),
 	topP: real('top_p'),
 	maxTokens: integer('max_tokens'),
+	streamEnabled: integer('stream_enabled', { mode: 'boolean' }).notNull().default(true),
 	createdAt: integer('created_at', { mode: 'timestamp_ms' })
 		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
 		.notNull(),

@@ -16,6 +16,14 @@
 	let copied = $state(false);
 
 	const processed = $derived(processMessage(message));
+	const isThinkingPlaceholder = $derived(
+		message.role === 'assistant' &&
+			message.content === '...' &&
+			!processed.thought &&
+			!processed.plan &&
+			processed.attachments.length === 0 &&
+			processed.parts.length === 0
+	);
 
 	function processMessage(msg: AiMessage) {
 		const content = msg.content || '';
@@ -89,7 +97,7 @@
 				>
 					<Bot class="h-3.5 w-3.5" />
 				</div>
-				<span class="text-muted-foreground/80 text-[11px] font-medium">Assistant</span>
+				<span class="text-muted-foreground/80 text-[11px] font-medium">Architects</span>
 			{:else}
 				<span class="text-muted-foreground/80 text-[11px] font-medium">You</span>
 				<div
@@ -122,8 +130,17 @@
 					<p class="whitespace-pre-wrap">{message.content}</p>
 				</div>
 			{:else}
-				{#if processed.content.trim() !== ''}
-					<div class="prose prose-sm prose-custom dark:prose-invert max-w-none">
+				{#if isThinkingPlaceholder}
+					<div class="text-muted-foreground flex items-center gap-2 text-sm font-semibold">
+						Thinking
+						<span class="ai-dots">
+							<span></span>
+							<span></span>
+							<span></span>
+						</span>
+					</div>
+				{:else if processed.content.trim() !== ''}
+					<div class="prose-sm prose prose-custom dark:prose-invert max-w-none">
 						<SvelteMarkdown source={processed.content} {renderers} />
 					</div>
 				{/if}
@@ -271,6 +288,40 @@
 		margin-top: 0.5em;
 		margin-bottom: 0.5em;
 		padding-left: 1.25em;
+	}
+
+	.ai-dots {
+		display: inline-flex;
+		gap: 4px;
+	}
+
+	.ai-dots span {
+		width: 4px;
+		height: 4px;
+		border-radius: 9999px;
+		background: currentColor;
+		opacity: 0.4;
+		animation: pulse-dot 1.2s infinite ease-in-out;
+	}
+
+	.ai-dots span:nth-child(2) {
+		animation-delay: 0.2s;
+	}
+
+	.ai-dots span:nth-child(3) {
+		animation-delay: 0.4s;
+	}
+
+	@keyframes pulse-dot {
+		0%,
+		100% {
+			transform: translateY(0);
+			opacity: 0.4;
+		}
+		50% {
+			transform: translateY(-2px);
+			opacity: 1;
+		}
 	}
 
 	.overflow-wrap-anywhere {

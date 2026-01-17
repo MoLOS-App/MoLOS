@@ -644,9 +644,7 @@
 					</div>
 				{:else}
 					<div class="flex w-full justify-center overflow-y-auto">
-						<div
-							class="min-h-full w-full max-w-6xl overflow-y-auto bg-transparent px-4 pt-6 pb-16 sm:px-6 md:pb-10 lg:px-8"
-						>
+						<div class="min-h-full w-full max-w-6xl bg-transparent pb-16 sm:px-6 md:pb-10 lg:px-8">
 							{@render children()}
 						</div>
 					</div>
