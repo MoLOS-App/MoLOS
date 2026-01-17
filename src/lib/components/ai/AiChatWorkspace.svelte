@@ -275,8 +275,8 @@
 	});
 </script>
 
-<div class="flex flex-col h-full overflow-hidden">
-	<div class="flex flex-col w-full h-full mb-4 overflow-hidden md:pr-4" in:fade={{ duration: 500 }}>
+<div class="flex h-full flex-col overflow-hidden">
+	<div class="mb-4 flex h-full w-full flex-col overflow-hidden md:pr-4" in:fade={{ duration: 500 }}>
 		<div
 			class="flex h-full min-h-[90svh] overflow-hidden md:rounded-2xl md:border md:border-border/70"
 		>
@@ -305,67 +305,67 @@
 			</aside>
 
 			<section
-				class="relative flex flex-col flex-1 min-w-0 overflow-hidden bg-background md:bg-transparent"
+				class="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-background md:bg-transparent"
 				role="main"
 			>
 				<header
-					class="sticky top-0 z-20 flex items-center justify-between gap-3 px-4 py-3 border-b border-border/60 bg-background md:px-6"
+					class="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-border/60 bg-background px-4 py-3 md:px-6"
 				>
 					<div class="flex items-center gap-3">
 						<button
-							class="flex items-center justify-center transition border rounded-full shadow-sm focus-visible:ring-ring h-9 w-9 border-border/50 bg-background text-foreground hover:bg-muted focus-visible:ring-2 focus-visible:ring-offset-2 md:hidden"
+							class="focus-visible:ring-ring flex h-9 w-9 items-center justify-center rounded-full border border-border/50 bg-background text-foreground shadow-sm transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-offset-2 md:hidden"
 							onclick={() => (isSidebarOpen = !isSidebarOpen)}
 							aria-label="Toggle sidebar"
 							aria-expanded={isSidebarOpen}
 						>
-							<Menu class="w-4 h-4" />
+							<Menu class="h-4 w-4" />
 						</button>
 						<div class="flex items-center gap-2 text-sm font-semibold">
-							<Bot class="w-5 h-5 text-muted-foreground" />
+							<Bot class="text-muted-foreground h-5 w-5" />
 							<span>The Architect</span>
 						</div>
 					</div>
-					<div class="hidden text-xs text-muted-foreground sm:block">
+					<div class="text-muted-foreground hidden text-xs sm:block">
 						{currentSessionId ? 'Chat in progress' : 'New chat'}
 					</div>
 				</header>
 
 				<div
-					class="flex-1 px-4 py-6 overflow-y-auto scroll-smooth md:px-6 md:py-8"
+					class="flex-1 overflow-y-auto scroll-smooth px-4 py-6 md:px-6 md:py-8"
 					bind:this={scrollViewport}
 					onscroll={handleScroll}
 					role="log"
 					aria-live="polite"
 					aria-label="Chat messages"
 				>
-					<div class="w-full max-w-4xl min-w-0 mx-auto space-y-6 md:space-y-8">
+					<div class="mx-auto w-full max-w-4xl min-w-0 space-y-6 md:space-y-8">
 						{#if messages.length === 0}
 							<div class="flex min-h-[50vh] flex-col items-center justify-center gap-6 text-center">
-								<div class="p-4 border rounded-full border-border/60 bg-muted/30">
-									<Bot class="w-8 h-8 text-muted-foreground" />
+								<div class="rounded-full border border-border/60 bg-muted/30 p-4">
+									<Bot class="text-muted-foreground h-8 w-8" />
 								</div>
 								<div class="space-y-2">
 									<p class="text-xl font-semibold">
 										{greeting}{userName ? `, ${userName}` : ''}
 									</p>
-									<p class="max-w-md text-sm text-muted-foreground">
+									<p class="text-muted-foreground max-w-md text-sm">
 										Ask a question, generate content, or explore ideas. Here are a few starting
 										points.
 									</p>
 								</div>
 								<div
-									class="grid w-full max-w-2xl grid-cols-1 gap-3 text-sm text-left text-muted-foreground md:grid-cols-2"
+									class="text-muted-foreground grid w-full max-w-2xl grid-cols-1 gap-3 text-left text-sm md:grid-cols-2"
 								>
-									<div class="px-4 py-4 border rounded-xl border-border/50 bg-muted/30">
+									<div class="rounded-xl border border-border/50 bg-muted/30 px-4 py-4">
 										"Plan my week around deep work and workouts."
 									</div>
-									<div class="px-4 py-4 border rounded-xl border-border/50 bg-muted/30">
+									<div class="rounded-xl border border-border/50 bg-muted/30 px-4 py-4">
 										"Summarize my tasks and deadlines."
 									</div>
-									<div class="px-4 py-4 border rounded-xl border-border/50 bg-muted/30">
+									<div class="rounded-xl border border-border/50 bg-muted/30 px-4 py-4">
 										"Draft a status update for leadership."
 									</div>
-									<div class="px-4 py-4 border rounded-xl border-border/50 bg-muted/30">
+									<div class="rounded-xl border border-border/50 bg-muted/30 px-4 py-4">
 										"Turn meeting notes into action items."
 									</div>
 								</div>
@@ -378,9 +378,9 @@
 								{#if isLoading && !isStreaming}
 									<div class="flex items-start" in:fade>
 										<div
-											class="flex items-center gap-3 px-4 py-3 text-sm font-bold tracking-wide uppercase border shadow-sm text-muted-foreground animate-pulse rounded-2xl border-border/60 bg-muted/35"
+											class="text-muted-foreground flex animate-pulse items-center gap-3 rounded-2xl border border-border/60 bg-muted/35 px-4 py-3 text-sm font-bold tracking-wide uppercase shadow-sm"
 										>
-											<LoaderCircle class="w-4 h-4 animate-spin" />
+											<LoaderCircle class="h-4 w-4 animate-spin" />
 											Thinking
 											<span class="inline-flex gap-1">
 												<span
@@ -403,12 +403,12 @@
 
 				{#if showScrollButton}
 					<button
-						class="absolute z-20 flex items-center justify-center transition-all border rounded-full shadow-lg focus-visible:ring-ring right-4 bottom-36 h-11 w-11 border-border/60 bg-background text-foreground backdrop-blur hover:bg-muted/90 focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 md:right-6"
+						class="focus-visible:ring-ring absolute right-4 bottom-36 z-20 flex h-11 w-11 items-center justify-center rounded-full border border-border/60 bg-background text-foreground shadow-lg backdrop-blur transition-all hover:bg-muted/90 focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 md:right-6"
 						onclick={scrollToBottom}
 						transition:fade
 						aria-label="Scroll to bottom"
 					>
-						<ArrowDown class="w-5 h-5" />
+						<ArrowDown class="h-5 w-5" />
 					</button>
 				{/if}
 
