@@ -34,12 +34,12 @@
 			e.preventDefault();
 			onSendMessage();
 		}}
-		class="relative flex items-end gap-2 rounded-2xl border border-border/60 bg-muted/30 p-2 transition-all focus-within:border-primary/40 focus-within:ring-1 focus-within:ring-primary/20"
+		class="relative flex items-end gap-2 rounded-xl border border-border/60 bg-background/90 p-2 shadow-sm transition-all focus-within:border-primary/40 focus-within:ring-1 focus-within:ring-primary/20"
 	>
 		<Button
 			variant="ghost"
 			size="icon"
-			class="text-muted-foreground h-9 w-9 shrink-0 rounded-xl hover:text-foreground"
+			class="text-muted-foreground h-9 w-9 shrink-0 rounded-xl hover:bg-muted/30 hover:text-foreground"
 			type="button"
 			title="Attach files"
 		>

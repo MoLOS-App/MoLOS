@@ -3,11 +3,12 @@
 	import { fade } from 'svelte/transition';
 	import { page } from '$app/stores';
 	import type { AiAction, AiMessage, AiSession } from '$lib/models/ai';
-	import { Bot, Loader2, Menu, ArrowDown } from 'lucide-svelte';
+	import { Bot, LoaderCircle, Menu, ArrowDown } from 'lucide-svelte';
 	import ChatMessage from '$lib/components/ai/ChatMessage.svelte';
 	import ChatInput from '$lib/components/ai/ChatInput.svelte';
 	import ReviewChangesOverlay from '$lib/components/ai/ReviewChangesOverlay.svelte';
 	import ChatSidebar from '$lib/components/ai/ChatSidebar.svelte';
+	import { uuid } from '$lib/utils/uuid';
 
 	let { userName } = $props<{ userName?: string }>();
 
@@ -16,6 +17,8 @@
 	let messages = $state<AiMessage[]>([]);
 	let input = $state('');
 	let isLoading = $state(false);
+	let isStreaming = $state(false);
+	let streamEnabled = $state(true);
 	let scrollViewport = $state<HTMLElement | null>(null);
 	let pendingAction = $state<AiAction | null>(null);
 	let actionTimer = $state(5);
@@ -37,6 +40,14 @@
 		}
 	}
 
+	async function loadSettings() {
+		const res = await fetch('/api/ai/settings');
+		if (res.ok) {
+			const data = await res.json();
+			streamEnabled = data.settings?.streamEnabled ?? true;
+		}
+	}
+
 	async function loadMessages(sessionId: string) {
 		const res = await fetch(`/api/ai/chat?sessionId=${sessionId}`);
 		if (res.ok) {
@@ -52,6 +63,8 @@
 		messages = [];
 		input = '';
 		pendingAction = null;
+		isLoading = false;
+		isStreaming = false;
 		isSidebarOpen = false;
 	}
 
@@ -97,22 +110,97 @@
 		}
 	}
 
+	function updateAssistantMessage(messageId: string, content: string) {
+		messages = messages.map((msg) => (msg.id === messageId ? { ...msg, content } : msg));
+	}
+
+	function applyStreamMeta(meta: { sessionId?: string; actions?: AiAction[] }) {
+		if (meta.sessionId) {
+			currentSessionId = meta.sessionId;
+		}
+		if (meta.actions?.some((a) => a.type === 'write' && a.status === 'pending')) {
+			pendingAction =
+				meta.actions.find((a) => a.type === 'write' && a.status === 'pending') || null;
+			if (pendingAction) startActionTimer();
+		}
+	}
+
+	async function handleStreamResponse(res: Response, assistantMessageId: string) {
+		const reader = res.body?.getReader();
+		if (!reader) throw new Error('Streaming response unavailable');
+
+		const decoder = new TextDecoder();
+		let buffer = '';
+		let content = '';
+
+		while (true) {
+			const { value, done } = await reader.read();
+			if (done) break;
+			buffer += decoder.decode(value, { stream: true });
+			const parts = buffer.split(/\r?\n\r?\n/);
+			buffer = parts.pop() || '';
+			for (const part of parts) {
+				const lines = part.split(/\r?\n/);
+				const dataLines = lines.filter((line) => line.startsWith('data:'));
+				if (!dataLines.length) continue;
+				const payload = dataLines.map((line) => line.replace(/^data:\s?/, '')).join('\n');
+				if (payload === '[DONE]') {
+					return;
+				}
+				let data: { type?: string; content?: string; message?: string } & {
+					sessionId?: string;
+					actions?: AiAction[];
+				};
+				try {
+					data = JSON.parse(payload);
+				} catch {
+					continue;
+				}
+				if (data.type === 'chunk') {
+					content += data.content || '';
+					updateAssistantMessage(assistantMessageId, content);
+					await scrollToBottom();
+				} else if (data.type === 'meta') {
+					applyStreamMeta(data);
+				} else if (data.type === 'error') {
+					throw new Error(data.message || 'Streaming failed');
+				}
+			}
+		}
+	}
+
 	async function sendMessage() {
 		if (!input.trim() || isLoading) return;
 
 		const userContent = input;
 		input = '';
 		isLoading = true;
+		isStreaming = false;
 
 		const tempUserMsg: AiMessage = {
-			id: crypto.randomUUID(),
+			id: uuid(),
 			userId: '',
 			sessionId: currentSessionId || '',
 			role: 'user',
 			content: userContent,
 			createdAt: new Date()
 		};
-		messages = [...messages, tempUserMsg];
+
+		let assistantMessageId: string | null = null;
+		if (streamEnabled) {
+			assistantMessageId = uuid();
+			const tempAssistantMsg: AiMessage = {
+				id: assistantMessageId,
+				userId: '',
+				sessionId: currentSessionId || '',
+				role: 'assistant',
+				content: '...',
+				createdAt: new Date()
+			};
+			messages = [...messages, tempUserMsg, tempAssistantMsg];
+		} else {
+			messages = [...messages, tempUserMsg];
+		}
 		await scrollToBottom();
 
 		try {
@@ -122,10 +210,22 @@
 				body: JSON.stringify({
 					content: userContent,
 					sessionId: currentSessionId,
-					activeModuleIds
+					activeModuleIds,
+					stream: streamEnabled
 				})
 			});
-			if (res.ok) {
+
+			const isEventStream =
+				res.headers.get('content-type')?.includes('text/event-stream') ?? streamEnabled;
+
+			if (res.ok && streamEnabled && isEventStream && assistantMessageId) {
+				isStreaming = true;
+				await handleStreamResponse(res, assistantMessageId);
+				if (currentSessionId) {
+					await loadMessages(currentSessionId);
+				}
+				await loadSessions();
+			} else if (res.ok) {
 				const data = await res.json();
 				currentSessionId = data.sessionId;
 				if (data.actions?.some((a: AiAction) => a.type === 'write' && a.status === 'pending')) {
@@ -137,8 +237,11 @@
 				await loadMessages(currentSessionId!);
 				await loadSessions();
 			}
+		} catch (error) {
+			console.error(error);
 		} finally {
 			isLoading = false;
+			isStreaming = false;
 			await scrollToBottom();
 		}
 	}
@@ -168,12 +271,15 @@
 
 	onMount(() => {
 		loadSessions();
+		loadSettings();
 	});
 </script>
 
-<div class="ai-page flex h-full flex-col overflow-hidden">
-	<div class="ai-shell flex h-full w-full flex-col overflow-hidden" in:fade={{ duration: 500 }}>
-		<div class="ai-layout flex h-full max-h-screen min-h-[90svh] overflow-hidden pb-26 md:pb-8">
+<div class="flex h-full flex-col overflow-hidden">
+	<div class="mb-4 flex h-full w-full flex-col overflow-hidden md:pr-4" in:fade={{ duration: 500 }}>
+		<div
+			class="flex h-full min-h-[90svh] overflow-hidden md:rounded-2xl md:border md:border-border/70"
+		>
 			<!-- Mobile Sidebar Overlay -->
 			{#if isSidebarOpen}
 				<button
@@ -184,13 +290,14 @@
 			{/if}
 
 			<aside
-				class="ai-sidebar fixed inset-y-0 left-0 z-50 flex w-80 flex-col border-r border-border/30 bg-background shadow-lg transition-transform duration-300 md:static md:z-0 md:flex md:rounded-2xl md:border md:shadow-sm {isSidebarOpen
+				class="fixed inset-y-0 left-0 z-50 flex w-80 flex-col border-r border-border/60 bg-background shadow-lg transition-transform duration-300 ease-out md:static md:z-0 md:flex md:bg-muted/20 md:shadow-sm {isSidebarOpen
 					? 'translate-x-0'
 					: '-translate-x-full md:translate-x-0'}"
 			>
 				<ChatSidebar
 					{sessions}
 					{currentSessionId}
+					{userName}
 					onNewChat={startNewChat}
 					onLoadSession={loadMessages}
 					onCloseSidebar={() => (isSidebarOpen = false)}
@@ -198,15 +305,15 @@
 			</aside>
 
 			<section
-				class="relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border/40 bg-background"
+				class="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-background md:bg-transparent"
 				role="main"
 			>
 				<header
-					class="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-border/40 bg-background/95 px-4 py-3 backdrop-blur md:px-6"
+					class="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-border/60 bg-background px-4 py-3 md:px-6"
 				>
 					<div class="flex items-center gap-3">
 						<button
-							class="flex h-9 w-9 items-center justify-center rounded-full border border-border/50 bg-background text-foreground shadow-sm transition hover:bg-muted md:hidden"
+							class="focus-visible:ring-ring flex h-9 w-9 items-center justify-center rounded-full border border-border/50 bg-background text-foreground shadow-sm transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-offset-2 md:hidden"
 							onclick={() => (isSidebarOpen = !isSidebarOpen)}
 							aria-label="Toggle sidebar"
 							aria-expanded={isSidebarOpen}
@@ -215,7 +322,7 @@
 						</button>
 						<div class="flex items-center gap-2 text-sm font-semibold">
 							<Bot class="text-muted-foreground h-5 w-5" />
-							<span>ChatGPT</span>
+							<span>The Architect</span>
 						</div>
 					</div>
 					<div class="text-muted-foreground hidden text-xs sm:block">
@@ -231,10 +338,10 @@
 					aria-live="polite"
 					aria-label="Chat messages"
 				>
-					<div class="mx-auto min-w-0 space-y-6 md:space-y-8">
+					<div class="mx-auto w-full max-w-4xl min-w-0 space-y-6 md:space-y-8">
 						{#if messages.length === 0}
 							<div class="flex min-h-[50vh] flex-col items-center justify-center gap-6 text-center">
-								<div class="rounded-full border border-border/40 bg-muted/30 p-4">
+								<div class="rounded-full border border-border/60 bg-muted/30 p-4">
 									<Bot class="text-muted-foreground h-8 w-8" />
 								</div>
 								<div class="space-y-2">
@@ -249,16 +356,16 @@
 								<div
 									class="text-muted-foreground grid w-full max-w-2xl grid-cols-1 gap-3 text-left text-sm md:grid-cols-2"
 								>
-									<div class="rounded-xl border border-border/40 bg-muted/20 px-4 py-4">
+									<div class="rounded-xl border border-border/50 bg-muted/30 px-4 py-4">
 										"Plan my week around deep work and workouts."
 									</div>
-									<div class="rounded-xl border border-border/40 bg-muted/20 px-4 py-4">
+									<div class="rounded-xl border border-border/50 bg-muted/30 px-4 py-4">
 										"Summarize my tasks and deadlines."
 									</div>
-									<div class="rounded-xl border border-border/40 bg-muted/20 px-4 py-4">
+									<div class="rounded-xl border border-border/50 bg-muted/30 px-4 py-4">
 										"Draft a status update for leadership."
 									</div>
-									<div class="rounded-xl border border-border/40 bg-muted/20 px-4 py-4">
+									<div class="rounded-xl border border-border/50 bg-muted/30 px-4 py-4">
 										"Turn meeting notes into action items."
 									</div>
 								</div>
@@ -268,17 +375,23 @@
 								{#each messages.filter((m) => m.role === 'user' || (m.role === 'assistant' && (m.content?.trim() !== '' || m.contextMetadata || m.parts || m.attachments))) as msg (msg.id)}
 									<ChatMessage message={msg} />
 								{/each}
-								{#if isLoading}
+								{#if isLoading && !isStreaming}
 									<div class="flex items-start" in:fade>
 										<div
-											class="text-muted-foreground flex items-center gap-3 rounded-2xl border border-border/40 bg-muted/30 px-4 py-3 text-sm font-bold tracking-wide uppercase"
+											class="text-muted-foreground flex animate-pulse items-center gap-3 rounded-2xl border border-border/60 bg-muted/35 px-4 py-3 text-sm font-bold tracking-wide uppercase shadow-sm"
 										>
-											<Loader2 class="h-4 w-4 animate-spin" />
+											<LoaderCircle class="h-4 w-4 animate-spin" />
 											Thinking
-											<span class="ai-dots">
-												<span></span>
-												<span></span>
-												<span></span>
+											<span class="inline-flex gap-1">
+												<span
+													class="h-1 w-1 animate-[pulse_1.2s_ease-in-out_infinite] rounded-full bg-current opacity-40"
+												></span>
+												<span
+													class="h-1 w-1 animate-[pulse_1.2s_ease-in-out_infinite] rounded-full bg-current opacity-40 [animation-delay:0.2s]"
+												></span>
+												<span
+													class="h-1 w-1 animate-[pulse_1.2s_ease-in-out_infinite] rounded-full bg-current opacity-40 [animation-delay:0.4s]"
+												></span>
 											</span>
 										</div>
 									</div>
@@ -290,7 +403,7 @@
 
 				{#if showScrollButton}
 					<button
-						class="focus-visible:ring-ring absolute right-4 bottom-36 z-20 flex h-11 w-11 items-center justify-center rounded-full border border-border/50 bg-background/90 text-foreground shadow-lg backdrop-blur transition-all hover:bg-muted focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 md:right-6"
+						class="focus-visible:ring-ring absolute right-4 bottom-36 z-20 flex h-11 w-11 items-center justify-center rounded-full border border-border/60 bg-background text-foreground shadow-lg backdrop-blur transition-all hover:bg-muted/90 focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 md:right-6"
 						onclick={scrollToBottom}
 						transition:fade
 						aria-label="Scroll to bottom"
@@ -299,9 +412,7 @@
 					</button>
 				{/if}
 
-				<div
-					class="sticky bottom-0 z-10 flex flex-col border-t border-border/40 bg-background/95 backdrop-blur"
-				>
+				<div class="sticky bottom-0 z-10 flex flex-col border-t border-border/60 bg-background">
 					<ReviewChangesOverlay {pendingAction} {actionTimer} onCancelAction={cancelAction} />
 					<div class="px-4 pt-4 pb-5 md:px-6">
 						<ChatInput
@@ -312,48 +423,9 @@
 							onInput={(value: string) => (input = value)}
 							onKeydown={handleKeydown}
 						/>
-						<p class="text-muted-foreground mt-3 text-center text-xs">
-							ChatGPT can make mistakes. Consider checking important information.
-						</p>
 					</div>
 				</div>
 			</section>
 		</div>
 	</div>
 </div>
-
-<style>
-	.ai-dots {
-		display: inline-flex;
-		gap: 4px;
-	}
-
-	.ai-dots span {
-		width: 4px;
-		height: 4px;
-		border-radius: 9999px;
-		background: currentColor;
-		opacity: 0.4;
-		animation: pulse-dot 1.2s infinite ease-in-out;
-	}
-
-	.ai-dots span:nth-child(2) {
-		animation-delay: 0.2s;
-	}
-
-	.ai-dots span:nth-child(3) {
-		animation-delay: 0.4s;
-	}
-
-	@keyframes pulse-dot {
-		0%,
-		100% {
-			transform: translateY(0);
-			opacity: 0.4;
-		}
-		50% {
-			transform: translateY(-2px);
-			opacity: 1;
-		}
-	}
-</style>

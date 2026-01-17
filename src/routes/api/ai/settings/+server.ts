@@ -12,7 +12,8 @@ const UpdateAiSettingsSchema = z.object({
 	baseUrl: z.string().optional(),
 	temperature: z.number().optional(),
 	topP: z.number().optional(),
-	maxTokens: z.number().optional()
+	maxTokens: z.number().optional(),
+	streamEnabled: z.boolean().optional()
 });
 
 export const GET: RequestHandler = async ({ locals }) => {

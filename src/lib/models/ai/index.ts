@@ -23,6 +23,7 @@ export interface AiSettings {
 	temperature?: number;
 	topP?: number;
 	maxTokens?: number;
+	streamEnabled?: boolean;
 	createdAt: Date;
 	updatedAt: Date;
 }

@@ -3,6 +3,17 @@ import type { RequestHandler } from './$types';
 import { AiAgent } from '$lib/server/ai/agent';
 import { AiRepository } from '$lib/repositories/ai/ai-repository';
 
+const chunkText = (text: string, size: number = 32): string[] => {
+	if (!text) return [''];
+	const chunks: string[] = [];
+	for (let i = 0; i < text.length; i += size) {
+		chunks.push(text.slice(i, i + size));
+	}
+	return chunks.length > 0 ? chunks : [''];
+};
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export const POST: RequestHandler = async ({ request, locals }) => {
 	if (!locals.user) {
 		return json({ error: 'Unauthorized' }, { status: 401 });
@@ -17,9 +28,13 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		actionToExecute,
 		activeModuleIds,
 		attachments,
-		parts
+		parts,
+		stream: streamRequested
 	} = body;
 	const agent = new AiAgent(locals.user.id);
+	const aiRepo = new AiRepository();
+	const settings = await aiRepo.getSettings(locals.user.id);
+	const shouldStream = Boolean(streamRequested && (settings?.streamEnabled ?? true));
 
 	// Handle confirmed action execution (Legacy/Manual)
 	if (actionToExecute) {
@@ -49,7 +64,6 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		return json({ error: 'Content is required' }, { status: 400 });
 	}
 
-	const aiRepo = new AiRepository();
 	let activeSessionId = sessionId;
 
 	if (!activeSessionId) {
@@ -60,6 +74,65 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	// Return response
 	console.log('Processing AI message for content:', content);
 	try {
+		if (shouldStream) {
+			const encoder = new TextEncoder();
+			const stream = new ReadableStream({
+				start: async (controller) => {
+					try {
+						controller.enqueue(
+							encoder.encode(
+								`data: ${JSON.stringify({ type: 'meta', sessionId: activeSessionId })}\n\n`
+							)
+						);
+						const response = await agent.processMessage(
+							content,
+							activeSessionId,
+							activeModuleIds,
+							messageAttachments,
+							messageParts
+						);
+						const chunks = chunkText(response.message || '');
+						for (const chunk of chunks) {
+							controller.enqueue(
+								encoder.encode(`data: ${JSON.stringify({ type: 'chunk', content: chunk })}\n\n`)
+							);
+							await sleep(40);
+						}
+						controller.enqueue(
+							encoder.encode(
+								`data: ${JSON.stringify({
+									type: 'meta',
+									sessionId: activeSessionId,
+									actions: response.actions || [],
+									events: response.events,
+									telemetry: response.telemetry
+								})}\n\n`
+							)
+						);
+						controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+						controller.close();
+					} catch (error) {
+						const errorMessage = (error as any)?.message || 'Internal Server Error';
+						controller.enqueue(
+							encoder.encode(
+								`data: ${JSON.stringify({ type: 'error', message: errorMessage })}\n\n`
+							)
+						);
+						controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+						controller.close();
+					}
+				}
+			});
+
+			return new Response(stream, {
+				headers: {
+					'Content-Type': 'text/event-stream',
+					'Cache-Control': 'no-cache',
+					Connection: 'keep-alive'
+				}
+			});
+		}
+
 		const response = await agent.processMessage(
 			content,
 			activeSessionId,

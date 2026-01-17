@@ -16,6 +16,14 @@
 	let copied = $state(false);
 
 	const processed = $derived(processMessage(message));
+	const isThinkingPlaceholder = $derived(
+		message.role === 'assistant' &&
+			message.content === '...' &&
+			!processed.thought &&
+			!processed.plan &&
+			processed.attachments.length === 0 &&
+			processed.parts.length === 0
+	);
 
 	function processMessage(msg: AiMessage) {
 		const content = msg.content || '';
@@ -84,14 +92,16 @@
 	>
 		<div class="flex items-center gap-2 px-1">
 			{#if message.role === 'assistant'}
-				<div class="flex h-6 w-6 items-center justify-center rounded-full bg-muted/60 text-primary">
+				<div
+					class="flex h-6 w-6 items-center justify-center rounded-full bg-muted/40 text-foreground"
+				>
 					<Bot class="h-3.5 w-3.5" />
 				</div>
-				<span class="text-muted-foreground/80 text-[11px] font-medium">Assistant</span>
+				<span class="text-muted-foreground/80 text-[11px] font-medium">Architects</span>
 			{:else}
 				<span class="text-muted-foreground/80 text-[11px] font-medium">You</span>
 				<div
-					class="text-muted-foreground flex h-6 w-6 items-center justify-center rounded-full bg-muted/60"
+					class="text-muted-foreground flex h-6 w-6 items-center justify-center rounded-full bg-muted/40"
 				>
 					<User class="h-3.5 w-3.5" />
 				</div>
@@ -102,7 +112,7 @@
 			class="bubble-container relative max-w-[92%] min-w-0 rounded-2xl px-4 py-3 text-[14px] leading-relaxed transition-all duration-200 {message.role ===
 			'user'
 				? 'user-bubble bg-primary text-primary-foreground'
-				: 'assistant-bubble border border-border/60 bg-muted/30 text-foreground'}"
+				: 'assistant-bubble border border-border/60 bg-muted/20 text-foreground'}"
 		>
 			{#if message.role === 'user'}
 				<div class="overflow-wrap-anywhere flex flex-col gap-2">
@@ -120,8 +130,17 @@
 					<p class="whitespace-pre-wrap">{message.content}</p>
 				</div>
 			{:else}
-				{#if processed.content.trim() !== ''}
-					<div class="prose prose-sm prose-custom dark:prose-invert max-w-none">
+				{#if isThinkingPlaceholder}
+					<div class="text-muted-foreground flex items-center gap-2 text-sm font-semibold">
+						Thinking
+						<span class="ai-dots">
+							<span></span>
+							<span></span>
+							<span></span>
+						</span>
+					</div>
+				{:else if processed.content.trim() !== ''}
+					<div class="prose-sm prose prose-custom dark:prose-invert max-w-none">
 						<SvelteMarkdown source={processed.content} {renderers} />
 					</div>
 				{/if}
@@ -144,7 +163,7 @@
 
 								{#if expandedThoughts[message.id]}
 									<div
-										class="text-muted-foreground/90 rounded-xl bg-muted/40 p-3 text-[12px] italic"
+										class="text-muted-foreground/90 rounded-xl border border-border/50 bg-muted/20 p-3 text-[12px] italic"
 										transition:slide
 									>
 										{processed.thought}
@@ -165,7 +184,7 @@
 
 								{#if expandedPlans[message.id]}
 									<div
-										class="text-muted-foreground/90 rounded-xl bg-muted/40 p-3 font-mono text-[12px]"
+										class="text-muted-foreground/90 rounded-xl border border-border/50 bg-muted/20 p-3 font-mono text-[12px]"
 										transition:slide
 									>
 										{processed.plan}
@@ -182,7 +201,7 @@
 				class="absolute top-0 -right-12 flex flex-col gap-1 opacity-0 transition-opacity group-hover/msg:opacity-100"
 			>
 				<button
-					class="text-muted-foreground flex h-8 w-8 items-center justify-center rounded-full border border-border/60 bg-background/80 hover:bg-muted/60 hover:text-foreground"
+					class="text-muted-foreground flex h-8 w-8 items-center justify-center rounded-full border border-border/60 bg-background/90 hover:bg-muted/30 hover:text-foreground"
 					onclick={copyToClipboard}
 					title="Copy message"
 				>
@@ -199,7 +218,7 @@
 			<div class="mt-1 flex flex-wrap gap-2">
 				{#each processed.actions as action, i (i)}
 					<div
-						class="text-muted-foreground flex items-center gap-2 rounded-full border border-border/40 bg-muted/30 px-3 py-1 text-[11px] font-medium"
+						class="text-muted-foreground flex items-center gap-2 rounded-full border border-border/50 bg-muted/20 px-3 py-1 text-[11px] font-medium"
 					>
 						<span
 							class="h-1.5 w-1.5 rounded-full {action.type === 'write'
@@ -269,6 +288,40 @@
 		margin-top: 0.5em;
 		margin-bottom: 0.5em;
 		padding-left: 1.25em;
+	}
+
+	.ai-dots {
+		display: inline-flex;
+		gap: 4px;
+	}
+
+	.ai-dots span {
+		width: 4px;
+		height: 4px;
+		border-radius: 9999px;
+		background: currentColor;
+		opacity: 0.4;
+		animation: pulse-dot 1.2s infinite ease-in-out;
+	}
+
+	.ai-dots span:nth-child(2) {
+		animation-delay: 0.2s;
+	}
+
+	.ai-dots span:nth-child(3) {
+		animation-delay: 0.4s;
+	}
+
+	@keyframes pulse-dot {
+		0%,
+		100% {
+			transform: translateY(0);
+			opacity: 0.4;
+		}
+		50% {
+			transform: translateY(-2px);
+			opacity: 1;
+		}
 	}
 
 	.overflow-wrap-anywhere {

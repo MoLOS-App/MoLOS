@@ -6,13 +6,13 @@ resources:
   - pvc.yaml
   - deployment.yaml
   - service.yaml
-  - ingress.yaml
   - secret.yaml
-
-commonLabels:
-  app.kubernetes.io/name: molos
-  app.kubernetes.io/part-of: molos-system
 
 images:
   - name: ghcr.io/molos-app/molos
     newTag: latest
+labels:
+  - includeSelectors: true
+    pairs:
+      app.kubernetes.io/name: molos
+      app.kubernetes.io/part-of: molos-system
