@@ -21,6 +21,7 @@ import {
 } from './agent-utils';
 import { createTelemetry, estimateTokensFromMessages, estimateTokensFromText } from './telemetry';
 import { getAgentRuntimeConfig, type AgentRuntimeConfig } from './runtime-config';
+import { uuid } from '$lib/utils/uuid';
 
 type LlmResponse = {
 	content: string;
@@ -218,7 +219,7 @@ export class AiAgent {
 		const actions: AiAction[] = [];
 		let currentPlan: string | null = null;
 		const runtime = getAgentRuntimeConfig(settings);
-		const runId = crypto.randomUUID();
+		const runId = uuid();
 		const { telemetry, events, recordEvent } = createTelemetry(runId);
 		const record = (event: AiAgentEvent) => {
 			if (events.length >= runtime.maxEvents) return;

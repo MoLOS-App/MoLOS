@@ -313,6 +313,7 @@
 					<section>
 						<Accordion.Root type="multiple" class="w-full space-y-4">
 							{#each builtInModules as mod, i (mod.id)}
+								{@const Icon = (mod as any).icon}
 								<div
 									draggable="true"
 									role="listitem"
@@ -377,8 +378,8 @@
 
 											<div class="flex flex-1 items-center gap-4 py-4">
 												<div class="rounded-xl bg-background p-2.5 text-primary shadow-xs">
-													{#if (mod as any).icon}
-														<svelte:component this={(mod as any).icon} class="h-4 w-4" />
+													{#if Icon}
+														<Icon class="h-4 w-4" />
 													{:else}
 														<LayoutGrid class="h-4 w-4" />
 													{/if}

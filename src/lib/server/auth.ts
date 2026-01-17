@@ -8,7 +8,7 @@ import { env } from '$env/dynamic/private';
 import { admin, apiKey } from 'better-auth/plugins';
 import { sql } from 'drizzle-orm';
 import { existsSync, readFileSync } from 'fs';
-import { dev } from '$app/environment';
+import { building, dev } from '$app/environment';
 
 function resolveAuthSecret(): string | undefined {
 	const direct = env.BETTER_AUTH_SECRET || process.env.BETTER_AUTH_SECRET;
@@ -26,12 +26,14 @@ let authSecret = resolveAuthSecret();
 if (!authSecret) {
 	const message =
 		'BETTER_AUTH_SECRET is required. Set BETTER_AUTH_SECRET or BETTER_AUTH_SECRET_FILE.';
-	if (!dev) {
-		// TODO: Make it dynamic
-		console.warn(`[Auth] PRODUCTION WARNING: ${message}`);
-		authSecret = 'super-secret-production-fallback-key-for-build-only-not-secure-for-runtime';
-	} else {
+	if (building) {
+		console.warn(`[Auth] BUILD WARNING: ${message}`);
+		authSecret = 'super-secret-build-fallback-key-not-secure-for-runtime';
+	} else if (dev) {
 		console.warn(`[Auth] ${message}`);
+		authSecret = 'super-secret-dev-fallback-key-not-secure-for-runtime';
+	} else {
+		throw new Error(`[Auth] ${message}`);
 	}
 }
 

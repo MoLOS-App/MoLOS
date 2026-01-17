@@ -319,7 +319,7 @@
 					<div class="rounded-3xl border border-border/60 bg-background/95 shadow-xl backdrop-blur">
 						<div
 							bind:this={mobileRailEl}
-							class={`overflow-hidden transition-colors ${mobileRailVisible ? 'border-b border-border/60' : ''}`}
+							class={`overflow-hidden transition-colors`}
 							style={`height: ${mobileRailHeight}px;`}
 						>
 							<div bind:this={mobileRailContentEl} class="px-3 py-2">
@@ -485,9 +485,9 @@
 			<!-- Content -->
 			<div class="flex min-w-0 flex-1 overflow-hidden">
 				{#if hasSubmenu && !isMobileViewport}
-					<div class="flex min-w-0 flex-1 gap-0 py-5 pr-6 pl-1">
+					<div class="flex min-w-0 flex-1 gap-0">
 						<div
-							class="flex shrink-0 rounded-3xl border border-border/60 bg-background/95 shadow-sm transition-shadow duration-300 ease-out hover:shadow-md"
+							class="hover:shadow-mds my-4 flex shrink-0 rounded-3xl border border-border/60 bg-background/95 shadow-sm transition-shadow duration-300 ease-out"
 						>
 							<div class="w-14 border-r border-border/60 px-2 py-4">
 								<div class="flex h-full flex-col items-center gap-3">
@@ -637,16 +637,14 @@
 							</aside>
 						</div>
 						<div class="flex min-w-0 flex-1 justify-center overflow-y-auto">
-							<div class="min-h-full w-full px-2 pt-2 pb-12 sm:px-4 md:pb-10 lg:px-6">
+							<div class="min-h-full w-full px-2 pt-4 pb-12 sm:px-4 md:pr-0 md:pb-0">
 								{@render children()}
 							</div>
 						</div>
 					</div>
 				{:else}
 					<div class="flex w-full justify-center overflow-y-auto">
-						<div
-							class="min-h-full w-full max-w-6xl overflow-y-auto bg-transparent px-4 pt-6 pb-16 sm:px-6 md:pb-10 lg:px-8"
-						>
+						<div class="min-h-full w-full max-w-6xl bg-transparent pb-16 sm:px-6 md:pb-10 lg:px-8">
 							{@render children()}
 						</div>
 					</div>

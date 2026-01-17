@@ -3,8 +3,9 @@
 	import type { HTMLAttributes } from 'svelte/elements';
 	import ChartStyle from './chart-style.svelte';
 	import { setChartContext, type ChartConfig } from './chart-utils.js';
+	import { uuid } from '$lib/utils/uuid';
 
-	const uid = crypto.randomUUID();
+	const uid = uuid();
 
 	let {
 		ref = $bindable(null),

@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: molos-deployment
+  namespace: molos
   labels:
     app: molos
 spec:
@@ -17,6 +18,7 @@ spec:
       containers:
         - name: molos
           image: ghcr.io/molos-app/molos:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 4173
           env:
@@ -37,38 +39,37 @@ spec:
               value: 'true'
             - name: FORCE_REBUILD
               value: 'false'
+            - name: MOLOS_ENABLE_PROD_BUILD
+              value: 'true'
             - name: CSRF_TRUSTED_ORIGINS
-              value: ['http://localhost:4173', 'http://127.0.0.1:4173']
+              value: 'http://localhost:4173,http://127.0.0.1:4173,http://192.168.1.10:30059'
 
           volumeMounts:
             - name: molos-data
               mountPath: /data
-            - name: external-modules
+              subPath: database
+            - name: molos-data
               mountPath: /app/external_modules
-            - name: molos-secrets
-              mountPath: /run/secrets
-              readOnly: true
+              subPath: external_modules
           livenessProbe:
             httpGet:
               path: /api/health
               port: 4173
-            initialDelaySeconds: 30
+            initialDelaySeconds: 10
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /api/health
               port: 4173
-            initialDelaySeconds: 15
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          startupProbe:
+            httpGet:
+              path: /api/health
+              port: 4173
+            failureThreshold: 60
             periodSeconds: 5
       volumes:
         - name: molos-data
           persistentVolumeClaim:
             claimName: molos-data-pvc
-        - name: external-modules
-          emptyDir: {} # Or use another PVC if modules should persist
-        - name: molos-secrets
-          secret:
-            secretName: molos-secrets
-            items:
-              - key: better-auth-secret
-                path: better_auth_secret

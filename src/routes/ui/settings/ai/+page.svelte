@@ -10,7 +10,8 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Textarea } from '$lib/components/ui/textarea';
-	import { ArrowLeft, Save, Bot, Shield, Cpu, Globe } from 'lucide-svelte';
+	import { Switch } from '$lib/components/ui/switch';
+	import { ArrowLeft, Save, Bot, Shield, Cpu, Globe, Zap } from 'lucide-svelte';
 	import { goto } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import { PREDEFINED_MODELS } from '$lib/models/ai';
@@ -23,6 +24,7 @@
 	let modelName = $state('gpt-4o');
 	let systemPrompt = $state('');
 	let baseUrl = $state('');
+	let streamEnabled = $state(true);
 
 	$effect(() => {
 		provider = data.settings?.provider || 'openai';
@@ -30,6 +32,7 @@
 		modelName = data.settings?.modelName || 'gpt-4o';
 		systemPrompt = data.settings?.systemPrompt || '';
 		baseUrl = data.settings?.baseUrl || '';
+		streamEnabled = data.settings?.streamEnabled ?? true;
 	});
 
 	let isSaving = $state(false);
@@ -71,7 +74,8 @@
 					apiKey,
 					modelName: finalModelName,
 					systemPrompt,
-					baseUrl
+					baseUrl,
+					streamEnabled
 				})
 			});
 
@@ -238,6 +242,33 @@
 							placeholder="You are a helpful assistant for MoLOS..."
 							rows={6}
 						/>
+					</div>
+				</CardContent>
+			</Card>
+
+			<Card class="border-none shadow-sm">
+				<CardHeader>
+					<div class="flex items-center gap-3">
+						<div class="rounded-xl bg-primary/10 p-2 text-primary shadow-xs">
+							<Zap class="h-5 w-5" />
+						</div>
+						<div>
+							<CardTitle>Response Streaming</CardTitle>
+							<CardDescription>Control how responses arrive in chat</CardDescription>
+						</div>
+					</div>
+				</CardHeader>
+				<CardContent>
+					<div
+						class="flex items-center justify-between gap-4 rounded-xl border border-border/50 bg-muted/20 px-4 py-3"
+					>
+						<div class="space-y-1">
+							<Label class="text-sm">Stream assistant responses</Label>
+							<p class="text-muted-foreground text-xs">
+								Show tokens as they arrive instead of waiting for a full response.
+							</p>
+						</div>
+						<Switch bind:checked={streamEnabled} />
 					</div>
 				</CardContent>
 			</Card>

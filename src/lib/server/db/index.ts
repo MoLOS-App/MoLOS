@@ -24,11 +24,9 @@ try {
 const rawDbPath =
 	env_DATABASE_URL || (process.env.NODE_ENV === 'production' ? '/data/molos.db' : 'molos.db');
 
-// Handle 'file:' prefix if present (common in DATABASE_URL)
-const dbPath = rawDbPath.startsWith('file:') ? rawDbPath.slice(5) : rawDbPath;
+// Handle URL prefixes
+const dbPath = rawDbPath.replace(/^sqlite:\/\//, '').replace(/^sqlite:|^file:/, '');
 
-// During build, we might not have access to the database file or directory.
-// We use a dummy database or skip initialization if possible.
 const client = isBuilding ? new Database(':memory:') : new Database(dbPath);
 
 try {
@@ -37,7 +35,7 @@ try {
 	client.pragma('synchronous = NORMAL');
 	client.pragma('foreign_keys = ON');
 } catch {
-	// Non-fatal: keep defaults if pragmas cannot be applied.
+	// Non-fatal
 }
 
 export const db = drizzle(client, { schema });

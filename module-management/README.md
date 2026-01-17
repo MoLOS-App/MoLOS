@@ -363,4 +363,3 @@ If migrating from the old scattered module management files:
 2. Replace direct script calls with new CLI commands
 3. Update configuration references to new locations
 4. Test thoroughly before deployment
-

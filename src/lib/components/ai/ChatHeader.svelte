@@ -5,9 +5,11 @@
 	let { view, onBack, onNewChat, onClose } = $props();
 </script>
 
-<div class="flex items-center justify-between border-b border-border/60 bg-accent px-4 py-3">
+<div
+	class="flex items-center justify-between border-b border-border/60 bg-background/95 px-4 py-3 backdrop-blur"
+>
 	<div class="flex items-center gap-4">
-		<div class="grid h-9 w-9 place-items-center rounded-2xl bg-muted/60 text-primary">
+		<div class="grid h-9 w-9 place-items-center rounded-2xl bg-muted/40 text-foreground">
 			<Bot class="h-5 w-5" />
 		</div>
 		<div class="flex flex-col">
@@ -22,7 +24,7 @@
 			<Button
 				variant="ghost"
 				size="icon"
-				class="h-9 w-9 rounded-full border border-border/60 bg-background/70 hover:bg-muted/60"
+				class="h-9 w-9 rounded-full border border-border/60 bg-background/80 hover:bg-muted/30"
 				onclick={onNewChat}
 			>
 				<Plus class="h-4 w-4" />
@@ -32,7 +34,7 @@
 			<Button
 				variant="ghost"
 				size="icon"
-				class="h-9 w-9 rounded-full border border-border/60 bg-background/70 hover:bg-muted/60"
+				class="h-9 w-9 rounded-full border border-border/60 bg-background/80 hover:bg-muted/30"
 				onclick={onBack}
 			>
 				<ChevronLeft class="h-5 w-5" />
@@ -41,7 +43,7 @@
 		<Button
 			variant="ghost"
 			size="icon"
-			class="h-9 w-9 rounded-full border border-border/60 bg-background/70 hover:bg-muted/60"
+			class="h-9 w-9 rounded-full border border-border/60 bg-background/80 hover:bg-muted/30"
 			onclick={onClose}
 		>
 			<X class="h-4 w-4" />
