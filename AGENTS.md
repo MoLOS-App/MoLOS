@@ -7,7 +7,6 @@
 - `external_modules/` contains optional modules (folders named `MoLOS-*`).
 - `scripts/` holds module tooling and CLIs used by npm scripts.
 - `drizzle/` stores database migrations and snapshots.
-- `docs/` and `internal_documentation/` contain product and developer notes.
 
 ## Build, Test, and Development Commands
 

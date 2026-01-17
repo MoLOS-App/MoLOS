@@ -21,6 +21,8 @@
 	let messages = $state<AiMessage[]>([]);
 	let input = $state('');
 	let isLoading = $state(false);
+	let isStreaming = $state(false);
+	let streamEnabled = $state(true);
 	let scrollViewport = $state<HTMLElement | null>(null);
 	let view = $state<'sessions' | 'chat'>('sessions');
 
@@ -50,6 +52,14 @@
 		}
 	}
 
+	async function loadSettings() {
+		const res = await fetch('/api/ai/settings');
+		if (res.ok) {
+			const data = await res.json();
+			streamEnabled = data.settings?.streamEnabled ?? true;
+		}
+	}
+
 	async function loadMessages(sessionId: string) {
 		const res = await fetch(`/api/ai/chat?sessionId=${sessionId}`);
 		if (res.ok) {
@@ -64,7 +74,67 @@
 	async function startNewChat() {
 		currentSessionId = null;
 		messages = [];
+		isLoading = false;
+		isStreaming = false;
 		view = 'chat';
+	}
+
+	function updateAssistantMessage(messageId: string, content: string) {
+		messages = messages.map((msg) => (msg.id === messageId ? { ...msg, content } : msg));
+	}
+
+	function applyStreamMeta(meta: { sessionId?: string; actions?: AiAction[] }) {
+		if (meta.sessionId) {
+			currentSessionId = meta.sessionId;
+		}
+		if (meta.actions?.some((a) => a.type === 'write' && a.status === 'pending')) {
+			pendingAction =
+				meta.actions.find((a) => a.type === 'write' && a.status === 'pending') || null;
+			if (pendingAction) startActionTimer();
+		}
+	}
+
+	async function handleStreamResponse(res: Response, assistantMessageId: string) {
+		const reader = res.body?.getReader();
+		if (!reader) throw new Error('Streaming response unavailable');
+
+		const decoder = new TextDecoder();
+		let buffer = '';
+		let content = '';
+
+		while (true) {
+			const { value, done } = await reader.read();
+			if (done) break;
+			buffer += decoder.decode(value, { stream: true });
+			const parts = buffer.split('\n\n');
+			buffer = parts.pop() || '';
+			for (const part of parts) {
+				const line = part.split('\n').find((l) => l.startsWith('data:'));
+				if (!line) continue;
+				const payload = line.replace(/^data:\s?/, '');
+				if (payload === '[DONE]') {
+					return;
+				}
+				let data: { type?: string; content?: string; message?: string } & {
+					sessionId?: string;
+					actions?: AiAction[];
+				};
+				try {
+					data = JSON.parse(payload);
+				} catch {
+					continue;
+				}
+				if (data.type === 'chunk') {
+					content += data.content || '';
+					updateAssistantMessage(assistantMessageId, content);
+					await scrollToBottom();
+				} else if (data.type === 'meta') {
+					applyStreamMeta(data);
+				} else if (data.type === 'error') {
+					throw new Error(data.message || 'Streaming failed');
+				}
+			}
+		}
 	}
 
 	async function sendMessage() {
@@ -73,8 +143,8 @@
 		const userContent = input;
 		input = '';
 		isLoading = true;
+		isStreaming = false;
 
-		// Optimistic update
 		const tempUserMsg: AiMessage = {
 			id: uuid(),
 			userId: '',
@@ -83,7 +153,22 @@
 			content: userContent,
 			createdAt: new Date()
 		};
-		messages = [...messages, tempUserMsg];
+
+		let assistantMessageId: string | null = null;
+		if (streamEnabled) {
+			assistantMessageId = uuid();
+			const tempAssistantMsg: AiMessage = {
+				id: assistantMessageId,
+				userId: '',
+				sessionId: currentSessionId || '',
+				role: 'assistant',
+				content: '...',
+				createdAt: new Date()
+			};
+			messages = [...messages, tempUserMsg, tempAssistantMsg];
+		} else {
+			messages = [...messages, tempUserMsg];
+		}
 		await scrollToBottom();
 
 		try {
@@ -93,11 +178,22 @@
 				body: JSON.stringify({
 					content: userContent,
 					sessionId: currentSessionId,
-					activeModuleIds
+					activeModuleIds,
+					stream: streamEnabled
 				})
 			});
 
-			if (res.ok) {
+			const isEventStream =
+				res.headers.get('content-type')?.includes('text/event-stream') ?? streamEnabled;
+
+			if (res.ok && streamEnabled && isEventStream && assistantMessageId) {
+				isStreaming = true;
+				await handleStreamResponse(res, assistantMessageId);
+				if (currentSessionId) {
+					await loadMessages(currentSessionId);
+				}
+				await loadSessions();
+			} else if (res.ok) {
 				const data = await res.json();
 				currentSessionId = data.sessionId;
 
@@ -115,6 +211,7 @@
 			console.error(e);
 		} finally {
 			isLoading = false;
+			isStreaming = false;
 			await scrollToBottom();
 		}
 	}
@@ -290,6 +387,7 @@
 
 	onMount(() => {
 		loadSessions();
+		loadSettings();
 		window.addEventListener('mousemove', handleMouseMove);
 		window.addEventListener('mouseup', stopResizing);
 		return () => {
@@ -341,7 +439,7 @@
 					{#each messages.filter((m) => m.role === 'user' || (m.role === 'assistant' && (m.content?.trim() !== '' || m.contextMetadata || m.parts || m.attachments))) as msg (msg.id)}
 						<ChatMessage message={msg} />
 					{/each}
-					{#if isLoading}
+					{#if isLoading && !isStreaming}
 						<div class="flex items-start">
 							<div
 								class="text-muted-foreground flex items-center gap-3 rounded-2xl border border-border/60 bg-muted/20 px-3 py-2 text-[10px] tracking-[0.2em] uppercase shadow-sm"

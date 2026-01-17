@@ -8,6 +8,13 @@
       "when": 1767649222782,
       "tag": "0000_condemned_ultron",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1768550392537,
+      "tag": "0001_gifted_terrax",
+      "breakpoints": true
     }
   ]
 }
