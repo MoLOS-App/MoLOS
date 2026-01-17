@@ -16,10 +16,14 @@ async function runCommand(command: string, args: string[]): Promise<number | nul
 async function start() {
 	console.log('[Supervisor] Starting MoLOS Automated Supervisor...');
 
+	const nodeEnv = process.env.NODE_ENV || 'production';
+	if (!process.env.PORT) {
+		process.env.PORT = '4173';
+	}
+
 	let rebuildRequested = false;
 
 	while (true) {
-		// 0. Sync/Cleanup modules before build
 		console.log('\n[Supervisor] Phase 0: Synchronizing modules...');
 		const syncCode = await runCommand('npm', ['run', 'module:sync']);
 
@@ -28,10 +32,9 @@ async function start() {
 			process.exit(syncCode || 1);
 		}
 
-		// 1. Build the project
 		const allowProdBuild =
 			process.env.MOLOS_ENABLE_PROD_BUILD === 'true' || process.env.FORCE_REBUILD === 'true';
-		if (process.env.NODE_ENV === 'production' && !allowProdBuild && !rebuildRequested) {
+		if (nodeEnv === 'production' && !allowProdBuild && !rebuildRequested) {
 			console.log('\n[Supervisor] Phase 1: Skipping build in production environment.');
 		} else {
 			console.log('\n[Supervisor] Phase 1: Building project...');
@@ -44,9 +47,8 @@ async function start() {
 			rebuildRequested = false;
 		}
 
-		// 2. Run the server
 		let exitCode: number | null;
-		if (process.env.NODE_ENV === 'production') {
+		if (nodeEnv === 'production') {
 			console.log('\n[Supervisor] Phase 2: Starting production server...');
 			exitCode = await runCommand('node', ['build/index.js']);
 		} else {
