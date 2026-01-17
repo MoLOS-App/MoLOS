@@ -25,9 +25,7 @@ const rawDbPath =
 	env_DATABASE_URL || (process.env.NODE_ENV === 'production' ? '/data/molos.db' : 'molos.db');
 
 // Handle URL prefixes
-const dbPath = rawDbPath
-	.replace(/^sqlite:\/\//, '')
-	.replace(/^sqlite:|^file:/, '');
+const dbPath = rawDbPath.replace(/^sqlite:\/\//, '').replace(/^sqlite:|^file:/, '');
 
 const client = isBuilding ? new Database(':memory:') : new Database(dbPath);
 
