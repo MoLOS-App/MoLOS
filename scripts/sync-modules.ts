@@ -1,4 +1,5 @@
 import { ModuleManager } from '../module-management/server/module-manager';
+import { ModuleInitialization } from '../module-management/server/initialization';
 import { existsSync, readFileSync, readdirSync } from 'fs';
 import path from 'path';
 import { parse } from 'yaml';
@@ -118,6 +119,16 @@ async function main() {
 
 	try {
 		await ModuleManager.init();
+		const failedModules = ModuleInitialization.consumeFailedModules();
+		if (failedModules.length > 0) {
+			console.warn(
+				`[SyncModules] Modules failed to initialize and were removed: ${failedModules.join(', ')}`
+			);
+			console.warn('[SyncModules] Re-syncing modules after removal...');
+			await ModuleManager.init();
+			console.warn('[SyncModules] Requesting restart due to failed module initialization...');
+			process.exit(10);
+		}
 		console.log('[SyncModules] Module synchronization complete.');
 		process.exit(0);
 	} catch (err) {
