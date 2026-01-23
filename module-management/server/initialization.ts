@@ -7,7 +7,8 @@ import {
 	realpathSync,
 	lstatSync,
 	copyFileSync,
-	mkdirSync
+	mkdirSync,
+	renameSync
 } from 'fs';
 import { execFileSync } from 'child_process';
 import path from 'path';
@@ -30,6 +31,14 @@ import type { ModuleManifest } from '../config/module-types.ts';
  */
 
 export class ModuleInitialization {
+	private static failedModuleIds = new Set<string>();
+
+	static consumeFailedModules(): string[] {
+		const failed = Array.from(this.failedModuleIds);
+		this.failedModuleIds.clear();
+		return failed;
+	}
+
 	private static isValidModuleId(moduleId: string): boolean {
 		return /^[a-zA-Z0-9_-]+$/.test(moduleId);
 	}
@@ -134,6 +143,15 @@ export class ModuleInitialization {
 		migrationRunner: MigrationRunner
 	): Promise<void> {
 		const modulePath = ModulePaths.getModulePath(moduleId);
+		const wasActive = mod.status === 'active';
+		const hadExistingModule = existsSync(modulePath);
+		const stagingPath = path.join(
+			ModulePaths.EXTERNAL_DIR,
+			`.staging-${moduleId}-${Date.now()}`
+		);
+		const backupPath = hadExistingModule
+			? path.join(ModulePaths.EXTERNAL_DIR, `.backup-${moduleId}-${Date.now()}`)
+			: null;
 		if (!this.isValidModuleId(moduleId)) {
 			throw new Error(`Invalid module ID: ${moduleId}`);
 		}
@@ -164,40 +182,30 @@ export class ModuleInitialization {
 		}
 
 		try {
-			// 0. Clean Refresh: Remove and re-clone (unless it's a local module already in place)
+			// 0. Stage refresh to avoid breaking a previously-active module
 			console.log(`[ModuleManager] Refreshing module ${moduleId} from ${mod.repoUrl}...`);
-			cleanupModuleArtifacts(moduleId);
+			if (!wasActive || !hadExistingModule) {
+				cleanupModuleArtifacts(moduleId);
+			}
+			if (existsSync(stagingPath)) {
+				rmSync(stagingPath, { recursive: true, force: true });
+			}
 
-			if (isLocal && existsSync(modulePath) && !existsSync(localSourcePath || '')) {
-				console.log(
-					`[ModuleManager] Module ${moduleId} is already in external_modules, skipping refresh.`
-				);
-			} else if (isLocal && localSourcePath && existsSync(localSourcePath)) {
+			if (isLocal && (!localSourcePath || !existsSync(localSourcePath))) {
+				throw new Error(`Local module source missing for ${moduleId}`);
+			}
+
+			if (isLocal && localSourcePath && existsSync(localSourcePath)) {
 				console.log(`[ModuleManager] Using local source for ${moduleId}`);
-				// Instead of symlinking, copy local source into external_modules.
 				const isSymlink = lstatSync(localSourcePath).isSymbolicLink();
 				const sourcePath = isSymlink ? realpathSync(localSourcePath) : localSourcePath;
-				const resolvedSource = path.resolve(sourcePath);
-				const resolvedTarget = path.resolve(modulePath);
-				if (!isSymlink && resolvedSource === resolvedTarget) {
-					console.log(
-						`[ModuleManager] Module ${moduleId} already in external_modules, skipping copy.`
-					);
-				} else {
-					if (existsSync(modulePath)) {
-						rmSync(modulePath, { recursive: true, force: true });
-					}
-					this.copyLocalModule(sourcePath, modulePath);
-				}
+				this.copyLocalModule(sourcePath, stagingPath);
 			} else {
 				if (mod.repoUrl.trim().startsWith('-')) {
 					throw new Error(`Invalid repository URL for ${moduleId}`);
 				}
-				if (existsSync(modulePath)) {
-					rmSync(modulePath, { recursive: true, force: true });
-				}
 				try {
-					execFileSync('git', ['clone', '--depth', '1', mod.repoUrl, modulePath], {
+					execFileSync('git', ['clone', '--depth', '1', mod.repoUrl, stagingPath], {
 						stdio: 'inherit'
 					});
 				} catch (cloneError) {
@@ -206,12 +214,12 @@ export class ModuleInitialization {
 			}
 
 			const moduleRoots = isLocal ? allowedRoots : [ModulePaths.EXTERNAL_DIR];
-			if (!this.isPathWithinRoots(modulePath, moduleRoots)) {
-				throw new Error(`Module path resolves outside allowed roots: ${modulePath}`);
+			if (!this.isPathWithinRoots(stagingPath, moduleRoots)) {
+				throw new Error(`Module path resolves outside allowed roots: ${stagingPath}`);
 			}
 
 			// 1. Validate Manifest
-			const manifestPath = ModulePaths.getManifestPath(moduleId);
+			const manifestPath = path.join(stagingPath, 'manifest.yaml');
 			if (!existsSync(manifestPath)) {
 				throw new Error(`Missing manifest.yaml in ${moduleId}`);
 			}
@@ -232,20 +240,31 @@ export class ModuleInitialization {
 			});
 
 			// 2. Run Tests (Basic validation)
-			this.runBasicTests(moduleId, modulePath);
+			this.runBasicTests(moduleId, stagingPath);
 
 			// 3. Run Migrations
-			const migrationsDir = ModulePaths.getMigrationsPath(moduleId);
+			const migrationsDir = path.join(stagingPath, 'drizzle');
 			await migrationRunner.runMigrations(moduleId, migrationsDir);
 
 			// 4. Standardize Exports
-			this.standardizeModuleExports(moduleId, modulePath);
+			this.standardizeModuleExports(moduleId, stagingPath);
 
-			// 5. Setup Symlinks (Runtime check/refresh)
+			// 5. Swap staged module into place (rollback-capable)
+			if (backupPath && existsSync(modulePath)) {
+				renameSync(modulePath, backupPath);
+			}
+			renameSync(stagingPath, modulePath);
+
+			// 6. Setup Symlinks (Runtime check/refresh)
 			this.setupSymlinks(moduleId, modulePath);
 
-			// 6. Update Status in DB
+			// 7. Update Status in DB
 			await settingsRepo.updateExternalModuleStatus(moduleId, 'active');
+
+			// 8. Cleanup backup after successful swap
+			if (backupPath && existsSync(backupPath)) {
+				rmSync(backupPath, { recursive: true, force: true });
+			}
 
 			console.log(`[ModuleManager] Module ${moduleId} initialized successfully.`);
 			await settingsRepo.log(
@@ -254,6 +273,10 @@ export class ModuleInitialization {
 				`Module ${moduleId} initialized successfully.`
 			);
 		} catch (error: unknown) {
+			if (existsSync(stagingPath)) {
+				rmSync(stagingPath, { recursive: true, force: true });
+			}
+
 			const { category, message, details } = formatErrorForLogging(
 				moduleId,
 				error,
@@ -277,24 +300,43 @@ export class ModuleInitialization {
 				stack: details
 			});
 
-			// Mark module in error state instead of deleting it
+			// Mark the module as errored and uninstall to prevent broken startups
 			await settingsRepo.updateExternalModuleStatus(
 				moduleId,
 				moduleError.status as any,
 				moduleError
 			);
-
-			console.log(
-				`[ModuleManager] Module ${moduleId} preserved in error state for inspection and recovery.`
-			);
-
-			// Cleanup symlinks and build artifacts so the module isn't partially loaded
+			try {
+				await settingsRepo.log(
+					'warn',
+					'ModuleManager',
+					`Uninstalling module ${moduleId} due to initialization failure.`,
+					{ errorType: category, message }
+				);
+			} catch {
+				// non-fatal
+			}
 			try {
 				cleanupModuleArtifacts(moduleId);
-				console.log(`[ModuleManager] Cleaned up broken symlinks and artifacts for ${moduleId}`);
+				if (existsSync(modulePath)) {
+					rmSync(modulePath, { recursive: true, force: true });
+				}
+				if (backupPath && existsSync(backupPath)) {
+					rmSync(backupPath, { recursive: true, force: true });
+				}
+				console.log(
+					`[ModuleManager] Module ${moduleId} removed after failed initialization.`
+				);
+				await settingsRepo.log(
+					'warn',
+					'ModuleManager',
+					`Module ${moduleId} auto-uninstalled after failed initialization.`,
+					{ status: moduleError.status }
+				);
 			} catch (cleanupError) {
 				console.warn(`[ModuleManager] Failed to cleanup artifacts for ${moduleId}:`, cleanupError);
 			}
+			this.failedModuleIds.add(moduleId);
 
 			// Don't trigger reboot - other modules may still be valid
 			// Only exit with error code if this is the last module being processed
@@ -314,12 +356,12 @@ export class ModuleInitialization {
 		}
 
 		// 2. Check for routes directory
-		if (!existsSync(ModulePaths.getRoutesPath(moduleId))) {
+		if (!existsSync(path.join(modulePath, 'routes'))) {
 			console.warn(`[ModuleManager] Warning: Module ${moduleId} has no routes directory.`);
 		}
 
 		// 3. Check for lib directory
-		if (!existsSync(ModulePaths.getLibPath(moduleId))) {
+		if (!existsSync(path.join(modulePath, 'lib'))) {
 			console.warn(`[ModuleManager] Warning: Module ${moduleId} has no lib directory.`);
 		}
 	}
@@ -328,7 +370,7 @@ export class ModuleInitialization {
 	 * Standardize module configuration and exports
 	 */
 	private static standardizeModuleExports(moduleId: string, modulePath: string): void {
-		const configPath = ModulePaths.getConfigPath(moduleId);
+		const configPath = path.join(modulePath, 'config.ts');
 		if (!existsSync(configPath)) return;
 		if (lstatSync(configPath).isSymbolicLink()) {
 			throw new Error(`Refusing to modify symlinked config: ${configPath}`);
