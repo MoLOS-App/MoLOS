@@ -63,6 +63,8 @@ const DANGEROUS_KEYWORDS = [
 	'CREATE VIRTUAL TABLE'
 ];
 
+const IGNORED_TABLE_TOKENS = new Set(['IF', 'NOT', 'EXISTS']);
+
 /**
  * SQL Security Validator
  */
@@ -105,40 +107,37 @@ export class SQLValidator {
 		}
 
 		// Extract and validate table names
-		const tableMatches = normalized.match(
-			/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?["'`]?([a-zA-Z0-9_-]+)["'`]?/gi
-		);
+		const tableRegex =
+			/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)*["'`]?([a-zA-Z0-9_-]+)["'`]?/gi;
+		const tableMatches = normalized.matchAll(tableRegex);
 
-		if (tableMatches) {
-			for (const match of tableMatches) {
-				// Extract table name from match
-				const tableName = match
-					.replace(/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?["'`]?/gi, '')
-					.replace(/["'`]?$/g, '');
+		for (const match of tableMatches) {
+			const tableName = match[1];
+			if (!tableName) continue;
+			if (IGNORED_TABLE_TOKENS.has(tableName.toUpperCase())) {
+				continue;
+			}
 
-				if (!tableName) continue;
+			tables.push(tableName);
 
-				tables.push(tableName);
+			// Validate table naming convention
+			const normalizedModuleId = moduleId.toLowerCase().replace(/-/g, '_');
+			const normalizedTableName = tableName.toLowerCase().replace(/-/g, '_');
+			const isValidPrefix =
+				normalizedTableName.startsWith('molos_') ||
+				normalizedTableName.startsWith(normalizedModuleId + '_') ||
+				tableName.startsWith(moduleId + '_') ||
+				normalizedTableName === normalizedModuleId;
 
-				// Validate table naming convention
-				const normalizedModuleId = moduleId.toLowerCase().replace(/-/g, '_');
-				const normalizedTableName = tableName.toLowerCase().replace(/-/g, '_');
-				const isValidPrefix =
-					normalizedTableName.startsWith('molos_') ||
-					normalizedTableName.startsWith(normalizedModuleId + '_') ||
-					tableName.startsWith(moduleId + '_') ||
-					normalizedTableName === normalizedModuleId;
+			if (!isValidPrefix) {
+				errors.push(
+					`Table "${tableName}" must start with "molos_" or "${moduleId}_" prefix (module ID: ${moduleId})`
+				);
+			}
 
-				if (!isValidPrefix) {
-					errors.push(
-						`Table "${tableName}" must start with "molos_" or "${moduleId}_" prefix (module ID: ${moduleId})`
-					);
-				}
-
-				// Warn about table name patterns
-				if (tableName.toLowerCase().includes('temp') || tableName.toLowerCase().includes('test')) {
-					warnings.push(`Table "${tableName}" appears to be temporary or for testing`);
-				}
+			// Warn about table name patterns
+			if (tableName.toLowerCase().includes('temp') || tableName.toLowerCase().includes('test')) {
+				warnings.push(`Table "${tableName}" appears to be temporary or for testing`);
 			}
 		}
 
@@ -222,6 +221,12 @@ export class SQLValidator {
 
 		// Normalize whitespace
 		normalized = normalized.replace(/\s+/g, ' ').trim();
+
+		// Collapse duplicate IF NOT EXISTS sequences
+		normalized = normalized.replace(
+			/IF\s+NOT\s+EXISTS(\s+IF\s+NOT\s+EXISTS)+/gi,
+			'IF NOT EXISTS'
+		);
 
 		return normalized.toUpperCase();
 	}

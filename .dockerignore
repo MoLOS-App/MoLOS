@@ -14,5 +14,17 @@ docs/UI_Inspo
 *.db-wal
 bun.lock
 # package-lock.json
-molos_data
+molos_data/
 (external_modules)
+external_modules/
+molos.db
+./src/routes/api/(external_modules)/*
+./src/routes/ui/(modules)/(external_modules)/*
+./src/lib/config/external_modules/*
+./src/lib/components/external_modules/*
+./src/lib/models/external_modules/*
+./src/lib/repositories/external_modules/*
+./src/lib/stores/external_modules/*
+./src/lib/utils/external_modules/*
+./src/lib/server/ai/external_modules/*
+./src/lib/server/db/schema/external_modules/*

@@ -25,6 +25,7 @@ export const SYMLINK_CONFIG = {
 	modelsDir: path.join(process.cwd(), 'src/lib/models/external_modules'),
 	repositoriesDir: path.join(process.cwd(), 'src/lib/repositories/external_modules'),
 	storesDir: path.join(process.cwd(), 'src/lib/stores/external_modules'),
+	utilsDir: path.join(process.cwd(), 'src/lib/utils/external_modules'),
 	serverAiDir: path.join(process.cwd(), 'src/lib/server/ai/external_modules'),
 	dbSchemaDir: path.join(process.cwd(), 'src/lib/server/db/schema/external_modules'),
 
@@ -51,6 +52,7 @@ export interface ModuleSymlinks {
 	models?: string;
 	repositories?: string;
 	stores?: string;
+	utils?: string;
 	serverAi?: string;
 	dbSchema?: string;
 	uiRoutes?: string;
@@ -67,6 +69,7 @@ export function getModuleSymlinks(moduleId: string): ModuleSymlinks {
 		models: path.join(SYMLINK_CONFIG.modelsDir, moduleId),
 		repositories: path.join(SYMLINK_CONFIG.repositoriesDir, moduleId),
 		stores: path.join(SYMLINK_CONFIG.storesDir, moduleId),
+		utils: path.join(SYMLINK_CONFIG.utilsDir, moduleId),
 		serverAi: path.join(SYMLINK_CONFIG.serverAiDir, moduleId),
 		dbSchema: path.join(SYMLINK_CONFIG.dbSchemaDir, moduleId),
 		uiRoutes: path.join(SYMLINK_CONFIG.uiRoutesDir, moduleId),
@@ -83,6 +86,7 @@ export interface ModuleSymlinkSources {
 	models?: string;
 	repositories?: string;
 	stores?: string;
+	utils?: string;
 	serverAi?: string;
 	dbSchema?: string;
 	uiRoutes?: string;
@@ -102,6 +106,7 @@ export function getModuleSymlinkSources(
 		models: path.join(modulePath, 'lib/models'),
 		repositories: path.join(modulePath, 'lib/repositories'),
 		stores: path.join(modulePath, 'lib/stores'),
+		utils: path.join(modulePath, 'lib/utils'),
 		serverAi: path.join(modulePath, 'lib/server/ai'),
 		dbSchema: path.join(modulePath, 'lib/server/db/schema'),
 		uiRoutes: path.join(modulePath, 'routes/ui'),
@@ -120,6 +125,7 @@ export const PATH_ENV_OVERRIDES: Record<string, string> = {
 	MOLOS_MODELS_DIR: 'modelsDir',
 	MOLOS_REPOSITORIES_DIR: 'repositoriesDir',
 	MOLOS_STORES_DIR: 'storesDir',
+	MOLOS_UTILS_DIR: 'utilsDir',
 	MOLOS_SERVER_AI_DIR: 'serverAiDir',
 	MOLOS_DB_SCHEMA_DIR: 'dbSchemaDir',
 	MOLOS_UI_ROUTES_DIR: 'uiRoutesDir',
@@ -160,6 +166,7 @@ export function validateSymlinkDirs(): { valid: boolean; errors: string[] } {
 		SYMLINK_CONFIG.modelsDir,
 		SYMLINK_CONFIG.repositoriesDir,
 		SYMLINK_CONFIG.storesDir,
+		SYMLINK_CONFIG.utilsDir,
 		SYMLINK_CONFIG.serverAiDir,
 		SYMLINK_CONFIG.dbSchemaDir
 	].forEach((dir) => {

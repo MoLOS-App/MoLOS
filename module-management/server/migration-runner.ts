@@ -7,14 +7,24 @@ import { SQLValidator } from '$lib/server/db/sql-security';
 export class MigrationRunner {
 	constructor(private db: BetterSQLite3Database<any>) {}
 
+	private normalizeSqlContent(sqlContent: string): string {
+		return sqlContent.replace(
+			/IF\s+NOT\s+EXISTS(\s+IF\s+NOT\s+EXISTS)+/gi,
+			'IF NOT EXISTS'
+		);
+	}
+
 	/**
 	 * Validates that the SQL content only touches tables prefixed with the moduleId
 	 */
 	validateSql(moduleId: string, sqlContent: string) {
+		const normalizedSqlContent = this.normalizeSqlContent(sqlContent);
+
 		// Improved regex to find table names while skipping SQL keywords
 		// We look for words following TABLE, INTO, UPDATE, FROM, but skip IF NOT EXISTS
 		const tableRegex =
-			/(?:TABLE|INTO|UPDATE|FROM|JOIN)\s+(?:IF\s+NOT\s+EXISTS\s+)?["`]?([a-zA-Z0-9_-]+)["`]?/gi;
+			/(?:TABLE|INTO|UPDATE|FROM|JOIN)\s+(?:IF\s+NOT\s+EXISTS\s+)*["`]?([a-zA-Z0-9_-]+)["`]?/gi;
+		const reservedTableTokens = new Set(['if', 'not', 'exists']);
 		const keywords = new Set([
 			'if',
 			'not',
@@ -45,8 +55,10 @@ export class MigrationRunner {
 		]);
 
 		let match;
-		while ((match = tableRegex.exec(sqlContent)) !== null) {
-			const tableName = match[1].toLowerCase();
+		while ((match = tableRegex.exec(normalizedSqlContent)) !== null) {
+			const tableName = match[1]?.toLowerCase();
+			if (!tableName) continue;
+			if (reservedTableTokens.has(tableName)) continue;
 
 			// Skip internal migration table and common SQL keywords
 			if (tableName === '_module_migrations' || keywords.has(tableName)) continue;
@@ -89,7 +101,8 @@ export class MigrationRunner {
 
 		for (const file of files) {
 			const filePath = path.join(migrationsDir, file);
-			const sqlContent = readFileSync(filePath, 'utf-8');
+			const rawSqlContent = readFileSync(filePath, 'utf-8');
+			const sqlContent = this.normalizeSqlContent(rawSqlContent);
 
 			try {
 				this.ensureMigrationTable();

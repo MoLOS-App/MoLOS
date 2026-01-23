@@ -10,7 +10,7 @@ export const load: LayoutServerLoad = async ({ locals, url, cookies }) => {
 		url.pathname === '/ui/login' || url.pathname === '/ui/signup' || url.pathname === '/ui/welcome';
 	const isAuthenticated = !!session;
 
-	if (!isAuthenticated && !isAuthPage && url.pathname.startsWith('/ui')) {
+	if (!isAuthenticated && !isAuthPage) {
 		// Check if there are any users in the DB to decide where to redirect
 		const userCountResult = await db.all(sql`SELECT count(*) as count FROM user`);
 		const userCount = (userCountResult[0] as unknown as { count: number }).count;

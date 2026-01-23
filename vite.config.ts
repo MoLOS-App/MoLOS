@@ -12,6 +12,8 @@ import {
 	symlinkSync
 } from 'fs';
 import path from 'path';
+import { createRequire } from 'module';
+import { SYMLINK_CONFIG } from './module-management/config/symlink-config';
 
 /**
  * MoLOS Module Linker
@@ -30,6 +32,15 @@ function linkExternalModules() {
 	const LEGACY_CONFIG_DIR = path.resolve('src/lib/config/modules');
 	const UI_ROUTES_DIR = path.resolve('src/routes/ui/(modules)/(external_modules)');
 	const API_ROUTES_DIR = path.resolve('src/routes/api/(external_modules)');
+	const LIB_SYMLINK_DIRS = [
+		SYMLINK_CONFIG.componentsDir,
+		SYMLINK_CONFIG.modelsDir,
+		SYMLINK_CONFIG.repositoriesDir,
+		SYMLINK_CONFIG.storesDir,
+		SYMLINK_CONFIG.utilsDir,
+		SYMLINK_CONFIG.serverAiDir,
+		SYMLINK_CONFIG.dbSchemaDir
+	];
 
 	// Helper to safely remove a path (including broken symlinks)
 	const safeRemove = (p: string) => {
@@ -42,7 +53,13 @@ function linkExternalModules() {
 
 	// 0. Cleanup broken or stale symlinks in the target directories first
 	// This prevents ENOENT errors when Vite tries to stat broken links
-	[INTERNAL_CONFIG_DIR, UI_ROUTES_DIR, API_ROUTES_DIR, LEGACY_CONFIG_DIR].forEach((dir) => {
+	[
+		INTERNAL_CONFIG_DIR,
+		UI_ROUTES_DIR,
+		API_ROUTES_DIR,
+		LEGACY_CONFIG_DIR,
+		...LIB_SYMLINK_DIRS
+	].forEach((dir) => {
 		if (existsSync(dir)) {
 			const entries = readdirSync(dir, { withFileTypes: true });
 			for (const entry of entries) {
@@ -77,6 +94,29 @@ function linkExternalModules() {
 	} catch (e) {
 		console.error('[Vite] Failed to read external modules directory:', e);
 		return;
+	}
+
+	const activeModuleIds = getActiveModulesFromDb();
+	if (activeModuleIds) {
+		const pruneSymlinks = (dir: string, toModuleId: (name: string) => string) => {
+			if (!existsSync(dir)) return;
+			const entries = readdirSync(dir, { withFileTypes: true });
+			for (const entry of entries) {
+				if (!entry.isSymbolicLink()) continue;
+				const moduleId = toModuleId(entry.name);
+				if (!activeModuleIds.has(moduleId)) {
+					safeRemove(path.join(dir, entry.name));
+				}
+			}
+		};
+
+		pruneSymlinks(INTERNAL_CONFIG_DIR, (name) => name.replace(/\.ts$/, ''));
+		pruneSymlinks(LEGACY_CONFIG_DIR, (name) => name.replace(/\.ts$/, ''));
+		pruneSymlinks(UI_ROUTES_DIR, (name) => name);
+		pruneSymlinks(API_ROUTES_DIR, (name) => name);
+		LIB_SYMLINK_DIRS.forEach((dir) => pruneSymlinks(dir, (name) => name));
+
+		modules = modules.filter((moduleId) => activeModuleIds.has(moduleId));
 	}
 
 	console.log(`[Vite] Linking ${modules.length} external modules...`);
@@ -149,6 +189,35 @@ function isPathWithinRoots(targetPath: string, roots: string[]): boolean {
 		const relative = path.relative(realRoot, realTarget);
 		return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
 	});
+}
+
+function normalizeDbPath(raw: string): string {
+	if (raw.startsWith('file:')) return raw.replace(/^file:/, '');
+	if (raw.startsWith('sqlite://')) return raw.replace(/^sqlite:\/\//, '');
+	if (raw.startsWith('sqlite:')) return raw.replace(/^sqlite:/, '');
+	return raw;
+}
+
+function getActiveModulesFromDb(): Set<string> | null {
+	const dbUrl = process.env.DATABASE_URL;
+	if (!dbUrl) return new Set();
+
+	const dbPath = normalizeDbPath(dbUrl);
+	try {
+		const require = createRequire(import.meta.url);
+		const Database = require('better-sqlite3');
+		const db = new Database(dbPath, { readonly: true, fileMustExist: true });
+		const rows = db.prepare('select id, status from settings_external_modules').all();
+		db.close();
+		return new Set(
+			rows
+				.filter((row: { status: string }) => row.status === 'active')
+				.map((row: { id: string }) => row.id)
+		);
+	} catch (e) {
+		console.warn('[Vite] Unable to read external module status from DB:', e);
+		return new Set();
+	}
 }
 
 // Execute linking immediately
