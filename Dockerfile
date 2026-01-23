@@ -22,10 +22,11 @@ RUN npm ci
 
 # Copy the rest of the application
 COPY . .
+RUN rm -rf external_modules/
 
 # Generate SvelteKit types and build the application
-# Running sync ensures .svelte-kit/tsconfig.json exists for the build
-RUN npx svelte-kit sync && npm run build
+# Cleanup broken module symlinks to avoid sync failures when modules are not present in build
+RUN npm run module:cleanup && npx svelte-kit sync && npm run build
 
 WORKDIR /app
 
@@ -39,7 +40,6 @@ RUN mkdir -p external_modules
 # Set production environment
 ENV NODE_ENV=production
 ENV DATABASE_URL=/data/molos.db
-
 # Expose the port SvelteKit runs on
 EXPOSE 4173
 RUN mkdir -p /app/external_modules
