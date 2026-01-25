@@ -145,10 +145,7 @@ export class ModuleInitialization {
 		const modulePath = ModulePaths.getModulePath(moduleId);
 		const wasActive = mod.status === 'active';
 		const hadExistingModule = existsSync(modulePath);
-		const stagingPath = path.join(
-			ModulePaths.EXTERNAL_DIR,
-			`.staging-${moduleId}-${Date.now()}`
-		);
+		const stagingPath = path.join(ModulePaths.EXTERNAL_DIR, `.staging-${moduleId}-${Date.now()}`);
 		const backupPath = hadExistingModule
 			? path.join(ModulePaths.EXTERNAL_DIR, `.backup-${moduleId}-${Date.now()}`)
 			: null;
@@ -324,9 +321,7 @@ export class ModuleInitialization {
 				if (backupPath && existsSync(backupPath)) {
 					rmSync(backupPath, { recursive: true, force: true });
 				}
-				console.log(
-					`[ModuleManager] Module ${moduleId} removed after failed initialization.`
-				);
+				console.log(`[ModuleManager] Module ${moduleId} removed after failed initialization.`);
 				await settingsRepo.log(
 					'warn',
 					'ModuleManager',
