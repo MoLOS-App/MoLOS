@@ -8,10 +8,7 @@ export class MigrationRunner {
 	constructor(private db: BetterSQLite3Database<any>) {}
 
 	private normalizeSqlContent(sqlContent: string): string {
-		return sqlContent.replace(
-			/IF\s+NOT\s+EXISTS(\s+IF\s+NOT\s+EXISTS)+/gi,
-			'IF NOT EXISTS'
-		);
+		return sqlContent.replace(/IF\s+NOT\s+EXISTS(\s+IF\s+NOT\s+EXISTS)+/gi, 'IF NOT EXISTS');
 	}
 
 	/**
