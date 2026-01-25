@@ -107,8 +107,7 @@ export class SQLValidator {
 		}
 
 		// Extract and validate table names
-		const tableRegex =
-			/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)*["'`]?([a-zA-Z0-9_-]+)["'`]?/gi;
+		const tableRegex = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)*["'`]?([a-zA-Z0-9_-]+)["'`]?/gi;
 		const tableMatches = normalized.matchAll(tableRegex);
 
 		for (const match of tableMatches) {
@@ -223,10 +222,7 @@ export class SQLValidator {
 		normalized = normalized.replace(/\s+/g, ' ').trim();
 
 		// Collapse duplicate IF NOT EXISTS sequences
-		normalized = normalized.replace(
-			/IF\s+NOT\s+EXISTS(\s+IF\s+NOT\s+EXISTS)+/gi,
-			'IF NOT EXISTS'
-		);
+		normalized = normalized.replace(/IF\s+NOT\s+EXISTS(\s+IF\s+NOT\s+EXISTS)+/gi, 'IF NOT EXISTS');
 
 		return normalized.toUpperCase();
 	}

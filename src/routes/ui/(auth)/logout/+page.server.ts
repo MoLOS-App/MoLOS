@@ -10,5 +10,5 @@ export const load: LayoutServerLoad = async () => {
 
 	if (userCount === 0) {
 		throw redirect(302, '/ui/welcome');
-	} 
+	}
 };

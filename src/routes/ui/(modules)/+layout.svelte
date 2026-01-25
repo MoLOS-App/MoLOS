@@ -91,6 +91,7 @@
 	let isSubmenuCompact = $state(false);
 	let CurrentModuleIcon = $derived(currentModule?.icon || LayoutGrid);
 	let CurrentSubmenuIcon = $derived(activeSubmenuItem?.icon || Compass);
+	let isPlayground = $derived(path.startsWith('/ui/MoLOS-AI-Knowledge/playground'));
 
 	const submenuCompactStorageKey = 'molos:submenu-compact';
 
@@ -636,15 +637,31 @@
 								</div>
 							</aside>
 						</div>
-						<div class="flex min-w-0 flex-1 justify-center overflow-y-auto">
-							<div class="min-h-full w-full px-2 pt-4 pb-12 sm:px-4 md:pr-0 md:pb-0">
+						<div
+							class={`flex min-w-0 flex-1 ${
+								isPlayground ? 'overflow-hidden' : 'justify-center overflow-y-auto'
+							}`}
+						>
+							<div
+								class={isPlayground
+									? 'min-h-full w-full'
+									: 'min-h-full w-full px-2 pt-4 pb-12 sm:px-4 md:pr-0 md:pb-0'}
+							>
 								{@render children()}
 							</div>
 						</div>
 					</div>
 				{:else}
-					<div class="flex w-full justify-center overflow-y-auto">
-						<div class="min-h-full w-full max-w-6xl bg-transparent pb-16 sm:px-6 md:pb-10 lg:px-8">
+					<div
+						class={`flex w-full ${
+							isPlayground ? 'overflow-hidden' : 'justify-center overflow-y-auto'
+						}`}
+					>
+						<div
+							class={isPlayground
+								? 'min-h-full w-full'
+								: 'min-h-full w-full max-w-6xl bg-transparent pb-16 sm:px-6 md:pb-10 lg:px-8'}
+						>
 							{@render children()}
 						</div>
 					</div>
