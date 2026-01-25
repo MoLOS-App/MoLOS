@@ -22,8 +22,8 @@
 
 	function handleSearch(e: KeyboardEvent) {
 		if (e.key === 'Enter' && searchQuery.trim()) {
-			// In a real app, this would search across modules
-			console.log('Searching for:', searchQuery);
+			const query = searchQuery.trim();
+			goto(`/ui/search?q=${encodeURIComponent(query)}`);
 		}
 	}
 </script>
