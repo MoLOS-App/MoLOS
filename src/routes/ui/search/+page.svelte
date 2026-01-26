@@ -200,7 +200,6 @@
 		{:else if results.length === 0}
 			<Card.Root class="border-dashed rounded-3xl bg-card">
 				<Card.Content class="flex flex-col items-center gap-3 p-10 text-center">
-					<div class="text-4xl">😞</div>
 					<div class="text-sm text-muted-foreground">
 						No results found for "{data.query}".
 					</div>
