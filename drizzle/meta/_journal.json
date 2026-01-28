@@ -15,6 +15,13 @@
       "when": 1768550392537,
       "tag": "0001_gifted_terrax",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1769630273356,
+      "tag": "0002_light_rictor",
+      "breakpoints": true
     }
   ]
 }

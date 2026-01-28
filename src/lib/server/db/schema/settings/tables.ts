@@ -73,6 +73,8 @@ export const settingsExternalModules = sqliteTable('settings_external_modules', 
 	errorDetails: text('error_details'), // JSON serialized error info
 	errorType: text('error_type'), // 'manifest_validation', 'migration_failed', 'config_export', etc.
 	recoverySteps: text('recovery_steps'), // JSON array of suggested recovery actions
+	retryCount: integer('retry_count').notNull().default(0), // Number of retry attempts
+	lastRetryAt: integer('last_retry_at', { mode: 'timestamp_ms' }), // Timestamp of last retry
 	installedAt: integer('installed_at', { mode: 'timestamp_ms' })
 		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
 		.notNull(),
