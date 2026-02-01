@@ -51,9 +51,7 @@ export const load: PageServerLoad = async ({ url, fetch, locals }) => {
 	};
 
 	const availableTypes = Array.from(
-		new Set(
-			availableModules.flatMap((module) => typesByModule[module.id] ?? [])
-		)
+		new Set(availableModules.flatMap((module) => typesByModule[module.id] ?? []))
 	);
 
 	if (!q) {

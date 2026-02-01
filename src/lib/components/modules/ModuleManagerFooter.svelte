@@ -4,19 +4,27 @@
 	import { enhance } from '$app/forms';
 	import { toast } from 'svelte-sonner';
 
-	let { moduleStates, isSaving }: {
-		moduleStates: Record<string, { enabled: boolean; menuOrder: number; submodules: Record<string, boolean> }>;
+	let {
+		moduleStates,
+		isSaving
+	}: {
+		moduleStates: Record<
+			string,
+			{ enabled: boolean; menuOrder: number; submodules: Record<string, boolean> }
+		>;
 		isSaving: boolean;
 	} = $props();
 </script>
 
 <div
-	class="fixed bottom-0 left-0 right-0 z-50 w-full border-t shadow-2xl border-muted-foreground/5 bg-background/80 backdrop-blur-md"
+	class="border-muted-foreground/5 fixed right-0 bottom-0 left-0 z-50 w-full border-t bg-background/80 shadow-2xl backdrop-blur-md"
 >
-	<div class="flex items-center justify-between max-w-4xl gap-3 px-6 py-4 mx-auto">
+	<div class="mx-auto flex max-w-4xl items-center justify-between gap-3 px-6 py-4">
 		<div class="flex items-center gap-4">
-			<div class="hidden h-6 border-l border-muted-foreground/10 md:block"></div>
-			<p class="text-muted-foreground/60 hidden text-[10px] font-bold tracking-widest uppercase md:block">
+			<div class="border-muted-foreground/10 hidden h-6 border-l md:block"></div>
+			<p
+				class="text-muted-foreground/60 hidden text-[10px] font-bold tracking-widest uppercase md:block"
+			>
 				<Info class="mr-1.5 mb-0.5 inline-block h-3.5 w-3.5" />
 				If you have made changes --->
 			</p>

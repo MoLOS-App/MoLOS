@@ -5,7 +5,13 @@
 	import { Label } from '$lib/components/ui/label';
 	import { GitBranch } from 'lucide-svelte';
 
-	let { open, module, newRef, onClose, onSubmit }: {
+	let {
+		open,
+		module,
+		newRef,
+		onClose,
+		onSubmit
+	}: {
 		open: boolean;
 		module: { id: string; name: string; currentRef: string } | null;
 		newRef: string;
@@ -15,13 +21,13 @@
 </script>
 
 {#if open}
-	<Dialog.Root open={open} onOpenChange={(o) => !o && onClose()}>
+	<Dialog.Root {open} onOpenChange={(o) => !o && onClose()}>
 		<Dialog.Content class="sm:max-w-md">
 			<Dialog.Header>
 				<Dialog.Title>Change Git Ref</Dialog.Title>
 				<Dialog.Description>
-					Enter the git tag or branch to checkout for this module. This will update the module to use the
-					specified ref.
+					Enter the git tag or branch to checkout for this module. This will update the module to
+					use the specified ref.
 				</Dialog.Description>
 			</Dialog.Header>
 			<div class="grid gap-4 py-4">

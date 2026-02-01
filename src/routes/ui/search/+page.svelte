@@ -11,9 +11,7 @@
 	import { Separator } from '$lib/components/ui/separator/index.js';
 
 	type Filters = { modules: string[]; types: string[]; from: string; to: string };
-	let {
-		data
-	} = $props<{
+	let { data } = $props<{
 		data: {
 			query: string;
 			results: any[];
@@ -81,7 +79,6 @@
 		await goto(`/ui/search?q=${encodeURIComponent(next)}`);
 	};
 
-
 	const formatDate = (value?: number) => {
 		if (!value) return '';
 		return new Date(value).toLocaleString();
@@ -89,40 +86,47 @@
 </script>
 
 <div class="min-h-[70vh] w-full bg-background">
-	<div class="flex flex-col w-full max-w-5xl gap-6 p-6 mx-auto md:p-10">
+	<div class="mx-auto flex w-full max-w-5xl flex-col gap-6 p-6 md:p-10">
 		<div class="flex items-center gap-3">
-			<Button href="/ui/dashboard" variant="ghost" class="gap-2 px-3 h-9">
-				<ArrowLeft class="w-4 h-4" />
+			<Button href="/ui/dashboard" variant="ghost" class="h-9 gap-2 px-3">
+				<ArrowLeft class="h-4 w-4" />
 				Back
 			</Button>
 			<div class="flex flex-col">
-				<span class="text-xs font-semibold tracking-[0.2em] text-muted-foreground uppercase"
+				<span class="text-muted-foreground text-xs font-semibold tracking-[0.2em] uppercase"
 					>Search</span
 				>
 				<h1 class="text-2xl font-black tracking-tight md:text-3xl">Find anything fast</h1>
 			</div>
 		</div>
 
-		<form class="flex items-center w-full gap-2" on:submit|preventDefault={submit}>
+		<form class="flex w-full items-center gap-2" on:submit|preventDefault={submit}>
 			<div class="relative flex-1">
-				<div class="absolute inset-y-0 flex items-center pointer-events-none left-3 text-muted-foreground">
-					<Search class="w-4 h-4" />
+				<div
+					class="text-muted-foreground pointer-events-none absolute inset-y-0 left-3 flex items-center"
+				>
+					<Search class="h-4 w-4" />
 				</div>
 				<Input
 					type="search"
 					placeholder="Search tasks, prompts, memories..."
-					class="w-full h-12 border shadow-sm rounded-2xl border-border bg-background pl-9 focus-visible:ring-2 focus-visible:ring-primary/20"
+					class="h-12 w-full rounded-2xl border border-border bg-background pl-9 shadow-sm focus-visible:ring-2 focus-visible:ring-primary/20"
 					bind:value={query}
 				/>
 			</div>
-			<Button type="button" variant="secondary" class="w-12 h-12 rounded-2xl" onclick={() => (filtersOpen = true)}>
-				<Filter class="w-4 h-4" />
+			<Button
+				type="button"
+				variant="secondary"
+				class="h-12 w-12 rounded-2xl"
+				onclick={() => (filtersOpen = true)}
+			>
+				<Filter class="h-4 w-4" />
 			</Button>
 			<Sheet.Root bind:open={filtersOpen}>
-				<Sheet.Content side="left" class="gap-4 w-80">
+				<Sheet.Content side="left" class="w-80 gap-4">
 					<Sheet.Header class="px-4 pt-4">
 						<Sheet.Title>Advanced filters</Sheet.Title>
-						<Sheet.Description class="text-sm text-muted-foreground">
+						<Sheet.Description class="text-muted-foreground text-sm">
 							Narrow results by module, type, and date.
 						</Sheet.Description>
 					</Sheet.Header>
@@ -130,12 +134,12 @@
 						<Separator class="my-2" />
 						<div class="space-y-6">
 							<div class="space-y-3">
-								<Label class="text-xs font-semibold tracking-wide uppercase text-muted-foreground">
+								<Label class="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
 									Modules
 								</Label>
 								<div class="grid gap-2">
 									{#each availableModules as module}
-										<Label class="flex items-center gap-2 text-sm cursor-pointer">
+										<Label class="flex cursor-pointer items-center gap-2 text-sm">
 											<Checkbox
 												checked={filters.modules.includes(module.id)}
 												onclick={() => toggleModule(module.id)}
@@ -144,17 +148,17 @@
 										</Label>
 									{/each}
 									{#if availableModules.length === 0}
-										<span class="text-xs text-muted-foreground">No modules available.</span>
+										<span class="text-muted-foreground text-xs">No modules available.</span>
 									{/if}
 								</div>
 							</div>
 							<div class="space-y-3">
-								<Label class="text-xs font-semibold tracking-wide uppercase text-muted-foreground">
+								<Label class="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
 									Types
 								</Label>
 								<div class="grid gap-2">
 									{#each availableTypes as type}
-										<Label class="flex items-center gap-2 text-sm cursor-pointer">
+										<Label class="flex cursor-pointer items-center gap-2 text-sm">
 											<Checkbox
 												checked={filters.types.includes(type)}
 												onclick={() => toggleType(type)}
@@ -165,73 +169,68 @@
 								</div>
 							</div>
 							<div class="space-y-3">
-								<Label class="text-xs font-semibold tracking-wide uppercase text-muted-foreground">
+								<Label class="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
 									Updated from
 								</Label>
 								<Input type="date" bind:value={filters.from} class="h-10 rounded-xl" />
 							</div>
 							<div class="space-y-3">
-								<Label class="text-xs font-semibold tracking-wide uppercase text-muted-foreground">
+								<Label class="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
 									Updated to
 								</Label>
 								<Input type="date" bind:value={filters.to} class="h-10 rounded-xl" />
 							</div>
 						</div>
 					</div>
-					<Sheet.Footer class="flex flex-row items-center justify-between gap-2 px-4 pb-4 mt-auto">
-						<Button type="button" variant="ghost" class="px-4 h-9" onclick={clearFilters}>
+					<Sheet.Footer class="mt-auto flex flex-row items-center justify-between gap-2 px-4 pb-4">
+						<Button type="button" variant="ghost" class="h-9 px-4" onclick={clearFilters}>
 							Clear
 						</Button>
-						<Button type="button" class="px-4 h-9" onclick={applyFilters}>
-							Apply
-						</Button>
+						<Button type="button" class="h-9 px-4" onclick={applyFilters}>Apply</Button>
 					</Sheet.Footer>
 				</Sheet.Content>
 			</Sheet.Root>
-			<Button type="submit" class="h-12 px-5 rounded-2xl">Search</Button>
+			<Button type="submit" class="h-12 rounded-2xl px-5">Search</Button>
 		</form>
 
 		{#if !data.query}
-			<Card.Root class="border-dashed rounded-3xl bg-card">
-				<Card.Content class="p-8 text-sm text-muted-foreground">
+			<Card.Root class="rounded-3xl border-dashed bg-card">
+				<Card.Content class="text-muted-foreground p-8 text-sm">
 					Try searching for tasks, prompts, or memories to get started.
 				</Card.Content>
 			</Card.Root>
 		{:else if results.length === 0}
-			<Card.Root class="border-dashed rounded-3xl bg-card">
+			<Card.Root class="rounded-3xl border-dashed bg-card">
 				<Card.Content class="flex flex-col items-center gap-3 p-10 text-center">
-					<div class="text-sm text-muted-foreground">
+					<div class="text-muted-foreground text-sm">
 						No results found for "{data.query}".
 					</div>
-					<div class="text-xs text-muted-foreground">
+					<div class="text-muted-foreground text-xs">
 						Try a different keyword or check spelling.
 					</div>
 				</Card.Content>
 			</Card.Root>
 		{:else}
-			<div class="flex items-center justify-between text-sm text-muted-foreground">
+			<div class="text-muted-foreground flex items-center justify-between text-sm">
 				<span>{results.length} results</span>
 				<span class="hidden md:inline">Sorted by most recently updated</span>
 			</div>
 			<div class="grid gap-3 md:grid-cols-2">
 				{#each results as result}
-					<a
-						href={result.href}
-						class="group block rounded-3xl transition hover:-translate-y-0.5"
-					>
-						<Card.Root class="relative overflow-hidden shadow-sm rounded-3xl bg-card">
+					<a href={result.href} class="group block rounded-3xl transition hover:-translate-y-0.5">
+						<Card.Root class="relative overflow-hidden rounded-3xl bg-card shadow-sm">
 							<Card.Content class="p-5">
 								<div class="flex items-start justify-between gap-3">
 									<div class="min-w-0">
-										<div class="text-sm font-semibold truncate text-foreground">
+										<div class="truncate text-sm font-semibold text-foreground">
 											{result.title}
 										</div>
 										{#if result.snippet}
-											<div class="mt-2 text-xs text-muted-foreground">{result.snippet}</div>
+											<div class="text-muted-foreground mt-2 text-xs">{result.snippet}</div>
 										{/if}
 									</div>
-									<div class="flex flex-col items-end gap-2 text-xs shrink-0 text-muted-foreground">
-										<Badge variant="secondary" class="px-3 py-1 rounded-full">
+									<div class="text-muted-foreground flex shrink-0 flex-col items-end gap-2 text-xs">
+										<Badge variant="secondary" class="rounded-full px-3 py-1">
 											{result.moduleName ?? result.moduleId}
 										</Badge>
 										{#if result.updatedAt}
@@ -241,7 +240,7 @@
 								</div>
 							</Card.Content>
 							<div
-								class="absolute inset-x-0 bottom-0 h-1 transition opacity-0 pointer-events-none bg-gradient-to-r from-primary/30 via-primary/10 to-transparent group-hover:opacity-100"
+								class="pointer-events-none absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-primary/30 via-primary/10 to-transparent opacity-0 transition group-hover:opacity-100"
 							></div>
 						</Card.Root>
 					</a>

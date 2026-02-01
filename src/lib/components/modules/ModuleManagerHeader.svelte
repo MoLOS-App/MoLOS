@@ -4,7 +4,15 @@
 	import { Box, FolderGit2, Search } from 'lucide-svelte';
 	import { Badge } from '$lib/components/ui/badge';
 
-	let { activeTab, builtInCount, externalCount, allowUserInstallPlugins, searchQuery, onTabChange, onSearchChange }: {
+	let {
+		activeTab,
+		builtInCount,
+		externalCount,
+		allowUserInstallPlugins,
+		searchQuery,
+		onTabChange,
+		onSearchChange
+	}: {
 		activeTab: 'builtin' | 'external';
 		builtInCount: number;
 		externalCount: number;
@@ -20,8 +28,7 @@
 		<Button
 			variant={activeTab === 'builtin' ? 'secondary' : 'ghost'}
 			size="sm"
-			class="rounded-lg text-[10px] font-bold tracking-wider uppercase {activeTab ===
-			'builtin'
+			class="rounded-lg text-[10px] font-bold tracking-wider uppercase {activeTab === 'builtin'
 				? 'bg-background shadow-xs'
 				: ''}"
 			onclick={() => onTabChange('builtin')}
@@ -36,8 +43,7 @@
 			<Button
 				variant={activeTab === 'external' ? 'secondary' : 'ghost'}
 				size="sm"
-				class="rounded-lg text-[10px] font-bold tracking-wider uppercase {activeTab ===
-				'external'
+				class="rounded-lg text-[10px] font-bold tracking-wider uppercase {activeTab === 'external'
 					? 'bg-background shadow-xs'
 					: ''}"
 				onclick={() => onTabChange('external')}

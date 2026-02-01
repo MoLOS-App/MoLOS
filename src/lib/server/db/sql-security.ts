@@ -101,7 +101,7 @@ export class SQLValidator {
 
 		// Check for dangerous operations
 		for (const keyword of DANGEROUS_KEYWORDS) {
-			if (normalized.includes(" " + keyword + " ")) {
+			if (normalized.includes(' ' + keyword + ' ')) {
 				errors.push(`Dangerous operation detected: ${keyword}`);
 			}
 		}

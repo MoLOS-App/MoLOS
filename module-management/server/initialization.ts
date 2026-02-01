@@ -25,7 +25,12 @@ import {
 import { getModuleSymlinks, getModuleSymlinkSources } from '../config/symlink-config';
 import { createModuleError, formatErrorForLogging } from './module-error-handler';
 import type { ModuleManifest } from '../config/module-types.ts';
-import { loadRetryConfig, calculateRetryDelay, shouldRetryModule as checkShouldRetry, type ModuleRetryConfig } from '../config/retry-config.js';
+import {
+	loadRetryConfig,
+	calculateRetryDelay,
+	shouldRetryModule as checkShouldRetry,
+	type ModuleRetryConfig
+} from '../config/retry-config.js';
 
 /**
  * Module initialization operations
@@ -252,10 +257,17 @@ export class ModuleInitialization {
 			// For git modules with blockUpdates that are already active, skip refresh entirely
 			// to preserve any local uncommitted changes
 			const existingGitPath = path.join(modulePath, '.git');
-			const shouldSkipRefresh = wasActive && hadExistingModule && existsSync(existingGitPath) && mod.blockUpdates && !isLocal;
+			const shouldSkipRefresh =
+				wasActive &&
+				hadExistingModule &&
+				existsSync(existingGitPath) &&
+				mod.blockUpdates &&
+				!isLocal;
 
 			if (shouldSkipRefresh) {
-				console.log(`[ModuleManager] blockUpdates enabled for ${moduleId} - skipping refresh to preserve local state`);
+				console.log(
+					`[ModuleManager] blockUpdates enabled for ${moduleId} - skipping refresh to preserve local state`
+				);
 				// Just ensure symlinks are set up correctly
 				this.setupSymlinks(moduleId, modulePath);
 				// Update status to ensure it's marked as active
@@ -290,19 +302,25 @@ export class ModuleInitialization {
 					// For git modules with blockUpdates that are not yet active or don't have existing content,
 					// we need to handle specially to prevent pulling updates
 					if (mod.blockUpdates && existsSync(existingGitPath)) {
-						console.log(`[ModuleManager] blockUpdates enabled for ${moduleId} - using existing .git folder without remote operations`);
+						console.log(
+							`[ModuleManager] blockUpdates enabled for ${moduleId} - using existing .git folder without remote operations`
+						);
 						// Use the existing module directly, no staging needed
 						// Just verify symlinks and update status
 						this.setupSymlinks(moduleId, modulePath);
 						await settingsRepo.updateExternalModuleStatus(moduleId, 'active');
-						console.log(`[ModuleManager] Module ${moduleId} initialized with existing local state.`);
+						console.log(
+							`[ModuleManager] Module ${moduleId} initialized with existing local state.`
+						);
 						return;
 					}
 
 					// If blockUpdates is enabled but there's no existing git state, we cannot proceed
 					// (we can't clone because that would pull updates, and we have nothing to restore from)
 					if (mod.blockUpdates) {
-						console.log(`[ModuleManager] blockUpdates enabled for ${moduleId} but no existing .git folder found - skipping initialization to prevent pulling updates.`);
+						console.log(
+							`[ModuleManager] blockUpdates enabled for ${moduleId} but no existing .git folder found - skipping initialization to prevent pulling updates.`
+						);
 						// Clean up any broken symlinks and return
 						cleanupModuleArtifacts(moduleId);
 						return;
@@ -377,7 +395,9 @@ export class ModuleInitialization {
 			// Verify .git folder exists after swap (important for forcePull functionality)
 			const gitPath = path.join(modulePath, '.git');
 			if (!existsSync(gitPath)) {
-				console.warn(`[ModuleManager] WARNING: .git folder not found after swap for ${moduleId}. This may affect forcePull functionality.`);
+				console.warn(
+					`[ModuleManager] WARNING: .git folder not found after swap for ${moduleId}. This may affect forcePull functionality.`
+				);
 			} else {
 				console.log(`[ModuleManager] Verified .git folder exists for ${moduleId}`);
 			}
@@ -415,7 +435,8 @@ export class ModuleInitialization {
 			const isTransient = this.isTransientError(error);
 			const currentRetryCount = mod.retryCount || 0;
 			const lastRetryAt = mod.lastRetryAt ? new Date(mod.lastRetryAt).getTime() : null;
-			const shouldRetry = isTransient && checkShouldRetry(currentRetryCount, lastRetryAt, this.retryConfig);
+			const shouldRetry =
+				isTransient && checkShouldRetry(currentRetryCount, lastRetryAt, this.retryConfig);
 
 			console.error(`\n[ModuleManager] ⚠️ FAILED TO INITIALIZE MODULE: ${moduleId}`);
 			console.error(`[ModuleManager] Error Type: ${category}`);
@@ -440,11 +461,7 @@ export class ModuleInitialization {
 					`[ModuleManager] Module ${moduleId} will be retried (transient error, retries remaining: ${this.retryConfig.maxRetries - (mod.retryCount || 0)})`
 				);
 				// Keep module in pending state for retry
-				await settingsRepo.updateExternalModuleStatus(
-					moduleId,
-					'pending',
-					moduleError
-				);
+				await settingsRepo.updateExternalModuleStatus(moduleId, 'pending', moduleError);
 
 				// Clean up only staging artifacts, keep the module
 				cleanupModuleArtifacts(moduleId);

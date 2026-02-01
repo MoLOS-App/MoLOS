@@ -16,7 +16,16 @@
 	} from 'lucide-svelte';
 	import type { ModuleData, ModuleState } from './types';
 
-	let { module, moduleState, index, isFirst, isLast, onToggle, onToggleSubmodule, onMove }: {
+	let {
+		module,
+		moduleState,
+		index,
+		isFirst,
+		isLast,
+		onToggle,
+		onToggleSubmodule,
+		onMove
+	}: {
 		module: ModuleData;
 		moduleState: ModuleState;
 		index: number;
@@ -96,16 +105,19 @@
 		? 'scale-[0.98] opacity-20 grayscale'
 		: ''} {dragOverId === module.id
 		? 'rounded-2xl bg-primary/5 ring-2 ring-primary ring-offset-4'
-		: ''} {!currentEnabled
-		? 'opacity-60'
-		: ''}"
+		: ''} {!currentEnabled ? 'opacity-60' : ''}"
 >
-	<Accordion.Item value={module.id} class="overflow-hidden rounded-2xl border-none bg-muted/20 px-0 shadow-sm">
+	<Accordion.Item
+		value={module.id}
+		class="overflow-hidden rounded-2xl border-none bg-muted/20 px-0 shadow-sm"
+	>
 		<div class="flex items-center gap-4 px-4">
 			<div class="flex items-center gap-1">
 				<Tooltip.Root>
 					<Tooltip.Trigger>
-						<div class="text-muted-foreground/50 cursor-grab p-1.5 transition-colors hover:text-primary active:cursor-grabbing">
+						<div
+							class="text-muted-foreground/50 cursor-grab p-1.5 transition-colors hover:text-primary active:cursor-grabbing"
+						>
 							<GripVertical class="h-4 w-4" />
 						</div>
 					</Tooltip.Trigger>
@@ -149,12 +161,16 @@
 					<div class="flex items-center gap-2">
 						<span class="truncate text-sm font-bold">{module.name}</span>
 						{#if !currentEnabled}
-							<Badge variant="outline" class="h-4 bg-background/50 px-1.5 text-[8px] font-black tracking-widest uppercase"
+							<Badge
+								variant="outline"
+								class="h-4 bg-background/50 px-1.5 text-[8px] font-black tracking-widest uppercase"
 								>Disabled</Badge
 							>
 						{/if}
 					</div>
-					<p class="text-muted-foreground truncate text-[10px] font-medium tracking-wider uppercase">
+					<p
+						class="text-muted-foreground truncate text-[10px] font-medium tracking-wider uppercase"
+					>
 						{module.description || 'No description available.'}
 					</p>
 				</div>
@@ -164,7 +180,11 @@
 				<Tooltip.Root>
 					<Tooltip.Trigger>
 						<div class="flex items-center">
-							<Switch checked={currentEnabled} onchange={() => onToggle(module.id)} class="scale-90" />
+							<Switch
+								checked={currentEnabled}
+								onchange={() => onToggle(module.id)}
+								class="scale-90"
+							/>
 						</div>
 					</Tooltip.Trigger>
 					<Tooltip.Content side="top" class="text-[10px] font-bold tracking-widest uppercase">
@@ -208,13 +228,17 @@
 						</div>
 					</div>
 				{:else}
-					<p class="text-muted-foreground/50 text-[10px] font-bold tracking-widest uppercase italic">
+					<p
+						class="text-muted-foreground/50 text-[10px] font-bold tracking-widest uppercase italic"
+					>
 						No submodules available
 					</p>
 				{/if}
 
 				<div class="flex items-center justify-between pt-2">
-					<div class="text-muted-foreground/40 flex items-center gap-2 text-[9px] font-black tracking-tighter uppercase">
+					<div
+						class="text-muted-foreground/40 flex items-center gap-2 text-[9px] font-black tracking-tighter uppercase"
+					>
 						ID: {module.id} • Order: {moduleState.menuOrder ?? 0}
 					</div>
 					<Button

@@ -123,7 +123,8 @@ export const actions: Actions = {
 			return { type: 'failure', data: { message: 'Missing repository URL' } };
 		}
 
-		const normalizedGitRef = gitRef && typeof gitRef === 'string' && gitRef.trim() ? gitRef.trim() : 'main';
+		const normalizedGitRef =
+			gitRef && typeof gitRef === 'string' && gitRef.trim() ? gitRef.trim() : 'main';
 
 		try {
 			const trimmedRepoUrl = repoUrl.trim();
@@ -190,7 +191,10 @@ export const actions: Actions = {
 			console.error('Failed to install module:', e);
 			return {
 				type: 'failure',
-				data: { message: 'Failed to install module. Ensure the URL is valid and the directory is writable.' }
+				data: {
+					message:
+						'Failed to install module. Ensure the URL is valid and the directory is writable.'
+				}
 			};
 		}
 	},
@@ -393,7 +397,9 @@ export const actions: Actions = {
 			return {
 				type: 'success',
 				data: {
-					message: shouldBlock ? 'Updates blocked for this module' : 'Updates enabled for this module'
+					message: shouldBlock
+						? 'Updates blocked for this module'
+						: 'Updates enabled for this module'
 				}
 			};
 		} catch (e) {
@@ -466,7 +472,10 @@ export const actions: Actions = {
 			};
 		} catch (e) {
 			console.error('Failed to force pull:', e);
-			return { type: 'failure', data: { message: 'Failed to pull latest changes. Check server logs for details.' } };
+			return {
+				type: 'failure',
+				data: { message: 'Failed to pull latest changes. Check server logs for details.' }
+			};
 		}
 	}
 };

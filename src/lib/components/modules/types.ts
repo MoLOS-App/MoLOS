@@ -19,7 +19,14 @@ export interface ModuleData {
 	repoUrl?: string; // For external modules to check if local
 }
 
-export type ModuleStatus = 'active' | 'pending' | 'deleting' | 'error_manifest' | 'error_migration' | 'error_config' | 'disabled';
+export type ModuleStatus =
+	| 'active'
+	| 'pending'
+	| 'deleting'
+	| 'error_manifest'
+	| 'error_migration'
+	| 'error_config'
+	| 'disabled';
 
 export interface ExternalModuleActionHandlers {
 	onDelete?: (moduleId: string) => void;

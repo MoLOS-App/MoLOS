@@ -53,7 +53,12 @@
 	let isInstalling = $state(false);
 
 	// Loading states for external modules
-	let loadingStates = $state<Record<string, { forcePull?: boolean; deleting?: boolean; cancelling?: boolean; togglingBlock?: boolean }>>({});
+	let loadingStates = $state<
+		Record<
+			string,
+			{ forcePull?: boolean; deleting?: boolean; cancelling?: boolean; togglingBlock?: boolean }
+		>
+	>({});
 
 	// Git ref dialog state
 	let showGitRefDialog = $state(false);
@@ -208,118 +213,123 @@
 </script>
 
 <Tooltip.Provider>
-<div class="min-h-screen bg-background pb-20">
-	<div class="mx-auto max-w-4xl space-y-8 p-6">
-		<!-- Header -->
-		<div class="space-y-4 pt-4">
-			<Button
-				variant="ghost"
-				size="sm"
-				onclick={() => goto('/ui/settings')}
-				class="text-muted-foreground -ml-2 h-8 rounded-full px-3 text-[10px] font-bold tracking-widest uppercase hover:text-foreground"
-			>
-				<ArrowLeft class="mr-2 h-3 w-3" />
-				Back to Settings
-			</Button>
-			<div class="space-y-1">
-				<h1 class="text-3xl font-black tracking-tighter">Module Manager</h1>
-				<p class="text-muted-foreground text-xs font-bold tracking-widest uppercase">
-					Configure active functionalities
-				</p>
-			</div>
-		</div>
-
-		<!-- Tabs and Search -->
-		<ModuleManagerHeader
-			activeTab={activeTab}
-			builtInCount={builtInModules.length}
-			externalCount={externalModules.length}
-			allowUserInstallPlugins={data.allowUserInstallPlugins}
-			searchQuery={searchQuery}
-			onTabChange={(tab) => (activeTab = tab)}
-			onSearchChange={(q) => (searchQuery = q)}
-		/>
-
-		{#if hasPendingModules}
-			<div class="flex items-center justify-between rounded-lg border bg-accent p-4">
-				<div class="flex items-center gap-3">
-					<span class="text-muted-foreground">⚠️</span>
-					<div>
-						<p class="font-medium">Restart Required</p>
-						<p class="text-sm opacity-90">
-							Changes to external modules detected. Restart the server to apply them.
-						</p>
-					</div>
+	<div class="min-h-screen bg-background pb-20">
+		<div class="mx-auto max-w-4xl space-y-8 p-6">
+			<!-- Header -->
+			<div class="space-y-4 pt-4">
+				<Button
+					variant="ghost"
+					size="sm"
+					onclick={() => goto('/ui/settings')}
+					class="text-muted-foreground -ml-2 h-8 rounded-full px-3 text-[10px] font-bold tracking-widest uppercase hover:text-foreground"
+				>
+					<ArrowLeft class="mr-2 h-3 w-3" />
+					Back to Settings
+				</Button>
+				<div class="space-y-1">
+					<h1 class="text-3xl font-black tracking-tighter">Module Manager</h1>
+					<p class="text-muted-foreground text-xs font-bold tracking-widest uppercase">
+						Configure active functionalities
+					</p>
 				</div>
-				<form method="POST" action="?/restart">
-					<Button variant="outline" size="sm" type="submit" class="border-accent/30 hover:bg-accent/20">
-						Restart Server Now
-					</Button>
-				</form>
 			</div>
-		{/if}
 
-		<div class="space-y-6">
-			{#if activeTab === 'builtin'}
-				<section>
-					<Accordion.Root type="multiple" class="w-full space-y-4">
-						{#each builtInModules as mod, i (mod.id)}
-							{@const isFirst = i === 0}
-							{@const isLast = i === builtInModules.length - 1}
-							<BuiltinModuleCard
-								module={mod}
-								moduleState={moduleStates[mod.id]}
-								index={i}
-								{isFirst}
-								{isLast}
-								onToggle={toggleModule}
-								onToggleSubmodule={toggleSubmodule}
-								onMove={moveModule}
-							/>
-						{/each}
-					</Accordion.Root>
-				</section>
-			{:else}
-				<section class="space-y-6">
-					<InstallModuleForm {isInstalling} />
+			<!-- Tabs and Search -->
+			<ModuleManagerHeader
+				{activeTab}
+				builtInCount={builtInModules.length}
+				externalCount={externalModules.length}
+				allowUserInstallPlugins={data.allowUserInstallPlugins}
+				{searchQuery}
+				onTabChange={(tab) => (activeTab = tab)}
+				onSearchChange={(q) => (searchQuery = q)}
+			/>
 
-					{#if externalModules.length > 0}
-						<div class="grid gap-4">
-							{#each externalModules as mod}
-								<ExternalModuleCard
+			{#if hasPendingModules}
+				<div class="flex items-center justify-between rounded-lg border bg-accent p-4">
+					<div class="flex items-center gap-3">
+						<span class="text-muted-foreground">⚠️</span>
+						<div>
+							<p class="font-medium">Restart Required</p>
+							<p class="text-sm opacity-90">
+								Changes to external modules detected. Restart the server to apply them.
+							</p>
+						</div>
+					</div>
+					<form method="POST" action="?/restart">
+						<Button
+							variant="outline"
+							size="sm"
+							type="submit"
+							class="border-accent/30 hover:bg-accent/20"
+						>
+							Restart Server Now
+						</Button>
+					</form>
+				</div>
+			{/if}
+
+			<div class="space-y-6">
+				{#if activeTab === 'builtin'}
+					<section>
+						<Accordion.Root type="multiple" class="w-full space-y-4">
+							{#each builtInModules as mod, i (mod.id)}
+								{@const isFirst = i === 0}
+								{@const isLast = i === builtInModules.length - 1}
+								<BuiltinModuleCard
 									module={mod}
-									enabled={moduleStates[mod.id].enabled}
-									isLoading={loadingStates[mod.id]}
-									onToggleEnabled={toggleModule}
-									onForcePull={forcePullModule}
-									onChangeGitRef={openGitRefDialog}
+									moduleState={moduleStates[mod.id]}
+									index={i}
+									{isFirst}
+									{isLast}
+									onToggle={toggleModule}
+									onToggleSubmodule={toggleSubmodule}
+									onMove={moveModule}
 								/>
 							{/each}
-						</div>
-					{:else}
-						<div
-							class="text-muted-foreground flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-muted p-12"
-						>
-							<span class="mb-4 text-4xl opacity-20">📦</span>
-							<p class="text-lg font-medium">No external modules installed</p>
-							<p class="text-sm">Install a module from a git repository to extend MoLOS.</p>
-						</div>
-					{/if}
-				</section>
-			{/if}
+						</Accordion.Root>
+					</section>
+				{:else}
+					<section class="space-y-6">
+						<InstallModuleForm {isInstalling} />
+
+						{#if externalModules.length > 0}
+							<div class="grid gap-4">
+								{#each externalModules as mod}
+									<ExternalModuleCard
+										module={mod}
+										enabled={moduleStates[mod.id].enabled}
+										isLoading={loadingStates[mod.id]}
+										onToggleEnabled={toggleModule}
+										onForcePull={forcePullModule}
+										onChangeGitRef={openGitRefDialog}
+									/>
+								{/each}
+							</div>
+						{:else}
+							<div
+								class="text-muted-foreground flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-muted p-12"
+							>
+								<span class="mb-4 text-4xl opacity-20">📦</span>
+								<p class="text-lg font-medium">No external modules installed</p>
+								<p class="text-sm">Install a module from a git repository to extend MoLOS.</p>
+							</div>
+						{/if}
+					</section>
+				{/if}
+			</div>
 		</div>
+
+		<!-- Footer -->
+		<ModuleManagerFooter {moduleStates} {isSaving} />
 	</div>
 
-	<!-- Footer -->
-	<ModuleManagerFooter {moduleStates} {isSaving} />
-</div>
-
-<!-- Git Ref Dialog -->
-<GitRefDialog
-	open={showGitRefDialog}
-	module={gitRefDialogModule}
-	newRef={newGitRefInput}
-	onClose={closeGitRefDialog}
-	onSubmit={submitGitRefUpdate}
-/>
+	<!-- Git Ref Dialog -->
+	<GitRefDialog
+		open={showGitRefDialog}
+		module={gitRefDialogModule}
+		newRef={newGitRefInput}
+		onClose={closeGitRefDialog}
+		onSubmit={submitGitRefUpdate}
+	/>
 </Tooltip.Provider>
