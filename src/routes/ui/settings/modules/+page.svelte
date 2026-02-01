@@ -20,8 +20,10 @@
 
 	// Local state - use derived to auto-update when data.modules changes
 	let localModules = $derived.by(() => [...data.modules]);
-	let moduleStates = $state(
-		(localModules || []).reduce(
+
+	// Initialize moduleStates from localModules, and update when data changes
+	let moduleStates = $state<Record<string, ModuleState>>(
+		localModules.reduce(
 			(acc, mod) => {
 				const savedMod = (data.savedStates || []).find(
 					(s) => s.moduleId === mod.id && s.submoduleId === 'main'
@@ -45,6 +47,34 @@
 			{} as Record<string, ModuleState>
 		)
 	);
+
+	// Keep moduleStates in sync when data changes
+	$effect(() => {
+		const newStates = localModules.reduce(
+			(acc, mod) => {
+				const savedMod = (data.savedStates || []).find(
+					(s) => s.moduleId === mod.id && s.submoduleId === 'main'
+				);
+				acc[mod.id] = {
+					enabled: savedMod ? savedMod.enabled : true,
+					menuOrder: savedMod?.menuOrder ?? 0,
+					submodules: (mod.navigation || []).reduce(
+						(subAcc, sub) => {
+							const savedSub = (data.savedStates || []).find(
+								(s) => s.moduleId === mod.id && s.submoduleId === sub.name
+							);
+							subAcc[sub.name] = savedSub ? savedSub.enabled : !sub.disabled;
+							return subAcc;
+						},
+						{} as Record<string, boolean>
+					)
+				};
+				return acc;
+			},
+			{} as Record<string, ModuleState>
+		);
+		moduleStates = newStates;
+	});
 
 	// UI state
 	let activeTab = $state<'builtin' | 'external'>('builtin');

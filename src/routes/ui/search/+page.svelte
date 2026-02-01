@@ -21,6 +21,11 @@
 		};
 	}>();
 
+	let filtersOpen = $state(false);
+
+	let availableModules = $derived(data.availableModules ?? []);
+	let availableTypes = $derived(data.availableTypes ?? []);
+
 	let query = $state(data.query ?? '');
 	let results = $state(data.results ?? []);
 	let filters = $state<Filters>({
@@ -29,10 +34,8 @@
 		from: data.filters?.from ?? '',
 		to: data.filters?.to ?? ''
 	});
-	let filtersOpen = $state(false);
 
-	let availableModules = $derived(data.availableModules ?? []);
-	let availableTypes = $derived(data.availableTypes ?? []);
+	// Keep state in sync with data props
 	$effect(() => {
 		query = data.query ?? '';
 		results = data.results ?? [];
