@@ -47,7 +47,7 @@
 	);
 
 	// UI state
-	let activeTab = $state('builtin');
+	let activeTab = $state<'builtin' | 'external'>('builtin');
 	let searchQuery = $state('');
 	let isSaving = $state(false);
 	let isInstalling = $state(false);
@@ -74,6 +74,11 @@
 					m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
 					m.description?.toLowerCase().includes(searchQuery.toLowerCase())
 			)
+			.map((m) => ({
+				...m,
+				description: m.description ?? '',
+				lastError: m.lastError ?? undefined
+			}))
 			.sort((a, b) => (moduleStates[a.id]?.menuOrder || 0) - (moduleStates[b.id]?.menuOrder || 0))
 	);
 
@@ -85,6 +90,11 @@
 					m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
 					m.description?.toLowerCase().includes(searchQuery.toLowerCase())
 			)
+			.map((m) => ({
+				...m,
+				description: m.description ?? '',
+				lastError: m.lastError ?? undefined
+			}))
 	);
 
 	let hasPendingModules = $derived(

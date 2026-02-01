@@ -100,7 +100,13 @@
 			</div>
 		</div>
 
-		<form class="flex w-full items-center gap-2" on:submit|preventDefault={submit}>
+		<form
+			class="flex w-full items-center gap-2"
+			onsubmit={(e) => {
+				e.preventDefault();
+				submit();
+			}}
+		>
 			<div class="relative flex-1">
 				<div
 					class="text-muted-foreground pointer-events-none absolute inset-y-0 left-3 flex items-center"

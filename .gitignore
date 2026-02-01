@@ -39,3 +39,4 @@ documentation/
 external_modules/
 src/routes/api/(external_modules)/
 src/routes/ui/(modules)/(external_modules)/
+.claude/

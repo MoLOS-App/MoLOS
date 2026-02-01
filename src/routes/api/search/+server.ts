@@ -95,7 +95,7 @@ export const GET: RequestHandler = async (event) => {
 				entityId: session.id,
 				title: session.title,
 				href: '/ui/ai/dashboard',
-				updatedAt: session.updatedAt
+				updatedAt: session.updatedAt.getTime()
 			}))
 		);
 
@@ -115,7 +115,7 @@ export const GET: RequestHandler = async (event) => {
 				title: 'Memory',
 				snippet: buildSnippet(memory.content),
 				href: '/ui/ai/dashboard',
-				updatedAt: memory.updatedAt
+				updatedAt: memory.updatedAt.getTime()
 			}))
 		);
 	}
