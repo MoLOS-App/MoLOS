@@ -69,10 +69,14 @@ export const settingsExternalModules = sqliteTable('settings_external_modules', 
 	id: text('id').primaryKey(), // folder name
 	repoUrl: text('repo_url').notNull(),
 	status: textEnum('status', ExternalModuleStatus).notNull().default(ExternalModuleStatus.PENDING),
+	gitRef: text('git_ref').notNull().default('main'), // Git tag/branch to checkout
+	blockUpdates: integer('block_updates', { mode: 'boolean' }).notNull().default(false), // Prevent sync script from pulling updates
 	lastError: text('last_error'),
 	errorDetails: text('error_details'), // JSON serialized error info
 	errorType: text('error_type'), // 'manifest_validation', 'migration_failed', 'config_export', etc.
 	recoverySteps: text('recovery_steps'), // JSON array of suggested recovery actions
+	retryCount: integer('retry_count').notNull().default(0), // Number of retry attempts
+	lastRetryAt: integer('last_retry_at', { mode: 'timestamp_ms' }), // Timestamp of last retry
 	installedAt: integer('installed_at', { mode: 'timestamp_ms' })
 		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
 		.notNull(),

@@ -95,9 +95,15 @@ Backups are simple. Move `./molos_data` to a new machine and you are done.
 
 ## For developers
 
-[Docs](https://molos-docs.eduard3v.com)
+[Documentation](https://molos-docs.eduard3v.com)
 
 The codebase is small on purpose. It is easy to read, easy to extend, and easy to own.
+
+### Module System
+
+- **[Module Improvements Guide](documentation/module-improvements.md)** - Learn about retry logic, change detection, and module linking
+- **[Quick Reference](documentation/module-quick-reference.md)** - Common commands and troubleshooting
+- **[Module System Context](documentation/context/module-system.md)** - Architecture and design decisions
 
 If you want to build a module or know why I made some architectural decisions, start there.
 

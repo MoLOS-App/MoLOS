@@ -103,3 +103,71 @@ export const aiMemories = sqliteTable('ai_memories', {
 		.$onUpdate(() => new Date())
 		.notNull()
 });
+
+/**
+ * Telegram Settings - Telegram Bot Configuration
+ * Stores Telegram bot configuration for each user
+ */
+export const telegramSettings = sqliteTable('telegram_settings', {
+	id: text('id').primaryKey(),
+	userId: text('user_id')
+		.notNull()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	botToken: text('bot_token').notNull(),
+	chatId: text('chat_id').notNull(),
+	webhookUrl: text('webhook_url'),
+	modelName: text('model_name').notNull().default('gpt-4o'),
+	systemPrompt: text('system_prompt'),
+	temperature: real('temperature'),
+	maxTokens: integer('max_tokens'),
+	enabled: integer('enabled', { mode: 'boolean' }).notNull().default(true),
+	createdAt: integer('created_at', { mode: 'timestamp_ms' })
+		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		.notNull(),
+	updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+		.$onUpdate(() => new Date())
+		.notNull()
+});
+
+/**
+ * Telegram Sessions - Telegram Chat Sessions
+ * Stores Telegram chat sessions for each user
+ */
+export const telegramSessions = sqliteTable('telegram_sessions', {
+	id: text('id').primaryKey(),
+	userId: text('user_id')
+		.notNull()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	aiSessionId: text('ai_session_id').references(() => aiSessions.id, { onDelete: 'cascade' }),
+	telegramChatId: text('telegram_chat_id').notNull(),
+	title: text('title').notNull(),
+	createdAt: integer('created_at', { mode: 'timestamp_ms' })
+		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		.notNull(),
+	updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+		.$onUpdate(() => new Date())
+		.notNull()
+});
+
+/**
+ * Telegram Messages - Telegram Chat Messages
+ * Stores individual messages within Telegram chat sessions
+ */
+export const telegramMessages = sqliteTable('telegram_messages', {
+	id: text('id').primaryKey(),
+	userId: text('user_id')
+		.notNull()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	sessionId: text('session_id')
+		.notNull()
+		.references(() => telegramSessions.id, { onDelete: 'cascade' }),
+	telegramMessageId: integer('telegram_message_id').notNull(),
+	role: textEnum('role', AIRole).notNull(),
+	content: text('content').notNull(),
+	contextMetadata: text('context_metadata'),
+	toolCallId: text('tool_call_id'),
+	toolCalls: text('tool_calls', { mode: 'json' }),
+	createdAt: integer('created_at', { mode: 'timestamp_ms' })
+		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		.notNull()
+});

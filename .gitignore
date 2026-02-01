@@ -27,11 +27,18 @@ Thumbs.db
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
+# Module state files
+.molo-sync-state.json
+.molo-module-links.json
+
 # SQLite
 *.db
 *.db-shm
 *.db-wal
 documentation/
-external_modules/
+# external_modules/
 src/routes/api/(external_modules)/
 src/routes/ui/(modules)/(external_modules)/
+.claude/
+.beads/
+.mcp.json

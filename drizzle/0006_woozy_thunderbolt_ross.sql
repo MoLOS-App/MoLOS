@@ -1,0 +1,1 @@
+ALTER TABLE `telegram_sessions` ADD `ai_session_id` text REFERENCES ai_sessions(id);

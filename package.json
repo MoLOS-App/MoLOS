@@ -9,6 +9,7 @@
 		"preview": "vite preview --host --port 4173",
 		"serve": "tsx scripts/supervisor.ts",
 		"module:sync": "tsx scripts/sync-modules.ts",
+		"module:link": "tsx scripts/link-modules.ts",
 		"module:create": "tsx scripts/module-dev-cli.ts create",
 		"module:validate": "tsx scripts/module-dev-cli.ts validate",
 		"module:test": "tsx scripts/module-dev-cli.ts test",

@@ -288,22 +288,20 @@
 					</Tooltip.Root>
 
 					<!-- AI Assistant -->
-					{#if !isAiOpen}
-						<Tooltip.Root>
-							<Tooltip.Trigger>
-								<Button
-									variant="ghost"
-									size="icon"
-									class="text-muted-foreground h-10 w-10 rounded-2xl hover:bg-muted/40"
-									aria-label="AI Assistant"
-									onclick={() => (isAiOpen = !isAiOpen)}
-								>
-									<Bot class="h-5 w-5" />
-								</Button>
-							</Tooltip.Trigger>
-							<Tooltip.Content side="right">AI Assistant</Tooltip.Content>
-						</Tooltip.Root>
-					{/if}
+					<Tooltip.Root>
+						<Tooltip.Trigger>
+							<Button
+								variant="ghost"
+								size="icon"
+								class="text-muted-foreground h-10 w-10 rounded-2xl hover:bg-muted/40"
+								aria-label="AI Assistant"
+								onclick={() => (isAiOpen = !isAiOpen)}
+							>
+								<Bot class="h-5 w-5" />
+							</Button>
+						</Tooltip.Trigger>
+						<Tooltip.Content side="right">AI Assistant</Tooltip.Content>
+					</Tooltip.Root>
 				</div>
 			</aside>
 		{/if}

@@ -41,14 +41,17 @@ export const load: PageServerLoad = async ({ locals }) => {
 		user: locals.user,
 		modules: allModules.map((m) => {
 			const savedState = moduleStates.find((s) => s.moduleId === m.id && s.submoduleId === 'main');
+			const externalModule = externalIds.get(m.id);
 			return {
 				id: m.id,
 				name: m.name,
 				description: m.description,
 				href: m.href,
 				isExternal: m.isExternal || externalIds.has(m.id),
-				status: externalIds.get(m.id)?.status || 'active',
-				lastError: externalIds.get(m.id)?.lastError,
+				status: externalModule?.status || 'active',
+				lastError: externalModule?.lastError,
+				gitRef: externalModule?.gitRef || 'main',
+				blockUpdates: externalModule?.blockUpdates || false,
 				menuOrder: savedState?.menuOrder ?? 0,
 				navigation: (m.navigation || []).map((n) => ({
 					name: n.name,
@@ -57,7 +60,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 			};
 		}),
 		savedStates: moduleStates,
-		allowUserInstallPlugins: allowUserInstallPlugins === 'true'
+		allowUserInstallPlugins: locals.user.role === 'admin' || allowUserInstallPlugins === 'true'
 	};
 };
 
@@ -114,56 +117,85 @@ export const actions: Actions = {
 
 		const formData = await request.formData();
 		const repoUrl = formData.get('repoUrl');
+		const gitRef = formData.get('gitRef');
 
 		if (!repoUrl || typeof repoUrl !== 'string') {
-			return fail(400, { message: 'Missing repository URL' });
+			return { type: 'failure', data: { message: 'Missing repository URL' } };
 		}
+
+		const normalizedGitRef =
+			gitRef && typeof gitRef === 'string' && gitRef.trim() ? gitRef.trim() : 'main';
 
 		try {
 			const trimmedRepoUrl = repoUrl.trim();
 			if (!isAllowedRepoUrl(trimmedRepoUrl)) {
-				return fail(400, {
-					message: 'Invalid repository URL. Only HTTPS or SSH Git URLs are allowed.'
-				});
+				return {
+					type: 'failure',
+					data: { message: 'Invalid repository URL. Only HTTPS or SSH Git URLs are allowed.' }
+				};
 			}
 
 			const folderName = getRepoFolderName(trimmedRepoUrl);
 			if (!folderName || !isValidModuleId(folderName)) {
-				return fail(400, { message: 'Invalid module repository name.' });
+				return { type: 'failure', data: { message: 'Invalid module repository name.' } };
 			}
 
 			const externalModulesDir = path.resolve(process.cwd(), 'external_modules');
 			const targetPath = path.resolve(externalModulesDir, folderName);
 			if (!targetPath.startsWith(externalModulesDir + path.sep)) {
-				return fail(400, { message: 'Invalid module path.' });
+				return { type: 'failure', data: { message: 'Invalid module path.' } };
 			}
 			if (existsSync(targetPath)) {
-				return fail(409, { message: 'Module already exists at target path.' });
+				return { type: 'failure', data: { message: 'Module already exists at target path.' } };
 			}
 
-			console.log(`Cloning ${trimmedRepoUrl} into ${targetPath}...`);
-			execFileSync('git', ['clone', '--depth', '1', trimmedRepoUrl, targetPath], {
-				stdio: 'inherit'
-			});
+			// Skip git operations for local modules
+			if (!trimmedRepoUrl.startsWith('local://')) {
+				console.log(`Cloning ${trimmedRepoUrl} into ${targetPath}...`);
+				execFileSync('git', ['clone', '--depth', '1', trimmedRepoUrl, targetPath], {
+					stdio: 'inherit'
+				});
+
+				// Verify .git folder was created
+				const gitPath = path.join(targetPath, '.git');
+				if (!existsSync(gitPath)) {
+					console.error(`[Install] WARNING: .git folder not found after clone for ${folderName}.`);
+				} else {
+					console.log(`[Install] Verified .git folder exists for ${folderName}`);
+				}
+
+				// Checkout the specified git ref if not 'main'
+				if (normalizedGitRef !== 'main') {
+					console.log(`Checking out ${normalizedGitRef}...`);
+					execFileSync('git', ['checkout', normalizedGitRef], {
+						cwd: targetPath,
+						stdio: 'inherit'
+					});
+				}
+			}
 
 			const settingsRepo = new SettingsRepository();
-			await settingsRepo.registerExternalModule(folderName, trimmedRepoUrl);
+			await settingsRepo.registerExternalModule(folderName, trimmedRepoUrl, normalizedGitRef);
 
 			// We no longer trigger restart automatically here to allow multiple installs
 			console.log(`[System] Module ${folderName} installed. Waiting for manual restart.`);
 
 			return {
-				success: true,
-				message: `Module ${folderName} cloned successfully. Restart required to activate.`
+				type: 'success',
+				data: { message: `Module ${folderName} cloned successfully. Restart required to activate.` }
 			};
 		} catch (e) {
 			if (e instanceof Error && e.constructor.name === 'Redirect') throw e;
 			if (e && typeof e === 'object' && 'status' in e && 'location' in e) throw e;
 
 			console.error('Failed to install module:', e);
-			return fail(500, {
-				message: 'Failed to install module. Ensure the URL is valid and the directory is writable.'
-			});
+			return {
+				type: 'failure',
+				data: {
+					message:
+						'Failed to install module. Ensure the URL is valid and the directory is writable.'
+				}
+			};
 		}
 	},
 
@@ -174,7 +206,7 @@ export const actions: Actions = {
 		const moduleId = formData.get('moduleId');
 
 		if (!moduleId || typeof moduleId !== 'string') {
-			return fail(400, { message: 'Missing module ID' });
+			return { type: 'failure', data: { message: 'Missing module ID' } };
 		}
 
 		try {
@@ -186,15 +218,15 @@ export const actions: Actions = {
 			console.log(`[System] Module ${moduleId} marked for deletion. Waiting for manual restart.`);
 
 			return {
-				success: true,
-				message: `Module ${moduleId} marked for deletion. Restart required to complete.`
+				type: 'success',
+				data: { message: `Module ${moduleId} marked for deletion. Restart required to complete.` }
 			};
 		} catch (e) {
 			if (e instanceof Error && e.constructor.name === 'Redirect') throw e;
 			if (e && typeof e === 'object' && 'status' in e && 'location' in e) throw e;
 
 			console.error('Failed to delete module:', e);
-			return fail(500, { message: 'Failed to delete module' });
+			return { type: 'failure', data: { message: 'Failed to delete module' } };
 		}
 	},
 
@@ -205,7 +237,7 @@ export const actions: Actions = {
 		const moduleId = formData.get('moduleId');
 
 		if (!moduleId || typeof moduleId !== 'string') {
-			return fail(400, { message: 'Missing module ID' });
+			return { type: 'failure', data: { message: 'Missing module ID' } };
 		}
 
 		try {
@@ -213,13 +245,13 @@ export const actions: Actions = {
 			const mod = await settingsRepo.getExternalModuleById(moduleId);
 
 			if (!mod) {
-				return fail(404, { message: 'Module not found' });
+				return { type: 'failure', data: { message: 'Module not found' } };
 			}
 
 			if (mod.status === 'deleting') {
 				// Revert to active
 				await settingsRepo.updateExternalModuleStatus(moduleId, 'active');
-				return { success: true, message: 'Deletion cancelled.' };
+				return { type: 'success', data: { message: 'Deletion cancelled.' } };
 			} else if (mod.status === 'pending') {
 				// Remove completely (it was just cloned)
 				const targetPath = path.join(process.cwd(), 'external_modules', moduleId);
@@ -229,13 +261,13 @@ export const actions: Actions = {
 					console.error(`Failed to remove module folder ${targetPath}:`, e);
 				}
 				await settingsRepo.deleteExternalModule(moduleId);
-				return { success: true, message: 'Installation cancelled.' };
+				return { type: 'success', data: { message: 'Installation cancelled.' } };
 			}
 
-			return fail(400, { message: 'Nothing to cancel for this module.' });
+			return { type: 'failure', data: { message: 'Nothing to cancel for this module.' } };
 		} catch (e) {
 			console.error('Failed to cancel action:', e);
-			return fail(500, { message: 'Failed to cancel action' });
+			return { type: 'failure', data: { message: 'Failed to cancel action' } };
 		}
 	},
 
@@ -278,6 +310,173 @@ export const actions: Actions = {
 		}
 
 		return redirect(303, '/ui/system/restarting');
+	},
+
+	updateGitRef: async ({ request, locals }) => {
+		await verifyAccess(locals);
+
+		const formData = await request.formData();
+		const moduleId = formData.get('moduleId');
+		const gitRef = formData.get('gitRef');
+
+		if (!moduleId || typeof moduleId !== 'string') {
+			return { type: 'failure', data: { message: 'Missing module ID' } };
+		}
+
+		if (!gitRef || typeof gitRef !== 'string') {
+			return { type: 'failure', data: { message: 'Missing git ref' } };
+		}
+
+		try {
+			const settingsRepo = new SettingsRepository();
+			const mod = await settingsRepo.getExternalModuleById(moduleId);
+
+			if (!mod) {
+				return { type: 'failure', data: { message: 'Module not found' } };
+			}
+
+			// Skip git operations for local modules
+			if (!mod.repoUrl.startsWith('local://')) {
+				const targetPath = path.join(process.cwd(), 'external_modules', moduleId);
+
+				if (!existsSync(targetPath)) {
+					return { type: 'failure', data: { message: 'Module directory not found' } };
+				}
+
+				// Fetch the latest refs
+				console.log(`Fetching latest refs for ${moduleId}...`);
+				execFileSync('git', ['fetch', 'origin'], {
+					cwd: targetPath,
+					stdio: 'inherit'
+				});
+
+				// Checkout the new ref
+				console.log(`Checking out ${gitRef}...`);
+				execFileSync('git', ['checkout', gitRef], {
+					cwd: targetPath,
+					stdio: 'inherit'
+				});
+
+				// Update module status to pending to trigger re-initialization on restart
+				await settingsRepo.updateExternalModuleStatus(moduleId, 'pending');
+			}
+
+			// Update the git ref in database
+			await settingsRepo.updateExternalModuleGitRef(moduleId, gitRef);
+
+			return {
+				type: 'success',
+				data: { message: `Git ref updated to ${gitRef}. Restart required to apply changes.` }
+			};
+		} catch (e) {
+			console.error('Failed to update git ref:', e);
+			return { type: 'failure', data: { message: 'Failed to update git ref' } };
+		}
+	},
+
+	toggleBlockUpdates: async ({ request, locals }) => {
+		await verifyAccess(locals);
+
+		const formData = await request.formData();
+		const moduleId = formData.get('moduleId');
+		const blockUpdates = formData.get('blockUpdates');
+
+		if (!moduleId || typeof moduleId !== 'string') {
+			return { type: 'failure', data: { message: 'Missing module ID' } };
+		}
+
+		if (blockUpdates === null) {
+			return { type: 'failure', data: { message: 'Missing blockUpdates value' } };
+		}
+
+		try {
+			const settingsRepo = new SettingsRepository();
+			const shouldBlock = blockUpdates === 'true';
+			await settingsRepo.updateExternalModuleBlockUpdates(moduleId, shouldBlock);
+
+			return {
+				type: 'success',
+				data: {
+					message: shouldBlock
+						? 'Updates blocked for this module'
+						: 'Updates enabled for this module'
+				}
+			};
+		} catch (e) {
+			console.error('Failed to toggle block updates:', e);
+			return { type: 'failure', data: { message: 'Failed to update block updates setting' } };
+		}
+	},
+
+	forcePull: async ({ request, locals }) => {
+		await verifyAccess(locals);
+
+		const formData = await request.formData();
+		const moduleId = formData.get('moduleId');
+
+		if (!moduleId || typeof moduleId !== 'string') {
+			return { type: 'failure', data: { message: 'Missing module ID' } };
+		}
+
+		try {
+			const settingsRepo = new SettingsRepository();
+			const mod = await settingsRepo.getExternalModuleById(moduleId);
+
+			if (!mod) {
+				return { type: 'failure', data: { message: 'Module not found' } };
+			}
+
+			// Skip for local modules
+			if (mod.repoUrl.startsWith('local://')) {
+				return { type: 'failure', data: { message: 'Cannot pull local modules' } };
+			}
+
+			const targetPath = path.join(process.cwd(), 'external_modules', moduleId);
+
+			if (!existsSync(targetPath)) {
+				return { type: 'failure', data: { message: 'Module directory not found' } };
+			}
+
+			// Fetch the latest refs
+			console.log(`[ForcePull] Fetching latest refs for ${moduleId}...`);
+			execFileSync('git', ['fetch', 'origin'], {
+				cwd: targetPath,
+				stdio: 'inherit'
+			});
+
+			// Checkout the configured git ref
+			const targetRef = mod.gitRef || 'main';
+			console.log(`[ForcePull] Checking out ${targetRef}...`);
+			execFileSync('git', ['checkout', targetRef], {
+				cwd: targetPath,
+				stdio: 'inherit'
+			});
+
+			// Pull latest changes if on a branch
+			try {
+				console.log(`[ForcePull] Pulling latest changes...`);
+				execFileSync('git', ['pull', 'origin', targetRef], {
+					cwd: targetPath,
+					stdio: 'inherit'
+				});
+			} catch (e) {
+				console.warn('[ForcePull] Pull failed (might be on a tag or detached HEAD):', e);
+			}
+
+			// Update module status to pending to trigger re-initialization on restart
+			await settingsRepo.updateExternalModuleStatus(moduleId, 'pending');
+
+			return {
+				type: 'success',
+				data: { message: `Module ${moduleId} updated. Restart required to apply changes.` }
+			};
+		} catch (e) {
+			console.error('Failed to force pull:', e);
+			return {
+				type: 'failure',
+				data: { message: 'Failed to pull latest changes. Check server logs for details.' }
+			};
+		}
 	}
 };
 
