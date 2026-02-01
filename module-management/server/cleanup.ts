@@ -1,4 +1,5 @@
 import { existsSync, readdirSync, rmSync } from 'fs';
+import path from 'path';
 import { ModulePaths } from './paths';
 import { cleanupModuleArtifacts, cleanupOrphanedSymlinks, isBrokenSymlink } from './utils';
 
@@ -19,8 +20,23 @@ export class ModuleCleanup {
 			const modulePath = ModulePaths.getModulePath(mod.id);
 			if (existsSync(modulePath)) {
 				try {
-					rmSync(modulePath, { recursive: true, force: true });
-					console.log(`[ModuleManager] Removed folder for deleted module: ${mod.id}`);
+					// If blockUpdates is true, preserve the .git folder and delete only other contents
+					if (mod.blockUpdates) {
+						console.log(`[ModuleManager] Preserving .git folder for module with blocked updates: ${mod.id}`);
+						const entries = readdirSync(modulePath, { withFileTypes: true });
+						for (const entry of entries) {
+							// Skip .git folder and git files
+							if (entry.name === '.git' || entry.name === '.gitignore' || entry.name === '.gitattributes') {
+								continue;
+							}
+							const entryPath = path.join(modulePath, entry.name);
+							rmSync(entryPath, { recursive: true, force: true });
+						}
+						console.log(`[ModuleManager] Removed non-git contents for deleted module (preserved .git): ${mod.id}`);
+					} else {
+						rmSync(modulePath, { recursive: true, force: true });
+						console.log(`[ModuleManager] Removed folder for deleted module: ${mod.id}`);
+					}
 				} catch (e) {
 					console.error(`[ModuleManager] Failed to remove folder for ${mod.id}:`, e);
 				}
