@@ -210,7 +210,7 @@ export class SettingsRepository extends BaseRepository {
 
 		// Don't retry if within grace period (unless it's the first retry)
 		if (module.lastRetryAt && module.retryCount > 0) {
-			const timeSinceLastRetry = Date.now() - module.lastRetryAt;
+			const timeSinceLastRetry = Date.now() - Number(module.lastRetryAt);
 			if (timeSinceLastRetry < gracePeriodMs) return false;
 		}
 
