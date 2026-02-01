@@ -79,15 +79,16 @@ export class SettingsRepository extends BaseRepository {
 		return results;
 	}
 
-	async registerExternalModule(id: string, repoUrl: string) {
+	async registerExternalModule(id: string, repoUrl: string, gitRef: string = 'main') {
 		return await this.db
 			.insert(settingsExternalModules)
-			.values({ id, repoUrl, status: 'pending' })
+			.values({ id, repoUrl, status: 'pending', gitRef })
 			.onConflictDoUpdate({
 				target: settingsExternalModules.id,
 				set: {
 					repoUrl,
 					status: 'pending',
+					gitRef,
 					lastError: null,
 					errorDetails: null,
 					errorType: null,
@@ -149,6 +150,83 @@ export class SettingsRepository extends BaseRepository {
 			.returning();
 	}
 
+	/**
+	 * Increment retry count for a module and update last retry timestamp
+	 */
+	async incrementRetryCount(id: string) {
+		const result = await this.db
+			.select({
+				retryCount: settingsExternalModules.retryCount
+			})
+			.from(settingsExternalModules)
+			.where(eq(settingsExternalModules.id, id))
+			.limit(1);
+
+		if (result[0]) {
+			const newCount = (result[0].retryCount || 0) + 1;
+			return await this.db
+				.update(settingsExternalModules)
+				.set({
+					retryCount: newCount,
+					lastRetryAt: new Date(),
+					updatedAt: new Date()
+				})
+				.where(eq(settingsExternalModules.id, id))
+				.returning();
+		}
+		return null;
+	}
+
+	/**
+	 * Reset retry count for a module (called on successful initialization)
+	 */
+	async resetRetryCount(id: string) {
+		return await this.db
+			.update(settingsExternalModules)
+			.set({
+				retryCount: 0,
+				lastRetryAt: null,
+				updatedAt: new Date()
+			})
+			.where(eq(settingsExternalModules.id, id))
+			.returning();
+	}
+
+	/**
+	 * Check if module should be retried based on retry policy
+	 */
+	async shouldRetryModule(id: string, maxRetries: number = 3, gracePeriodMs: number = 300000) {
+		const result = await this.db
+			.select()
+			.from(settingsExternalModules)
+			.where(eq(settingsExternalModules.id, id))
+			.limit(1);
+
+		const module = result[0];
+		if (!module) return false;
+
+		// Don't retry if max retries exceeded
+		if (module.retryCount >= maxRetries) return false;
+
+		// Don't retry if within grace period (unless it's the first retry)
+		if (module.lastRetryAt && module.retryCount > 0) {
+			const timeSinceLastRetry = Date.now() - module.lastRetryAt;
+			if (timeSinceLastRetry < gracePeriodMs) return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Get modules that are retryable (in error state but within retry limits)
+	 */
+	async getRetryableModules(maxRetries: number = 3) {
+		return await this.db
+			.select()
+			.from(settingsExternalModules)
+			.where(sql`(status LIKE 'error_%' OR status = 'pending') AND retry_count < ${maxRetries}`);
+	}
+
 	async log(level: 'info' | 'warn' | 'error', source: string, message: string, details?: unknown) {
 		return await this.db
 			.insert(settingsServerLogs)
@@ -195,5 +273,27 @@ export class SettingsRepository extends BaseRepository {
 
 	async getAllSystemSettings() {
 		return await this.db.select().from(settingsSystem);
+	}
+
+	async updateExternalModuleGitRef(id: string, gitRef: string) {
+		return await this.db
+			.update(settingsExternalModules)
+			.set({
+				gitRef,
+				updatedAt: new Date()
+			})
+			.where(eq(settingsExternalModules.id, id))
+			.returning();
+	}
+
+	async updateExternalModuleBlockUpdates(id: string, blockUpdates: boolean) {
+		return await this.db
+			.update(settingsExternalModules)
+			.set({
+				blockUpdates,
+				updatedAt: new Date()
+			})
+			.where(eq(settingsExternalModules.id, id))
+			.returning();
 	}
 }
