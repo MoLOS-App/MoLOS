@@ -49,6 +49,25 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const aiRepo = new AiRepository();
 	const updated = await aiRepo.updateTelegramSettings(locals.user.id, result.data);
 
+	// Register webhook with Telegram if webhookUrl is provided
+	if (result.data.webhookUrl && updated.botToken) {
+		try {
+			const webhookUrl = result.data.webhookUrl;
+			const telegramApiUrl = `https://api.telegram.org/bot${updated.botToken}/setWebhook`;
+			const response = await fetch(telegramApiUrl, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ url: webhookUrl })
+			});
+			const data = await response.json();
+			if (!data.ok) {
+				console.error('[Telegram API] Failed to set webhook:', data.description);
+			}
+		} catch (error) {
+			console.error('[Telegram API] Error setting webhook:', error);
+		}
+	}
+
 	// Don't expose full bot token in response
 	const maskedSettings = {
 		...updated,

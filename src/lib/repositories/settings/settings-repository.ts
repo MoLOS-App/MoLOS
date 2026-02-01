@@ -134,6 +134,13 @@ export class SettingsRepository extends BaseRepository {
 		return await this.db.select().from(settingsExternalModules);
 	}
 
+	async getActiveExternalModules() {
+		return await this.db
+			.select()
+			.from(settingsExternalModules)
+			.where(eq(settingsExternalModules.status, 'active'));
+	}
+
 	async getExternalModuleById(id: string) {
 		const result = await this.db
 			.select()
