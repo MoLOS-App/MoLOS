@@ -2,6 +2,7 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { AiRepository } from '$lib/repositories/ai/ai-repository';
 import { AiAgent } from '$lib/server/ai/agent';
+import { SettingsRepository } from '$lib/repositories/settings/settings-repository';
 import { eq } from 'drizzle-orm';
 
 interface TelegramUpdate {
@@ -110,6 +111,43 @@ export const POST: RequestHandler = async ({ request }) => {
 			return json({ ok: true });
 		}
 
+		// Handle /new command - create a new session
+		if (messageText === '/new' || messageText.startsWith('/new ')) {
+			console.log('[Telegram Webhook] /new command detected, creating new session');
+			const { telegramSessions: telegramSessionsTable } = await import('$lib/server/db/schema');
+			const { uuid } = await import('$lib/utils/uuid');
+
+			// Delete existing session for this chat
+			const existingSession = await aiRepo.getTelegramSessionByChatId(userId, telegramChatId);
+			if (existingSession) {
+				// Delete the old Telegram session (cascade will delete AI session too)
+				await db.delete(telegramSessionsTable).where(eq(telegramSessionsTable.id, existingSession.id));
+			}
+
+			// Create new session
+			const session = await aiRepo.createTelegramSession(
+				userId,
+				telegramChatId,
+				`Telegram Chat (${update.message.chat.title || telegramChatId})`
+			);
+
+			await sendTelegramMessage(
+				settings.botToken,
+				telegramChatId,
+				'Started a new conversation! How can I help you today?'
+			);
+
+			// Save the command to Telegram DB
+			await aiRepo.addTelegramMessage(userId, {
+				sessionId: session.id,
+				telegramMessageId,
+				role: 'user',
+				content: messageText
+			});
+
+			return json({ ok: true });
+		}
+
 		// Get or create session for this telegram chat
 		console.log(`[Telegram Webhook] Creating/getting session...`);
 		const session = await aiRepo.getOrCreateTelegramSession(
@@ -140,8 +178,16 @@ export const POST: RequestHandler = async ({ request }) => {
 		}
 
 		console.log(`[Telegram Webhook] Processing with AiAgent...`);
+
+		// Get active external modules for tools
+		const settingsRepo = new SettingsRepository();
+		const activeExternalModules = await settingsRepo.getActiveExternalModules();
+		const activeModuleIds = activeExternalModules.map((m) => m.id);
+
+		console.log(`[Telegram Webhook] Active modules: ${activeModuleIds.join(', ') || 'none'}`);
+
 		const agent = new AiAgent(userId);
-		const response = await agent.processMessage(messageText, session.aiSessionId, [], undefined, undefined);
+		const response = await agent.processMessage(messageText, session.aiSessionId, activeModuleIds, undefined, undefined);
 
 		console.log(`[Telegram Webhook] AI response:`, response.message?.substring(0, 100) + '...');
 
@@ -247,13 +293,18 @@ async function handleCallbackQuery(
 
 		console.log(`[Telegram Webhook] Executing ${pendingActions.length} confirmed actions...`);
 
+		// Get active external modules for tools
+		const settingsRepo = new SettingsRepository();
+		const activeExternalModules = await settingsRepo.getActiveExternalModules();
+		const activeModuleIds = activeExternalModules.map((m) => m.id);
+
 		// Execute each action and get final response
 		const agent = new AiAgent(userId);
 		let finalResponse = '';
 
 		for (const pendingAction of pendingActions) {
 			try {
-				const result = await agent.processActionConfirmation(pendingAction, aiSessionId, []);
+				const result = await agent.processActionConfirmation(pendingAction, aiSessionId, activeModuleIds);
 				finalResponse = result.message || 'Actions executed successfully.';
 			} catch (error) {
 				console.error('[Telegram Webhook] Error executing action:', error);
@@ -293,14 +344,18 @@ async function sendTelegramMessage(
 	text: string
 ): Promise<void> {
 	const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
-	const body: TelegramMessageResponse = {
-		method: 'sendMessage',
-		chat_id: chatId,
-		text: text,
-		parse_mode: 'Markdown'
-	};
 
-	try {
+	// Try with Markdown first, fallback to plain text if it fails
+	const trySend = async (withParseMode: boolean): Promise<boolean> => {
+		const body: any = {
+			method: 'sendMessage',
+			chat_id: chatId,
+			text: text
+		};
+		if (withParseMode) {
+			body.parse_mode = 'Markdown';
+		}
+
 		const response = await fetch(url, {
 			method: 'POST',
 			headers: {
@@ -309,8 +364,21 @@ async function sendTelegramMessage(
 			body: JSON.stringify(body)
 		});
 
-		if (!response.ok) {
-			console.error('Failed to send Telegram message:', await response.text());
+		if (response.ok) {
+			return true;
+		}
+
+		const errorText = await response.text();
+		console.error(`Failed to send Telegram message${withParseMode ? ' with Markdown' : ''}:`, errorText);
+		return false;
+	};
+
+	try {
+		// First try with Markdown
+		let success = await trySend(true);
+		// If that fails, try without Markdown (plain text)
+		if (!success) {
+			success = await trySend(false);
 		}
 	} catch (error) {
 		console.error('Error sending Telegram message:', error);
