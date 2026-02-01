@@ -190,6 +190,7 @@ async function main() {
 async function syncExternalModulesFromDatabase(): Promise<void> {
 	const settingsRepo = new SettingsRepository();
 	const externalModules = await settingsRepo.getExternalModules();
+	const externalModulesDir = path.resolve(process.cwd(), 'external_modules');
 
 	for (const mod of externalModules) {
 		const modulePath = path.join(externalModulesDir, mod.id);
