@@ -105,9 +105,7 @@ export function hashAllModules(externalModulesDir: string): string {
 
 	try {
 		const items = readdirSync(externalModulesDir, { withFileTypes: true });
-		const moduleDirs = items.filter(
-			(item) => item.isDirectory() || item.isSymbolicLink()
-		);
+		const moduleDirs = items.filter((item) => item.isDirectory() || item.isSymbolicLink());
 
 		// Sort for consistent hashing
 		moduleDirs.sort((a, b) => a.name.localeCompare(b.name));

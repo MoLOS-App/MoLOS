@@ -22,17 +22,25 @@ export class ModuleCleanup {
 				try {
 					// If blockUpdates is true, preserve the .git folder and delete only other contents
 					if (mod.blockUpdates) {
-						console.log(`[ModuleManager] Preserving .git folder for module with blocked updates: ${mod.id}`);
+						console.log(
+							`[ModuleManager] Preserving .git folder for module with blocked updates: ${mod.id}`
+						);
 						const entries = readdirSync(modulePath, { withFileTypes: true });
 						for (const entry of entries) {
 							// Skip .git folder and git files
-							if (entry.name === '.git' || entry.name === '.gitignore' || entry.name === '.gitattributes') {
+							if (
+								entry.name === '.git' ||
+								entry.name === '.gitignore' ||
+								entry.name === '.gitattributes'
+							) {
 								continue;
 							}
 							const entryPath = path.join(modulePath, entry.name);
 							rmSync(entryPath, { recursive: true, force: true });
 						}
-						console.log(`[ModuleManager] Removed non-git contents for deleted module (preserved .git): ${mod.id}`);
+						console.log(
+							`[ModuleManager] Removed non-git contents for deleted module (preserved .git): ${mod.id}`
+						);
 					} else {
 						rmSync(modulePath, { recursive: true, force: true });
 						console.log(`[ModuleManager] Removed folder for deleted module: ${mod.id}`);

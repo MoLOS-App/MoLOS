@@ -1,5 +1,11 @@
 <script lang="ts">
-	import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '$lib/components/ui/card';
+	import {
+		Card,
+		CardContent,
+		CardHeader,
+		CardTitle,
+		CardDescription
+	} from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import { Switch } from '$lib/components/ui/switch';
 	import { Badge } from '$lib/components/ui/badge';
@@ -49,14 +55,12 @@
 	class="overflow-hidden rounded-2xl border-none shadow-sm transition-all duration-200 {status ===
 		'pending' || isDeleting
 		? 'opacity-50'
-		: ''} {!enabled
-		? 'opacity-60 grayscale'
-		: ''}"
+		: ''} {!enabled ? 'opacity-60 grayscale' : ''}"
 >
-	<CardHeader class="flex flex-row items-start justify-between pb-3 space-y-0">
+	<CardHeader class="flex flex-row items-start justify-between space-y-0 pb-3">
 		<div class="flex items-start gap-4">
 			<div class="rounded-xl bg-background p-2.5 text-primary shadow-xs">
-				<LayoutGrid class="w-4 h-4" />
+				<LayoutGrid class="h-4 w-4" />
 			</div>
 			<div class="space-y-1">
 				<div class="flex items-center gap-2">
@@ -78,7 +82,10 @@
 							</Tooltip.Content>
 						</Tooltip.Root>
 					{:else}
-						<Badge variant="outline" class="h-5 px-2 text-[8px] font-black tracking-wider uppercase">
+						<Badge
+							variant="outline"
+							class="h-5 px-2 text-[8px] font-black tracking-wider uppercase"
+						>
 							Local
 						</Badge>
 					{/if}
@@ -86,10 +93,18 @@
 						<CircleCheck class="h-3.5 w-3.5 text-primary" />
 					{:else if status === 'pending'}
 						<RefreshCw class="h-3.5 w-3.5 animate-spin text-accent" />
-						<Badge variant="outline" class="h-4 border-accent/20 bg-accent/10 px-1.5 text-[8px] font-black tracking-widest text-accent uppercase">Pending</Badge>
+						<Badge
+							variant="outline"
+							class="h-4 border-accent/20 bg-accent/10 px-1.5 text-[8px] font-black tracking-widest text-accent uppercase"
+							>Pending</Badge
+						>
 					{:else if isDeleting}
 						<Trash2 class="h-3.5 w-3.5 text-destructive" />
-						<Badge variant="destructive" class="h-4 border-destructive/20 bg-destructive/10 px-1.5 text-[8px] font-black tracking-widest text-destructive uppercase">Deleting</Badge>
+						<Badge
+							variant="destructive"
+							class="h-4 border-destructive/20 bg-destructive/10 px-1.5 text-[8px] font-black tracking-widest text-destructive uppercase"
+							>Deleting</Badge
+						>
 					{:else if hasError}
 						<CircleX class="h-3.5 w-3.5 text-destructive" />
 					{/if}
@@ -98,7 +113,9 @@
 					{module.description || 'External module.'}
 				</CardDescription>
 				{#if hasError && module.lastError}
-					<div class="mt-2 flex items-start gap-2 rounded-lg border border-destructive/10 bg-destructive/5 p-2 text-[9px] text-destructive">
+					<div
+						class="mt-2 flex items-start gap-2 rounded-lg border border-destructive/10 bg-destructive/5 p-2 text-[9px] text-destructive"
+					>
 						<span>{module.lastError}</span>
 					</div>
 				{/if}
@@ -107,7 +124,7 @@
 	</CardHeader>
 
 	<!-- Actions Section -->
-	<CardContent class="pt-0 space-y-3">
+	<CardContent class="space-y-3 pt-0">
 		<div class="flex flex-wrap items-center gap-2">
 			<!-- Module Status Badge -->
 			<div class="flex items-center gap-1.5 rounded-lg bg-background px-2.5 py-1.5 shadow-xs">
@@ -115,14 +132,13 @@
 					class="h-2 w-2 rounded-full {status === 'active'
 						? 'bg-primary'
 						: status === 'pending'
-							? 'bg-accent animate-pulse'
+							? 'animate-pulse bg-accent'
 							: hasError
 								? 'bg-destructive'
 								: 'bg-muted-foreground'}"
 				></div>
 				<span
-					class="text-[10px] font-bold tracking-wider uppercase {status ===
-					'active'
+					class="text-[10px] font-bold tracking-wider uppercase {status === 'active'
 						? 'text-primary'
 						: hasError
 							? 'text-destructive'
@@ -221,7 +237,7 @@
 						variant="ghost"
 						size="sm"
 						type="submit"
-						class="h-8 rounded-lg px-3 text-[10px] font-bold tracking-wider uppercase text-destructive hover:bg-destructive/10 hover:text-destructive"
+						class="h-8 rounded-lg px-3 text-[10px] font-bold tracking-wider text-destructive uppercase hover:bg-destructive/10 hover:text-destructive"
 						disabled={isLoading?.deleting}
 					>
 						<Trash2 class="mr-1.5 h-3 w-3 {isLoading?.deleting ? 'animate-pulse' : ''}" />
@@ -249,7 +265,7 @@
 						variant="outline"
 						size="sm"
 						type="submit"
-						class="h-8 rounded-lg border-accent/50 px-3 text-[10px] font-bold tracking-wider uppercase text-accent hover:bg-accent/10"
+						class="h-8 rounded-lg border-accent/50 px-3 text-[10px] font-bold tracking-wider text-accent uppercase hover:bg-accent/10"
 						disabled={isLoading?.cancelling}
 					>
 						<Undo2 class="mr-1.5 h-3 w-3 {isLoading?.cancelling ? 'animate-spin' : ''}" />

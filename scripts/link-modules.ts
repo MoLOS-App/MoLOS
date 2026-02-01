@@ -151,7 +151,9 @@ function isPathWithinRoots(targetPath: string, roots: string[]): boolean {
 /**
  * Main module linking function
  */
-export async function linkExternalModules(options: { force?: boolean; verbose?: boolean } = {}): Promise<void> {
+export async function linkExternalModules(
+	options: { force?: boolean; verbose?: boolean } = {}
+): Promise<void> {
 	const { force = false, verbose = false } = options;
 	const EXTERNAL_DIR = path.resolve('external_modules');
 	const allowParentModules =
@@ -205,7 +207,8 @@ export async function linkExternalModules(options: { force?: boolean; verbose?: 
 							if (verbose) console.log(`[ModuleLinker] Removing broken symlink: ${fullPath}`);
 							safeRemove(fullPath);
 						} else if (dir === LEGACY_CONFIG_DIR) {
-							if (verbose) console.log(`[ModuleLinker] Removing legacy module config symlink: ${fullPath}`);
+							if (verbose)
+								console.log(`[ModuleLinker] Removing legacy module config symlink: ${fullPath}`);
 							safeRemove(fullPath);
 						}
 					}

@@ -4,7 +4,12 @@ import { existsSync, readFileSync, readdirSync } from 'fs';
 import path from 'path';
 import { parse } from 'yaml';
 import { validateModuleManifest, formatValidationErrors } from '../src/lib/config/module-types.ts';
-import { hasModulesChanged, clearSyncState, saveSyncState, hashAllModules } from '../module-management/utils/hash.js';
+import {
+	hasModulesChanged,
+	clearSyncState,
+	saveSyncState,
+	hashAllModules
+} from '../module-management/utils/hash.js';
 import { linkExternalModules } from '../scripts/link-modules.js';
 import { execFileSync } from 'child_process';
 import { SettingsRepository } from '../src/lib/repositories/settings/settings-repository.js';
