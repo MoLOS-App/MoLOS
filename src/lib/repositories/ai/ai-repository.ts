@@ -408,7 +408,10 @@ export class AiRepository extends BaseRepository {
 			values.toolCalls = JSON.stringify(toolCalls);
 		}
 
-		const result = await this.db.insert(telegramMessages).values(values as any).returning();
+		const result = await this.db
+			.insert(telegramMessages)
+			.values(values as any)
+			.returning();
 
 		// Update session timestamp
 		await this.db

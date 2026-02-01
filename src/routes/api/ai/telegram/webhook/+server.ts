@@ -121,7 +121,9 @@ export const POST: RequestHandler = async ({ request }) => {
 			const existingSession = await aiRepo.getTelegramSessionByChatId(userId, telegramChatId);
 			if (existingSession) {
 				// Delete the old Telegram session (cascade will delete AI session too)
-				await db.delete(telegramSessionsTable).where(eq(telegramSessionsTable.id, existingSession.id));
+				await db
+					.delete(telegramSessionsTable)
+					.where(eq(telegramSessionsTable.id, existingSession.id));
 			}
 
 			// Create new session
@@ -187,14 +189,25 @@ export const POST: RequestHandler = async ({ request }) => {
 		console.log(`[Telegram Webhook] Active modules: ${activeModuleIds.join(', ') || 'none'}`);
 
 		const agent = new AiAgent(userId);
-		const response = await agent.processMessage(messageText, session.aiSessionId, activeModuleIds, undefined, undefined);
+		const response = await agent.processMessage(
+			messageText,
+			session.aiSessionId,
+			activeModuleIds,
+			undefined,
+			undefined
+		);
 
 		console.log(`[Telegram Webhook] AI response:`, response.message?.substring(0, 100) + '...');
 
 		// Check if there are pending write actions that need confirmation
-		if (response.actions && response.actions.some((a) => a.type === 'write' && a.status === 'pending')) {
+		if (
+			response.actions &&
+			response.actions.some((a) => a.type === 'write' && a.status === 'pending')
+		) {
 			// Store pending actions for later confirmation
-			const pendingActions = response.actions.filter((a) => a.type === 'write' && a.status === 'pending');
+			const pendingActions = response.actions.filter(
+				(a) => a.type === 'write' && a.status === 'pending'
+			);
 			pendingActionsStore.set(session.aiSessionId, pendingActions);
 
 			// Send message with inline keyboard for confirmation
@@ -304,7 +317,11 @@ async function handleCallbackQuery(
 
 		for (const pendingAction of pendingActions) {
 			try {
-				const result = await agent.processActionConfirmation(pendingAction, aiSessionId, activeModuleIds);
+				const result = await agent.processActionConfirmation(
+					pendingAction,
+					aiSessionId,
+					activeModuleIds
+				);
 				finalResponse = result.message || 'Actions executed successfully.';
 			} catch (error) {
 				console.error('[Telegram Webhook] Error executing action:', error);
@@ -338,11 +355,7 @@ async function handleCallbackQuery(
 }
 
 // Helper function to send message to Telegram
-async function sendTelegramMessage(
-	botToken: string,
-	chatId: string,
-	text: string
-): Promise<void> {
+async function sendTelegramMessage(botToken: string, chatId: string, text: string): Promise<void> {
 	const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
 
 	// Try with Markdown first, fallback to plain text if it fails
@@ -369,7 +382,10 @@ async function sendTelegramMessage(
 		}
 
 		const errorText = await response.text();
-		console.error(`Failed to send Telegram message${withParseMode ? ' with Markdown' : ''}:`, errorText);
+		console.error(
+			`Failed to send Telegram message${withParseMode ? ' with Markdown' : ''}:`,
+			errorText
+		);
 		return false;
 	};
 
@@ -396,9 +412,7 @@ async function sendTelegramConfirmation(
 	const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
 
 	// Build action descriptions
-	const actionDescriptions = actions
-		.map((a) => `• ${a.description}`)
-		.join('\n');
+	const actionDescriptions = actions.map((a) => `• ${a.description}`).join('\n');
 
 	const fullText = `${text}\n\n${actionDescriptions}`;
 
