@@ -143,3 +143,40 @@ export const PREDEFINED_MODELS = {
 		{ id: 'phi3', name: 'Phi-3' }
 	]
 };
+
+// Telegram-specific types
+export interface TelegramSettings {
+	id: string;
+	userId: string;
+	botToken: string;
+	chatId: string;
+	modelName: string;
+	systemPrompt?: string;
+	temperature?: number;
+	maxTokens?: number;
+	enabled: boolean;
+	createdAt: Date;
+	updatedAt: Date;
+}
+
+export interface TelegramSession {
+	id: string;
+	userId: string;
+	telegramChatId: string;
+	title: string;
+	createdAt: Date;
+	updatedAt: Date;
+}
+
+export interface TelegramMessage {
+	id: string;
+	userId: string;
+	sessionId: string;
+	telegramMessageId: number;
+	role: (typeof AIRole)[keyof typeof AIRole];
+	content: string;
+	contextMetadata?: string;
+	toolCallId?: string;
+	toolCalls?: Record<string, unknown>[];
+	createdAt: Date;
+}

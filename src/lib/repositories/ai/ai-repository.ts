@@ -1,6 +1,14 @@
 import { eq, desc, and } from 'drizzle-orm';
-import { aiSettings, aiMessages, aiSessions, aiMemories } from '$lib/server/db/schema';
-import type { AiSettings, AiMessage, AiSession } from '$lib/models/ai';
+import {
+	aiSettings,
+	aiMessages,
+	aiSessions,
+	aiMemories,
+	telegramSettings,
+	telegramSessions,
+	telegramMessages
+} from '$lib/server/db/schema';
+import type { AiSettings, AiMessage, AiSession, TelegramSettings, TelegramSession } from '$lib/models/ai';
 import { BaseRepository } from '../base-repository';
 import { uuid } from '$lib/utils/uuid';
 
@@ -170,5 +178,181 @@ export class AiRepository extends BaseRepository {
 			} as any)
 			.returning();
 		return result[0];
+	}
+
+	// Telegram Settings Management
+	async getTelegramSettings(userId: string): Promise<TelegramSettings | null> {
+		const result = await this.db
+			.select()
+			.from(telegramSettings)
+			.where(eq(telegramSettings.userId, userId))
+			.limit(1);
+
+		return result[0]
+			? ({
+					...result[0],
+					createdAt: new Date(result[0].createdAt as number),
+					updatedAt: new Date(result[0].updatedAt as number)
+				} as unknown as TelegramSettings)
+			: null;
+	}
+
+	async updateTelegramSettings(
+		userId: string,
+		settings: Partial<Omit<TelegramSettings, 'id' | 'userId' | 'createdAt' | 'updatedAt'>>
+	): Promise<TelegramSettings> {
+		const existing = await this.getTelegramSettings(userId);
+
+		if (existing) {
+			const result = await this.db
+				.update(telegramSettings)
+				.set({
+					...settings,
+					updatedAt: new Date()
+				} as any)
+				.where(eq(telegramSettings.userId, userId))
+				.returning();
+			return {
+				...result[0],
+				createdAt: new Date(result[0].createdAt as number),
+				updatedAt: new Date(result[0].updatedAt as number)
+			} as unknown as TelegramSettings;
+		} else {
+			const result = await this.db
+				.insert(telegramSettings)
+				.values({
+					id: uuid(),
+					userId,
+					botToken: settings.botToken || '',
+					chatId: settings.chatId || '',
+					modelName: settings.modelName || 'gpt-4o',
+					enabled: settings.enabled ?? true,
+					...settings,
+					updatedAt: new Date()
+				} as any)
+				.returning();
+			return {
+				...result[0],
+				createdAt: new Date(result[0].createdAt as number),
+				updatedAt: new Date(result[0].updatedAt as number)
+			} as unknown as TelegramSettings;
+		}
+	}
+
+	// Telegram Session Management
+	async getTelegramSessions(userId: string): Promise<TelegramSession[]> {
+		const result = await this.db
+			.select()
+			.from(telegramSessions)
+			.where(eq(telegramSessions.userId, userId))
+			.orderBy(desc(telegramSessions.updatedAt));
+
+		return result.map((row) => ({
+			...row,
+			createdAt: new Date(row.createdAt as number),
+			updatedAt: new Date(row.updatedAt as number)
+		})) as unknown as TelegramSession[];
+	}
+
+	async getTelegramSessionByChatId(
+		userId: string,
+		telegramChatId: string
+	): Promise<TelegramSession | null> {
+		const result = await this.db
+			.select()
+			.from(telegramSessions)
+			.where(
+				and(eq(telegramSessions.userId, userId), eq(telegramSessions.telegramChatId, telegramChatId))
+			)
+			.limit(1);
+
+		return result[0]
+			? ({
+					...result[0],
+					createdAt: new Date(result[0].createdAt as number),
+					updatedAt: new Date(result[0].updatedAt as number)
+				} as unknown as TelegramSession)
+			: null;
+	}
+
+	async createTelegramSession(
+		userId: string,
+		telegramChatId: string,
+		title: string = 'Telegram Chat'
+	): Promise<TelegramSession> {
+		const result = await this.db
+			.insert(telegramSessions)
+			.values({
+				id: uuid(),
+				userId,
+				telegramChatId,
+				title,
+				createdAt: new Date(),
+				updatedAt: new Date()
+			} as any)
+			.returning();
+
+		return {
+			...result[0],
+			createdAt: new Date(result[0].createdAt as number),
+			updatedAt: new Date(result[0].updatedAt as number)
+		} as unknown as TelegramSession;
+	}
+
+	async getOrCreateTelegramSession(
+		userId: string,
+		telegramChatId: string,
+		title: string = 'Telegram Chat'
+	): Promise<TelegramSession> {
+		const existing = await this.getTelegramSessionByChatId(userId, telegramChatId);
+		if (existing) return existing;
+		return await this.createTelegramSession(userId, telegramChatId, title);
+	}
+
+	// Telegram Message Management
+	async getTelegramMessages(sessionId: string, userId: string, limit: number = 50): Promise<any[]> {
+		const result = await this.db
+			.select()
+			.from(telegramMessages)
+			.where(and(eq(telegramMessages.sessionId, sessionId), eq(telegramMessages.userId, userId)))
+			.orderBy(desc(telegramMessages.createdAt))
+			.limit(limit);
+
+		return result.reverse().map((row) => ({
+			...row,
+			toolCalls: row.toolCalls ? JSON.parse(row.toolCalls as string) : undefined,
+			createdAt: new Date(row.createdAt as number)
+		}));
+	}
+
+	async addTelegramMessage(
+		userId: string,
+		message: Omit<any, 'id' | 'userId' | 'createdAt'>
+	): Promise<any> {
+		const { toolCallId, toolCalls, ...rest } = message;
+
+		const result = await this.db
+			.insert(telegramMessages)
+			.values({
+				id: uuid(),
+				userId,
+				...rest,
+				toolCallId,
+				toolCalls: toolCalls ? JSON.stringify(toolCalls) : undefined,
+				createdAt: new Date()
+			} as any)
+			.returning();
+
+		// Update session timestamp
+		await this.db
+			.update(telegramSessions)
+			.set({ updatedAt: new Date() } as any)
+			.where(eq(telegramSessions.id, message.sessionId));
+
+		return {
+			...result[0],
+			toolCalls: result[0].toolCalls ? JSON.parse(result[0].toolCalls as string) : undefined,
+			createdAt: new Date(result[0].createdAt as number)
+		};
 	}
 }
