@@ -308,6 +308,46 @@ export async function linkExternalModules(
 				symlinkSync(apiSource, apiDest, 'dir');
 			}
 
+			// 4. Link lib directories (stores, components, models, repositories, utils, server/ai, server/db/schema)
+			const libMappings: Array<{ source: string; dest: string }> = [
+				{
+					source: path.join(modulePath, 'lib/stores'),
+					dest: path.join(SYMLINK_CONFIG.storesDir, moduleId)
+				},
+				{
+					source: path.join(modulePath, 'lib/components'),
+					dest: path.join(SYMLINK_CONFIG.componentsDir, moduleId)
+				},
+				{
+					source: path.join(modulePath, 'lib/models'),
+					dest: path.join(SYMLINK_CONFIG.modelsDir, moduleId)
+				},
+				{
+					source: path.join(modulePath, 'lib/repositories'),
+					dest: path.join(SYMLINK_CONFIG.repositoriesDir, moduleId)
+				},
+				{
+					source: path.join(modulePath, 'lib/utils'),
+					dest: path.join(SYMLINK_CONFIG.utilsDir, moduleId)
+				},
+				{
+					source: path.join(modulePath, 'lib/server/ai'),
+					dest: path.join(SYMLINK_CONFIG.serverAiDir, moduleId)
+				},
+				{
+					source: path.join(modulePath, 'lib/server/db/schema'),
+					dest: path.join(SYMLINK_CONFIG.dbSchemaDir, moduleId)
+				}
+			];
+
+			for (const { source, dest } of libMappings) {
+				if (existsSync(source)) {
+					safeRemove(dest);
+					if (!existsSync(path.dirname(dest))) mkdirSync(path.dirname(dest), { recursive: true });
+					symlinkSync(source, dest, 'dir');
+				}
+			}
+
 			linkedModules.push(moduleId);
 			if (verbose) console.log(`[ModuleLinker] ✓ Linked ${moduleId}`);
 		} catch (e) {
