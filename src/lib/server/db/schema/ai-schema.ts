@@ -138,6 +138,7 @@ export const telegramSessions = sqliteTable('telegram_sessions', {
 	userId: text('user_id')
 		.notNull()
 		.references(() => user.id, { onDelete: 'cascade' }),
+	aiSessionId: text('ai_session_id').references(() => aiSessions.id, { onDelete: 'cascade' }),
 	telegramChatId: text('telegram_chat_id').notNull(),
 	title: text('title').notNull(),
 	createdAt: integer('created_at', { mode: 'timestamp_ms' })

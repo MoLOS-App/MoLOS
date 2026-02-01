@@ -163,6 +163,7 @@ export interface TelegramSettings {
 export interface TelegramSession {
 	id: string;
 	userId: string;
+	aiSessionId?: string | null;
 	telegramChatId: string;
 	title: string;
 	createdAt: Date;

@@ -299,11 +299,23 @@ export class AiRepository extends BaseRepository {
 		telegramChatId: string,
 		title: string = 'Telegram Chat'
 	): Promise<TelegramSession> {
+		// First create the AI session
+		const aiSessionResult = await this.db
+			.insert(aiSessions)
+			.values({
+				id: uuid(),
+				userId,
+				title
+			})
+			.returning();
+
+		// Then create the Telegram session with the link
 		const result = await this.db
 			.insert(telegramSessions)
 			.values({
 				id: uuid(),
 				userId,
+				aiSessionId: aiSessionResult[0].id,
 				telegramChatId,
 				title
 			})
@@ -311,6 +323,7 @@ export class AiRepository extends BaseRepository {
 
 		return {
 			...result[0],
+			aiSessionId: aiSessionResult[0].id,
 			createdAt: result[0].createdAt,
 			updatedAt: result[0].updatedAt
 		} as unknown as TelegramSession;
@@ -322,7 +335,33 @@ export class AiRepository extends BaseRepository {
 		title: string = 'Telegram Chat'
 	): Promise<TelegramSession> {
 		const existing = await this.getTelegramSessionByChatId(userId, telegramChatId);
-		if (existing) return existing;
+		if (existing) {
+			// If existing session doesn't have aiSessionId, create one and link it
+			if (!existing.aiSessionId) {
+				const aiSessionResult = await this.db
+					.insert(aiSessions)
+					.values({
+						id: uuid(),
+						userId,
+						title: existing.title
+					})
+					.returning();
+
+				const updateResult = await this.db
+					.update(telegramSessions)
+					.set({ aiSessionId: aiSessionResult[0].id } as any)
+					.where(eq(telegramSessions.id, existing.id))
+					.returning();
+
+				return {
+					...updateResult[0],
+					aiSessionId: aiSessionResult[0].id,
+					createdAt: updateResult[0].createdAt,
+					updatedAt: updateResult[0].updatedAt
+				} as unknown as TelegramSession;
+			}
+			return existing;
+		}
 		return await this.createTelegramSession(userId, telegramChatId, title);
 	}
 
