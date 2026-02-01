@@ -84,6 +84,55 @@ export const POST: RequestHandler = async ({ request, locals, url }) => {
 	}
 };
 
+// Delete webhook
+export const DELETE: RequestHandler = async ({ request, locals }) => {
+	if (!locals.user) {
+		return json({ error: 'Unauthorized' }, { status: 401 });
+	}
+
+	try {
+		const url = new URL(request.url);
+		const botToken = url.searchParams.get('botToken');
+
+		if (!botToken) {
+			return json({ error: 'Bot token is required' }, { status: 400 });
+		}
+
+		console.log('[Telegram Setup] Deleting webhook for bot');
+
+		// Call Telegram API to delete webhook
+		const telegramUrl = `https://api.telegram.org/bot${botToken}/deleteWebhook`;
+		const response = await fetch(telegramUrl, {
+			method: 'POST'
+		});
+
+		const data = await response.json();
+
+		if (data.ok) {
+			// Clear webhook URL from database
+			const aiRepo = new AiRepository();
+			await aiRepo.updateTelegramSettings(locals.user.id, {
+				webhookUrl: ''
+			});
+
+			return json({
+				success: true,
+				message: 'Webhook deleted successfully. You can now use getUpdates (polling).'
+			});
+		} else {
+			return json(
+				{
+					error: `Failed to delete webhook: ${data.description || 'Unknown error'}`
+				},
+				{ status: 400 }
+			);
+		}
+	} catch (error) {
+		console.error('Error deleting webhook:', error);
+		return json({ error: 'Failed to delete webhook' }, { status: 500 });
+	}
+};
+
 // Get webhook info
 export const GET: RequestHandler = async ({ request, locals }) => {
 	if (!locals.user) {
