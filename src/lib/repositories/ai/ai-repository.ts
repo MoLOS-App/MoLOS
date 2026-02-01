@@ -8,7 +8,13 @@ import {
 	telegramSessions,
 	telegramMessages
 } from '$lib/server/db/schema';
-import type { AiSettings, AiMessage, AiSession, TelegramSettings, TelegramSession } from '$lib/models/ai';
+import type {
+	AiSettings,
+	AiMessage,
+	AiSession,
+	TelegramSettings,
+	TelegramSession
+} from '$lib/models/ai';
 import { BaseRepository } from '../base-repository';
 import { uuid } from '$lib/utils/uuid';
 
@@ -191,8 +197,8 @@ export class AiRepository extends BaseRepository {
 		return result[0]
 			? ({
 					...result[0],
-					createdAt: new Date(result[0].createdAt as number),
-					updatedAt: new Date(result[0].updatedAt as number)
+					createdAt: result[0].createdAt,
+					updatedAt: result[0].updatedAt
 				} as unknown as TelegramSettings)
 			: null;
 	}
@@ -204,18 +210,26 @@ export class AiRepository extends BaseRepository {
 		const existing = await this.getTelegramSettings(userId);
 
 		if (existing) {
+			// Build update object with only provided fields
+			const updateData: Record<string, unknown> = { updatedAt: new Date() };
+			if (settings.botToken !== undefined) updateData.bot_token = settings.botToken;
+			if (settings.chatId !== undefined) updateData.chat_id = settings.chatId;
+			if (settings.webhookUrl !== undefined) updateData.webhook_url = settings.webhookUrl;
+			if (settings.modelName !== undefined) updateData.model_name = settings.modelName;
+			if (settings.systemPrompt !== undefined) updateData.system_prompt = settings.systemPrompt;
+			if (settings.temperature !== undefined) updateData.temperature = settings.temperature;
+			if (settings.maxTokens !== undefined) updateData.max_tokens = settings.maxTokens;
+			if (settings.enabled !== undefined) updateData.enabled = settings.enabled ? 1 : 0;
+
 			const result = await this.db
 				.update(telegramSettings)
-				.set({
-					...settings,
-					updatedAt: new Date()
-				} as any)
+				.set(updateData as any)
 				.where(eq(telegramSettings.userId, userId))
 				.returning();
 			return {
 				...result[0],
-				createdAt: new Date(result[0].createdAt as number),
-				updatedAt: new Date(result[0].updatedAt as number)
+				createdAt: result[0].createdAt,
+				updatedAt: result[0].updatedAt
 			} as unknown as TelegramSettings;
 		} else {
 			const result = await this.db
@@ -225,16 +239,18 @@ export class AiRepository extends BaseRepository {
 					userId,
 					botToken: settings.botToken || '',
 					chatId: settings.chatId || '',
+					webhookUrl: settings.webhookUrl,
 					modelName: settings.modelName || 'gpt-4o',
 					enabled: settings.enabled ?? true,
-					...settings,
-					updatedAt: new Date()
+					systemPrompt: settings.systemPrompt,
+					temperature: settings.temperature,
+					maxTokens: settings.maxTokens
 				} as any)
 				.returning();
 			return {
 				...result[0],
-				createdAt: new Date(result[0].createdAt as number),
-				updatedAt: new Date(result[0].updatedAt as number)
+				createdAt: result[0].createdAt,
+				updatedAt: result[0].updatedAt
 			} as unknown as TelegramSettings;
 		}
 	}
@@ -249,8 +265,8 @@ export class AiRepository extends BaseRepository {
 
 		return result.map((row) => ({
 			...row,
-			createdAt: new Date(row.createdAt as number),
-			updatedAt: new Date(row.updatedAt as number)
+			createdAt: row.createdAt,
+			updatedAt: row.updatedAt
 		})) as unknown as TelegramSession[];
 	}
 
@@ -262,15 +278,18 @@ export class AiRepository extends BaseRepository {
 			.select()
 			.from(telegramSessions)
 			.where(
-				and(eq(telegramSessions.userId, userId), eq(telegramSessions.telegramChatId, telegramChatId))
+				and(
+					eq(telegramSessions.userId, userId),
+					eq(telegramSessions.telegramChatId, telegramChatId)
+				)
 			)
 			.limit(1);
 
 		return result[0]
 			? ({
 					...result[0],
-					createdAt: new Date(result[0].createdAt as number),
-					updatedAt: new Date(result[0].updatedAt as number)
+					createdAt: result[0].createdAt,
+					updatedAt: result[0].updatedAt
 				} as unknown as TelegramSession)
 			: null;
 	}
@@ -286,16 +305,14 @@ export class AiRepository extends BaseRepository {
 				id: uuid(),
 				userId,
 				telegramChatId,
-				title,
-				createdAt: new Date(),
-				updatedAt: new Date()
-			} as any)
+				title
+			})
 			.returning();
 
 		return {
 			...result[0],
-			createdAt: new Date(result[0].createdAt as number),
-			updatedAt: new Date(result[0].updatedAt as number)
+			createdAt: result[0].createdAt,
+			updatedAt: result[0].updatedAt
 		} as unknown as TelegramSession;
 	}
 
@@ -321,7 +338,7 @@ export class AiRepository extends BaseRepository {
 		return result.reverse().map((row) => ({
 			...row,
 			toolCalls: row.toolCalls ? JSON.parse(row.toolCalls as string) : undefined,
-			createdAt: new Date(row.createdAt as number)
+			createdAt: row.createdAt
 		}));
 	}
 
@@ -331,28 +348,40 @@ export class AiRepository extends BaseRepository {
 	): Promise<any> {
 		const { toolCallId, toolCalls, ...rest } = message;
 
-		const result = await this.db
-			.insert(telegramMessages)
-			.values({
-				id: uuid(),
-				userId,
-				...rest,
-				toolCallId,
-				toolCalls: toolCalls ? JSON.stringify(toolCalls) : undefined,
-				createdAt: new Date()
-			} as any)
-			.returning();
+		// Build values object only with defined fields
+		const values: Record<string, unknown> = {
+			id: uuid(),
+			userId,
+			sessionId: rest.sessionId,
+			telegramMessageId: Number(rest.telegramMessageId),
+			role: rest.role,
+			content: rest.content
+		};
+
+		// Only add optional fields if they are defined
+		if (rest.contextMetadata !== undefined) {
+			values.contextMetadata = rest.contextMetadata;
+		}
+		if (toolCallId !== undefined) {
+			values.toolCallId = toolCallId;
+		}
+		if (toolCalls !== undefined) {
+			values.toolCalls = JSON.stringify(toolCalls);
+		}
+
+		const result = await this.db.insert(telegramMessages).values(values as any).returning();
 
 		// Update session timestamp
 		await this.db
 			.update(telegramSessions)
-			.set({ updatedAt: new Date() } as any)
-			.where(eq(telegramSessions.id, message.sessionId));
+			.set({ updatedAt: new Date() })
+			.where(eq(telegramSessions.id, rest.sessionId));
 
 		return {
 			...result[0],
 			toolCalls: result[0].toolCalls ? JSON.parse(result[0].toolCalls as string) : undefined,
-			createdAt: new Date(result[0].createdAt as number)
+			createdAt: result[0].createdAt,
+			sessionId: rest.sessionId
 		};
 	}
 }

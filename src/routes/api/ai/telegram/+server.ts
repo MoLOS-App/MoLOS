@@ -4,9 +4,10 @@ import { AiRepository } from '$lib/repositories/ai/ai-repository';
 import { z } from 'zod';
 
 const UpdateTelegramSettingsSchema = z.object({
-	botToken: z.string().min(1, 'Bot token is required'),
+	botToken: z.string().min(1, 'Bot token is required').optional(),
 	chatId: z.string().min(1, 'Chat ID is required'),
 	modelName: z.string().optional(),
+	webhookUrl: z.string().optional(),
 	systemPrompt: z.string().optional(),
 	temperature: z.number().min(0).max(2).optional(),
 	maxTokens: z.number().positive().optional(),

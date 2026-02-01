@@ -150,6 +150,7 @@ export interface TelegramSettings {
 	userId: string;
 	botToken: string;
 	chatId: string;
+	webhookUrl?: string;
 	modelName: string;
 	systemPrompt?: string;
 	temperature?: number;

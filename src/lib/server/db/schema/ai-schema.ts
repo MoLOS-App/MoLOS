@@ -115,6 +115,7 @@ export const telegramSettings = sqliteTable('telegram_settings', {
 		.references(() => user.id, { onDelete: 'cascade' }),
 	botToken: text('bot_token').notNull(),
 	chatId: text('chat_id').notNull(),
+	webhookUrl: text('webhook_url'),
 	modelName: text('model_name').notNull().default('gpt-4o'),
 	systemPrompt: text('system_prompt'),
 	temperature: real('temperature'),
