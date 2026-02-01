@@ -286,7 +286,25 @@
 		}
 
 		isLoading = true;
+		let webhookWasActive = false;
+		let originalWebhookUrl = '';
+
 		try {
+			// Check if webhook is active
+			const webhookInfoUrl = `https://api.telegram.org/bot${tokenToUse}/getWebhookInfo`;
+			const webhookResponse = await fetch(webhookInfoUrl);
+			const webhookData = await webhookResponse.json();
+
+			if (webhookData.ok && webhookData.result?.url) {
+				webhookWasActive = true;
+				originalWebhookUrl = webhookData.result.url;
+
+				// Delete webhook temporarily to use getUpdates
+				await fetch(`https://api.telegram.org/bot${tokenToUse}/deleteWebhook`, {
+					method: 'POST'
+				});
+			}
+
 			// Call Telegram API to get updates
 			const url = `https://api.telegram.org/bot${tokenToUse}/getUpdates`;
 			const response = await fetch(url);
@@ -310,6 +328,19 @@
 			console.error('Error fetching chat ID:', error);
 			toast.error('Failed to fetch chat ID. Make sure your bot token is correct.');
 		} finally {
+			// Restore webhook if it was active
+			if (webhookWasActive && originalWebhookUrl) {
+				try {
+					await fetch(`https://api.telegram.org/bot${tokenToUse}/setWebhook`, {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({ url: originalWebhookUrl })
+					});
+				} catch (e) {
+					console.error('Error restoring webhook:', e);
+					toast.warning('Webhook was removed. Please click "Setup Webhook" to restore it.');
+				}
+			}
 			isLoading = false;
 		}
 	}
