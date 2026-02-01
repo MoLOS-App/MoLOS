@@ -268,6 +268,8 @@ export default defineConfig({
 					: [])
 			]
 		},
+		// Allow ngrok and other tunneling services for Telegram webhook development
+		allowedHosts: ['.ngrok-free.dev', '.ngrok.io', '.ngrok.app', 'localhost'],
 		watch: {
 			followSymlinks: true,
 			ignored: [
