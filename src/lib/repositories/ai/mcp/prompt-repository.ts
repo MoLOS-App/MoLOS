@@ -4,7 +4,7 @@
  * Handles database operations for MCP prompts.
  */
 
-import { eq, and, desc, count, like, sql } from 'drizzle-orm';
+import { eq, and, desc, count, sql } from 'drizzle-orm';
 import { aiMcpPrompts } from '$lib/server/db/schema';
 import type {
 	MCPPrompt,
@@ -16,6 +16,32 @@ import type {
 } from '$lib/models/ai/mcp';
 import { BaseRepository } from '../../base-repository';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+
+type PromptDbRow = {
+	id: string;
+	userId: string;
+	name: string;
+	description: string;
+	arguments: string; // Stored as JSON string in DB
+	moduleId: string | null;
+	enabled: number;
+	createdAt: Date;
+	updatedAt: Date;
+};
+
+function mapToMCPPrompt(row: PromptDbRow): MCPPrompt {
+	return {
+		id: row.id,
+		userId: row.userId,
+		name: row.name,
+		description: row.description,
+		arguments: JSON.parse(row.arguments),
+		moduleId: row.moduleId ?? null,
+		enabled: row.enabled === 1,
+		createdAt: row.createdAt,
+		updatedAt: row.updatedAt
+	};
+}
 
 export class McpPromptRepository extends BaseRepository {
 	constructor(db?: BetterSQLite3Database<any>) {
@@ -37,15 +63,12 @@ export class McpPromptRepository extends BaseRepository {
 				arguments: JSON.stringify(input.arguments),
 				moduleId: input.moduleId ?? null,
 				enabled: input.enabled ?? true,
-				createdAt: now.toISOString(),
-				updatedAt: now.toISOString()
-			})
+				createdAt: now,
+				updatedAt: now
+			} as any)
 			.returning();
 
-		return {
-			...prompt,
-			arguments: JSON.parse(prompt.arguments)
-		};
+		return mapToMCPPrompt(prompt as unknown as PromptDbRow);
 	}
 
 	/**
@@ -56,10 +79,7 @@ export class McpPromptRepository extends BaseRepository {
 
 		if (!prompt) return null;
 
-		return {
-			...prompt,
-			arguments: JSON.parse(prompt.arguments)
-		};
+		return mapToMCPPrompt(prompt as unknown as PromptDbRow);
 	}
 
 	/**
@@ -74,10 +94,7 @@ export class McpPromptRepository extends BaseRepository {
 
 		if (!prompt) return null;
 
-		return {
-			...prompt,
-			arguments: JSON.parse(prompt.arguments)
-		};
+		return mapToMCPPrompt(prompt as unknown as PromptDbRow);
 	}
 
 	/**
@@ -92,10 +109,7 @@ export class McpPromptRepository extends BaseRepository {
 
 		if (!prompt) return null;
 
-		return {
-			...prompt,
-			arguments: JSON.parse(prompt.arguments)
-		};
+		return mapToMCPPrompt(prompt as unknown as PromptDbRow);
 	}
 
 	/**
@@ -145,10 +159,7 @@ export class McpPromptRepository extends BaseRepository {
 			.offset(offset);
 
 		return {
-			items: items.map((item) => ({
-				...item,
-				arguments: JSON.parse(item.arguments)
-			})),
+			items: items.map((item) => mapToMCPPrompt(item as unknown as PromptDbRow)),
 			total,
 			page,
 			limit,
@@ -184,8 +195,9 @@ export class McpPromptRepository extends BaseRepository {
 			.where(whereClause);
 
 		return items.map((item) => ({
-			...item,
-			arguments: JSON.parse(item.arguments)
+			name: item.name,
+			description: item.description,
+			arguments: JSON.parse((item.arguments as any) as string)
 		}));
 	}
 
@@ -194,7 +206,7 @@ export class McpPromptRepository extends BaseRepository {
 	 */
 	async update(id: string, userId: string, input: UpdatePromptInput): Promise<MCPPrompt | null> {
 		const updateData: Record<string, unknown> = {
-			updatedAt: new Date().toISOString()
+			updatedAt: new Date()
 		};
 
 		if (input.name !== undefined) updateData.name = input.name;
@@ -205,16 +217,13 @@ export class McpPromptRepository extends BaseRepository {
 
 		const [result] = await this.db
 			.update(aiMcpPrompts)
-			.set(updateData)
+			.set(updateData as any)
 			.where(and(eq(aiMcpPrompts.userId, userId), eq(aiMcpPrompts.id, id)))
 			.returning();
 
 		if (!result) return null;
 
-		return {
-			...result,
-			arguments: JSON.parse(result.arguments)
-		};
+		return mapToMCPPrompt(result as unknown as PromptDbRow);
 	}
 
 	/**

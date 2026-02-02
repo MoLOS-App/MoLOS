@@ -134,12 +134,12 @@ export class ApiKeyRepository extends BaseRepository {
 				keyHash: generated.hash,
 				status: MCPApiKeyStatus.ACTIVE,
 				allowedModules: input.allowedModules ?? [],
-				expiresAt: input.expiresAt ? input.expiresAt.toISOString() : null,
+				expiresAt: input.expiresAt || null,
 				lastUsedAt: null,
 				usageCount: 0,
-				createdAt: now.toISOString(),
-				updatedAt: now.toISOString()
-			})
+				createdAt: now,
+				updatedAt: now
+			} as any)
 			.returning()
 			.then((rows) => rows[0]);
 
@@ -241,18 +241,17 @@ export class ApiKeyRepository extends BaseRepository {
 	 */
 	async update(id: string, userId: string, input: UpdateApiKeyInput): Promise<MCPApiKey | null> {
 		const updateData: Record<string, unknown> = {
-			updatedAt: new Date().toISOString()
+			updatedAt: new Date()
 		};
 
 		if (input.name !== undefined) updateData.name = input.name;
 		if (input.status !== undefined) updateData.status = input.status;
 		if (input.allowedModules !== undefined) updateData.allowedModules = input.allowedModules;
-		if (input.expiresAt !== undefined)
-			updateData.expiresAt = input.expiresAt ? input.expiresAt.toISOString() : null;
+		if (input.expiresAt !== undefined) updateData.expiresAt = input.expiresAt || null;
 
 		const result = await this.db
 			.update(aiMcpApiKeys)
-			.set(updateData)
+			.set(updateData as any)
 			.where(and(eq(aiMcpApiKeys.userId, userId), eq(aiMcpApiKeys.id, id)))
 			.returning();
 
@@ -278,9 +277,9 @@ export class ApiKeyRepository extends BaseRepository {
 		await this.db
 			.update(aiMcpApiKeys)
 			.set({
-				lastUsedAt: new Date().toISOString(),
+				lastUsedAt: new Date(),
 				usageCount: (current?.count ?? 0) + 1
-			})
+			} as any)
 			.where(eq(aiMcpApiKeys.id, id));
 	}
 
