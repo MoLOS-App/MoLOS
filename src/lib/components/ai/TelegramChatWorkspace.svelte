@@ -391,7 +391,9 @@
 				toast.success(`Chat ID found: ${chatId}`);
 			} else {
 				chatIdFetchStep = 4;
-				toast.error('No messages found. Please try again and make sure to send a message to your bot.');
+				toast.error(
+					'No messages found. Please try again and make sure to send a message to your bot.'
+				);
 			}
 		} catch (error) {
 			console.error('Error fetching chat ID:', error);
@@ -489,7 +491,9 @@
 			if (res.ok) {
 				if (mode === 'polling') {
 					isPolling = true;
-					toast.success(`Polling mode enabled. Checking for messages every ${config.pollingInterval / 1000}s.`);
+					toast.success(
+						`Polling mode enabled. Checking for messages every ${config.pollingInterval / 1000}s.`
+					);
 				} else {
 					isPolling = false;
 					if (data.webhookSet) {
@@ -528,76 +532,81 @@
 	});
 </script>
 
-<div class="flex flex-col h-full overflow-hidden">
-	<div class="flex flex-col w-full h-full mb-4 overflow-hidden md:pr-4" in:fade={{ duration: 500 }}>
-		<div class="flex h-full min-h-[90svh] overflow-hidden md:rounded-2xl md:border md:border-border/70">
+<div class="flex h-full flex-col overflow-hidden">
+	<div class="mb-4 flex h-full w-full flex-col overflow-hidden md:pr-4" in:fade={{ duration: 500 }}>
+		<div
+			class="flex h-full min-h-[90svh] overflow-hidden md:rounded-2xl md:border md:border-border/70"
+		>
 			<!-- Configuration Sidebar -->
 			<aside
 				class="w-[480px] flex-col border-r border-border/60 bg-muted/10 md:flex {showConfig
 					? 'flex'
 					: 'hidden md:flex'}"
 			>
-				<div class="flex flex-col h-full">
+				<div class="flex h-full flex-col">
 					<!-- Header -->
 					<div
-						class="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b border-border/60 bg-background/95 backdrop-blur"
+						class="sticky top-0 z-10 flex items-center justify-between border-b border-border/60 bg-background/95 px-6 py-4 backdrop-blur"
 					>
 						<div class="flex items-center gap-3">
-							<div class="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10">
-								<Settings class="w-5 h-5 text-primary" />
+							<div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+								<Settings class="h-5 w-5 text-primary" />
 							</div>
 							<div>
 								<h2 class="text-sm font-bold tracking-wide">Telegram Configuration</h2>
-								<p class="text-xs text-muted-foreground">Configure your AI bot</p>
+								<p class="text-muted-foreground text-xs">Configure your AI bot</p>
 							</div>
 						</div>
 						<button
-							class="flex items-center justify-center transition border rounded-lg border-border/60 h-9 w-9 bg-background hover:bg-muted/50"
+							class="flex h-9 w-9 items-center justify-center rounded-lg border border-border/60 bg-background transition hover:bg-muted/50"
 							onclick={() => (showConfig = !showConfig)}
 							aria-label="Toggle configuration"
 							title="Toggle panel"
 						>
-							<X class="w-4 h-4" />
+							<X class="h-4 w-4" />
 						</button>
 					</div>
 
 					<!-- Scrollable Content -->
 					<div class="flex-1 overflow-y-auto">
-						<div class="p-6 space-y-8">
+						<div class="space-y-8 p-6">
 							<!-- Bot Authentication Section -->
 							<section class="space-y-4">
-								<div class="flex items-center gap-2 pb-2 border-b border-border/40">
-									<Key class="w-4 h-4 text-primary" />
+								<div class="flex items-center gap-2 border-b border-border/40 pb-2">
+									<Key class="h-4 w-4 text-primary" />
 									<h3 class="text-sm font-semibold">Bot Authentication</h3>
 								</div>
 
 								<!-- Bot Token -->
 								<div class="space-y-2">
 									<div class="flex items-center justify-between">
-										<label class="text-xs font-semibold text-muted-foreground">Bot Token</label>
+										<label for="botToken" class="text-muted-foreground text-xs font-semibold"
+											>Bot Token</label
+										>
 										{#if config.botToken}
 											<span
-												class="px-2 py-0.5 text-[10px] font-medium rounded-full bg-green-500/20 text-green-700 dark:text-green-400"
+												class="rounded-full bg-green-500/20 px-2 py-0.5 text-[10px] font-medium text-green-700 dark:text-green-400"
 												>Active</span
 											>
 										{/if}
 									</div>
 									<div class="flex gap-2">
 										<input
+											id="botToken"
 											type={showBotToken ? 'text' : 'password'}
 											bind:value={config.botToken}
 											placeholder="Paste your bot token from @BotFather"
-											class="flex-1 px-3 py-2.5 text-sm border rounded-xl border-border/60 bg-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+											class="focus-visible:ring-ring flex-1 rounded-xl border border-border/60 bg-background px-3 py-2.5 text-sm focus-visible:ring-2 focus-visible:outline-none"
 										/>
 										<button
 											onclick={() => (showBotToken = !showBotToken)}
-											class="flex items-center justify-center px-3 transition text-muted-foreground hover:text-foreground"
+											class="text-muted-foreground flex items-center justify-center px-3 transition hover:text-foreground"
 											aria-label={showBotToken ? 'Hide token' : 'Show token'}
 										>
 											{#if showBotToken}
-												<EyeOff class="w-4 h-4" />
+												<EyeOff class="h-4 w-4" />
 											{:else}
-												<Eye class="w-4 h-4" />
+												<Eye class="h-4 w-4" />
 											{/if}
 										</button>
 									</div>
@@ -605,7 +614,7 @@
 
 								<!-- Chat ID -->
 								<div class="space-y-2">
-									<label for="chatId" class="text-xs font-semibold text-muted-foreground"
+									<label for="chatId" class="text-muted-foreground text-xs font-semibold"
 										>Chat ID</label
 									>
 									<div class="flex gap-2">
@@ -614,19 +623,19 @@
 											type="text"
 											bind:value={config.chatId}
 											placeholder="Enter your Telegram chat ID"
-											class="flex-1 px-3 py-2.5 text-sm border rounded-xl border-border/60 bg-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+											class="focus-visible:ring-ring flex-1 rounded-xl border border-border/60 bg-background px-3 py-2.5 text-sm focus-visible:ring-2 focus-visible:outline-none"
 										/>
 										<button
 											onclick={fetchChatIdFromBot}
 											disabled={isLoading || !config.botToken}
-											class="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium transition border rounded-xl border-border/60 bg-muted/30 hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-50"
+											class="flex items-center justify-center gap-2 rounded-xl border border-border/60 bg-muted/30 px-4 py-2.5 text-sm font-medium transition hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-50"
 											title="Auto-fetch chat ID"
 										>
-											<RefreshCw class="w-4 h-4" />
+											<RefreshCw class="h-4 w-4" />
 											Auto-detect
 										</button>
 									</div>
-									<p class="text-[10px] text-muted-foreground">
+									<p class="text-muted-foreground text-[10px]">
 										Send a message to your bot, then click "Auto-detect" to find your chat ID
 									</p>
 								</div>
@@ -634,17 +643,17 @@
 
 							<!-- Connection Section -->
 							<section class="space-y-4">
-								<div class="flex items-center gap-2 pb-2 border-b border-border/40">
-									<Server class="w-4 h-4 text-primary" />
+								<div class="flex items-center gap-2 border-b border-border/40 pb-2">
+									<Server class="h-4 w-4 text-primary" />
 									<h3 class="text-sm font-semibold">Connection Mode</h3>
 									{#if isPolling}
 										<span
-											class="ml-auto px-2 py-0.5 text-[10px] font-medium rounded-full bg-blue-500/20 text-blue-600 dark:text-blue-400 animate-pulse"
+											class="ml-auto animate-pulse rounded-full bg-blue-500/20 px-2 py-0.5 text-[10px] font-medium text-blue-600 dark:text-blue-400"
 											>Polling Active</span
 										>
 									{:else if config.webhookUrl}
 										<span
-											class="ml-auto px-2 py-0.5 text-[10px] font-medium rounded-full bg-green-500/20 text-green-600 dark:text-green-400"
+											class="ml-auto rounded-full bg-green-500/20 px-2 py-0.5 text-[10px] font-medium text-green-600 dark:text-green-400"
 											>Webhook Active</span
 										>
 									{/if}
@@ -655,29 +664,29 @@
 									<button
 										onclick={() => setConnectionMode('webhook')}
 										disabled={isLoading || !config.botToken}
-										class="flex flex-col items-center gap-2 p-4 border-2 rounded-xl transition {config.connectionMode
-											=== 'webhook'
+										class="flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition {config.connectionMode ===
+										'webhook'
 											? 'border-primary bg-primary/5'
 											: 'border-border/60 bg-background hover:bg-muted/30'} disabled:cursor-not-allowed disabled:opacity-50"
 									>
-										<Webhook class="w-6 h-6" />
+										<Webhook class="h-6 w-6" />
 										<div class="text-center">
 											<div class="text-sm font-semibold">Webhook</div>
-											<div class="text-[10px] text-muted-foreground">Instant delivery</div>
+											<div class="text-muted-foreground text-[10px]">Instant delivery</div>
 										</div>
 									</button>
 									<button
 										onclick={() => setConnectionMode('polling')}
 										disabled={isLoading || !config.botToken}
-										class="flex flex-col items-center gap-2 p-4 border-2 rounded-xl transition {config.connectionMode
-											=== 'polling'
+										class="flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition {config.connectionMode ===
+										'polling'
 											? 'border-primary bg-primary/5'
 											: 'border-border/60 bg-background hover:bg-muted/30'} disabled:cursor-not-allowed disabled:opacity-50"
 									>
-										<MessageCircle class="w-6 h-6" />
+										<MessageCircle class="h-6 w-6" />
 										<div class="text-center">
 											<div class="text-sm font-semibold">Polling</div>
-											<div class="text-[10px] text-muted-foreground">Checks every 2s</div>
+											<div class="text-muted-foreground text-[10px]">Checks every 2s</div>
 										</div>
 									</button>
 								</div>
@@ -685,28 +694,32 @@
 								{#if config.connectionMode === 'webhook'}
 									<!-- Webhook Configuration -->
 									<div class="space-y-2">
-										<label class="text-xs font-semibold">Webhook URL</label>
+										<label for="webhookUrl" class="text-xs font-semibold">Webhook URL</label>
 										<input
+											id="webhookUrl"
 											type="text"
 											bind:value={customWebhookUrl}
 											placeholder="https://your-url.ngrok.io/api/ai/telegram/webhook"
-											class="w-full px-3 py-2.5 text-sm border rounded-xl border-border/60 bg-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+											class="focus-visible:ring-ring w-full rounded-xl border border-border/60 bg-background px-3 py-2.5 text-sm focus-visible:ring-2 focus-visible:outline-none"
 										/>
 										<button
 											onclick={setupWebhook}
 											disabled={isLoading || !config.botToken}
-											class="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium transition rounded-xl bg-primary/10 text-primary hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-50"
+											class="flex w-full items-center justify-center gap-2 rounded-xl bg-primary/10 px-4 py-2.5 text-sm font-medium text-primary transition hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-50"
 										>
-											<Webhook class="w-4 h-4" />
+											<Webhook class="h-4 w-4" />
 											Setup Webhook
 										</button>
 									</div>
 								{:else}
 									<!-- Polling Configuration -->
 									<div class="space-y-2">
-										<label class="text-xs font-semibold">Polling Interval</label>
+										<label for="pollingInterval" class="text-xs font-semibold"
+											>Polling Interval</label
+										>
 										<div class="flex items-center gap-3">
 											<input
+												id="pollingInterval"
 												type="number"
 												min="1"
 												max="60"
@@ -714,11 +727,11 @@
 												value={pollingIntervalSeconds}
 												oninput={(e) => setPollingIntervalSeconds(Number(e.currentTarget.value))}
 												placeholder="2"
-												class="w-20 px-3 py-2.5 text-sm text-center border rounded-xl border-border/60 bg-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+												class="focus-visible:ring-ring w-20 rounded-xl border border-border/60 bg-background px-3 py-2.5 text-center text-sm focus-visible:ring-2 focus-visible:outline-none"
 											/>
-											<span class="text-sm text-muted-foreground">seconds</span>
+											<span class="text-muted-foreground text-sm">seconds</span>
 										</div>
-										<p class="text-[10px] text-muted-foreground">
+										<p class="text-muted-foreground text-[10px]">
 											Lower values check more often but use more resources (1-60 seconds)
 										</p>
 									</div>
@@ -727,20 +740,20 @@
 
 							<!-- AI Behavior Section -->
 							<section class="space-y-4">
-								<div class="flex items-center gap-2 pb-2 border-b border-border/40">
-									<Sliders class="w-4 h-4 text-primary" />
+								<div class="flex items-center gap-2 border-b border-border/40 pb-2">
+									<Sliders class="h-4 w-4 text-primary" />
 									<h3 class="text-sm font-semibold">AI Behavior</h3>
 								</div>
 
 								<!-- Model Selection -->
 								<div class="space-y-2">
-									<label for="modelName" class="text-xs font-semibold text-muted-foreground"
+									<label for="modelName" class="text-muted-foreground text-xs font-semibold"
 										>AI Model</label
 									>
 									<select
 										id="modelName"
 										bind:value={selectedModelId}
-										class="w-full px-3 py-2.5 text-sm border rounded-xl border-border/60 bg-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+										class="focus-visible:ring-ring w-full rounded-xl border border-border/60 bg-background px-3 py-2.5 text-sm focus-visible:ring-2 focus-visible:outline-none"
 									>
 										{#each availableModels as m (m.id)}
 											<option value={m.id}>{m.name}</option>
@@ -750,7 +763,7 @@
 
 								<!-- System Prompt -->
 								<div class="space-y-2">
-									<label for="systemPrompt" class="text-xs font-semibold text-muted-foreground"
+									<label for="systemPrompt" class="text-muted-foreground text-xs font-semibold"
 										>System Prompt</label
 									>
 									<textarea
@@ -758,14 +771,14 @@
 										bind:value={config.systemPrompt}
 										placeholder="Define how your AI assistant should behave..."
 										rows="3"
-										class="w-full px-3 py-2.5 text-sm border resize-none rounded-xl border-border/60 bg-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+										class="focus-visible:ring-ring w-full resize-none rounded-xl border border-border/60 bg-background px-3 py-2.5 text-sm focus-visible:ring-2 focus-visible:outline-none"
 									></textarea>
 								</div>
 
 								<!-- Temperature & Max Tokens -->
 								<div class="grid grid-cols-2 gap-4">
 									<div class="space-y-2">
-										<label for="temperature" class="text-xs font-semibold text-muted-foreground"
+										<label for="temperature" class="text-muted-foreground text-xs font-semibold"
 											>Temperature</label
 										>
 										<input
@@ -775,12 +788,12 @@
 											min="0"
 											max="2"
 											bind:value={config.temperature}
-											class="w-full px-3 py-2.5 text-sm border rounded-xl border-border/60 bg-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+											class="focus-visible:ring-ring w-full rounded-xl border border-border/60 bg-background px-3 py-2.5 text-sm focus-visible:ring-2 focus-visible:outline-none"
 										/>
-										<p class="text-[10px] text-muted-foreground">0 = focused, 2 = creative</p>
+										<p class="text-muted-foreground text-[10px]">0 = focused, 2 = creative</p>
 									</div>
 									<div class="space-y-2">
-										<label for="maxTokens" class="text-xs font-semibold text-muted-foreground"
+										<label for="maxTokens" class="text-muted-foreground text-xs font-semibold"
 											>Max Tokens</label
 										>
 										<input
@@ -788,17 +801,17 @@
 											type="number"
 											min="1"
 											bind:value={config.maxTokens}
-											class="w-full px-3 py-2.5 text-sm border rounded-xl border-border/60 bg-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+											class="focus-visible:ring-ring w-full rounded-xl border border-border/60 bg-background px-3 py-2.5 text-sm focus-visible:ring-2 focus-visible:outline-none"
 										/>
-										<p class="text-[10px] text-muted-foreground">Max response length</p>
+										<p class="text-muted-foreground text-[10px]">Max response length</p>
 									</div>
 								</div>
 							</section>
 
 							<!-- Status Section -->
 							<section class="space-y-4">
-								<div class="flex items-center gap-2 pb-2 border-b border-border/40">
-									<Shield class="w-4 h-4 text-primary" />
+								<div class="flex items-center gap-2 border-b border-border/40 pb-2">
+									<Shield class="h-4 w-4 text-primary" />
 									<h3 class="text-sm font-semibold">Status</h3>
 								</div>
 
@@ -807,19 +820,19 @@
 										id="enabled"
 										type="checkbox"
 										bind:checked={config.enabled}
-										class="w-5 h-5 rounded focus-visible:ring-2 focus-visible:ring-ring border-border/60"
+										class="focus-visible:ring-ring h-5 w-5 rounded border-border/60 focus-visible:ring-2"
 									/>
-									<label for="enabled" class="flex-1 text-sm font-medium cursor-pointer">
+									<label for="enabled" class="flex-1 cursor-pointer text-sm font-medium">
 										Enable Telegram Bot
 									</label>
 									{#if config.enabled}
 										<span
-											class="px-2 py-0.5 text-xs font-medium rounded-full bg-green-500/20 text-green-600 dark:text-green-400"
+											class="rounded-full bg-green-500/20 px-2 py-0.5 text-xs font-medium text-green-600 dark:text-green-400"
 											>Active</span
 										>
 									{:else}
 										<span
-											class="px-2 py-0.5 text-xs font-medium rounded-full bg-muted text-muted-foreground"
+											class="text-muted-foreground rounded-full bg-muted px-2 py-0.5 text-xs font-medium"
 											>Disabled</span
 										>
 									{/if}
@@ -828,15 +841,17 @@
 
 							<!-- HTTPS Help Warning -->
 							{#if showWebhookHelp}
-								<div class="flex items-start gap-3 p-3 border rounded-xl border-amber-500/50 bg-amber-500/10">
-									<Info class="flex-shrink-0 w-5 h-5 text-amber-600 dark:text-amber-400" />
+								<div
+									class="flex items-start gap-3 rounded-xl border border-amber-500/50 bg-amber-500/10 p-3"
+								>
+									<Info class="h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
 									<div class="flex-1 text-xs">
 										<p class="mb-1 font-semibold text-amber-700 dark:text-amber-300">
 											HTTPS Required
 										</p>
 										<p class="text-amber-600 dark:text-amber-400">
 											Telegram requires HTTPS. For local dev, use ngrok:
-											<code class="px-1 rounded bg-background/50">ngrok http 5173</code>
+											<code class="rounded bg-background/50 px-1">ngrok http 5173</code>
 										</p>
 									</div>
 								</div>
@@ -845,26 +860,26 @@
 					</div>
 
 					<!-- Footer Actions -->
-					<div class="p-4 border-t border-border/60 bg-background/95 backdrop-blur">
+					<div class="border-t border-border/60 bg-background/95 p-4 backdrop-blur">
 						<div class="grid grid-cols-2 gap-3">
 							<button
-								class="flex items-center justify-center flex-1 gap-2 px-4 py-3 text-sm font-semibold transition rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+								class="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
 								onclick={saveConfig}
 								disabled={isSaving}
 							>
 								{#if isSaving}
-									<LoaderCircle class="w-4 h-4 animate-spin" />
+									<LoaderCircle class="h-4 w-4 animate-spin" />
 								{:else}
-									<Save class="w-4 h-4" />
+									<Save class="h-4 w-4" />
 								{/if}
 								Save All
 							</button>
 							<button
-								class="flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold transition border rounded-xl border-border/60 bg-background text-destructive hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"
+								class="flex items-center justify-center gap-2 rounded-xl border border-border/60 bg-background px-4 py-3 text-sm font-semibold text-destructive transition hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"
 								onclick={deleteConfig}
 								disabled={isSaving}
 							>
-								<Trash2 class="w-4 h-4" />
+								<Trash2 class="h-4 w-4" />
 								Delete
 							</button>
 						</div>
@@ -874,23 +889,23 @@
 
 			<!-- Main Content Area -->
 			<section
-				class="relative flex flex-col flex-1 min-w-0 overflow-hidden bg-background md:bg-transparent"
+				class="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-background md:bg-transparent"
 				role="main"
 			>
 				<header
-					class="sticky top-0 z-20 flex items-center justify-between gap-3 px-6 py-4 border-b border-border/60 bg-background md:px-6"
+					class="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-border/60 bg-background px-6 py-4 md:px-6"
 				>
 					<div class="flex items-center gap-3">
-						<div class="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10">
-							<Send class="w-5 h-5 text-primary" />
+						<div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+							<Send class="h-5 w-5 text-primary" />
 						</div>
 						<div>
 							<h1 class="text-sm font-semibold">Telegram Conversations</h1>
-							<p class="text-xs text-muted-foreground">
+							<p class="text-muted-foreground text-xs">
 								{#if config.enabled && config.botToken && config.chatId}
 									{#if isPolling}
 										<span class="flex items-center gap-1.5">
-											<span class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+											<span class="h-2 w-2 animate-pulse rounded-full bg-blue-500"></span>
 											Polling active
 										</span>
 									{:else}
@@ -903,82 +918,81 @@
 						</div>
 					</div>
 					<button
-						class="flex items-center justify-center w-10 h-10 transition border rounded-lg border-border/60 bg-background hover:bg-muted/50 md:hidden"
+						class="flex h-10 w-10 items-center justify-center rounded-lg border border-border/60 bg-background transition hover:bg-muted/50 md:hidden"
 						onclick={() => (showConfig = !showConfig)}
 						aria-label="Toggle configuration"
 					>
-						<Settings class="w-5 h-5" />
+						<Settings class="h-5 w-5" />
 					</button>
 				</header>
 
 				<div
-					class="flex-1 px-6 py-8 overflow-y-auto scroll-smooth"
+					class="flex-1 overflow-y-auto scroll-smooth px-6 py-8"
 					role="log"
 					aria-live="polite"
 					aria-label="Telegram messages"
 				>
-					<div class="w-full max-w-4xl min-w-0 mx-auto space-y-6">
+					<div class="mx-auto w-full max-w-4xl min-w-0 space-y-6">
 						{#if isFetchingChatId}
 							<!-- Chat ID Fetch Tutorial -->
 							<div class="flex min-h-[50vh] flex-col items-center justify-center gap-8 text-center">
 								<button
 									onclick={cancelChatIdFetch}
-									class="absolute flex items-center justify-center w-10 h-10 transition border rounded-full right-6 top-6 border-border/60 bg-background/80 backdrop-blur hover:bg-muted/50"
+									class="absolute top-6 right-6 flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-background/80 backdrop-blur transition hover:bg-muted/50"
 									aria-label="Cancel chat ID fetch"
 								>
-									<X class="w-5 h-5 text-muted-foreground" />
+									<X class="text-muted-foreground h-5 w-5" />
 								</button>
 
-								<div class="p-6 border rounded-full border-border/60 bg-muted/30">
+								<div class="rounded-full border border-border/60 bg-muted/30 p-6">
 									<RefreshCw
-										class="text-primary h-12 w-12 {chatIdFetchStep === 2 ? 'animate-spin' : ''}"
+										class="h-12 w-12 text-primary {chatIdFetchStep === 2 ? 'animate-spin' : ''}"
 									/>
 								</div>
 
 								<div class="space-y-3">
 									{#if chatIdFetchStep === 1}
 										<p class="text-xl font-semibold">Preparing to detect your Chat ID...</p>
-										<p class="max-w-md text-sm text-muted-foreground">
+										<p class="text-muted-foreground max-w-md text-sm">
 											Temporarily disabling webhook to listen for your message.
 										</p>
 									{:else if chatIdFetchStep === 2}
 										<p class="text-xl font-semibold">Send a message to your bot now!</p>
-										<p class="max-w-md text-sm text-muted-foreground">
-											Open Telegram, find your bot, and send any message (like "hello" or
-											"start").
+										<p class="text-muted-foreground max-w-md text-sm">
+											Open Telegram, find your bot, and send any message (like "hello" or "start").
 										</p>
 									{:else if chatIdFetchStep === 3}
 										<p class="text-xl font-semibold text-green-600 dark:text-green-400">
-											<Check class="inline w-6 h-6" /> Chat ID found!
+											<Check class="inline h-6 w-6" /> Chat ID found!
 										</p>
-										<p class="max-w-md text-sm text-muted-foreground">
-											Your Chat ID has been automatically detected and saved. You can now save
-											your configuration.
+										<p class="text-muted-foreground max-w-md text-sm">
+											Your Chat ID has been automatically detected and saved. You can now save your
+											configuration.
 										</p>
 									{:else if chatIdFetchStep === 4}
 										<p class="text-xl font-semibold text-destructive">No message received</p>
-										<p class="max-w-md text-sm text-muted-foreground">
-											We couldn't detect your message. Make sure you've sent a message to your
-											bot and try again.
+										<p class="text-muted-foreground max-w-md text-sm">
+											We couldn't detect your message. Make sure you've sent a message to your bot
+											and try again.
 										</p>
 									{/if}
 								</div>
 
 								{#if chatIdFetchStep === 2}
-									<div class="px-8 py-6 border rounded-2xl border-primary/50 bg-primary/5">
-										<div class="mb-2 text-6xl font-bold tabular-nums text-primary">
+									<div class="rounded-2xl border border-primary/50 bg-primary/5 px-8 py-6">
+										<div class="mb-2 text-6xl font-bold text-primary tabular-nums">
 											{Math.ceil(chatIdFetchCountdown / 1000)}
 										</div>
-										<div class="text-sm font-medium tracking-wider uppercase text-muted-foreground">
+										<div class="text-muted-foreground text-sm font-medium tracking-wider uppercase">
 											seconds remaining
 										</div>
 									</div>
 								{/if}
 
 								{#if chatIdFetchStep === 3}
-									<div class="px-8 py-6 border rounded-2xl border-green-500/50 bg-green-500/10">
-										<Check class="w-16 h-16 mx-auto mb-2 text-green-600 dark:text-green-400" />
-										<div class="text-sm text-muted-foreground">
+									<div class="rounded-2xl border border-green-500/50 bg-green-500/10 px-8 py-6">
+										<Check class="mx-auto mb-2 h-16 w-16 text-green-600 dark:text-green-400" />
+										<div class="text-muted-foreground text-sm">
 											Chat ID: <span class="font-mono font-bold text-foreground"
 												>{config.chatId}</span
 											>
@@ -991,14 +1005,15 @@
 							<div class="flex flex-col gap-3">
 								{#each sessions as session (session.id)}
 									<button
-										class="w-full rounded-xl border border-border/60 bg-background px-5 py-4 text-left transition hover:bg-muted/30 {selectedSessionId === session.id
+										class="w-full rounded-xl border border-border/60 bg-background px-5 py-4 text-left transition hover:bg-muted/30 {selectedSessionId ===
+										session.id
 											? 'ring-2 ring-primary'
 											: ''}"
 										onclick={() => loadSessionSummary(session.id)}
 									>
 										<div class="flex items-center justify-between">
 											<div class="font-semibold">{session.title}</div>
-											<div class="text-xs text-muted-foreground">
+											<div class="text-muted-foreground text-xs">
 												{new Date(session.updatedAt).toLocaleString()}
 											</div>
 										</div>
@@ -1007,25 +1022,27 @@
 							</div>
 
 							{#if selectedSessionSummary}
-								<div class="p-6 mt-6 border rounded-xl border-border/60 bg-muted/30" in:fade>
-									<div class="flex items-center justify-between pb-3 mb-4 border-b border-border/60">
+								<div class="mt-6 rounded-xl border border-border/60 bg-muted/30 p-6" in:fade>
+									<div
+										class="mb-4 flex items-center justify-between border-b border-border/60 pb-3"
+									>
 										<h3 class="text-lg font-semibold">Conversation Summary</h3>
 										<button
 											onclick={() => {
 												selectedSessionId = null;
 												selectedSessionSummary = null;
 											}}
-											class="transition text-muted-foreground hover:text-foreground"
+											class="text-muted-foreground transition hover:text-foreground"
 											aria-label="Close summary"
 										>
-											<X class="w-5 h-5" />
+											<X class="h-5 w-5" />
 										</button>
 									</div>
 
 									<div class="space-y-4">
 										<div class="grid grid-cols-2 gap-4">
 											<div class="space-y-1">
-												<p class="text-xs font-semibold uppercase text-muted-foreground">
+												<p class="text-muted-foreground text-xs font-semibold uppercase">
 													Session ID
 												</p>
 												<p class="font-mono text-xs">
@@ -1033,7 +1050,7 @@
 												</p>
 											</div>
 											<div class="space-y-1">
-												<p class="text-xs font-semibold uppercase text-muted-foreground">
+												<p class="text-muted-foreground text-xs font-semibold uppercase">
 													Telegram Chat ID
 												</p>
 												<p class="font-mono text-xs">
@@ -1044,7 +1061,7 @@
 
 										<div class="grid grid-cols-2 gap-4">
 											<div class="space-y-1">
-												<p class="text-xs font-semibold uppercase text-muted-foreground">
+												<p class="text-muted-foreground text-xs font-semibold uppercase">
 													Message Count
 												</p>
 												<p class="text-sm font-semibold">
@@ -1052,23 +1069,23 @@
 												</p>
 											</div>
 											<div class="space-y-1">
-												<p class="text-xs font-semibold uppercase text-muted-foreground">
+												<p class="text-muted-foreground text-xs font-semibold uppercase">
 													Last Updated
 												</p>
 												<p class="text-xs">
-													{new Date(
-														selectedSessionSummary.session.updatedAt
-													).toLocaleString()}
+													{new Date(selectedSessionSummary.session.updatedAt).toLocaleString()}
 												</p>
 											</div>
 										</div>
 
 										{#if selectedSessionSummary.lastMessage}
 											<div class="space-y-1">
-												<p class="text-xs font-semibold uppercase text-muted-foreground">
+												<p class="text-muted-foreground text-xs font-semibold uppercase">
 													Last Message Preview
 												</p>
-												<p class="px-3 py-2 text-xs border rounded-lg border-border/50 bg-background/50">
+												<p
+													class="rounded-lg border border-border/50 bg-background/50 px-3 py-2 text-xs"
+												>
 													{selectedSessionSummary.lastMessage.slice(0, 200)}
 													{selectedSessionSummary.lastMessage.length > 200 ? '...' : ''}
 												</p>
@@ -1080,48 +1097,48 @@
 						{:else if !config.botToken || !config.chatId}
 							<!-- Setup Tutorial -->
 							<div class="flex min-h-[50vh] flex-col items-center justify-center gap-6 text-center">
-								<div class="p-4 border rounded-full border-border/60 bg-muted/30">
-									<Settings class="w-8 h-8 text-muted-foreground" />
+								<div class="rounded-full border border-border/60 bg-muted/30 p-4">
+									<Settings class="text-muted-foreground h-8 w-8" />
 								</div>
 								<div class="space-y-2">
 									<p class="text-xl font-semibold">Configure Your Telegram Bot</p>
-									<p class="max-w-md text-sm text-muted-foreground">
-										Enter your Telegram bot token and chat ID to start conversing with the AI
-										via Telegram.
+									<p class="text-muted-foreground max-w-md text-sm">
+										Enter your Telegram bot token and chat ID to start conversing with the AI via
+										Telegram.
 									</p>
 								</div>
 								<div
-									class="grid w-full max-w-2xl grid-cols-1 gap-3 text-sm text-left text-muted-foreground"
+									class="text-muted-foreground grid w-full max-w-2xl grid-cols-1 gap-3 text-left text-sm"
 								>
-									<div class="px-4 py-4 border rounded-xl border-border/50 bg-muted/30">
+									<div class="rounded-xl border border-border/50 bg-muted/30 px-4 py-4">
 										<p class="mb-1 font-semibold">1. Create a Bot</p>
 										<p class="text-xs">
 											Message <span class="font-mono">@BotFather</span> on Telegram with
-											<code class="px-1 rounded bg-background/50">/newbot</code> to create a new
-											bot. Copy the bot token provided.
+											<code class="rounded bg-background/50 px-1">/newbot</code> to create a new bot.
+											Copy the bot token provided.
 										</p>
 									</div>
-									<div class="px-4 py-4 border rounded-xl border-border/50 bg-muted/30">
+									<div class="rounded-xl border border-border/50 bg-muted/30 px-4 py-4">
 										<p class="mb-1 font-semibold">2. Set Up Webhook (HTTPS Required)</p>
 										<p class="text-xs">
 											Paste the token in the config panel. Telegram requires
 											<span class="text-amber-600 dark:text-amber-400">HTTPS</span>
 											- if developing locally, use ngrok:
-											<code class="px-1 rounded bg-background/50">ngrok http 5173</code>
+											<code class="rounded bg-background/50 px-1">ngrok http 5173</code>
 										</p>
 									</div>
-									<div class="px-4 py-4 border rounded-xl border-border/50 bg-muted/30">
+									<div class="rounded-xl border border-border/50 bg-muted/30 px-4 py-4">
 										<p class="mb-1 font-semibold">3. Get Your Chat ID</p>
 										<p class="text-xs">
 											Send a message to your bot, then click the
 											<span class="font-medium">Auto-detect</span> button to fetch your chat ID.
 										</p>
 									</div>
-									<div class="px-4 py-4 border rounded-xl border-border/50 bg-muted/30">
+									<div class="rounded-xl border border-border/50 bg-muted/30 px-4 py-4">
 										<p class="mb-1 font-semibold">4. Save & Start Chatting</p>
 										<p class="text-xs">
-											Click <span class="font-medium">Save All</span> to save your configuration.
-											Your bot is now ready!
+											Click <span class="font-medium">Save All</span> to save your configuration. Your
+											bot is now ready!
 										</p>
 									</div>
 								</div>
@@ -1129,12 +1146,12 @@
 						{:else}
 							<!-- No Conversations -->
 							<div class="flex min-h-[50vh] flex-col items-center justify-center gap-6 text-center">
-								<div class="p-4 border rounded-full border-border/60 bg-muted/30">
-									<MessageSquare class="w-8 h-8 text-muted-foreground" />
+								<div class="rounded-full border border-border/60 bg-muted/30 p-4">
+									<MessageSquare class="text-muted-foreground h-8 w-8" />
 								</div>
 								<div class="space-y-2">
 									<p class="text-xl font-semibold">No Conversations Yet</p>
-									<p class="max-w-md text-sm text-muted-foreground">
+									<p class="text-muted-foreground max-w-md text-sm">
 										Send a message to your Telegram bot to start a conversation.
 									</p>
 								</div>
@@ -1144,9 +1161,9 @@
 						{#if isLoading}
 							<div class="flex items-center justify-center py-8" in:fade>
 								<div
-									class="flex items-center gap-3 px-4 py-3 text-sm font-bold tracking-wide uppercase border shadow-sm text-muted-foreground animate-pulse rounded-2xl border-border/60 bg-muted/35"
+									class="text-muted-foreground flex animate-pulse items-center gap-3 rounded-2xl border border-border/60 bg-muted/35 px-4 py-3 text-sm font-bold tracking-wide uppercase shadow-sm"
 								>
-									<LoaderCircle class="w-4 h-4 animate-spin" />
+									<LoaderCircle class="h-4 w-4 animate-spin" />
 									Loading
 								</div>
 							</div>
