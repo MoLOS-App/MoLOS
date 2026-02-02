@@ -26,13 +26,13 @@
 	let availableModules = $derived(data.availableModules ?? []);
 	let availableTypes = $derived(data.availableTypes ?? []);
 
-	let query = $state(data.query ?? '');
-	let results = $state(data.results ?? []);
+	let query = $state('');
+	let results = $state<any[]>([]);
 	let filters = $state<Filters>({
-		modules: data.filters?.modules ?? [],
-		types: data.filters?.types ?? [],
-		from: data.filters?.from ?? '',
-		to: data.filters?.to ?? ''
+		modules: [],
+		types: [],
+		from: '',
+		to: ''
 	});
 
 	// Keep state in sync with data props
@@ -87,6 +87,11 @@
 		return new Date(value).toLocaleString();
 	};
 </script>
+
+<svelte:head>
+	<title>Search - MoLOS</title>
+	<meta name="description" content="Search across your MoLOS tasks, prompts, and memories." />
+</svelte:head>
 
 <div class="min-h-[70vh] w-full bg-background">
 	<div class="mx-auto flex w-full max-w-5xl flex-col gap-6 p-6 md:p-10">

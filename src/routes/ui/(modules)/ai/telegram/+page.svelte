@@ -4,4 +4,9 @@
 	export let data;
 </script>
 
+<svelte:head>
+	<title>Telegram AI - MoLOS</title>
+	<meta name="description" content="Chat with your Telegram AI assistant." />
+</svelte:head>
+
 <TelegramChatWorkspace userName={data.user?.name} />

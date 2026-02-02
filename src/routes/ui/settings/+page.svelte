@@ -76,6 +76,11 @@
 	const darkThemes = $derived(THEMES.filter((t) => t.isDark));
 </script>
 
+<svelte:head>
+	<title>Settings - MoLOS</title>
+	<meta name="description" content="Personalize your MoLOS experience." />
+</svelte:head>
+
 <div class="min-h-screen bg-background pb-20">
 	<div class="mx-auto max-w-4xl space-y-8 p-6">
 		<!-- Header -->

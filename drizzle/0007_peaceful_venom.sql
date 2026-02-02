@@ -1,0 +1,1 @@
+ALTER TABLE `telegram_settings` ADD `connection_mode` text CHECK(connection_mode IN ('webhook', 'polling')) DEFAULT 'webhook' NOT NULL;

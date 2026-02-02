@@ -1,4 +1,4 @@
-import { eq, desc, and } from 'drizzle-orm';
+import { eq, desc, and, count } from 'drizzle-orm';
 import {
 	aiSettings,
 	aiMessages,
@@ -211,14 +211,15 @@ export class AiRepository extends BaseRepository {
 
 		if (existing) {
 			// Build update object with only provided fields
-			const updateData: Record<string, unknown> = { updatedAt: new Date() };
-			if (settings.botToken !== undefined) updateData.bot_token = settings.botToken;
-			if (settings.chatId !== undefined) updateData.chat_id = settings.chatId;
-			if (settings.webhookUrl !== undefined) updateData.webhook_url = settings.webhookUrl;
-			if (settings.modelName !== undefined) updateData.model_name = settings.modelName;
-			if (settings.systemPrompt !== undefined) updateData.system_prompt = settings.systemPrompt;
+			// Note: Drizzle uses the JS property names from schema, not raw column names
+			const updateData: Record<string, unknown> = {};
+			if (settings.botToken !== undefined) updateData.botToken = settings.botToken;
+			if (settings.chatId !== undefined) updateData.chatId = settings.chatId;
+			if (settings.webhookUrl !== undefined) updateData.webhookUrl = settings.webhookUrl;
+			if (settings.modelName !== undefined) updateData.modelName = settings.modelName;
+			if (settings.systemPrompt !== undefined) updateData.systemPrompt = settings.systemPrompt;
 			if (settings.temperature !== undefined) updateData.temperature = settings.temperature;
-			if (settings.maxTokens !== undefined) updateData.max_tokens = settings.maxTokens;
+			if (settings.maxTokens !== undefined) updateData.maxTokens = settings.maxTokens;
 			if (settings.enabled !== undefined) updateData.enabled = settings.enabled ? 1 : 0;
 
 			const result = await this.db
@@ -424,6 +425,49 @@ export class AiRepository extends BaseRepository {
 			toolCalls: result[0].toolCalls ? JSON.parse(result[0].toolCalls as string) : undefined,
 			createdAt: result[0].createdAt,
 			sessionId: rest.sessionId
+		};
+	}
+
+	async getTelegramSessionSummary(
+		sessionId: string,
+		userId: string
+	): Promise<{
+		session: TelegramSession;
+		messageCount: number;
+		lastMessage?: string;
+	} | null> {
+		const sessionResult = await this.db
+			.select()
+			.from(telegramSessions)
+			.where(and(eq(telegramSessions.id, sessionId), eq(telegramSessions.userId, userId)))
+			.limit(1);
+
+		if (!sessionResult[0]) {
+			return null;
+		}
+
+		// Get message count
+		const countResult = await this.db
+			.select({ count: count() })
+			.from(telegramMessages)
+			.where(and(eq(telegramMessages.sessionId, sessionId), eq(telegramMessages.userId, userId)));
+
+		// Get last message for preview
+		const lastMessageResult = await this.db
+			.select()
+			.from(telegramMessages)
+			.where(and(eq(telegramMessages.sessionId, sessionId), eq(telegramMessages.userId, userId)))
+			.orderBy(desc(telegramMessages.createdAt))
+			.limit(1);
+
+		return {
+			session: {
+				...sessionResult[0],
+				createdAt: sessionResult[0].createdAt,
+				updatedAt: sessionResult[0].updatedAt
+			} as unknown as TelegramSession,
+			messageCount: countResult[0]?.count || 0,
+			lastMessage: lastMessageResult[0]?.content
 		};
 	}
 }

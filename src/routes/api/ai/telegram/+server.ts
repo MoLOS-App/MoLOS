@@ -4,10 +4,12 @@ import { AiRepository } from '$lib/repositories/ai/ai-repository';
 import { z } from 'zod';
 
 const UpdateTelegramSettingsSchema = z.object({
-	botToken: z.string().min(1, 'Bot token is required').optional(),
+	botToken: z.string().optional(),
 	chatId: z.string().min(1, 'Chat ID is required'),
 	modelName: z.string().optional(),
 	webhookUrl: z.string().optional(),
+	connectionMode: z.enum(['webhook', 'polling']).optional(),
+	pollingInterval: z.number().min(1000).max(60000).optional(),
 	systemPrompt: z.string().optional(),
 	temperature: z.number().min(0).max(2).optional(),
 	maxTokens: z.number().positive().optional(),
@@ -22,13 +24,9 @@ export const GET: RequestHandler = async ({ locals }) => {
 	const aiRepo = new AiRepository();
 	const settings = await aiRepo.getTelegramSettings(locals.user.id);
 
-	// Don't expose full bot token in GET response
+	// Return full bot token so it can be displayed with eye icon for privacy
 	if (settings) {
-		const maskedSettings = {
-			...settings,
-			botToken: settings.botToken ? settings.botToken.slice(0, 10) + '...' : ''
-		};
-		return json({ settings: maskedSettings });
+		return json({ settings });
 	}
 
 	return json({ settings: null });
@@ -49,8 +47,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const aiRepo = new AiRepository();
 	const updated = await aiRepo.updateTelegramSettings(locals.user.id, result.data);
 
-	// Register webhook with Telegram if webhookUrl is provided
-	if (result.data.webhookUrl && updated.botToken) {
+	// Handle webhook/polling mode
+	const mode = result.data.connectionMode || updated.connectionMode || 'webhook';
+	if (mode === 'webhook' && result.data.webhookUrl && updated.botToken) {
+		// Register webhook with Telegram if webhookUrl is provided
 		try {
 			const webhookUrl = result.data.webhookUrl;
 			const telegramApiUrl = `https://api.telegram.org/bot${updated.botToken}/setWebhook`;
@@ -68,13 +68,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		}
 	}
 
-	// Don't expose full bot token in response
-	const maskedSettings = {
-		...updated,
-		botToken: updated.botToken ? updated.botToken.slice(0, 10) + '...' : ''
-	};
-
-	return json({ settings: maskedSettings });
+	// Return actual bot token so it can be displayed with eye icon for privacy
+	return json({ settings: updated });
 };
 
 export const DELETE: RequestHandler = async ({ locals }) => {

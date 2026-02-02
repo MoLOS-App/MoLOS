@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount, tick } from 'svelte';
+	import { onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
 	import {
 		Send,
@@ -9,7 +9,17 @@
 		Check,
 		Save,
 		Trash2,
-		RefreshCw
+		RefreshCw,
+		X,
+		Eye,
+		EyeOff,
+		Key,
+		Webhook,
+		MessageCircle,
+		Sliders,
+		Shield,
+		Server,
+		Info
 	} from 'lucide-svelte';
 	import { toast } from 'svelte-sonner';
 	import type { TelegramSettings, TelegramSession, TelegramMessage } from '$lib/models/ai';
@@ -28,6 +38,8 @@
 		botToken: string;
 		chatId: string;
 		webhookUrl?: string;
+		connectionMode: 'webhook' | 'polling';
+		pollingInterval: number;
 		modelName: string;
 		systemPrompt: string;
 		temperature: number;
@@ -37,6 +49,8 @@
 		botToken: '',
 		chatId: '',
 		webhookUrl: undefined,
+		connectionMode: 'webhook',
+		pollingInterval: 2000,
 		modelName: 'gpt-4o',
 		systemPrompt: '',
 		temperature: 0.7,
@@ -49,20 +63,29 @@
 	let isSaving = $state(false);
 	let showWebhookHelp = $state(false);
 	let customWebhookUrl = $state('');
-	let hasTokenInDb = $state(false);
-	let actualBotToken = $state(''); // Keep actual token for API calls (not shown in UI)
+	let showBotToken = $state(false);
+
+	// Bot token update state
+
+	// Chat ID fetch tutorial state
+	let isFetchingChatId = $state(false);
+	let chatIdFetchCountdown = $state(0);
+	let chatIdFetchStep = $state(0); // 0: idle, 1: preparing, 2: waiting_message, 3: success, 4: error
+	let abortChatIdFetch = $state(false);
+
+	// Polling state
+	let isPolling = $state(false);
+
+	// Polling interval in seconds for the input
+	let pollingIntervalSeconds = $derived(config.pollingInterval / 1000);
+	let setPollingIntervalSeconds = (seconds: number) => {
+		config.pollingInterval = Math.max(1000, Math.min(60000, seconds * 1000));
+	};
 
 	// Initialize customWebhookUrl from config.webhookUrl
 	$effect(() => {
 		if (config.webhookUrl && !customWebhookUrl) {
 			customWebhookUrl = config.webhookUrl;
-		}
-	});
-
-	// Sync actualBotToken when user types in the input
-	$effect(() => {
-		if (config.botToken) {
-			actualBotToken = config.botToken;
 		}
 	});
 
@@ -95,6 +118,11 @@
 	let sessions = $state<TelegramSession[]>([]);
 	let messages = $state<TelegramMessage[]>([]);
 	let selectedSessionId = $state<string | null>(null);
+	let selectedSessionSummary = $state<{
+		session: TelegramSession;
+		messageCount: number;
+		lastMessage?: string;
+	} | null>(null);
 	let isLoading = $state(false);
 
 	async function loadAiSettings() {
@@ -106,7 +134,6 @@
 					provider: data.settings?.provider || 'openai',
 					modelName: data.settings?.modelName || 'gpt-4o'
 				};
-				// Update default model if not set
 				if (!config.modelName || config.modelName === 'gpt-4o') {
 					config.modelName = aiSettings.modelName;
 				}
@@ -122,25 +149,21 @@
 			if (res.ok) {
 				const data = await res.json();
 				if (data.settings) {
-					const isTokenMasked = data.settings.botToken?.includes('...');
-					hasTokenInDb = isTokenMasked || !!data.settings.botToken;
-
-					// Store actual token if not masked (for API calls)
-					if (!isTokenMasked && data.settings.botToken) {
-						actualBotToken = data.settings.botToken;
-					}
-
 					config = {
-						// Don't overwrite input with masked token; keep user's input or show placeholder
-						botToken: isTokenMasked ? '' : data.settings.botToken || '',
+						botToken: data.settings.botToken || '',
 						chatId: data.settings.chatId || '',
 						webhookUrl: data.settings.webhookUrl || undefined,
+						connectionMode: data.settings.connectionMode || 'webhook',
+						pollingInterval: data.settings.pollingInterval || 2000,
 						modelName: data.settings.modelName || aiSettings?.modelName || 'gpt-4o',
 						systemPrompt: data.settings.systemPrompt || '',
 						temperature: data.settings.temperature || 0.7,
 						maxTokens: data.settings.maxTokens || 4096,
 						enabled: data.settings.enabled ?? true
 					};
+					if (data.settings.webhookUrl) {
+						customWebhookUrl = data.settings.webhookUrl;
+					}
 				}
 			}
 			isConfigLoaded = true;
@@ -160,9 +183,10 @@
 		}
 
 		try {
-			// Only include botToken if user has entered something
 			const saveData: Record<string, unknown> = {
 				chatId: config.chatId,
+				connectionMode: config.connectionMode,
+				pollingInterval: config.pollingInterval,
 				modelName: selectedModelId,
 				systemPrompt: config.systemPrompt,
 				temperature: config.temperature,
@@ -170,11 +194,8 @@
 				enabled: config.enabled
 			};
 
-			// Use actualBotToken (from input or previously saved)
-			const tokenToSave = config.botToken || actualBotToken;
-			if (tokenToSave) {
-				saveData.botToken = tokenToSave;
-			}
+			// Always include botToken (even if empty to allow clearing)
+			saveData.botToken = config.botToken;
 
 			// Only include webhookUrl if it's set
 			if (customWebhookUrl) {
@@ -192,10 +213,6 @@
 
 			if (res.ok) {
 				config.modelName = selectedModelId;
-				// Update hasTokenInDb flag if token was saved
-				if (config.botToken) {
-					hasTokenInDb = true;
-				}
 				toast.success('Telegram configuration saved successfully');
 				await loadSessions();
 			} else {
@@ -224,12 +241,16 @@
 				config = {
 					botToken: '',
 					chatId: '',
+					webhookUrl: undefined,
+					connectionMode: 'webhook',
+					pollingInterval: 2000,
 					modelName: aiSettings?.modelName || 'gpt-4o',
 					systemPrompt: '',
 					temperature: 0.7,
 					maxTokens: 4096,
 					enabled: true
 				};
+				customWebhookUrl = '';
 				toast.success('Telegram configuration deleted');
 				sessions = [];
 				messages = [];
@@ -261,6 +282,23 @@
 		}
 	}
 
+	async function loadSessionSummary(sessionId: string) {
+		selectedSessionId = sessionId;
+		isLoading = true;
+		try {
+			const res = await fetch(`/api/ai/telegram/sessions/${sessionId}/summary`);
+			if (res.ok) {
+				const data = await res.json();
+				selectedSessionSummary = data;
+			}
+		} catch (error) {
+			console.error('Error loading session summary:', error);
+			toast.error('Failed to load session summary');
+		} finally {
+			isLoading = false;
+		}
+	}
+
 	async function loadMessages(sessionId: string) {
 		selectedSessionId = sessionId;
 		isLoading = true;
@@ -279,19 +317,22 @@
 	}
 
 	async function fetchChatIdFromBot() {
-		const tokenToUse = config.botToken || actualBotToken;
-		if (!tokenToUse) {
+		if (!config.botToken) {
 			toast.error('Please enter your bot token first');
 			return;
 		}
 
-		isLoading = true;
+		abortChatIdFetch = false;
+		isFetchingChatId = true;
+		chatIdFetchStep = 1;
+		chatIdFetchCountdown = 0;
+
 		let webhookWasActive = false;
 		let originalWebhookUrl = '';
 
 		try {
-			// Check if webhook is active
-			const webhookInfoUrl = `https://api.telegram.org/bot${tokenToUse}/getWebhookInfo`;
+			// Step 1: Check if webhook is active
+			const webhookInfoUrl = `https://api.telegram.org/bot${config.botToken}/getWebhookInfo`;
 			const webhookResponse = await fetch(webhookInfoUrl);
 			const webhookData = await webhookResponse.json();
 
@@ -300,38 +341,69 @@
 				originalWebhookUrl = webhookData.result.url;
 
 				// Delete webhook temporarily to use getUpdates
-				await fetch(`https://api.telegram.org/bot${tokenToUse}/deleteWebhook`, {
+				await fetch(`https://api.telegram.org/bot${config.botToken}/deleteWebhook`, {
 					method: 'POST'
 				});
 			}
 
-			// Call Telegram API to get updates
-			const url = `https://api.telegram.org/bot${tokenToUse}/getUpdates`;
-			const response = await fetch(url);
-			const data = await response.json();
+			// Step 2: Poll for updates
+			const maxAttempts = 12;
+			const delayBetweenAttempts = 2500;
+			let chatId: string | null = null;
 
-			if (data.ok && data.result && data.result.length > 0) {
-				// Get the most recent message's chat ID
-				const lastUpdate = data.result[data.result.length - 1];
-				const chatId = lastUpdate.message?.chat?.id || lastUpdate.edited_message?.chat?.id;
+			chatIdFetchStep = 2;
+			chatIdFetchCountdown = maxAttempts * delayBetweenAttempts;
 
-				if (chatId) {
-					config.chatId = chatId.toString();
-					toast.success(`Chat ID found: ${chatId}`);
-				} else {
-					toast.error('No messages found. Send a message to your bot first, then try again.');
+			for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+				if (abortChatIdFetch) {
+					break;
 				}
+
+				chatIdFetchCountdown = (maxAttempts - attempt + 1) * delayBetweenAttempts;
+
+				const url = `https://api.telegram.org/bot${config.botToken}/getUpdates`;
+				const response = await fetch(url);
+				const data = await response.json();
+
+				if (data.ok && data.result && data.result.length > 0) {
+					const lastUpdate = data.result[data.result.length - 1];
+					const extractedChatId =
+						lastUpdate.message?.chat?.id || lastUpdate.edited_message?.chat?.id;
+
+					if (extractedChatId) {
+						chatId = extractedChatId.toString();
+						break;
+					}
+				}
+
+				if (attempt < maxAttempts && !abortChatIdFetch) {
+					await new Promise((resolve) => setTimeout(resolve, delayBetweenAttempts));
+				}
+			}
+
+			if (abortChatIdFetch) {
+				return;
+			}
+
+			if (chatId) {
+				config.chatId = chatId;
+				chatIdFetchStep = 3;
+				toast.success(`Chat ID found: ${chatId}`);
 			} else {
-				toast.error('No messages found. Send a message to your bot first, then try again.');
+				chatIdFetchStep = 4;
+				toast.error(
+					'No messages found. Please try again and make sure to send a message to your bot.'
+				);
 			}
 		} catch (error) {
 			console.error('Error fetching chat ID:', error);
+			chatIdFetchStep = 4;
 			toast.error('Failed to fetch chat ID. Make sure your bot token is correct.');
 		} finally {
 			// Restore webhook if it was active
 			if (webhookWasActive && originalWebhookUrl) {
 				try {
-					await fetch(`https://api.telegram.org/bot${tokenToUse}/setWebhook`, {
+					await fetch(`https://api.telegram.org/bot${config.botToken}/setWebhook`, {
 						method: 'POST',
 						headers: { 'Content-Type': 'application/json' },
 						body: JSON.stringify({ url: originalWebhookUrl })
@@ -341,13 +413,24 @@
 					toast.warning('Webhook was removed. Please click "Setup Webhook" to restore it.');
 				}
 			}
-			isLoading = false;
+			if (chatIdFetchStep === 3 || chatIdFetchStep === 4) {
+				setTimeout(() => {
+					isFetchingChatId = false;
+					chatIdFetchStep = 0;
+				}, 5000);
+			}
 		}
 	}
 
+	function cancelChatIdFetch() {
+		abortChatIdFetch = true;
+		isFetchingChatId = false;
+		chatIdFetchStep = 0;
+		chatIdFetchCountdown = 0;
+	}
+
 	async function setupWebhook() {
-		const tokenToUse = config.botToken || actualBotToken;
-		if (!tokenToUse) {
+		if (!config.botToken) {
 			toast.error('Please enter your bot token first');
 			return;
 		}
@@ -358,7 +441,7 @@
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
-					botToken: tokenToUse,
+					botToken: config.botToken,
 					customWebhookUrl: customWebhookUrl || undefined
 				})
 			});
@@ -383,9 +466,69 @@
 		}
 	}
 
+	async function setConnectionMode(mode: 'webhook' | 'polling') {
+		if (!config.botToken) {
+			toast.error('Please enter your bot token first');
+			return;
+		}
+
+		config.connectionMode = mode;
+
+		try {
+			const res = await fetch('/api/ai/telegram/set-mode', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					botToken: config.botToken,
+					mode,
+					webhookUrl: config.webhookUrl,
+					pollingInterval: config.pollingInterval
+				})
+			});
+
+			const data = await res.json();
+
+			if (res.ok) {
+				if (mode === 'polling') {
+					isPolling = true;
+					toast.success(
+						`Polling mode enabled. Checking for messages every ${config.pollingInterval / 1000}s.`
+					);
+				} else {
+					isPolling = false;
+					if (data.webhookSet) {
+						toast.success('Webhook mode enabled.');
+					} else {
+						toast.info('Webhook mode selected. Click Setup Webhook to configure.');
+					}
+				}
+			} else {
+				toast.error(data.error || 'Failed to switch mode');
+				config.connectionMode = mode === 'polling' ? 'webhook' : 'polling';
+			}
+		} catch (error) {
+			console.error('Error switching connection mode:', error);
+			toast.error('Failed to switch mode');
+			config.connectionMode = mode === 'polling' ? 'webhook' : 'polling';
+		}
+	}
+
+	async function checkPollingStatus() {
+		try {
+			const res = await fetch('/api/ai/telegram/polling-status');
+			if (res.ok) {
+				const data = await res.json();
+				isPolling = data.isPolling || false;
+			}
+		} catch (error) {
+			console.error('Error checking polling status:', error);
+		}
+	}
+
 	onMount(() => {
 		loadAiSettings();
 		loadConfig();
+		checkPollingStatus();
 	});
 </script>
 
@@ -394,253 +537,347 @@
 		<div
 			class="flex h-full min-h-[90svh] overflow-hidden md:rounded-2xl md:border md:border-border/70"
 		>
+			<!-- Configuration Sidebar -->
 			<aside
-				class="w-96 flex-col border-r border-border/60 bg-muted/20 md:flex {showConfig
+				class="w-[480px] flex-col border-r border-border/60 bg-muted/10 md:flex {showConfig
 					? 'flex'
 					: 'hidden md:flex'}"
 			>
-				<div class="flex h-full flex-col gap-4 p-4">
+				<div class="flex h-full flex-col">
+					<!-- Header -->
 					<div
-						class="sticky top-0 z-10 flex items-center justify-between border-b border-border/60 bg-background/80 pb-3 backdrop-blur"
+						class="sticky top-0 z-10 flex items-center justify-between border-b border-border/60 bg-background/95 px-6 py-4 backdrop-blur"
 					>
-						<h2 class="text-muted-foreground text-xs font-bold tracking-wider uppercase">
-							Telegram Configuration
-						</h2>
+						<div class="flex items-center gap-3">
+							<div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+								<Settings class="h-5 w-5 text-primary" />
+							</div>
+							<div>
+								<h2 class="text-sm font-bold tracking-wide">Telegram Configuration</h2>
+								<p class="text-muted-foreground text-xs">Configure your AI bot</p>
+							</div>
+						</div>
 						<button
-							class="focus-visible:ring-ring flex h-9 w-9 items-center justify-center rounded-xl border border-border/60 bg-background/80 transition hover:bg-muted/30"
+							class="flex h-9 w-9 items-center justify-center rounded-lg border border-border/60 bg-background transition hover:bg-muted/50"
 							onclick={() => (showConfig = !showConfig)}
 							aria-label="Toggle configuration"
+							title="Toggle panel"
 						>
-							<Settings class="h-4 w-4" />
+							<X class="h-4 w-4" />
 						</button>
 					</div>
 
-					<div class="flex flex-1 flex-col gap-4 overflow-y-auto pr-1">
-						<div class="space-y-3">
-							<div class="space-y-1">
-								<label for="botToken" class="text-muted-foreground text-xs font-semibold">
-									Bot Token
-									{#if hasTokenInDb && !config.botToken}
-										<span
-											class="ml-2 rounded bg-green-500/20 px-1.5 py-0.5 text-[10px] text-green-600 dark:text-green-400"
-											>Saved</span
-										>
-									{/if}
-								</label>
-								<div class="flex gap-2">
-									<input
-										id="botToken"
-										type="text"
-										bind:value={config.botToken}
-										placeholder={hasTokenInDb
-											? 'Token saved - enter new token to change'
-											: 'Enter your Telegram bot token'}
-										class="focus-visible:ring-ring flex-1 rounded-xl border border-border/60 bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
-									/>
-									<button
-										onclick={setupWebhook}
-										disabled={isLoading || (!config.botToken && !hasTokenInDb)}
-										class="focus-visible:ring-ring flex items-center justify-center gap-2 rounded-xl border border-border/60 bg-primary/10 px-3 py-2 text-sm font-medium text-primary transition hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-50"
-										title="Set webhook to connect your bot"
-									>
-										<Settings class="h-4 w-4" />
-									</button>
+					<!-- Scrollable Content -->
+					<div class="flex-1 overflow-y-auto">
+						<div class="space-y-8 p-6">
+							<!-- Bot Authentication Section -->
+							<section class="space-y-4">
+								<div class="flex items-center gap-2 border-b border-border/40 pb-2">
+									<Key class="h-4 w-4 text-primary" />
+									<h3 class="text-sm font-semibold">Bot Authentication</h3>
 								</div>
-								<p class="text-muted-foreground text-[10px]">
-									{#if hasTokenInDb && !config.botToken}
-										Token is saved securely. Enter a new token above to replace it.
-									{:else}
-										Click the settings icon to set up your bot's webhook after saving your token.
-									{/if}
-								</p>
-							</div>
 
-							<div class="space-y-1">
-								<label for="chatId" class="text-muted-foreground text-xs font-semibold">
-									Chat ID
-								</label>
-								<div class="flex gap-2">
-									<input
-										id="chatId"
-										type="text"
-										bind:value={config.chatId}
-										placeholder="Enter your Telegram chat ID"
-										class="focus-visible:ring-ring flex-1 rounded-xl border border-border/60 bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
-									/>
-									<button
-										onclick={fetchChatIdFromBot}
-										disabled={isLoading || !config.botToken}
-										class="focus-visible:ring-ring flex items-center justify-center gap-2 rounded-xl border border-border/60 bg-muted/30 px-3 py-2 text-sm font-medium transition hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-50"
-										title="Fetch chat ID from bot - send a message to your bot first"
-									>
-										<RefreshCw class="h-4 w-4" />
-									</button>
-								</div>
-								<p class="text-muted-foreground text-[10px]">
-									Send a message to your bot, then click the refresh button to auto-fetch your chat
-									ID.
-								</p>
-							</div>
-
-							<div class="space-y-1">
-								<label for="webhookUrl" class="text-muted-foreground text-xs font-semibold">
-									Webhook URL
-									{#if config.webhookUrl}
-										<span
-											class="ml-2 rounded bg-green-500/20 px-1.5 py-0.5 text-[10px] text-green-600 dark:text-green-400"
-											>Connected</span
+								<!-- Bot Token -->
+								<div class="space-y-2">
+									<div class="flex items-center justify-between">
+										<label for="botToken" class="text-muted-foreground text-xs font-semibold"
+											>Bot Token</label
 										>
-									{/if}
-								</label>
-								<div class="flex gap-2">
-									<input
-										id="webhookUrl"
-										type="text"
-										bind:value={customWebhookUrl}
-										placeholder="https://your-url.ngrok.io/api/ai/telegram/webhook"
-										class="focus-visible:ring-ring flex-1 rounded-xl border border-border/60 bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
-									/>
-								</div>
-								<p class="text-muted-foreground text-[10px]">
-									{#if config.webhookUrl}
-										Webhook is set. Enter a new URL to update it.
-									{:else}
-										Full URL including path: <code class="rounded bg-background/50 px-1"
-											>/api/ai/telegram/webhook</code
-										>
-									{/if}
-								</p>
-							</div>
-
-							{#if showWebhookHelp}
-								<div class="space-y-2 rounded-xl border border-amber-500/50 bg-amber-500/10 p-3">
-									<p class="text-xs font-semibold text-amber-700 dark:text-amber-300">
-										⚠️ HTTPS Required for Webhook
-									</p>
-									<p class="text-[10px] text-amber-600 dark:text-amber-400">
-										Telegram requires HTTPS URLs. For local development, use one of these options:
-									</p>
-									<div class="space-y-1 text-[10px]">
-										<p class="font-medium">Option 1: Use ngrok (recommended)</p>
-										<ol
-											class="list-inside list-decimal space-y-1 pl-2 text-amber-600 dark:text-amber-400"
-										>
-											<li>
-												Install ngrok: <code class="rounded bg-background/50 px-1"
-													>brew install ngrok</code
-												>
-											</li>
-											<li>
-												Run: <code class="rounded bg-background/50 px-1">ngrok http 5173</code>
-											</li>
-											<li>Copy the HTTPS URL (e.g., https://xyz.ngrok.io)</li>
-											<li>Paste below and click webhook setup again</li>
-										</ol>
+										{#if config.botToken}
+											<span
+												class="rounded-full bg-green-500/20 px-2 py-0.5 text-[10px] font-medium text-green-700 dark:text-green-400"
+												>Active</span
+											>
+										{/if}
 									</div>
-									<div class="space-y-1">
-										<label class="text-xs font-medium">Custom HTTPS Webhook URL</label>
+									<div class="flex gap-2">
 										<input
+											id="botToken"
+											type={showBotToken ? 'text' : 'password'}
+											bind:value={config.botToken}
+											placeholder="Paste your bot token from @BotFather"
+											class="focus-visible:ring-ring flex-1 rounded-xl border border-border/60 bg-background px-3 py-2.5 text-sm focus-visible:ring-2 focus-visible:outline-none"
+										/>
+										<button
+											onclick={() => (showBotToken = !showBotToken)}
+											class="text-muted-foreground flex items-center justify-center px-3 transition hover:text-foreground"
+											aria-label={showBotToken ? 'Hide token' : 'Show token'}
+										>
+											{#if showBotToken}
+												<EyeOff class="h-4 w-4" />
+											{:else}
+												<Eye class="h-4 w-4" />
+											{/if}
+										</button>
+									</div>
+								</div>
+
+								<!-- Chat ID -->
+								<div class="space-y-2">
+									<label for="chatId" class="text-muted-foreground text-xs font-semibold"
+										>Chat ID</label
+									>
+									<div class="flex gap-2">
+										<input
+											id="chatId"
+											type="text"
+											bind:value={config.chatId}
+											placeholder="Enter your Telegram chat ID"
+											class="focus-visible:ring-ring flex-1 rounded-xl border border-border/60 bg-background px-3 py-2.5 text-sm focus-visible:ring-2 focus-visible:outline-none"
+										/>
+										<button
+											onclick={fetchChatIdFromBot}
+											disabled={isLoading || !config.botToken}
+											class="flex items-center justify-center gap-2 rounded-xl border border-border/60 bg-muted/30 px-4 py-2.5 text-sm font-medium transition hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-50"
+											title="Auto-fetch chat ID"
+										>
+											<RefreshCw class="h-4 w-4" />
+											Auto-detect
+										</button>
+									</div>
+									<p class="text-muted-foreground text-[10px]">
+										Send a message to your bot, then click "Auto-detect" to find your chat ID
+									</p>
+								</div>
+							</section>
+
+							<!-- Connection Section -->
+							<section class="space-y-4">
+								<div class="flex items-center gap-2 border-b border-border/40 pb-2">
+									<Server class="h-4 w-4 text-primary" />
+									<h3 class="text-sm font-semibold">Connection Mode</h3>
+									{#if isPolling}
+										<span
+											class="ml-auto animate-pulse rounded-full bg-blue-500/20 px-2 py-0.5 text-[10px] font-medium text-blue-600 dark:text-blue-400"
+											>Polling Active</span
+										>
+									{:else if config.webhookUrl}
+										<span
+											class="ml-auto rounded-full bg-green-500/20 px-2 py-0.5 text-[10px] font-medium text-green-600 dark:text-green-400"
+											>Webhook Active</span
+										>
+									{/if}
+								</div>
+
+								<!-- Mode Selection -->
+								<div class="grid grid-cols-2 gap-3">
+									<button
+										onclick={() => setConnectionMode('webhook')}
+										disabled={isLoading || !config.botToken}
+										class="flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition {config.connectionMode ===
+										'webhook'
+											? 'border-primary bg-primary/5'
+											: 'border-border/60 bg-background hover:bg-muted/30'} disabled:cursor-not-allowed disabled:opacity-50"
+									>
+										<Webhook class="h-6 w-6" />
+										<div class="text-center">
+											<div class="text-sm font-semibold">Webhook</div>
+											<div class="text-muted-foreground text-[10px]">Instant delivery</div>
+										</div>
+									</button>
+									<button
+										onclick={() => setConnectionMode('polling')}
+										disabled={isLoading || !config.botToken}
+										class="flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition {config.connectionMode ===
+										'polling'
+											? 'border-primary bg-primary/5'
+											: 'border-border/60 bg-background hover:bg-muted/30'} disabled:cursor-not-allowed disabled:opacity-50"
+									>
+										<MessageCircle class="h-6 w-6" />
+										<div class="text-center">
+											<div class="text-sm font-semibold">Polling</div>
+											<div class="text-muted-foreground text-[10px]">Checks every 2s</div>
+										</div>
+									</button>
+								</div>
+
+								{#if config.connectionMode === 'webhook'}
+									<!-- Webhook Configuration -->
+									<div class="space-y-2">
+										<label for="webhookUrl" class="text-xs font-semibold">Webhook URL</label>
+										<input
+											id="webhookUrl"
 											type="text"
 											bind:value={customWebhookUrl}
-											placeholder="https://your-ngrok-url.ngrok.io/api/ai/telegram/webhook"
-											class="focus-visible:ring-ring w-full rounded-lg border border-border/60 bg-background px-2 py-1.5 text-xs focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+											placeholder="https://your-url.ngrok.io/api/ai/telegram/webhook"
+											class="focus-visible:ring-ring w-full rounded-xl border border-border/60 bg-background px-3 py-2.5 text-sm focus-visible:ring-2 focus-visible:outline-none"
 										/>
+										<button
+											onclick={setupWebhook}
+											disabled={isLoading || !config.botToken}
+											class="flex w-full items-center justify-center gap-2 rounded-xl bg-primary/10 px-4 py-2.5 text-sm font-medium text-primary transition hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-50"
+										>
+											<Webhook class="h-4 w-4" />
+											Setup Webhook
+										</button>
+									</div>
+								{:else}
+									<!-- Polling Configuration -->
+									<div class="space-y-2">
+										<label for="pollingInterval" class="text-xs font-semibold"
+											>Polling Interval</label
+										>
+										<div class="flex items-center gap-3">
+											<input
+												id="pollingInterval"
+												type="number"
+												min="1"
+												max="60"
+												step="1"
+												value={pollingIntervalSeconds}
+												oninput={(e) => setPollingIntervalSeconds(Number(e.currentTarget.value))}
+												placeholder="2"
+												class="focus-visible:ring-ring w-20 rounded-xl border border-border/60 bg-background px-3 py-2.5 text-center text-sm focus-visible:ring-2 focus-visible:outline-none"
+											/>
+											<span class="text-muted-foreground text-sm">seconds</span>
+										</div>
+										<p class="text-muted-foreground text-[10px]">
+											Lower values check more often but use more resources (1-60 seconds)
+										</p>
+									</div>
+								{/if}
+							</section>
+
+							<!-- AI Behavior Section -->
+							<section class="space-y-4">
+								<div class="flex items-center gap-2 border-b border-border/40 pb-2">
+									<Sliders class="h-4 w-4 text-primary" />
+									<h3 class="text-sm font-semibold">AI Behavior</h3>
+								</div>
+
+								<!-- Model Selection -->
+								<div class="space-y-2">
+									<label for="modelName" class="text-muted-foreground text-xs font-semibold"
+										>AI Model</label
+									>
+									<select
+										id="modelName"
+										bind:value={selectedModelId}
+										class="focus-visible:ring-ring w-full rounded-xl border border-border/60 bg-background px-3 py-2.5 text-sm focus-visible:ring-2 focus-visible:outline-none"
+									>
+										{#each availableModels as m (m.id)}
+											<option value={m.id}>{m.name}</option>
+										{/each}
+									</select>
+								</div>
+
+								<!-- System Prompt -->
+								<div class="space-y-2">
+									<label for="systemPrompt" class="text-muted-foreground text-xs font-semibold"
+										>System Prompt</label
+									>
+									<textarea
+										id="systemPrompt"
+										bind:value={config.systemPrompt}
+										placeholder="Define how your AI assistant should behave..."
+										rows="3"
+										class="focus-visible:ring-ring w-full resize-none rounded-xl border border-border/60 bg-background px-3 py-2.5 text-sm focus-visible:ring-2 focus-visible:outline-none"
+									></textarea>
+								</div>
+
+								<!-- Temperature & Max Tokens -->
+								<div class="grid grid-cols-2 gap-4">
+									<div class="space-y-2">
+										<label for="temperature" class="text-muted-foreground text-xs font-semibold"
+											>Temperature</label
+										>
+										<input
+											id="temperature"
+											type="number"
+											step="0.1"
+											min="0"
+											max="2"
+											bind:value={config.temperature}
+											class="focus-visible:ring-ring w-full rounded-xl border border-border/60 bg-background px-3 py-2.5 text-sm focus-visible:ring-2 focus-visible:outline-none"
+										/>
+										<p class="text-muted-foreground text-[10px]">0 = focused, 2 = creative</p>
+									</div>
+									<div class="space-y-2">
+										<label for="maxTokens" class="text-muted-foreground text-xs font-semibold"
+											>Max Tokens</label
+										>
+										<input
+											id="maxTokens"
+											type="number"
+											min="1"
+											bind:value={config.maxTokens}
+											class="focus-visible:ring-ring w-full rounded-xl border border-border/60 bg-background px-3 py-2.5 text-sm focus-visible:ring-2 focus-visible:outline-none"
+										/>
+										<p class="text-muted-foreground text-[10px]">Max response length</p>
+									</div>
+								</div>
+							</section>
+
+							<!-- Status Section -->
+							<section class="space-y-4">
+								<div class="flex items-center gap-2 border-b border-border/40 pb-2">
+									<Shield class="h-4 w-4 text-primary" />
+									<h3 class="text-sm font-semibold">Status</h3>
+								</div>
+
+								<div class="flex items-center gap-3">
+									<input
+										id="enabled"
+										type="checkbox"
+										bind:checked={config.enabled}
+										class="focus-visible:ring-ring h-5 w-5 rounded border-border/60 focus-visible:ring-2"
+									/>
+									<label for="enabled" class="flex-1 cursor-pointer text-sm font-medium">
+										Enable Telegram Bot
+									</label>
+									{#if config.enabled}
+										<span
+											class="rounded-full bg-green-500/20 px-2 py-0.5 text-xs font-medium text-green-600 dark:text-green-400"
+											>Active</span
+										>
+									{:else}
+										<span
+											class="text-muted-foreground rounded-full bg-muted px-2 py-0.5 text-xs font-medium"
+											>Disabled</span
+										>
+									{/if}
+								</div>
+							</section>
+
+							<!-- HTTPS Help Warning -->
+							{#if showWebhookHelp}
+								<div
+									class="flex items-start gap-3 rounded-xl border border-amber-500/50 bg-amber-500/10 p-3"
+								>
+									<Info class="h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+									<div class="flex-1 text-xs">
+										<p class="mb-1 font-semibold text-amber-700 dark:text-amber-300">
+											HTTPS Required
+										</p>
+										<p class="text-amber-600 dark:text-amber-400">
+											Telegram requires HTTPS. For local dev, use ngrok:
+											<code class="rounded bg-background/50 px-1">ngrok http 5173</code>
+										</p>
 									</div>
 								</div>
 							{/if}
-
-							<div class="space-y-1">
-								<label for="modelName" class="text-muted-foreground text-xs font-semibold">
-									Model
-									{#if aiSettings?.modelName && config.modelName === aiSettings.modelName}
-										<span class="text-muted-foreground/70 text-xs">(default from settings)</span>
-									{/if}
-								</label>
-								<select
-									id="modelName"
-									bind:value={selectedModelId}
-									class="focus-visible:ring-ring w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
-								>
-									{#each availableModels as m (m.id)}
-										<option value={m.id}>{m.name}</option>
-									{/each}
-								</select>
-							</div>
-
-							<div class="space-y-1">
-								<label for="systemPrompt" class="text-muted-foreground text-xs font-semibold">
-									System Prompt
-								</label>
-								<textarea
-									id="systemPrompt"
-									bind:value={config.systemPrompt}
-									placeholder="Custom system prompt for your Telegram bot..."
-									rows="4"
-									class="focus-visible:ring-ring w-full resize-none rounded-xl border border-border/60 bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
-								></textarea>
-							</div>
-
-							<div class="flex gap-2">
-								<div class="flex-1 space-y-1">
-									<label for="temperature" class="text-muted-foreground text-xs font-semibold">
-										Temperature
-									</label>
-									<input
-										id="temperature"
-										type="number"
-										step="0.1"
-										min="0"
-										max="2"
-										bind:value={config.temperature}
-										class="focus-visible:ring-ring w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
-									/>
-								</div>
-								<div class="flex-1 space-y-1">
-									<label for="maxTokens" class="text-muted-foreground text-xs font-semibold">
-										Max Tokens
-									</label>
-									<input
-										id="maxTokens"
-										type="number"
-										min="1"
-										bind:value={config.maxTokens}
-										class="focus-visible:ring-ring w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
-									/>
-								</div>
-							</div>
-
-							<div class="flex items-center gap-2">
-								<input
-									id="enabled"
-									type="checkbox"
-									bind:checked={config.enabled}
-									class="focus-visible:ring-ring h-4 w-4 rounded border-border/60"
-								/>
-								<label for="enabled" class="text-sm font-medium text-foreground">
-									Enable Telegram bot
-								</label>
-							</div>
 						</div>
+					</div>
 
-						<div class="flex gap-2 border-t border-border/60 pt-2">
+					<!-- Footer Actions -->
+					<div class="border-t border-border/60 bg-background/95 p-4 backdrop-blur">
+						<div class="grid grid-cols-2 gap-3">
 							<button
-								class="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+								class="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
 								onclick={saveConfig}
-								disabled={isSaving ||
-									(!config.botToken && !actualBotToken && !hasTokenInDb) ||
-									!config.chatId}
+								disabled={isSaving}
 							>
 								{#if isSaving}
 									<LoaderCircle class="h-4 w-4 animate-spin" />
 								{:else}
 									<Save class="h-4 w-4" />
 								{/if}
-								{isSaving ? 'Saving...' : 'Save'}
+								Save All
 							</button>
 							<button
-								class="flex items-center justify-center gap-2 rounded-xl border border-border/60 bg-background px-4 py-2.5 text-sm font-semibold text-destructive transition hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"
+								class="flex items-center justify-center gap-2 rounded-xl border border-border/60 bg-background px-4 py-3 text-sm font-semibold text-destructive transition hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"
 								onclick={deleteConfig}
-								disabled={isSaving || !config.botToken}
+								disabled={isSaving}
 							>
 								<Trash2 class="h-4 w-4" />
 								Delete
@@ -650,32 +887,215 @@
 				</div>
 			</aside>
 
+			<!-- Main Content Area -->
 			<section
 				class="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-background md:bg-transparent"
 				role="main"
 			>
 				<header
-					class="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-border/60 bg-background px-4 py-3 md:px-6"
+					class="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-border/60 bg-background px-6 py-4 md:px-6"
 				>
 					<div class="flex items-center gap-3">
-						<Send class="text-muted-foreground h-5 w-5" />
-						<span class="text-sm font-semibold">Telegram Conversations</span>
+						<div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+							<Send class="h-5 w-5 text-primary" />
+						</div>
+						<div>
+							<h1 class="text-sm font-semibold">Telegram Conversations</h1>
+							<p class="text-muted-foreground text-xs">
+								{#if config.enabled && config.botToken && config.chatId}
+									{#if isPolling}
+										<span class="flex items-center gap-1.5">
+											<span class="h-2 w-2 animate-pulse rounded-full bg-blue-500"></span>
+											Polling active
+										</span>
+									{:else}
+										Bot active (webhook)
+									{/if}
+								{:else}
+									Configure bot to start
+								{/if}
+							</p>
+						</div>
 					</div>
-					<div class="text-muted-foreground text-xs">
-						{config.enabled && config.botToken && config.chatId
-							? 'Bot active'
-							: 'Configure bot to start'}
-					</div>
+					<button
+						class="flex h-10 w-10 items-center justify-center rounded-lg border border-border/60 bg-background transition hover:bg-muted/50 md:hidden"
+						onclick={() => (showConfig = !showConfig)}
+						aria-label="Toggle configuration"
+					>
+						<Settings class="h-5 w-5" />
+					</button>
 				</header>
 
 				<div
-					class="flex-1 overflow-y-auto scroll-smooth px-4 py-6 md:px-6 md:py-8"
+					class="flex-1 overflow-y-auto scroll-smooth px-6 py-8"
 					role="log"
 					aria-live="polite"
 					aria-label="Telegram messages"
 				>
 					<div class="mx-auto w-full max-w-4xl min-w-0 space-y-6">
-						{#if !config.botToken || !config.chatId}
+						{#if isFetchingChatId}
+							<!-- Chat ID Fetch Tutorial -->
+							<div class="flex min-h-[50vh] flex-col items-center justify-center gap-8 text-center">
+								<button
+									onclick={cancelChatIdFetch}
+									class="absolute top-6 right-6 flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-background/80 backdrop-blur transition hover:bg-muted/50"
+									aria-label="Cancel chat ID fetch"
+								>
+									<X class="text-muted-foreground h-5 w-5" />
+								</button>
+
+								<div class="rounded-full border border-border/60 bg-muted/30 p-6">
+									<RefreshCw
+										class="h-12 w-12 text-primary {chatIdFetchStep === 2 ? 'animate-spin' : ''}"
+									/>
+								</div>
+
+								<div class="space-y-3">
+									{#if chatIdFetchStep === 1}
+										<p class="text-xl font-semibold">Preparing to detect your Chat ID...</p>
+										<p class="text-muted-foreground max-w-md text-sm">
+											Temporarily disabling webhook to listen for your message.
+										</p>
+									{:else if chatIdFetchStep === 2}
+										<p class="text-xl font-semibold">Send a message to your bot now!</p>
+										<p class="text-muted-foreground max-w-md text-sm">
+											Open Telegram, find your bot, and send any message (like "hello" or "start").
+										</p>
+									{:else if chatIdFetchStep === 3}
+										<p class="text-xl font-semibold text-green-600 dark:text-green-400">
+											<Check class="inline h-6 w-6" /> Chat ID found!
+										</p>
+										<p class="text-muted-foreground max-w-md text-sm">
+											Your Chat ID has been automatically detected and saved. You can now save your
+											configuration.
+										</p>
+									{:else if chatIdFetchStep === 4}
+										<p class="text-xl font-semibold text-destructive">No message received</p>
+										<p class="text-muted-foreground max-w-md text-sm">
+											We couldn't detect your message. Make sure you've sent a message to your bot
+											and try again.
+										</p>
+									{/if}
+								</div>
+
+								{#if chatIdFetchStep === 2}
+									<div class="rounded-2xl border border-primary/50 bg-primary/5 px-8 py-6">
+										<div class="mb-2 text-6xl font-bold text-primary tabular-nums">
+											{Math.ceil(chatIdFetchCountdown / 1000)}
+										</div>
+										<div class="text-muted-foreground text-sm font-medium tracking-wider uppercase">
+											seconds remaining
+										</div>
+									</div>
+								{/if}
+
+								{#if chatIdFetchStep === 3}
+									<div class="rounded-2xl border border-green-500/50 bg-green-500/10 px-8 py-6">
+										<Check class="mx-auto mb-2 h-16 w-16 text-green-600 dark:text-green-400" />
+										<div class="text-muted-foreground text-sm">
+											Chat ID: <span class="font-mono font-bold text-foreground"
+												>{config.chatId}</span
+											>
+										</div>
+									</div>
+								{/if}
+							</div>
+						{:else if sessions.length > 0}
+							<!-- Sessions List -->
+							<div class="flex flex-col gap-3">
+								{#each sessions as session (session.id)}
+									<button
+										class="w-full rounded-xl border border-border/60 bg-background px-5 py-4 text-left transition hover:bg-muted/30 {selectedSessionId ===
+										session.id
+											? 'ring-2 ring-primary'
+											: ''}"
+										onclick={() => loadSessionSummary(session.id)}
+									>
+										<div class="flex items-center justify-between">
+											<div class="font-semibold">{session.title}</div>
+											<div class="text-muted-foreground text-xs">
+												{new Date(session.updatedAt).toLocaleString()}
+											</div>
+										</div>
+									</button>
+								{/each}
+							</div>
+
+							{#if selectedSessionSummary}
+								<div class="mt-6 rounded-xl border border-border/60 bg-muted/30 p-6" in:fade>
+									<div
+										class="mb-4 flex items-center justify-between border-b border-border/60 pb-3"
+									>
+										<h3 class="text-lg font-semibold">Conversation Summary</h3>
+										<button
+											onclick={() => {
+												selectedSessionId = null;
+												selectedSessionSummary = null;
+											}}
+											class="text-muted-foreground transition hover:text-foreground"
+											aria-label="Close summary"
+										>
+											<X class="h-5 w-5" />
+										</button>
+									</div>
+
+									<div class="space-y-4">
+										<div class="grid grid-cols-2 gap-4">
+											<div class="space-y-1">
+												<p class="text-muted-foreground text-xs font-semibold uppercase">
+													Session ID
+												</p>
+												<p class="font-mono text-xs">
+													{selectedSessionSummary.session.id.slice(0, 8)}...
+												</p>
+											</div>
+											<div class="space-y-1">
+												<p class="text-muted-foreground text-xs font-semibold uppercase">
+													Telegram Chat ID
+												</p>
+												<p class="font-mono text-xs">
+													{selectedSessionSummary.session.telegramChatId}
+												</p>
+											</div>
+										</div>
+
+										<div class="grid grid-cols-2 gap-4">
+											<div class="space-y-1">
+												<p class="text-muted-foreground text-xs font-semibold uppercase">
+													Message Count
+												</p>
+												<p class="text-sm font-semibold">
+													{selectedSessionSummary.messageCount}
+												</p>
+											</div>
+											<div class="space-y-1">
+												<p class="text-muted-foreground text-xs font-semibold uppercase">
+													Last Updated
+												</p>
+												<p class="text-xs">
+													{new Date(selectedSessionSummary.session.updatedAt).toLocaleString()}
+												</p>
+											</div>
+										</div>
+
+										{#if selectedSessionSummary.lastMessage}
+											<div class="space-y-1">
+												<p class="text-muted-foreground text-xs font-semibold uppercase">
+													Last Message Preview
+												</p>
+												<p
+													class="rounded-lg border border-border/50 bg-background/50 px-3 py-2 text-xs"
+												>
+													{selectedSessionSummary.lastMessage.slice(0, 200)}
+													{selectedSessionSummary.lastMessage.length > 200 ? '...' : ''}
+												</p>
+											</div>
+										{/if}
+									</div>
+								</div>
+							{/if}
+						{:else if !config.botToken || !config.chatId}
+							<!-- Setup Tutorial -->
 							<div class="flex min-h-[50vh] flex-col items-center justify-center gap-6 text-center">
 								<div class="rounded-full border border-border/60 bg-muted/30 p-4">
 									<Settings class="text-muted-foreground h-8 w-8" />
@@ -701,34 +1121,30 @@
 									<div class="rounded-xl border border-border/50 bg-muted/30 px-4 py-4">
 										<p class="mb-1 font-semibold">2. Set Up Webhook (HTTPS Required)</p>
 										<p class="text-xs">
-											Paste the token and click the <span class="font-medium">settings icon</span>
-											⚙️.
-											<span class="text-amber-600 dark:text-amber-400">Telegram requires HTTPS</span
-											>
+											Paste the token in the config panel. Telegram requires
+											<span class="text-amber-600 dark:text-amber-400">HTTPS</span>
 											- if developing locally, use ngrok:
 											<code class="rounded bg-background/50 px-1">ngrok http 5173</code>
-											then paste the HTTPS URL in the custom webhook field that appears.
 										</p>
 									</div>
 									<div class="rounded-xl border border-border/50 bg-muted/30 px-4 py-4">
 										<p class="mb-1 font-semibold">3. Get Your Chat ID</p>
 										<p class="text-xs">
-											Open your bot in Telegram and send <span class="font-medium">any message</span
-											>
-											(like "start"). Then click the <span class="font-medium">refresh button</span> to
-											auto-fetch your chat ID.
+											Send a message to your bot, then click the
+											<span class="font-medium">Auto-detect</span> button to fetch your chat ID.
 										</p>
 									</div>
 									<div class="rounded-xl border border-border/50 bg-muted/30 px-4 py-4">
 										<p class="mb-1 font-semibold">4. Save & Start Chatting</p>
 										<p class="text-xs">
-											Click <span class="font-medium">Save</span> to save your configuration. Your bot
-											is now ready to chat with AI! Just message it anytime.
+											Click <span class="font-medium">Save All</span> to save your configuration. Your
+											bot is now ready!
 										</p>
 									</div>
 								</div>
 							</div>
-						{:else if sessions.length === 0}
+						{:else}
+							<!-- No Conversations -->
 							<div class="flex min-h-[50vh] flex-col items-center justify-center gap-6 text-center">
 								<div class="rounded-full border border-border/60 bg-muted/30 p-4">
 									<MessageSquare class="text-muted-foreground h-8 w-8" />
@@ -739,20 +1155,6 @@
 										Send a message to your Telegram bot to start a conversation.
 									</p>
 								</div>
-							</div>
-						{:else}
-							<div class="flex flex-col gap-4">
-								{#each sessions as session (session.id)}
-									<button
-										class="w-full rounded-xl border border-border/60 bg-background px-4 py-3 text-left transition hover:bg-muted/30"
-										onclick={() => loadMessages(session.id)}
-									>
-										<div class="font-semibold">{session.title}</div>
-										<div class="text-muted-foreground text-xs">
-											{new Date(session.updatedAt).toLocaleString()}
-										</div>
-									</button>
-								{/each}
 							</div>
 						{/if}
 

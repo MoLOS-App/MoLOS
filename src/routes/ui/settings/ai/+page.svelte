@@ -107,6 +107,11 @@
 	}
 </script>
 
+<svelte:head>
+	<title>AI Configuration - MoLOS Settings</title>
+	<meta name="description" content="Configure your AI assistant settings and providers." />
+</svelte:head>
+
 <div class="min-h-screen bg-background pb-20">
 	<div class="mx-auto max-w-4xl space-y-8 p-6">
 		<!-- Header -->

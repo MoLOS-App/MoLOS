@@ -109,6 +109,11 @@
 	const baseThemes = $derived(THEMES.filter((t) => t.id === 'dark' || t.id === 'medium'));
 </script>
 
+<svelte:head>
+	<title>Theme - MoLOS Settings</title>
+	<meta name="description" content="Customize your MoLOS theme and appearance." />
+</svelte:head>
+
 <div class="flex h-screen flex-col overflow-hidden bg-background">
 	<div class="mx-auto w-full max-w-7xl flex-none space-y-8 p-6">
 		<!-- Header -->
