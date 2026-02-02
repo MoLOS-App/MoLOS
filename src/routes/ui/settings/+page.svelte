@@ -1,8 +1,3 @@
-<svelte:head>
-	<title>Settings - MoLOS</title>
-	<meta name="description" content="Personalize your MoLOS experience." />
-</svelte:head>
-
 <script lang="ts">
 	import type { PageData } from './$types';
 	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
@@ -80,6 +75,11 @@
 	const lightThemes = $derived(THEMES.filter((t) => !t.isDark));
 	const darkThemes = $derived(THEMES.filter((t) => t.isDark));
 </script>
+
+<svelte:head>
+	<title>Settings - MoLOS</title>
+	<meta name="description" content="Personalize your MoLOS experience." />
+</svelte:head>
 
 <div class="min-h-screen bg-background pb-20">
 	<div class="mx-auto max-w-4xl space-y-8 p-6">

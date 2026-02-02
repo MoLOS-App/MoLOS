@@ -1,8 +1,3 @@
-<svelte:head>
-	<title>Profile Settings - MoLOS</title>
-	<meta name="description" content="Manage your profile information and account settings." />
-</svelte:head>
-
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
@@ -72,6 +67,11 @@
 		}
 	}
 </script>
+
+<svelte:head>
+	<title>Profile Settings - MoLOS</title>
+	<meta name="description" content="Manage your profile information and account settings." />
+</svelte:head>
 
 <div class="min-h-screen bg-background pb-20">
 	<div class="mx-auto max-w-4xl space-y-8 p-6">

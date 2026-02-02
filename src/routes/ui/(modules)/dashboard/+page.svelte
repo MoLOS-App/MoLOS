@@ -1,8 +1,3 @@
-<svelte:head>
-	<title>Dashboard - MoLOS</title>
-	<meta name="description" content="Your personal MoLOS dashboard." />
-</svelte:head>
-
 <script lang="ts">
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -32,6 +27,11 @@
 		}
 	}
 </script>
+
+<svelte:head>
+	<title>Dashboard - MoLOS</title>
+	<meta name="description" content="Your personal MoLOS dashboard." />
+</svelte:head>
 
 <div class="pt-0s flex min-h-screen flex-col items-center bg-background p-6 pb-24 md:p-8">
 	<!-- Main Content -->
