@@ -26,13 +26,13 @@
 	let availableModules = $derived(data.availableModules ?? []);
 	let availableTypes = $derived(data.availableTypes ?? []);
 
-	let query = $state(data.query ?? '');
-	let results = $state(data.results ?? []);
+	let query = $state('');
+	let results = $state<any[]>([]);
 	let filters = $state<Filters>({
-		modules: data.filters?.modules ?? [],
-		types: data.filters?.types ?? [],
-		from: data.filters?.from ?? '',
-		to: data.filters?.to ?? ''
+		modules: [],
+		types: [],
+		from: '',
+		to: ''
 	});
 
 	// Keep state in sync with data props
