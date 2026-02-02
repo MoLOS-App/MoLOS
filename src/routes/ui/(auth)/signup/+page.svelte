@@ -1,3 +1,8 @@
+<svelte:head>
+	<title>Create Account - MoLOS</title>
+	<meta name="description" content="Join MoLOS and create your account to start your journey." />
+</svelte:head>
+
 <script lang="ts">
 	import { authClient } from '$lib/auth-client';
 	import { Button } from '$lib/components/ui/button';

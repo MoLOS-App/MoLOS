@@ -1,3 +1,8 @@
+<svelte:head>
+	<title>System Restarting - MoLOS</title>
+	<meta name="description" content="MoLOS is restarting. Please wait..." />
+</svelte:head>
+
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { RefreshCw, Loader2, CircleCheck, AlertCircle } from 'lucide-svelte';
