@@ -3,8 +3,9 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Badge } from '$lib/components/ui/badge';
-	import { Key, Search, Plus, Trash2 } from 'lucide-svelte';
+	import { Key, Search, Plus, Trash2, Copy, Check } from 'lucide-svelte';
 	import { Empty, EmptyMedia, EmptyTitle, EmptyContent } from '$lib/components/ui/empty';
+	import { toast } from 'svelte-sonner';
 
 	export interface ApiKey {
 		id: string;
@@ -30,6 +31,19 @@
 
 	let searchQuery = $state('');
 	let statusFilter = $state('');
+	let copiedKeyId = $state<string | null>(null);
+
+	async function copyKey(key: ApiKey) {
+		const keyText = `mcp_live_${key.keyPrefix}_******`;
+		try {
+			await navigator.clipboard.writeText(keyText);
+			copiedKeyId = key.id;
+			toast.success('API key prefix copied to clipboard');
+			setTimeout(() => (copiedKeyId = null), 2000);
+		} catch {
+			toast.error('Failed to copy to clipboard');
+		}
+	}
 
 	const filteredKeys = $derived(
 		keys.filter((key) => {
@@ -44,17 +58,17 @@
 		switch (key.status) {
 			case 'active':
 				return {
-					class: 'bg-green-500/10 text-green-600 dark:text-green-400',
+					class: 'bg-success/10 text-success',
 					label: 'Active'
 				};
 			case 'disabled':
 				return {
-					class: 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400',
+					class: 'bg-warning/10 text-warning',
 					label: 'Disabled'
 				};
 			case 'revoked':
 				return {
-					class: 'bg-red-500/10 text-red-600 dark:text-red-400',
+					class: 'bg-error/10 text-error',
 					label: 'Revoked'
 				};
 			default:
@@ -196,16 +210,32 @@
 										{/if}
 									</td>
 									<td class="px-6 py-4 text-right">
-										{#if onRevokeKey}
+										<div class="flex items-center justify-end gap-1">
 											<Button
 												variant="ghost"
 												size="sm"
-												onclick={() => onRevokeKey(key.id)}
-												class="text-destructive hover:text-destructive"
+												onclick={() => copyKey(key)}
+												class="gap-1"
+												title="Copy key prefix"
 											>
-												<Trash2 class="w-4 h-4" />
+												{#if copiedKeyId === key.id}
+													<Check class="w-4 h-4 text-success" />
+												{:else}
+													<Copy class="w-4 h-4" />
+												{/if}
 											</Button>
-										{/if}
+											{#if onRevokeKey}
+												<Button
+													variant="ghost"
+													size="sm"
+													onclick={() => onRevokeKey(key.id)}
+													class="text-destructive hover:text-destructive"
+													title="Revoke key"
+												>
+													<Trash2 class="w-4 h-4" />
+												</Button>
+											{/if}
+										</div>
 									</td>
 								</tr>
 							{/each}

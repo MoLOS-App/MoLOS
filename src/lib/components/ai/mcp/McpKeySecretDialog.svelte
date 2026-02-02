@@ -43,7 +43,7 @@
 	<DialogContent class="sm:max-w-md" onCloseAutoFocus={(e) => e.preventDefault()}>
 		<DialogHeader>
 			<DialogTitle class="flex items-center gap-3">
-				<CheckCircle class="w-6 h-6 text-green-500" />
+				<CheckCircle class="w-6 h-6 text-success" />
 				API Key Created
 			</DialogTitle>
 		</DialogHeader>
@@ -65,7 +65,7 @@
 					title="Copy to clipboard"
 				>
 					{#if copied}
-						<Check class="w-4 h-4 text-green-500" />
+						<Check class="w-4 h-4 text-success" />
 					{:else}
 						<Copy class="w-4 h-4" />
 					{/if}

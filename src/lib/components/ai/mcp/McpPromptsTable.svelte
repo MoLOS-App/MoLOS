@@ -168,7 +168,7 @@
 									</td>
 									<td class="px-6 py-4">
 										{#if prompt.enabled}
-											<Badge class="bg-green-500/10 text-green-600 dark:text-green-400">
+											<Badge class="bg-success/10 text-success">
 												Enabled
 											</Badge>
 										{:else}
