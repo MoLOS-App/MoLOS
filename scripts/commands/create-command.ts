@@ -59,22 +59,31 @@ export class CreateCommand {
 		// ============== CORE CONFIGURATION FILES ==============
 
 		// Create manifest.yaml
-		const manifest = `id: '${moduleName}'
-name: '${options.name || this.pascalCase(moduleName)}'
-version: '${options.version || '1.0.0'}'
-description: '${options.description || 'A new MoLOS module'}'
-author: '${options.author || 'Module Developer'}'
-icon: '${options.icon || 'Zap'}'
+		const manifest = `# Module identity used by the core app and module manager.
+id: "${moduleName}"
+name: "${options.name || this.pascalCase(moduleName)}"
+version: "${options.version || '1.0.0'}"
+description: "${options.description || 'A new MoLOS module'}"
+author: "${options.author || 'Module Developer'}"
+# Icon name must exist in lucide-svelte
+icon: "${options.icon || 'Zap'}"
 `;
 
 		writeFileSync(path.join(moduleDir, 'manifest.yaml'), manifest);
 		console.log('  ✓ Created manifest.yaml');
 
 		// Create config.ts
-		const config = `import type { ModuleConfig } from '$lib/config/types';
-import { ${options.icon || 'Zap'} } from 'lucide-svelte';
+		const config = `/**
+ * ${this.pascalCase(moduleName)} Module Configuration
+ * Defines routes, navigation items, and metadata for the ${this.pascalCase(moduleName)} module
+ *
+ * Keep the \`id\` and \`href\` aligned with \`manifest.yaml\` and the UI base route.
+ */
 
-export const moduleConfig: ModuleConfig = {
+import { ${options.icon || 'Zap'}, Settings } from 'lucide-svelte';
+import type { ModuleConfig } from '$lib/config/types';
+
+export const ${this.camelCase(moduleName)}Config: ModuleConfig = {
 	id: '${moduleName}',
 	name: '${options.name || this.pascalCase(moduleName)}',
 	href: '/ui/${moduleName}',
@@ -85,12 +94,17 @@ export const moduleConfig: ModuleConfig = {
 			name: 'Dashboard',
 			icon: ${options.icon || 'Zap'},
 			href: '/ui/${moduleName}/dashboard'
+		},
+		{
+			name: 'Settings',
+			icon: Settings,
+			href: '/ui/${moduleName}/settings'
 		}
 	]
 };
 
-export const moduleConfigAlias = moduleConfig;
-export default moduleConfig;
+export const moduleConfig = ${this.camelCase(moduleName)}Config;
+export default ${this.camelCase(moduleName)}Config;
 `;
 
 		writeFileSync(path.join(moduleDir, 'config.ts'), config);
@@ -99,6 +113,7 @@ export default moduleConfig;
 		// Create package.json
 		const packageJson = {
 			name: moduleName,
+			private: true,
 			version: options.version || '1.0.0',
 			description: options.description || 'A new MoLOS module',
 			type: 'module',
@@ -107,25 +122,34 @@ export default moduleConfig;
 				build: 'vite build',
 				preview: 'vite preview',
 				check: 'svelte-kit sync && svelte-check --tsconfig ./tsconfig.json',
+				'check:watch': 'svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch',
 				'db:generate': 'drizzle-kit generate',
-				test: 'npm run test:unit -- --run',
 				'test:unit': 'vitest',
+				test: 'npm run test:unit -- --run',
 				'db:push': 'drizzle-kit push',
-				'db:studio': 'drizzle-kit studio'
+				'db:studio': 'drizzle-kit studio',
+				'init:standalone': 'tsx ../MoLOS/scripts/init-standalone.ts'
 			},
 			devDependencies: {
+				'@sveltejs/adapter-auto': '^3.3.1',
 				'@sveltejs/kit': '^2.49.2',
-				svelte: '^5.46.1',
+				'@sveltejs/vite-plugin-svelte': '^6.2.1',
+				'@types/node': '^20.0.0',
 				'drizzle-kit': '^0.31.0',
+				svelte: '^5.46.1',
+				'svelte-check': '^4.0.0',
 				tsx: '^4.0.0',
 				typescript: '^5.0.0',
+				vite: '^7.3.0',
 				vitest: '^4.0.16'
 			},
 			dependencies: {
 				'better-sqlite3': '^12.5.0',
 				'drizzle-orm': '^0.41.0',
 				'lucide-svelte': '^0.561.0',
-				zod: '^4.2.1'
+				mdsvex: '^0.12.6',
+				yaml: '^2.0.0',
+				zod: '^3.0.0'
 			}
 		};
 
@@ -748,38 +772,54 @@ export const ${this.snakeCase(moduleName)}Entities = sqliteTable('${moduleName}_
 		writeFileSync(path.join(moduleDir, 'routes/ui/+layout.svelte'), layout);
 		console.log('  ✓ Created routes/ui/+layout.svelte');
 
+		// Create routes/ui/+layout.server.ts
+		const layoutServer = `import type { LayoutServerLoad } from './$types';
+import { ${this.pascalCase(moduleName)}Repository } from '$lib/repositories/external_modules/${moduleName}';
+
+export const load: LayoutServerLoad = async ({ locals }) => {
+	if (!locals.user) {
+		return { entities: [] };
+	}
+
+	try {
+		const repo = new ${this.pascalCase(moduleName)}Repository();
+		const entities = await repo.getByUserId(locals.user.id);
+		return { entities };
+	} catch (error) {
+		console.error('Error loading entities:', error);
+		return { entities: [] };
+	}
+};
+`;
+
+		writeFileSync(path.join(moduleDir, 'routes/ui/+layout.server.ts'), layoutServer);
+		console.log('  ✓ Created routes/ui/+layout.server.ts');
+
 		// Create routes/ui/+page.svelte
 		const indexPage = `<script lang="ts">
-	import { onMount } from 'svelte';
-	import { load${this.pascalCase(moduleName)}Data } from '$lib/stores/external_modules/${moduleName}';
-	import { ${this.camelCase(moduleName)}EntitiesStore, ${this.camelCase(moduleName)}UIState } from '$lib/stores/external_modules/${moduleName}';
+	import type { PageData } from './$types';
+	import { hydrate${this.pascalCase(moduleName)}Data } from '$lib/stores/external_modules/${moduleName}';
+	let { data }: { data: PageData } = $props();
 
-	onMount(() => {
-		load${this.pascalCase(moduleName)}Data();
-	});
+	// Hydrate store with server-loaded data
+	hydrate${this.pascalCase(moduleName)}Data(data.entities);
 </script>
 
 <div class="dashboard">
 	<h1>Dashboard</h1>
 
-	{#if $$${this.camelCase(moduleName)}UIState.loading}
-		<p>Loading...</p>
-	{:else if $$${this.camelCase(moduleName)}UIState.error}
-		<p class="error">{$$${this.camelCase(moduleName)}UIState.error}</p>
-	{:else}
-		<div class="entities-list">
-			{#each $$${this.camelCase(moduleName)}EntitiesStore as entity}
-				<div class="entity-card">
-					<h3>{entity.name}</h3>
-					<p>{entity.description || 'No description'}</p>
-					<span class="status">{entity.status}</span>
-				</div>
-			{/each}
-			{#if $$${this.camelCase(moduleName)}EntitiesStore.length === 0}
-				<p>No entities yet. Create your first one!</p>
-			{/if}
-		</div>
-	{/if}
+	<div class="entities-list">
+		{#each data.entities as entity}
+			<div class="entity-card">
+				<h3>{entity.name}</h3>
+				<p>{entity.description || 'No description'}</p>
+				<span class="status">{entity.status}</span>
+			</div>
+		{/each}
+		{#if data.entities.length === 0}
+			<p>No entities yet. Create your first one!</p>
+		{/if}
+	</div>
 </div>
 
 <style>
@@ -820,10 +860,6 @@ export const ${this.snakeCase(moduleName)}Entities = sqliteTable('${moduleName}_
 		background: #dbeafe;
 		color: #1d4ed8;
 	}
-
-	.error {
-		color: #dc2626;
-	}
 </style>
 `;
 
@@ -832,17 +868,21 @@ export const ${this.snakeCase(moduleName)}Entities = sqliteTable('${moduleName}_
 
 		// Create routes/ui/dashboard/+page.svelte
 		const dashboardPage = `<script lang="ts">
-	import { ${this.camelCase(moduleName)}Stats } from '$lib/stores/external_modules/${moduleName}';
+	import type { PageData } from './$types';
+	let { data }: { data: PageData } = $props();
+
+	const total = $derived(data.entities.length);
+	const active = $derived(data.entities.filter((e) => e.status === 'active').length);
 </script>
 
 <div class="stats-grid">
 	<div class="stat-card">
 		<h2>Total Entities</h2>
-		<p class="value">$$${this.camelCase(moduleName)}Stats.total</p>
+		<p class="value">{total}</p>
 	</div>
 	<div class="stat-card">
 		<h2>Active</h2>
-		<p class="value">$$${this.camelCase(moduleName)}Stats.active</p>
+		<p class="value">{active}</p>
 	</div>
 </div>
 
@@ -878,80 +918,82 @@ export const ${this.snakeCase(moduleName)}Entities = sqliteTable('${moduleName}_
 		console.log('  ✓ Created routes/ui/dashboard/+page.svelte');
 
 		// Create routes/api/+server.ts
-		const apiServer = `import { json } from '@sveltejs/kit';
+		const apiServer = `import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { ${this.pascalCase(moduleName)}Repository } from '$lib/repositories/external_modules/${moduleName}';
 
 export const GET: RequestHandler = async ({ locals }) => {
-	if (!locals.user) {
-		return json({ error: 'Unauthorized' }, { status: 401 });
-	}
+	const userId = locals.user?.id;
+	if (!userId) throw error(401, 'Unauthorized');
 
 	try {
 		const repo = new ${this.pascalCase(moduleName)}Repository();
-		const entities = await repo.getByUserId(locals.user.id);
-		return json({ data: entities });
+		const entities = await repo.getByUserId(userId);
+		return json(entities);
 	} catch (error) {
 		console.error('Error fetching entities:', error);
-		return json({ error: 'Failed to fetch entities' }, { status: 500 });
+		throw error(500, 'Failed to fetch entities');
 	}
 };
 
 export const POST: RequestHandler = async ({ locals, request }) => {
-	if (!locals.user) {
-		return json({ error: 'Unauthorized' }, { status: 401 });
-	}
+	const userId = locals.user?.id;
+	if (!userId) throw error(401, 'Unauthorized');
 
 	try {
 		const input = await request.json();
 		const repo = new ${this.pascalCase(moduleName)}Repository();
-		const entity = await repo.create(input, locals.user.id);
-		return json({ data: entity }, { status: 201 });
+		const entity = await repo.create(input, userId);
+		return json(entity, { status: 201 });
 	} catch (error) {
 		console.error('Error creating entity:', error);
-		return json({ error: 'Failed to create entity' }, { status: 500 });
+		throw error(500, 'Failed to create entity');
 	}
 };
 
 export const PUT: RequestHandler = async ({ locals, request }) => {
-	if (!locals.user) {
-		return json({ error: 'Unauthorized' }, { status: 401 });
-	}
+	const userId = locals.user?.id;
+	if (!userId) throw error(401, 'Unauthorized');
 
 	try {
 		const { id, ...updates } = await request.json();
 		const repo = new ${this.pascalCase(moduleName)}Repository();
-		const entity = await repo.update(id, locals.user.id, updates);
+		const entity = await repo.update(id, userId, updates);
 
 		if (!entity) {
-			return json({ error: 'Entity not found' }, { status: 404 });
+			throw error(404, 'Entity not found');
 		}
 
-		return json({ data: entity });
+		return json(entity);
 	} catch (error) {
 		console.error('Error updating entity:', error);
-		return json({ error: 'Failed to update entity' }, { status: 500 });
+		if (error instanceof Error && 'status' in error && error.status === 404) {
+			throw error;
+		}
+		throw error(500, 'Failed to update entity');
 	}
 };
 
 export const DELETE: RequestHandler = async ({ locals, request }) => {
-	if (!locals.user) {
-		return json({ error: 'Unauthorized' }, { status: 401 });
-	}
+	const userId = locals.user?.id;
+	if (!userId) throw error(401, 'Unauthorized');
 
 	try {
 		const { id } = await request.json();
 		const repo = new ${this.pascalCase(moduleName)}Repository();
-		const deleted = await repo.delete(id, locals.user.id);
+		const deleted = await repo.delete(id, userId);
 
 		if (!deleted) {
-			return json({ error: 'Entity not found' }, { status: 404 });
+			throw error(404, 'Entity not found');
 		}
 
 		return json({ success: true });
 	} catch (error) {
 		console.error('Error deleting entity:', error);
-		return json({ error: 'Failed to delete entity' }, { status: 500 });
+		if (error instanceof Error && 'status' in error && error.status === 404) {
+			throw error;
+		}
+		throw error(500, 'Failed to delete entity');
 	}
 };
 `;
