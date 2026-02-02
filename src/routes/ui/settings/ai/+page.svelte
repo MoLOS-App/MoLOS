@@ -1,3 +1,8 @@
+<svelte:head>
+	<title>AI Configuration - MoLOS Settings</title>
+	<meta name="description" content="Configure your AI assistant settings and providers." />
+</svelte:head>
+
 <script lang="ts">
 	import {
 		Card,

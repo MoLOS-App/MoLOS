@@ -1,3 +1,8 @@
+<svelte:head>
+	<title>Signing Out - MoLOS</title>
+	<meta name="description" content="Signing you out safely..." />
+</svelte:head>
+
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { authClient } from '$lib/auth-client';

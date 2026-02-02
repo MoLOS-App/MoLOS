@@ -1,3 +1,8 @@
+<svelte:head>
+	<title>Search - MoLOS</title>
+	<meta name="description" content="Search across your MoLOS tasks, prompts, and memories." />
+</svelte:head>
+
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { Input } from '$lib/components/ui/input/index.js';

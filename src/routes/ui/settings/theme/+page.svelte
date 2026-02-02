@@ -1,3 +1,8 @@
+<svelte:head>
+	<title>Theme - MoLOS Settings</title>
+	<meta name="description" content="Customize your MoLOS theme and appearance." />
+</svelte:head>
+
 <script lang="ts">
 	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';

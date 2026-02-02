@@ -1,3 +1,8 @@
+<svelte:head>
+	<title>Modules - MoLOS Settings</title>
+	<meta name="description" content="Configure and manage your MoLOS modules." />
+</svelte:head>
+
 <script lang="ts">
 	import { ArrowLeft } from 'lucide-svelte';
 	import { goto } from '$app/navigation';

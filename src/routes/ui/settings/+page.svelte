@@ -1,3 +1,8 @@
+<svelte:head>
+	<title>Settings - MoLOS</title>
+	<meta name="description" content="Personalize your MoLOS experience." />
+</svelte:head>
+
 <script lang="ts">
 	import type { PageData } from './$types';
 	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';

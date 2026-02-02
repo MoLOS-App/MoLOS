@@ -1,3 +1,8 @@
+<svelte:head>
+	<title>Admin Console - MoLOS</title>
+	<meta name="description" content="System management and governance for MoLOS administrators." />
+</svelte:head>
+
 <script lang="ts">
 	import type { PageData } from './$types';
 	import { authClient } from '$lib/auth-client';

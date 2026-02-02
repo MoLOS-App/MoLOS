@@ -1,3 +1,8 @@
+<svelte:head>
+	<title>Profile Settings - MoLOS</title>
+	<meta name="description" content="Manage your profile information and account settings." />
+</svelte:head>
+
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
