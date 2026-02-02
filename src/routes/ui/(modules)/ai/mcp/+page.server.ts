@@ -2,6 +2,7 @@ import type { PageServerLoad } from './$types';
 import { ApiKeyRepository } from '$lib/repositories/ai/mcp';
 import { McpLogRepository } from '$lib/repositories/ai/mcp';
 import { MCPApiKeyStatus } from '$lib/server/db/schema';
+import { getAllModules } from '$lib/config';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.user) {
@@ -44,9 +45,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 	};
 };
 
-function getAvailableExternalModules(): string[] {
-	// Import at runtime to avoid SSR issues
-	const { getAllModules } = require('$lib/config');
+function getAvailableExternalModules() {
 	const modules = getAllModules();
-	return modules.filter((m: any) => m.isExternal).map((m: any) => ({ id: m.id, name: m.name }));
+	return modules.filter((m) => m.isExternal).map((m) => ({ id: m.id, name: m.name }));
 }
