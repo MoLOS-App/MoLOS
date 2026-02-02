@@ -1,8 +1,3 @@
-<svelte:head>
-	<title>Sign In - MoLOS</title>
-	<meta name="description" content="Sign in to your MoLOS account to access your personalized dashboard." />
-</svelte:head>
-
 <script lang="ts">
 	import { authClient } from '$lib/auth-client';
 	import { Button } from '$lib/components/ui/button';
@@ -51,6 +46,14 @@
 		}
 	}
 </script>
+
+<svelte:head>
+	<title>Sign In - MoLOS</title>
+	<meta
+		name="description"
+		content="Sign in to your MoLOS account to access your personalized dashboard."
+	/>
+</svelte:head>
 
 <div
 	class="flex min-h-screen flex-col items-center justify-center bg-background p-6 text-foreground"

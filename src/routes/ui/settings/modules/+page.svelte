@@ -1,8 +1,3 @@
-<svelte:head>
-	<title>Modules - MoLOS Settings</title>
-	<meta name="description" content="Configure and manage your MoLOS modules." />
-</svelte:head>
-
 <script lang="ts">
 	import { ArrowLeft } from 'lucide-svelte';
 	import { goto } from '$app/navigation';
@@ -22,40 +17,71 @@
 	import { toast } from 'svelte-sonner';
 
 	let { data } = $props();
+	// Local state for modules - use $state for reactivity
+	// svelte-ignore state_referenced_locally
+	let localModules = $state([...data.modules]);
 
-	// Local state - use derived to auto-update when data.modules changes
-	let localModules = $derived.by(() => [...data.modules]);
+	// Initialize state from server data
+	// svelte-ignore state_referenced_locally
+	let moduleStates = $state<Record<string, ModuleState>>(
+		(() => {
+			// First pass: collect all states
+			const tempStates = (localModules || []).reduce(
+				(acc, mod) => {
+					const savedMod = (data.savedStates || []).find(
+						(s: any) => s.moduleId === mod.id && s.submoduleId === 'main'
+					);
+					acc[mod.id] = {
+						enabled: savedMod ? savedMod.enabled : true,
+						// Use the menuOrder that's already on the module object (from server)
+						menuOrder: mod.menuOrder ?? savedMod?.menuOrder ?? 0,
+						submodules: (mod.navigation || []).reduce(
+							(subAcc, sub: any) => {
+								const savedSub = (data.savedStates || []).find(
+									(s: any) => s.moduleId === mod.id && s.submoduleId === sub.name
+								);
+								subAcc[sub.name] = savedSub ? savedSub.enabled : !sub.disabled;
+								return subAcc;
+							},
+							{} as Record<string, boolean>
+						)
+					};
+					return acc;
+				},
+				{} as Record<string, ModuleState>
+			);
 
-	// Initialize moduleStates from localModules, and update when data changes
-	let moduleStates = $state<Record<string, ModuleState>>({});
-
-	// Keep moduleStates in sync when data changes
-	$effect(() => {
-		const newStates = localModules.reduce(
-			(acc, mod) => {
-				const savedMod = (data.savedStates || []).find(
-					(s) => s.moduleId === mod.id && s.submoduleId === 'main'
+			// Second pass: re-index built-in modules if they all have the same order
+			// Get all built-in modules and sort them by their current order
+			const builtInMods = (localModules || [])
+				.filter((m: any) => !m.isExternal || m.status === 'active')
+				.sort(
+					(a: any, b: any) =>
+						(tempStates[a.id]?.menuOrder || 0) - (tempStates[b.id]?.menuOrder || 0)
 				);
-				acc[mod.id] = {
-					enabled: savedMod ? savedMod.enabled : true,
-					menuOrder: savedMod?.menuOrder ?? 0,
-					submodules: (mod.navigation || []).reduce(
-						(subAcc, sub) => {
-							const savedSub = (data.savedStates || []).find(
-								(s) => s.moduleId === mod.id && s.submoduleId === sub.name
-							);
-							subAcc[sub.name] = savedSub ? savedSub.enabled : !sub.disabled;
-							return subAcc;
-						},
-						{} as Record<string, boolean>
-					)
-				};
-				return acc;
-			},
-			{} as Record<string, ModuleState>
-		);
-		moduleStates = newStates;
-	});
+
+			if (builtInMods.length > 0) {
+				// Get the order of the first module
+				const firstOrder = tempStates[builtInMods[0].id]?.menuOrder ?? 0;
+
+				// Check if all have the same order
+				const allSameOrder = builtInMods.every(
+					(m: any) => (tempStates[m.id]?.menuOrder ?? 0) === firstOrder
+				);
+
+				if (allSameOrder) {
+					// Re-index to sequential values
+					builtInMods.forEach((m: any, i: number) => {
+						if (tempStates[m.id]) {
+							tempStates[m.id].menuOrder = i;
+						}
+					});
+				}
+			}
+
+			return tempStates;
+		})()
+	);
 
 	// UI state
 	let activeTab = $state<'builtin' | 'external'>('builtin');
@@ -116,19 +142,25 @@
 	function toggleModule(moduleId: string) {
 		if (moduleStates[moduleId]) {
 			moduleStates[moduleId].enabled = !moduleStates[moduleId].enabled;
+		} else {
+			return;
 		}
 	}
 
 	function toggleSubmodule(moduleId: string, subName: string) {
 		if (moduleStates[moduleId]?.submodules) {
 			moduleStates[moduleId].submodules[subName] = !moduleStates[moduleId].submodules[subName];
+		} else {
+			return;
 		}
 	}
 
 	function moveModule(moduleId: string, direction: 'up' | 'down') {
 		const modules = [...builtInModules];
 		const index = modules.findIndex((m) => m.id === moduleId);
-		if (index === -1) return;
+		if (index === -1) {
+			return;
+		}
 
 		const newIndex = direction === 'up' ? index - 1 : index + 1;
 		if (newIndex < 0 || newIndex >= modules.length) return;
@@ -139,14 +171,44 @@
 		const tempOrder = moduleStates[moduleId].menuOrder;
 		moduleStates[moduleId].menuOrder = moduleStates[otherModuleId].menuOrder;
 		moduleStates[otherModuleId].menuOrder = tempOrder;
+	}
 
-		// If they were the same, we need to re-index everything
-		if (moduleStates[moduleId].menuOrder === moduleStates[otherModuleId].menuOrder) {
-			modules.forEach((m, i) => {
-				moduleStates[m.id].menuOrder = i;
+	function reorderModules(sourceId: string, targetId: string) {
+		const modules = [...builtInModules];
+		const sourceIndex = modules.findIndex((m) => m.id === sourceId);
+		const targetIndex = modules.findIndex((m) => m.id === targetId);
+
+		if (sourceIndex === -1 || targetIndex === -1) {
+			return;
+		}
+
+		if (sourceIndex === targetIndex) return;
+
+		// Get the order to insert at
+		const targetOrder = moduleStates[targetId].menuOrder;
+
+		// Move source module to target position
+		// We need to update all modules between source and target
+		const sourceOrder = moduleStates[sourceId].menuOrder;
+
+		if (sourceIndex < targetIndex) {
+			// Moving down: shift modules between source+1 and target down by 1
+			modules.forEach((m) => {
+				const order = moduleStates[m.id].menuOrder;
+				if (order > sourceOrder && order <= targetOrder) {
+					moduleStates[m.id].menuOrder = order - 1;
+				}
 			});
-			// Re-run swap
-			moveModule(moduleId, direction);
+			moduleStates[sourceId].menuOrder = targetOrder;
+		} else {
+			// Moving up: shift modules between target and source-1 up by 1
+			modules.forEach((m) => {
+				const order = moduleStates[m.id].menuOrder;
+				if (order >= targetOrder && order < sourceOrder) {
+					moduleStates[m.id].menuOrder = order + 1;
+				}
+			});
+			moduleStates[sourceId].menuOrder = targetOrder;
 		}
 	}
 
@@ -233,6 +295,11 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Modules - MoLOS Settings</title>
+	<meta name="description" content="Configure and manage your MoLOS modules." />
+</svelte:head>
+
 <Tooltip.Provider>
 	<div class="min-h-screen bg-background pb-20">
 		<div class="mx-auto max-w-4xl space-y-8 p-6">
@@ -297,7 +364,11 @@
 							{#each builtInModules as mod, i (mod.id)}
 								{@const isFirst = i === 0}
 								{@const isLast = i === builtInModules.length - 1}
-								{@const modState = moduleStates[mod.id] ?? { enabled: true, menuOrder: i, submodules: {} }}
+								{@const modState = moduleStates[mod.id] ?? {
+									enabled: true,
+									menuOrder: i,
+									submodules: {}
+								}}
 								<BuiltinModuleCard
 									module={mod}
 									moduleState={modState}
@@ -307,6 +378,7 @@
 									onToggle={toggleModule}
 									onToggleSubmodule={toggleSubmodule}
 									onMove={moveModule}
+									onReorder={reorderModules}
 								/>
 							{/each}
 						</Accordion.Root>
@@ -318,7 +390,11 @@
 						{#if externalModules.length > 0}
 							<div class="grid gap-4">
 								{#each externalModules as mod}
-									{@const modState = moduleStates[mod.id] ?? { enabled: true, menuOrder: 0, submodules: {} }}
+									{@const modState = moduleStates[mod.id] ?? {
+										enabled: true,
+										menuOrder: 0,
+										submodules: {}
+									}}
 									<ExternalModuleCard
 										module={mod}
 										enabled={modState.enabled}

@@ -1,8 +1,3 @@
-<svelte:head>
-	<title>Welcome - MoLOS Setup</title>
-	<meta name="description" content="Welcome to MoLOS! Let's get you set up with your account." />
-</svelte:head>
-
 <script lang="ts">
 	import { authClient } from '$lib/auth-client';
 	import { Button } from '$lib/components/ui/button';
@@ -62,6 +57,11 @@
 		if (step === 1 && name) step = 2;
 	}
 </script>
+
+<svelte:head>
+	<title>Welcome - MoLOS Setup</title>
+	<meta name="description" content="Welcome to MoLOS! Let's get you set up with your account." />
+</svelte:head>
 
 <div
 	class="flex min-h-screen flex-col items-center justify-center bg-background p-6 font-sans text-foreground"

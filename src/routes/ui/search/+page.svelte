@@ -1,8 +1,3 @@
-<svelte:head>
-	<title>Search - MoLOS</title>
-	<meta name="description" content="Search across your MoLOS tasks, prompts, and memories." />
-</svelte:head>
-
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { Input } from '$lib/components/ui/input/index.js';
@@ -92,6 +87,11 @@
 		return new Date(value).toLocaleString();
 	};
 </script>
+
+<svelte:head>
+	<title>Search - MoLOS</title>
+	<meta name="description" content="Search across your MoLOS tasks, prompts, and memories." />
+</svelte:head>
 
 <div class="min-h-[70vh] w-full bg-background">
 	<div class="mx-auto flex w-full max-w-5xl flex-col gap-6 p-6 md:p-10">

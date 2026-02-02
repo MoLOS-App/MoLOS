@@ -24,7 +24,8 @@
 		isLast,
 		onToggle,
 		onToggleSubmodule,
-		onMove
+		onMove,
+		onReorder
 	}: {
 		module: ModuleData;
 		moduleState: ModuleState;
@@ -34,6 +35,7 @@
 		onToggle: (moduleId: string) => void;
 		onToggleSubmodule: (moduleId: string, subName: string) => void;
 		onMove: (moduleId: string, direction: 'up' | 'down') => void;
+		onReorder?: (sourceId: string, targetId: string) => void;
 	} = $props();
 
 	let draggedId = $state<string | null>(null);
@@ -46,6 +48,10 @@
 
 	function handleToggleSubmodule(subName: string) {
 		onToggleSubmodule(module.id, subName);
+	}
+
+	function handleToggleModule() {
+		onToggle(module.id);
 	}
 
 	function handleDragStart(e: DragEvent, id: string) {
@@ -78,12 +84,8 @@
 			dragOverId = null;
 			return;
 		}
-		// Emit event to parent for reordering
-		const event = new CustomEvent('reorder-modules', {
-			detail: { sourceId, targetId },
-			bubbles: true
-		});
-		e.target?.dispatchEvent(event);
+		// Call parent's reorder function
+		onReorder?.(sourceId, targetId);
 		draggedId = null;
 		dragOverId = null;
 	}
@@ -178,20 +180,22 @@
 			</div>
 
 			<div class="flex items-center gap-3">
-				<Tooltip.Root>
-					<Tooltip.Trigger>
-						<div class="flex items-center">
-							<Switch
-								checked={currentEnabled}
-								onchange={() => onToggle(module.id)}
-								class="scale-90"
-							/>
-						</div>
-					</Tooltip.Trigger>
-					<Tooltip.Content side="top" class="text-[10px] font-bold tracking-widest uppercase">
-						{currentEnabled ? 'Deactivate' : 'Activate'}
-					</Tooltip.Content>
-				</Tooltip.Root>
+				<button
+					class="flex items-center"
+					onclick={(e) => {
+						e.stopPropagation();
+						handleToggleModule();
+					}}
+				>
+					<Tooltip.Root>
+						<Tooltip.Trigger>
+							<Switch checked={currentEnabled} class="pointer-events-none scale-90" />
+						</Tooltip.Trigger>
+						<Tooltip.Content side="top" class="text-[10px] font-bold tracking-widest uppercase">
+							{currentEnabled ? 'Deactivate' : 'Activate'}
+						</Tooltip.Content>
+					</Tooltip.Root>
+				</button>
 				<Accordion.Trigger
 					class="rounded-xl p-2 transition-colors hover:bg-background/50 hover:no-underline"
 				></Accordion.Trigger>
@@ -217,13 +221,17 @@
 									<Label class="cursor-pointer text-xs font-bold" for="{module.id}-{sub.name}">
 										{sub.name}
 									</Label>
-									<Switch
+									<button
 										id="{module.id}-{sub.name}"
 										disabled={!currentEnabled}
-										checked={currentSubmodules[sub.name]}
-										onchange={() => handleToggleSubmodule(sub.name)}
-										class="scale-75"
-									/>
+										class="border-none bg-transparent p-0"
+										onclick={() => handleToggleSubmodule(sub.name)}
+									>
+										<Switch
+											checked={currentSubmodules[sub.name]}
+											class="pointer-events-none scale-75"
+										/>
+									</button>
 								</div>
 							{/each}
 						</div>
@@ -240,7 +248,7 @@
 					<div
 						class="text-muted-foreground/40 flex items-center gap-2 text-[9px] font-black tracking-tighter uppercase"
 					>
-						ID: {module.id} • Order: {moduleState.menuOrder ?? 0}
+						ID: {module.id} • Order: {moduleState?.menuOrder ?? 0}
 					</div>
 					<Button
 						variant="outline"

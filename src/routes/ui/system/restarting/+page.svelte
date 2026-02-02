@@ -1,8 +1,3 @@
-<svelte:head>
-	<title>System Restarting - MoLOS</title>
-	<meta name="description" content="MoLOS is restarting. Please wait..." />
-</svelte:head>
-
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { RefreshCw, Loader2, CircleCheck, AlertCircle } from 'lucide-svelte';
@@ -64,6 +59,11 @@
 		}
 	}
 </script>
+
+<svelte:head>
+	<title>System Restarting - MoLOS</title>
+	<meta name="description" content="MoLOS is restarting. Please wait..." />
+</svelte:head>
 
 <div class="flex min-h-screen items-center justify-center bg-background p-4">
 	<Card class="w-full max-w-md border-primary/20 shadow-xl">
