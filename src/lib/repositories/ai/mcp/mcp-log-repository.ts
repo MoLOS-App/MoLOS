@@ -5,12 +5,15 @@
  */
 
 import { eq, and, desc, count, like, sql } from 'drizzle-orm';
-import { db } from '$lib/server/db';
 import { aiMcpLogs, MCPLogStatus } from '$lib/server/db/schema';
 import type { MCPLogEntry, PaginationParams, PaginatedResponse } from '$lib/models/ai/mcp';
+import { BaseRepository } from '../../base-repository';
+import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 
-export class McpLogRepository {
-	constructor(private db = db) {}
+export class McpLogRepository extends BaseRepository {
+	constructor(db?: BetterSQLite3Database<any>) {
+		super(db);
+	}
 
 	/**
 	 * Create a new MCP log entry
