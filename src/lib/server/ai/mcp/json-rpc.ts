@@ -94,7 +94,9 @@ export function isValidJSONRPCRequest(data: unknown): data is JSONRPCRequest {
 /**
  * Check if request is a notification (no id, no response expected)
  */
-export function isNotification(request: JSONRPCRequest): request is JSONRPCNotification {
+export function isNotification(
+	request: JSONRPCRequest | JSONRPCNotification
+): request is JSONRPCNotification {
 	return request.id === undefined;
 }
 

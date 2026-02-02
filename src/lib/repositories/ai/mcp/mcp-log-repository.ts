@@ -4,8 +4,8 @@
  * Handles database operations for MCP request/response logs.
  */
 
-import { eq, and, desc, count, like, sql } from 'drizzle-orm';
-import { aiMcpLogs, MCPLogStatus } from '$lib/server/db/schema';
+import { eq, and, desc, count, sql } from 'drizzle-orm';
+import { aiMcpLogs } from '$lib/server/db/schema';
 import type { MCPLogEntry, PaginationParams, PaginatedResponse } from '$lib/models/ai/mcp';
 import { BaseRepository } from '../../base-repository';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
@@ -25,7 +25,7 @@ export class McpLogRepository extends BaseRepository {
 			.values({
 				id: crypto.randomUUID(),
 				userId: entry.userId,
-				apiKeyId: entry.apiKeyId,
+				apiKeyId: entry.apiKeyId ?? null,
 				sessionId: entry.sessionId,
 				requestId: entry.requestId,
 				method: entry.method,
@@ -36,16 +36,19 @@ export class McpLogRepository extends BaseRepository {
 				result: entry.result ? JSON.stringify(entry.result) : null,
 				errorMessage: entry.errorMessage ?? null,
 				status: entry.status,
-				durationMs: entry.durationMs,
-				createdAt: now.toISOString()
-			})
+				durationMs: entry.durationMs ?? null,
+				createdAt: now
+			} as any)
 			.returning();
+
+		const logParams = log.params as string | null;
+		const logResult = log.result as string | null;
 
 		return {
 			...log,
-			params: log.params ? JSON.parse(log.params) : null,
-			result: log.result ? JSON.parse(log.result) : null
-		};
+			params: logParams ? JSON.parse(logParams) : undefined,
+			result: logResult ? JSON.parse(logResult) : undefined
+		} as MCPLogEntry;
 	}
 
 	/**
@@ -56,11 +59,14 @@ export class McpLogRepository extends BaseRepository {
 
 		if (!log) return null;
 
+		const logParams = log.params as string | null;
+		const logResult = log.result as string | null;
+
 		return {
 			...log,
-			params: log.params ? JSON.parse(log.params) : null,
-			result: log.result ? JSON.parse(log.result) : null
-		};
+			params: logParams ? JSON.parse(logParams) : undefined,
+			result: logResult ? JSON.parse(logResult) : undefined
+		} as MCPLogEntry;
 	}
 
 	/**
@@ -75,11 +81,14 @@ export class McpLogRepository extends BaseRepository {
 
 		if (!log) return null;
 
+		const logParams = log.params as string | null;
+		const logResult = log.result as string | null;
+
 		return {
 			...log,
-			params: log.params ? JSON.parse(log.params) : null,
-			result: log.result ? JSON.parse(log.result) : null
-		};
+			params: logParams ? JSON.parse(logParams) : undefined,
+			result: logResult ? JSON.parse(logResult) : undefined
+		} as MCPLogEntry;
 	}
 
 	/**
@@ -90,7 +99,7 @@ export class McpLogRepository extends BaseRepository {
 		filters: {
 			apiKeyId?: string;
 			method?: string;
-			status?: MCPLogStatus;
+			status?: 'success' | 'error';
 			search?: string;
 			from?: Date;
 			to?: Date;
@@ -123,11 +132,11 @@ export class McpLogRepository extends BaseRepository {
 		}
 
 		if (filters.from) {
-			conditions.push(sql`${aiMcpLogs.createdAt} >= ${filters.from.toISOString()}`);
+			conditions.push(sql`${aiMcpLogs.createdAt} >= ${filters.from.getTime()}`);
 		}
 
 		if (filters.to) {
-			conditions.push(sql`${aiMcpLogs.createdAt} <= ${filters.to.toISOString()}`);
+			conditions.push(sql`${aiMcpLogs.createdAt} <= ${filters.to.getTime()}`);
 		}
 
 		const whereClause = conditions.length === 1 ? conditions[0] : and(...conditions);
@@ -148,11 +157,15 @@ export class McpLogRepository extends BaseRepository {
 			.offset(offset);
 
 		return {
-			items: items.map((item) => ({
-				...item,
-				params: item.params ? JSON.parse(item.params) : null,
-				result: item.result ? JSON.parse(item.result) : null
-			})),
+			items: items.map((item) => {
+				const itemParams = item.params as string | null;
+				const itemResult = item.result as string | null;
+				return {
+					...item,
+					params: itemParams ? JSON.parse(itemParams) : undefined,
+					result: itemResult ? JSON.parse(itemResult) : undefined
+				} as MCPLogEntry;
+			}),
 			total,
 			page,
 			limit,
@@ -180,7 +193,10 @@ export class McpLogRepository extends BaseRepository {
 			.orderBy(desc(aiMcpLogs.createdAt))
 			.limit(limit);
 
-		return items;
+		return items.map((item) => ({
+			...item,
+			durationMs: item.durationMs ?? 0
+		})) as Pick<MCPLogEntry, 'id' | 'method' | 'status' | 'createdAt' | 'durationMs'>[];
 	}
 
 	/**
@@ -224,7 +240,7 @@ export class McpLogRepository extends BaseRepository {
 	async deleteOlderThan(date: Date): Promise<number> {
 		const result = await this.db
 			.delete(aiMcpLogs)
-			.where(sql`${aiMcpLogs.createdAt} < ${date.toISOString()}`)
+			.where(sql`${aiMcpLogs.createdAt} < ${date.getTime()}`)
 			.returning();
 
 		return result.length;

@@ -4,7 +4,7 @@
  * Handles database operations for MCP resources.
  */
 
-import { eq, and, desc, count, like } from 'drizzle-orm';
+import { eq, and, desc, count, sql } from 'drizzle-orm';
 import { aiMcpResources } from '$lib/server/db/schema';
 import type {
 	MCPResource,
@@ -38,15 +38,15 @@ export class McpResourceRepository extends BaseRepository {
 				mimeType: input.mimeType ?? 'application/json',
 				metadata: input.metadata ? JSON.stringify(input.metadata) : null,
 				enabled: input.enabled ?? true,
-				createdAt: now.toISOString(),
-				updatedAt: now.toISOString()
-			})
+				createdAt: now,
+				updatedAt: now
+			} as any)
 			.returning();
 
 		return {
 			...resource,
-			metadata: resource.metadata ? JSON.parse(resource.metadata) : null
-		};
+			metadata: resource.metadata ? JSON.parse(resource.metadata as string) : undefined
+		} as MCPResource;
 	}
 
 	/**
@@ -63,8 +63,8 @@ export class McpResourceRepository extends BaseRepository {
 
 		return {
 			...resource,
-			metadata: resource.metadata ? JSON.parse(resource.metadata) : null
-		};
+			metadata: resource.metadata ? JSON.parse(resource.metadata as string) : undefined
+		} as MCPResource;
 	}
 
 	/**
@@ -81,8 +81,8 @@ export class McpResourceRepository extends BaseRepository {
 
 		return {
 			...resource,
-			metadata: resource.metadata ? JSON.parse(resource.metadata) : null
-		};
+			metadata: resource.metadata ? JSON.parse(resource.metadata as string) : undefined
+		} as MCPResource;
 	}
 
 	/**
@@ -99,8 +99,8 @@ export class McpResourceRepository extends BaseRepository {
 
 		return {
 			...resource,
-			metadata: resource.metadata ? JSON.parse(resource.metadata) : null
-		};
+			metadata: resource.metadata ? JSON.parse(resource.metadata as string) : undefined
+		} as MCPResource;
 	}
 
 	/**
@@ -152,8 +152,8 @@ export class McpResourceRepository extends BaseRepository {
 		return {
 			items: items.map((item) => ({
 				...item,
-				metadata: item.metadata ? JSON.parse(item.metadata) : null
-			})),
+				metadata: item.metadata ? JSON.parse(item.metadata as string) : undefined
+			})) as MCPResource[],
 			total,
 			page,
 			limit,
@@ -190,7 +190,10 @@ export class McpResourceRepository extends BaseRepository {
 			.from(aiMcpResources)
 			.where(whereClause);
 
-		return items;
+		return items.map((item) => ({
+			...item,
+			mimeType: item.mimeType ?? 'application/json'
+		}));
 	}
 
 	/**
@@ -198,7 +201,7 @@ export class McpResourceRepository extends BaseRepository {
 	 */
 	async update(id: string, userId: string, input: UpdateResourceInput): Promise<MCPResource | null> {
 		const updateData: Record<string, unknown> = {
-			updatedAt: new Date().toISOString()
+			updatedAt: new Date()
 		};
 
 		if (input.name !== undefined) updateData.name = input.name;
@@ -212,7 +215,7 @@ export class McpResourceRepository extends BaseRepository {
 
 		const [result] = await this.db
 			.update(aiMcpResources)
-			.set(updateData)
+			.set(updateData as any)
 			.where(and(eq(aiMcpResources.userId, userId), eq(aiMcpResources.id, id)))
 			.returning();
 
@@ -220,8 +223,8 @@ export class McpResourceRepository extends BaseRepository {
 
 		return {
 			...result,
-			metadata: result.metadata ? JSON.parse(result.metadata) : null
-		};
+			metadata: result.metadata ? JSON.parse(result.metadata as string) : undefined
+		} as MCPResource;
 	}
 
 	/**
