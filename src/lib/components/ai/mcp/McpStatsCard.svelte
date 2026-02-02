@@ -6,7 +6,7 @@
 		title,
 		value,
 		icon: Icon,
-		iconColor = 'text-blue-500'
+		iconColor = 'text-primary'
 	}: {
 		title: string;
 		value: string | number;

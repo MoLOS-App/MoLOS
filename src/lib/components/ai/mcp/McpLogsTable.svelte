@@ -181,13 +181,13 @@
 									<td class="px-6 py-4">
 										{#if log.status === 'success'}
 											<div class="flex items-center gap-2">
-												<CheckCircle class="w-4 h-4 text-green-500" />
-												<span class="text-sm text-green-600 dark:text-green-400">Success</span>
+												<CheckCircle class="w-4 h-4 text-success" />
+												<span class="text-sm text-success">Success</span>
 											</div>
 										{:else}
 											<div class="flex items-center gap-2">
-												<XCircle class="w-4 h-4 text-red-500" />
-												<span class="text-sm text-red-600 dark:text-red-400">Error</span>
+												<XCircle class="w-4 h-4 text-error" />
+												<span class="text-sm text-error">Error</span>
 											</div>
 										{/if}
 									</td>

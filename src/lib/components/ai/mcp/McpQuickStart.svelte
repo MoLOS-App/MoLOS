@@ -183,7 +183,7 @@
 					class="gap-2"
 				>
 					{#if copiedAgent === activeAgent.id}
-						<Check class="w-4 h-4 text-green-500" />
+						<Check class="w-4 h-4 text-success" />
 						Copied!
 					{:else}
 						<Copy class="w-4 h-4" />
@@ -197,12 +197,12 @@
 		</div>
 
 		<!-- Transport Info -->
-		<div class="flex items-center gap-2 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-			<span class="text-xs text-blue-600 dark:text-blue-400">
+		<div class="flex items-center gap-2 p-3 bg-primary/10 border border-primary/20 rounded-lg">
+			<span class="text-xs text-primary">
 				<strong>Transport:</strong> {activeAgent.transportType.toUpperCase()}
 			</span>
 			<span class="text-muted-foreground">•</span>
-			<span class="text-xs text-blue-600 dark:text-blue-400">
+			<span class="text-xs text-primary">
 				<strong>URL:</strong> {getFullUrl()}
 			</span>
 		</div>

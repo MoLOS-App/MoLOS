@@ -45,7 +45,7 @@
 		<div class="space-y-2">
 			<p class="text-sm text-muted-foreground">Transport URL</p>
 			<div class="flex items-center gap-2">
-				<code class="flex-1 text-sm font-mono text-blue-600 dark:text-blue-400 bg-muted px-3 py-2 rounded break-all">
+				<code class="flex-1 text-sm font-mono text-primary bg-muted px-3 py-2 rounded break-all">
 					{transportUrl}
 				</code>
 				{#if browser}
@@ -56,7 +56,7 @@
 						title="Copy transport URL"
 					>
 						{#if copied}
-							<Check class="w-4 h-4 text-green-500" />
+							<Check class="w-4 h-4 text-success" />
 						{:else}
 							<Copy class="w-4 h-4" />
 						{/if}
@@ -75,8 +75,8 @@
 
 		<!-- Full URL Info (only in browser) -->
 		{#if browser}
-			<div class="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-				<p class="text-xs text-blue-600 dark:text-blue-400">
+			<div class="p-3 bg-primary/10 border border-primary/20 rounded-lg">
+				<p class="text-xs text-primary">
 					<strong>Full URL:</strong> {getFullUrl()}
 				</p>
 			</div>
