@@ -3,7 +3,7 @@
  * Defines routes, navigation items, and metadata for the AI module
  */
 
-import { Bot, Send } from 'lucide-svelte';
+import { Bot, Send, Server, Key, ScrollText, List, Activity } from 'lucide-svelte';
 import type { ModuleConfig } from '../../types';
 
 export const aiConfig: ModuleConfig = {
@@ -22,6 +22,31 @@ export const aiConfig: ModuleConfig = {
 			name: 'Telegram',
 			icon: Send,
 			href: '/ui/ai/telegram'
+		},
+		{
+			name: 'MCP',
+			icon: Server,
+			href: '/ui/ai/mcp'
+		},
+		{
+			name: 'API Keys',
+			icon: Key,
+			href: '/ui/ai/mcp/keys'
+		},
+		{
+			name: 'Resources',
+			icon: ScrollText,
+			href: '/ui/ai/mcp/resources'
+		},
+		{
+			name: 'Prompts',
+			icon: List,
+			href: '/ui/ai/mcp/prompts'
+		},
+		{
+			name: 'Activity Logs',
+			icon: Activity,
+			href: '/ui/ai/mcp/logs'
 		}
 	]
 };

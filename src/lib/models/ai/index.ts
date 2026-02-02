@@ -184,3 +184,6 @@ export interface TelegramMessage {
 	toolCalls?: Record<string, unknown>[];
 	createdAt: Date;
 }
+
+// Export MCP (Model Context Protocol) types
+export * from './mcp';
