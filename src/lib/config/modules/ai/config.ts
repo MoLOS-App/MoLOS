@@ -27,26 +27,6 @@ export const aiConfig: ModuleConfig = {
 			name: 'MCP',
 			icon: Server,
 			href: '/ui/ai/mcp'
-		},
-		{
-			name: 'API Keys',
-			icon: Key,
-			href: '/ui/ai/mcp/keys'
-		},
-		{
-			name: 'Resources',
-			icon: ScrollText,
-			href: '/ui/ai/mcp/resources'
-		},
-		{
-			name: 'Prompts',
-			icon: List,
-			href: '/ui/ai/mcp/prompts'
-		},
-		{
-			name: 'Activity Logs',
-			icon: Activity,
-			href: '/ui/ai/mcp/logs'
 		}
 	]
 };
