@@ -297,9 +297,10 @@
 							{#each builtInModules as mod, i (mod.id)}
 								{@const isFirst = i === 0}
 								{@const isLast = i === builtInModules.length - 1}
+								{@const modState = moduleStates[mod.id] ?? { enabled: true, menuOrder: i, submodules: {} }}
 								<BuiltinModuleCard
 									module={mod}
-									moduleState={moduleStates[mod.id]}
+									moduleState={modState}
 									index={i}
 									{isFirst}
 									{isLast}
@@ -317,9 +318,10 @@
 						{#if externalModules.length > 0}
 							<div class="grid gap-4">
 								{#each externalModules as mod}
+									{@const modState = moduleStates[mod.id] ?? { enabled: true, menuOrder: 0, submodules: {} }}
 									<ExternalModuleCard
 										module={mod}
-										enabled={moduleStates[mod.id].enabled}
+										enabled={modState.enabled}
 										isLoading={loadingStates[mod.id]}
 										onToggleEnabled={toggleModule}
 										onForcePull={forcePullModule}

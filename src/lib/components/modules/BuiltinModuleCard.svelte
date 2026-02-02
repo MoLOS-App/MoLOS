@@ -40,8 +40,9 @@
 	let dragOverId = $state<string | null>(null);
 
 	// Use the prop values directly - no local state sync needed
-	const currentEnabled = $derived(moduleState.enabled);
-	const currentSubmodules = $derived(moduleState.submodules);
+	// Provide defaults in case moduleState is undefined (SSR edge case)
+	const currentEnabled = $derived(moduleState?.enabled ?? true);
+	const currentSubmodules = $derived(moduleState?.submodules ?? {});
 
 	function handleToggleSubmodule(subName: string) {
 		onToggleSubmodule(module.id, subName);
