@@ -5,7 +5,6 @@
  */
 
 import { eq, and, desc, count, like, sql } from 'drizzle-orm';
-import { db } from '$lib/server/db';
 import { aiMcpPrompts } from '$lib/server/db/schema';
 import type {
 	MCPPrompt,
@@ -15,9 +14,13 @@ import type {
 	PaginatedResponse,
 	PromptArgument
 } from '$lib/models/ai/mcp';
+import { BaseRepository } from '../../base-repository';
+import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 
-export class McpPromptRepository {
-	constructor(private db = db) {}
+export class McpPromptRepository extends BaseRepository {
+	constructor(db?: BetterSQLite3Database<any>) {
+		super(db);
+	}
 
 	/**
 	 * Create a new MCP prompt

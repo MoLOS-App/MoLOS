@@ -5,7 +5,6 @@
  */
 
 import { eq, and, desc, count, like, or } from 'drizzle-orm';
-import { db } from '$lib/server/db';
 import { aiMcpApiKeys, MCPApiKeyStatus } from '$lib/server/db/schema';
 import type {
 	MCPApiKey,
@@ -17,6 +16,8 @@ import type {
 	ApiKeyValidation
 } from '$lib/models/ai/mcp';
 import { createHash, randomBytes } from 'crypto';
+import { BaseRepository } from '../../base-repository';
+import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 
 const SECRET_SALT = process.env.MCP_API_KEY_SALT || 'molos-mcp-default-salt-change-in-production';
 
@@ -52,8 +53,10 @@ function parseApiKey(key: string): { valid: boolean; prefix?: string; suffix?: s
 	return { valid: true, prefix: parts[2], suffix: parts[3] };
 }
 
-export class ApiKeyRepository {
-	constructor(private db = db) {}
+export class ApiKeyRepository extends BaseRepository {
+	constructor(db?: BetterSQLite3Database<any>) {
+		super(db);
+	}
 
 	/**
 	 * Generate a new API key
@@ -265,16 +268,18 @@ export class ApiKeyRepository {
 	 * Update last used timestamp and increment usage count
 	 */
 	async recordUsage(id: string): Promise<void> {
+		// Get current usage count
+		const [current] = await this.db
+			.select({ count: aiMcpApiKeys.usageCount })
+			.from(aiMcpApiKeys)
+			.where(eq(aiMcpApiKeys.id, id));
+
+		// Update with incremented count
 		await this.db
 			.update(aiMcpApiKeys)
 			.set({
 				lastUsedAt: new Date().toISOString(),
-				usageCount: db
-					.select({
-						count: aiMcpApiKeys.usageCount
-					})
-					.from(aiMcpApiKeys)
-					.where(eq(aiMcpApiKeys.id, id))
+				usageCount: (current?.count ?? 0) + 1
 			})
 			.where(eq(aiMcpApiKeys.id, id));
 	}

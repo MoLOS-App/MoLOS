@@ -5,7 +5,6 @@
  */
 
 import { eq, and, desc, count, like } from 'drizzle-orm';
-import { db } from '$lib/server/db';
 import { aiMcpResources } from '$lib/server/db/schema';
 import type {
 	MCPResource,
@@ -14,9 +13,13 @@ import type {
 	ResourceFilters,
 	PaginatedResponse
 } from '$lib/models/ai/mcp';
+import { BaseRepository } from '../../base-repository';
+import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 
-export class McpResourceRepository {
-	constructor(private db = db) {}
+export class McpResourceRepository extends BaseRepository {
+	constructor(db?: BetterSQLite3Database<any>) {
+		super(db);
+	}
 
 	/**
 	 * Create a new MCP resource
