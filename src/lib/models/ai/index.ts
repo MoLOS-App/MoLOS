@@ -151,6 +151,8 @@ export interface TelegramSettings {
 	botToken: string;
 	chatId: string;
 	webhookUrl?: string;
+	connectionMode: 'webhook' | 'polling';
+	pollingInterval: number;
 	modelName: string;
 	systemPrompt?: string;
 	temperature?: number;
