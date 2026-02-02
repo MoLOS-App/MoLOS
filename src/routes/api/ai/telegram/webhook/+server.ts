@@ -105,6 +105,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		const userId = settings.userId;
 
 		console.log(`[Telegram Webhook] Found user ${userId} with enabled=${settings.enabled}`);
+		console.log(`[Telegram Webhook] Bot token from DB: ${settings.botToken ? settings.botToken.slice(0, 10) + '...' : 'MISSING'} (length: ${settings.botToken?.length || 0})`);
 
 		if (!settings.enabled) {
 			console.log('[Telegram Webhook] Telegram is disabled for user:', userId);
@@ -355,11 +356,11 @@ async function handleCallbackQuery(
 }
 
 // Helper function to send message to Telegram
-async function sendTelegramMessage(botToken: string, chatId: string, text: string): Promise<void> {
+async function sendTelegramMessage(botToken: string, chatId: string, text: string): Promise<boolean> {
 	const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
 
 	// Try with Markdown first, fallback to plain text if it fails
-	const trySend = async (withParseMode: boolean): Promise<boolean> => {
+	const trySend = async (withParseMode: boolean): Promise<{ success: boolean; isAuthError: boolean }> => {
 		const body: any = {
 			method: 'sendMessage',
 			chat_id: chatId,
@@ -378,26 +379,41 @@ async function sendTelegramMessage(botToken: string, chatId: string, text: strin
 		});
 
 		if (response.ok) {
-			return true;
+			return { success: true, isAuthError: false };
 		}
 
 		const errorText = await response.text();
+		const isAuthError = response.status === 401 || errorText.includes('Unauthorized');
+
 		console.error(
 			`Failed to send Telegram message${withParseMode ? ' with Markdown' : ''}:`,
 			errorText
 		);
-		return false;
+
+		if (isAuthError) {
+			console.error(
+				'[Telegram] 401 Unauthorized: Bot token is invalid or expired. ' +
+				'Please update the bot token in your Telegram configuration.'
+			);
+		}
+
+		return { success: false, isAuthError };
 	};
 
 	try {
 		// First try with Markdown
-		let success = await trySend(true);
-		// If that fails, try without Markdown (plain text)
-		if (!success) {
-			success = await trySend(false);
+		let result = await trySend(true);
+		if (result.isAuthError) {
+			return false; // Don't retry on auth error
 		}
+		// If that fails, try without Markdown (plain text)
+		if (!result.success) {
+			result = await trySend(false);
+		}
+		return result.success;
 	} catch (error) {
 		console.error('Error sending Telegram message:', error);
+		return false;
 	}
 }
 

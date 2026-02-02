@@ -50,6 +50,20 @@
       "when": 1769963973090,
       "tag": "0006_woozy_thunderbolt_ross",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1769986429220,
+      "tag": "0007_peaceful_venom",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1769987095200,
+      "tag": "0008_fearless_dakota_north",
+      "breakpoints": true
     }
   ]
 }

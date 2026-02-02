@@ -76,17 +76,6 @@ else
 fi
 
 
-log "Checking for rebuild requirements..."
-if [ -f "package.json" ] && { [ "$NODE_ENV" != "production" ] || [ ! -d "build" ] || [ -n "$FORCE_REBUILD" ]; }; then
-  log "Rebuilding application..."
-  if npm run build; then
-    log "Rebuild completed successfully."
-  else
-    error "Rebuild failed."
-    exit 1
-  fi
-fi
-
-# Start
+# Start (supervisor handles builds)
 log "Starting MoLOS server..."
 exec npm run serve

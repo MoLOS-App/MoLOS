@@ -17,6 +17,11 @@ export const AIRole = {
 	TOOL: 'tool'
 } as const;
 
+export const TelegramConnectionMode = {
+	WEBHOOK: 'webhook',
+	POLLING: 'polling'
+} as const;
+
 /**
  * AI Settings - User AI Configuration
  * Stores AI provider settings and preferences for each user
@@ -116,6 +121,10 @@ export const telegramSettings = sqliteTable('telegram_settings', {
 	botToken: text('bot_token').notNull(),
 	chatId: text('chat_id').notNull(),
 	webhookUrl: text('webhook_url'),
+	connectionMode: textEnum('connection_mode', TelegramConnectionMode)
+		.notNull()
+		.default(TelegramConnectionMode.WEBHOOK),
+	pollingInterval: integer('polling_interval').notNull().default(2000),
 	modelName: text('model_name').notNull().default('gpt-4o'),
 	systemPrompt: text('system_prompt'),
 	temperature: real('temperature'),
