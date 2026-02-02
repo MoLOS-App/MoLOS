@@ -450,17 +450,13 @@ export class AiRepository extends BaseRepository {
 		const countResult = await this.db
 			.select({ count: count() })
 			.from(telegramMessages)
-			.where(
-				and(eq(telegramMessages.sessionId, sessionId), eq(telegramMessages.userId, userId))
-			);
+			.where(and(eq(telegramMessages.sessionId, sessionId), eq(telegramMessages.userId, userId)));
 
 		// Get last message for preview
 		const lastMessageResult = await this.db
 			.select()
 			.from(telegramMessages)
-			.where(
-				and(eq(telegramMessages.sessionId, sessionId), eq(telegramMessages.userId, userId))
-			)
+			.where(and(eq(telegramMessages.sessionId, sessionId), eq(telegramMessages.userId, userId)))
 			.orderBy(desc(telegramMessages.createdAt))
 			.limit(1);
 

@@ -58,7 +58,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 							lastUpdateId = update.update_id;
 
 							// Forward to our webhook handler
-							await fetch(`${request.url.origin}/api/ai/telegram/webhook`, {
+							await fetch(`${new URL(request.url).origin}/api/ai/telegram/webhook`, {
 								method: 'POST',
 								headers: { 'Content-Type': 'application/json' },
 								body: JSON.stringify(update)

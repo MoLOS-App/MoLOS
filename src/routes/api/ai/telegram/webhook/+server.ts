@@ -105,7 +105,9 @@ export const POST: RequestHandler = async ({ request }) => {
 		const userId = settings.userId;
 
 		console.log(`[Telegram Webhook] Found user ${userId} with enabled=${settings.enabled}`);
-		console.log(`[Telegram Webhook] Bot token from DB: ${settings.botToken ? settings.botToken.slice(0, 10) + '...' : 'MISSING'} (length: ${settings.botToken?.length || 0})`);
+		console.log(
+			`[Telegram Webhook] Bot token from DB: ${settings.botToken ? settings.botToken.slice(0, 10) + '...' : 'MISSING'} (length: ${settings.botToken?.length || 0})`
+		);
 
 		if (!settings.enabled) {
 			console.log('[Telegram Webhook] Telegram is disabled for user:', userId);
@@ -356,11 +358,17 @@ async function handleCallbackQuery(
 }
 
 // Helper function to send message to Telegram
-async function sendTelegramMessage(botToken: string, chatId: string, text: string): Promise<boolean> {
+async function sendTelegramMessage(
+	botToken: string,
+	chatId: string,
+	text: string
+): Promise<boolean> {
 	const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
 
 	// Try with Markdown first, fallback to plain text if it fails
-	const trySend = async (withParseMode: boolean): Promise<{ success: boolean; isAuthError: boolean }> => {
+	const trySend = async (
+		withParseMode: boolean
+	): Promise<{ success: boolean; isAuthError: boolean }> => {
 		const body: any = {
 			method: 'sendMessage',
 			chat_id: chatId,
@@ -393,7 +401,7 @@ async function sendTelegramMessage(botToken: string, chatId: string, text: strin
 		if (isAuthError) {
 			console.error(
 				'[Telegram] 401 Unauthorized: Bot token is invalid or expired. ' +
-				'Please update the bot token in your Telegram configuration.'
+					'Please update the bot token in your Telegram configuration.'
 			);
 		}
 
