@@ -122,10 +122,9 @@ export async function handleToolsCall(
 export async function handleToolsMethod(
 	context: MCPContext,
 	requestId: number | string,
-	params: unknown
+	params: unknown,
+	action?: string
 ): Promise<ReturnType<typeof createSuccessResponse> | ReturnType<typeof errors.invalidParams> | ReturnType<typeof errors.methodNotFound>> {
-	const { method, action } = parseMethod('tools');
-
 	if (action === 'list') {
 		return handleToolsList(context, requestId);
 	}
