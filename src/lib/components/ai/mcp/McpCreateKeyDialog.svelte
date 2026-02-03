@@ -9,7 +9,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
-	import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '$lib/components/ui/select';
+	import { Select, SelectTrigger, SelectContent, SelectItem } from '$lib/components/ui/select';
 	import { Info } from 'lucide-svelte';
 
 	interface Module {
@@ -59,6 +59,12 @@
 		selectedModule = '__all__';
 		expiresAt = '';
 	}
+
+	function getSelectedModuleName(): string {
+		if (selectedModule === '__all__') return 'All modules';
+		const module = availableModules.find((m) => m.id === selectedModule);
+		return module?.name || 'Select a module';
+	}
 </script>
 
 <Dialog {open} onOpenChange={onOpenChange}>
@@ -93,7 +99,7 @@
 				{#if availableModules.length > 0}
 					<Select bind:value={selectedModule}>
 						<SelectTrigger id="module-select">
-							<SelectValue placeholder="Select a module" />
+							{getSelectedModuleName()}
 						</SelectTrigger>
 						<SelectContent>
 							<SelectItem value="__all__">All modules</SelectItem>
