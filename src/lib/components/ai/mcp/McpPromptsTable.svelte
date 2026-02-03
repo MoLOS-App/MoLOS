@@ -3,6 +3,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Badge } from '$lib/components/ui/badge';
+	import { Select, SelectTrigger, SelectContent, SelectItem } from '$lib/components/ui/select';
 	import { List, Search, Plus, Edit } from 'lucide-svelte';
 	import { Empty, EmptyMedia, EmptyTitle } from '$lib/components/ui/empty';
 
@@ -64,23 +65,37 @@
 					class="w-64 pl-9 h-9"
 				/>
 			</div>
-			<select
-				bind:value={moduleFilter}
-				class="px-3 py-2 text-sm border border-input bg-background text-foreground rounded-lg focus:ring-2 focus:ring-ring"
-			>
-				<option value="">All Modules</option>
-				{#each availableModules as module}
-					<option value={module.id}>{module.name}</option>
-				{/each}
-			</select>
-			<select
-				bind:value={enabledFilter}
-				class="px-3 py-2 text-sm border border-input bg-background text-foreground rounded-lg focus:ring-2 focus:ring-ring"
-			>
-				<option value="">All Status</option>
-				<option value="true">Enabled</option>
-				<option value="false">Disabled</option>
-			</select>
+			<Select bind:value={moduleFilter}>
+				<SelectTrigger class="h-9 w-40">
+					{#if moduleFilter === ''}
+						All Modules
+					{:else}
+						{availableModules.find(m => m.id === moduleFilter)?.name || 'All Modules'}
+					{/if}
+				</SelectTrigger>
+				<SelectContent>
+					<SelectItem value="">All Modules</SelectItem>
+					{#each availableModules as module}
+						<SelectItem value={module.id}>{module.name}</SelectItem>
+					{/each}
+				</SelectContent>
+			</Select>
+			<Select bind:value={enabledFilter}>
+				<SelectTrigger class="h-9 w-32">
+					{#if enabledFilter === ''}
+						All Status
+					{:else if enabledFilter === 'true'}
+						Enabled
+					{:else if enabledFilter === 'false'}
+						Disabled
+					{/if}
+				</SelectTrigger>
+				<SelectContent>
+					<SelectItem value="">All Status</SelectItem>
+					<SelectItem value="true">Enabled</SelectItem>
+					<SelectItem value="false">Disabled</SelectItem>
+				</SelectContent>
+			</Select>
 		</div>
 		{#if onCreatePrompt}
 			<Button onclick={onCreatePrompt} class="gap-2">

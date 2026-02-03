@@ -9,6 +9,11 @@ import type { JSONRPCResponse } from '$lib/models/ai/mcp';
 import { formatSSEMessage } from './json-rpc';
 
 /**
+ * Global flag to indicate if module is being disposed (for HMR)
+ */
+let isDisposing = false;
+
+/**
  * SSE event types
  */
 export type SSEEventType = 'message' | 'endpoint' | 'error' | 'keep-alive';
@@ -86,6 +91,11 @@ export function formatSSEEvent(event: SSEEvent): string {
 }
 
 /**
+ * Track all active timers for cleanup during HMR
+ */
+const activeTimers = new Set<ReturnType<typeof setInterval>>();
+
+/**
  * Create a readable stream that periodically sends keep-alive comments
  */
 export function createKeepAliveStream(intervalMs: number = 15000): ReadableStream<Uint8Array> {
@@ -96,16 +106,40 @@ export function createKeepAliveStream(intervalMs: number = 15000): ReadableStrea
 		start(c) {
 			controller = c;
 			timer = setInterval(() => {
+				if (isDisposing) {
+					// Module is being disposed, stop timer
+					if (timer) {
+						clearInterval(timer);
+						activeTimers.delete(timer);
+					}
+					return;
+				}
+				if (!controller || controller.desiredSize === null) {
+					// Controller is closed
+					if (timer) {
+						clearInterval(timer);
+						activeTimers.delete(timer);
+					}
+					return;
+				}
 				try {
 					controller.enqueue(new TextEncoder().encode(': keep-alive\n\n'));
 				} catch {
-					// Stream already closed
+					// Stream already closed, clean up
+					if (timer) {
+						clearInterval(timer);
+						activeTimers.delete(timer);
+					}
 				}
 			}, intervalMs);
+			if (timer) {
+				activeTimers.add(timer);
+			}
 		},
 		cancel() {
 			if (timer) {
 				clearInterval(timer);
+				activeTimers.delete(timer);
 			}
 		}
 	});
@@ -120,20 +154,38 @@ export function mergeStreams(...streams: ReadableStream<Uint8Array>[]): Readable
 
 	return new ReadableStream({
 		async start(controller) {
+			// Track if controller is already closed
+			let isClosed = false;
+
 			// Read from all streams in parallel
 			for (let i = 0; i < readers.length; i++) {
 				const reader = readers[i];
 				(async () => {
 					try {
 						while (true) {
+							// Check if module is being disposed
+							if (isDisposing) {
+								break;
+							}
 							const { done, value } = await reader.read();
 							if (done) break;
-							controller.enqueue(value);
+							if (!isClosed) {
+								try {
+									controller.enqueue(value);
+								} catch {
+									isClosed = true;
+									break;
+								}
+							}
 						}
 					} finally {
 						closedCount++;
-						if (closedCount === readers.length) {
-							controller.close();
+						if (closedCount === readers.length && !isClosed && !isDisposing) {
+							try {
+								controller.close();
+							} catch {
+								// Controller already closed
+							}
 						}
 					}
 				})();
@@ -179,18 +231,28 @@ export class MCPConnectionSession {
 		return !this.closed;
 	}
 
+	get hasController(): boolean {
+		return this.controller !== null;
+	}
+
 	/**
 	 * Attach a stream controller to this session
 	 */
 	attachController(controller: ReadableStreamDefaultController<Uint8Array>): void {
 		this.controller = controller;
+		console.log('[MCP Session] Controller attached to session:', this.id);
 
 		// Send any queued messages
+		let queuedCount = 0;
 		while (this.responseQueue.length > 0 && this.closed === false) {
 			const response = this.responseQueue.shift();
 			if (response) {
 				this.sendResponse(response);
+				queuedCount++;
 			}
+		}
+		if (queuedCount > 0) {
+			console.log('[MCP Session] Sent', queuedCount, 'queued messages');
 		}
 	}
 
@@ -199,6 +261,7 @@ export class MCPConnectionSession {
 	 */
 	sendResponse(response: JSONRPCResponse): void {
 		if (this.closed) {
+			console.error('[MCP Session] Session closed, cannot send response');
 			return;
 		}
 
@@ -207,12 +270,15 @@ export class MCPConnectionSession {
 		if (this.controller) {
 			try {
 				this.controller.enqueue(new TextEncoder().encode(message));
-			} catch {
+				console.log('[MCP Session] Response enqueued to SSE:', message.substring(0, 100));
+			} catch (e) {
 				// Stream closed
+				console.error('[MCP Session] Error enqueueing response:', e);
 				this.closed = true;
 			}
 		} else {
 			// Queue the message until controller is attached
+			console.log('[MCP Session] Controller not attached, queuing message');
 			this.responseQueue.push(response);
 		}
 	}
@@ -285,4 +351,34 @@ export function getActiveSessions(): MCPConnectionSession[] {
  */
 export function getActiveSessionCount(): number {
 	return activeSessions.size;
+}
+
+/**
+ * HMR cleanup - clear all active timers when module is disposed
+ */
+if (import.meta.hot) {
+	import.meta.hot.dispose(() => {
+		// Signal all streams to stop operations
+		isDisposing = true;
+
+		// Small delay to let async operations notice the flag
+		// Then clean up resources
+		setTimeout(() => {
+			// Clear all keep-alive timers
+			for (const timer of activeTimers) {
+				clearInterval(timer);
+			}
+			activeTimers.clear();
+
+			// Close all active sessions
+			for (const session of activeSessions.values()) {
+				try {
+					session.close('Module reloading');
+				} catch {
+					// Ignore close errors
+				}
+			}
+			activeSessions.clear();
+		}, 0);
+	});
 }
