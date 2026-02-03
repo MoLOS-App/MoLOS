@@ -110,7 +110,8 @@ export function getCoreAiTools(userId: string): ToolDefinition[] {
 		// ==================== MCP Resource Tools ====================
 		{
 			name: 'create_mcp_resource',
-			description: 'Creates a new MCP resource. Resources provide data that AI assistants can access via the MCP protocol.',
+			description:
+				'Creates a new MCP resource. Resources provide data that AI assistants can access via the MCP protocol.',
 			parameters: {
 				type: 'object',
 				properties: {
@@ -129,7 +130,8 @@ export function getCoreAiTools(userId: string): ToolDefinition[] {
 					resourceType: {
 						type: 'string',
 						enum: ['static', 'url'],
-						description: 'The type of resource: static (stored content) or url (fetched from HTTP/HTTPS).'
+						description:
+							'The type of resource: static (stored content) or url (fetched from HTTP/HTTPS).'
 					},
 					url: {
 						type: 'string',
@@ -174,7 +176,8 @@ export function getCoreAiTools(userId: string): ToolDefinition[] {
 		},
 		{
 			name: 'list_mcp_resources',
-			description: 'Lists all MCP resources for the current user, optionally filtered by module or enabled status.',
+			description:
+				'Lists all MCP resources for the current user, optionally filtered by module or enabled status.',
 			parameters: {
 				type: 'object',
 				properties: {
@@ -305,7 +308,8 @@ export function getCoreAiTools(userId: string): ToolDefinition[] {
 				if (params.name !== undefined) input.name = params.name as string;
 				if (params.uri !== undefined) input.uri = params.uri as string;
 				if (params.description !== undefined) input.description = params.description as string;
-				if (params.resourceType !== undefined) input.resourceType = params.resourceType as 'static' | 'url';
+				if (params.resourceType !== undefined)
+					input.resourceType = params.resourceType as 'static' | 'url';
 				if (params.url !== undefined) input.url = params.url as string;
 				if (params.moduleId !== undefined) input.moduleId = params.moduleId as string;
 				if (params.enabled !== undefined) input.enabled = params.enabled as boolean;
@@ -362,7 +366,8 @@ export function getCoreAiTools(userId: string): ToolDefinition[] {
 		// ==================== MCP Prompt Tools ====================
 		{
 			name: 'create_mcp_prompt',
-			description: 'Creates a new MCP prompt template. Prompts define reusable message templates that AI assistants can use.',
+			description:
+				'Creates a new MCP prompt template. Prompts define reusable message templates that AI assistants can use.',
 			parameters: {
 				type: 'object',
 				properties: {
@@ -408,7 +413,8 @@ export function getCoreAiTools(userId: string): ToolDefinition[] {
 					arguments: (params.arguments as PromptArgument[]).map((arg: any) => ({
 						name: arg.name,
 						description: arg.description,
-						required: arg.required ?? false
+						required: arg.required ?? false,
+						type: arg.type ?? 'string'
 					})),
 					moduleId: (params.moduleId as string) ?? null,
 					enabled: (params.enabled as boolean) ?? true
@@ -429,7 +435,8 @@ export function getCoreAiTools(userId: string): ToolDefinition[] {
 		},
 		{
 			name: 'list_mcp_prompts',
-			description: 'Lists all MCP prompts for the current user, optionally filtered by module or enabled status.',
+			description:
+				'Lists all MCP prompts for the current user, optionally filtered by module or enabled status.',
 			parameters: {
 				type: 'object',
 				properties: {
@@ -560,7 +567,8 @@ export function getCoreAiTools(userId: string): ToolDefinition[] {
 					input.arguments = (params.arguments as PromptArgument[]).map((arg: any) => ({
 						name: arg.name,
 						description: arg.description,
-						required: arg.required ?? false
+						required: arg.required ?? false,
+						type: arg.type ?? 'string'
 					}));
 				}
 				if (params.moduleId !== undefined) input.moduleId = params.moduleId as string;

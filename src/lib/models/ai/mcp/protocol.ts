@@ -5,7 +5,12 @@
  * See: https://spec.modelcontextprotocol.io/
  */
 
-import type { MCPProtocolResource, ResourceContent, MCPProtocolPrompt, PromptMessage } from './index';
+import type {
+	MCPProtocolResource,
+	ResourceContent,
+	MCPProtocolPrompt,
+	PromptMessage
+} from './index';
 
 // ============================================================================
 // JSON-RPC 2.0 Base Types

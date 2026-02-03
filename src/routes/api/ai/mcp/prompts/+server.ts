@@ -25,11 +25,12 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 	// Parse query parameters
 	const filters: PromptFilters = {
 		moduleId: url.searchParams.get('moduleId') ?? undefined,
-		enabled: url.searchParams.get('enabled') === 'true'
-			? true
-			: url.searchParams.get('enabled') === 'false'
-				? false
-				: undefined,
+		enabled:
+			url.searchParams.get('enabled') === 'true'
+				? true
+				: url.searchParams.get('enabled') === 'false'
+					? false
+					: undefined,
 		search: url.searchParams.get('search') ?? undefined
 	};
 
@@ -88,7 +89,10 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 			return json({ error: 'Argument name must be less than 100 characters' }, { status: 400 });
 		}
 		if (arg.description && arg.description.length > 500) {
-			return json({ error: 'Argument description must be less than 500 characters' }, { status: 400 });
+			return json(
+				{ error: 'Argument description must be less than 500 characters' },
+				{ status: 400 }
+			);
 		}
 	}
 

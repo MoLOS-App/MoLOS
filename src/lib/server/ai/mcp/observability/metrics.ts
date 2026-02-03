@@ -77,11 +77,7 @@ class MCPMetrics {
 	/**
 	 * Increment a counter metric
 	 */
-	incrementCounter(
-		name: string,
-		value = 1,
-		tags?: Record<string, string>
-	): void {
+	incrementCounter(name: string, value = 1, tags?: Record<string, string>): void {
 		const key = this.makeKey(name, tags);
 		const metric = this.getOrCreateMetric(key, 'counter', tags);
 
@@ -95,11 +91,7 @@ class MCPMetrics {
 	/**
 	 * Record a timing value (histogram)
 	 */
-	recordTiming(
-		name: string,
-		durationMs: number,
-		tags?: Record<string, string>
-	): void {
+	recordTiming(name: string, durationMs: number, tags?: Record<string, string>): void {
 		const key = this.makeKey(name, tags);
 		const metric = this.getOrCreateMetric(key, 'histogram', tags);
 
@@ -120,11 +112,7 @@ class MCPMetrics {
 	/**
 	 * Set a gauge value
 	 */
-	recordGauge(
-		name: string,
-		value: number,
-		tags?: Record<string, string>
-	): void {
+	recordGauge(name: string, value: number, tags?: Record<string, string>): void {
 		const key = this.makeKey(name, tags);
 		const metric = this.getOrCreateMetric(key, 'gauge', tags);
 
@@ -184,20 +172,13 @@ class MCPMetrics {
 			requests: {
 				total: requestMetrics?.value.count ?? 0,
 				errors: errorMetrics?.value.count ?? 0,
-				avgDurationMs: durationMetrics
-					? durationMetrics.value.sum / durationMetrics.value.count
-					: 0
+				avgDurationMs: durationMetrics ? durationMetrics.value.sum / durationMetrics.value.count : 0
 			},
 			tools: {
 				totalCalls: toolCalls?.value.count ?? 0,
 				mostCalled: this.getTopTools(),
-				avgDurationMs: toolDuration
-					? toolDuration.value.sum / toolDuration.value.count
-					: 0,
-				errorRate:
-					toolCalls && toolErrors
-						? toolErrors.value.count / toolCalls.value.count
-						: 0
+				avgDurationMs: toolDuration ? toolDuration.value.sum / toolDuration.value.count : 0,
+				errorRate: toolCalls && toolErrors ? toolErrors.value.count / toolCalls.value.count : 0
 			},
 			resources: {
 				totalReads: resourceReads?.value.count ?? 0,
@@ -211,13 +192,9 @@ class MCPMetrics {
 			},
 			prompts: {
 				totalGets: promptGets?.value.count ?? 0,
-				avgDurationMs: promptDuration
-					? promptDuration.value.sum / promptDuration.value.count
-					: 0,
+				avgDurationMs: promptDuration ? promptDuration.value.sum / promptDuration.value.count : 0,
 				errorRate:
-					promptGets && promptErrors
-						? promptErrors.value.count / promptGets.value.count
-						: 0
+					promptGets && promptErrors ? promptErrors.value.count / promptGets.value.count : 0
 			},
 			cache: {
 				hitRate: totalCacheOps > 0 ? cacheHitValue / totalCacheOps : 0,
@@ -327,6 +304,9 @@ class MCPMetrics {
 export const mcpMetrics = new MCPMetrics();
 
 // Cleanup old metrics every hour
-setInterval(() => {
-	mcpMetrics.cleanup();
-}, 60 * 60 * 1000);
+setInterval(
+	() => {
+		mcpMetrics.cleanup();
+	},
+	60 * 60 * 1000
+);

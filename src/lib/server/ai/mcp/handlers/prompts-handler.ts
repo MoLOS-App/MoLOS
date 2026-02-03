@@ -6,7 +6,7 @@
 
 import { listMcpPrompts, getMcpPrompt } from '../discovery/prompts-discovery';
 import { createSuccessResponse, errors } from '../json-rpc';
-import type { MCPContext } from '$lib/models/ai/mcp';
+import type { MCPContext, JSONRPCResponse } from '$lib/models/ai/mcp';
 import { PromptsGetRequestParamsSchema, validateRequest } from '../validation/schemas';
 import { withErrorHandling, MCP_ERROR_CODES } from './error-handler';
 
@@ -16,16 +16,11 @@ import { withErrorHandling, MCP_ERROR_CODES } from './error-handler';
 export async function handlePromptsList(
 	context: MCPContext,
 	requestId: number | string
-): Promise<ReturnType<typeof createSuccessResponse>> {
-	return withErrorHandling(
-		context,
-		requestId,
-		'prompts/list',
-		async () => {
-			const result = await listMcpPrompts(context);
-			return result;
-		}
-	);
+): Promise<JSONRPCResponse> {
+	return withErrorHandling(context, requestId, 'prompts/list', async () => {
+		const result = await listMcpPrompts(context);
+		return result;
+	});
 }
 
 /**
@@ -35,7 +30,7 @@ export async function handlePromptsGet(
 	context: MCPContext,
 	requestId: number | string,
 	params: unknown
-): Promise<ReturnType<typeof createSuccessResponse> | ReturnType<typeof errors.invalidParams>> {
+): Promise<JSONRPCResponse> {
 	// Validate params first
 	const validation = validateRequest(PromptsGetRequestParamsSchema, params, requestId);
 
@@ -56,6 +51,7 @@ export async function handlePromptsGet(
 			return result;
 		},
 		{
+			method: 'prompts/get',
 			promptName: name,
 			params: args
 		}
@@ -70,7 +66,7 @@ export async function handlePromptsMethod(
 	requestId: number | string,
 	params: unknown,
 	action?: string
-): Promise<ReturnType<typeof createSuccessResponse> | ReturnType<typeof errors.invalidParams> | ReturnType<typeof errors.methodNotFound>> {
+): Promise<JSONRPCResponse> {
 	if (action === 'list') {
 		return handlePromptsList(context, requestId);
 	}

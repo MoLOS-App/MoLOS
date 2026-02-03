@@ -10,7 +10,8 @@
 export interface PromptArgument {
 	name: string;
 	description: string;
-	required?: boolean;
+	required: boolean;
+	type: string;
 }
 
 /**

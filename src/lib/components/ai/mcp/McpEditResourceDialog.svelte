@@ -42,15 +42,18 @@
 		onOpenChange: (open: boolean) => void;
 		availableModules: Module[];
 		resource: Resource | null;
-		onUpdate: (id: string, data: {
-			name: string;
-			description: string;
-			uri: string;
-			moduleId: string | null;
-			resourceType: 'static' | 'url';
-			url: string | null;
-			enabled: boolean;
-		}) => void | Promise<void>;
+		onUpdate: (
+			id: string,
+			data: {
+				name: string;
+				description: string;
+				uri: string;
+				moduleId: string | null;
+				resourceType: 'static' | 'url';
+				url: string | null;
+				enabled: boolean;
+			}
+		) => void | Promise<void>;
 	} = $props();
 
 	let name = $state('');
@@ -60,6 +63,7 @@
 	let url = $state('');
 	let selectedModule = $state<string>('__global__');
 	let enabled = $state(true);
+	let rows = 2;
 
 	// Populate form when resource changes
 	$effect(() => {
@@ -100,17 +104,15 @@
 
 	const isValid = $derived(
 		name.trim() !== '' &&
-			(resourceType === 'static'
-				? uri.trim() !== ''
-				: resourceType === 'url' && url.trim() !== '')
+			(resourceType === 'static' ? uri.trim() !== '' : resourceType === 'url' && url.trim() !== '')
 	);
 </script>
 
-<Dialog {open} onOpenChange={onOpenChange}>
+<Dialog {open} {onOpenChange}>
 	<DialogContent class="sm:max-w-lg">
 		<DialogHeader>
 			<DialogTitle class="flex items-center gap-2">
-				<ScrollText class="w-5 h-5" />
+				<ScrollText class="h-5 w-5" />
 				Edit Resource
 			</DialogTitle>
 		</DialogHeader>
@@ -136,7 +138,7 @@
 					id="resource-description"
 					bind:value={description}
 					placeholder="Describe what this resource provides..."
-					rows="2"
+					{rows}
 				/>
 			</div>
 
@@ -146,20 +148,20 @@
 				<RadioGroup bind:value={resourceType} class="flex gap-4">
 					<div class="flex items-center gap-2">
 						<RadioGroupItem value="static" id="type-static" />
-						<Label for="type-static" class="flex items-center gap-2 cursor-pointer">
-							<FileCode class="w-4 h-4" />
+						<Label for="type-static" class="flex cursor-pointer items-center gap-2">
+							<FileCode class="h-4 w-4" />
 							<span>Static</span>
 						</Label>
 					</div>
 					<div class="flex items-center gap-2">
 						<RadioGroupItem value="url" id="type-url" />
-						<Label for="type-url" class="flex items-center gap-2 cursor-pointer">
-							<Globe class="w-4 h-4" />
+						<Label for="type-url" class="flex cursor-pointer items-center gap-2">
+							<Globe class="h-4 w-4" />
 							<span>URL</span>
 						</Label>
 					</div>
 				</RadioGroup>
-				<p class="text-xs text-muted-foreground">
+				<p class="text-muted-foreground text-xs">
 					{resourceType === 'static'
 						? 'Static resources return predefined content. Use for configuration and static data.'
 						: 'URL resources fetch content from an HTTP/HTTPS URL on demand.'}
@@ -178,7 +180,7 @@
 						placeholder="e.g., config://user/profile"
 						autocomplete="off"
 					/>
-					<p class="text-xs text-muted-foreground">
+					<p class="text-muted-foreground text-xs">
 						The unique URI identifier for this resource (e.g., config://app/settings)
 					</p>
 				</div>
@@ -196,8 +198,9 @@
 						placeholder="https://example.com/data.json"
 						autocomplete="off"
 					/>
-					<p class="text-xs text-muted-foreground">
-						The HTTP/HTTPS URL to fetch content from. The content will be served when the resource is read.
+					<p class="text-muted-foreground text-xs">
+						The HTTP/HTTPS URL to fetch content from. The content will be served when the resource
+						is read.
 					</p>
 				</div>
 			{/if}
@@ -216,7 +219,7 @@
 						{/each}
 					</SelectContent>
 				</Select>
-				<p class="text-xs text-muted-foreground">
+				<p class="text-muted-foreground text-xs">
 					Leave as "Global" to make this resource available to all modules
 				</p>
 			</div>
@@ -225,9 +228,7 @@
 			<div class="flex items-center justify-between">
 				<div class="space-y-0.5">
 					<Label for="resource-enabled">Enabled</Label>
-					<p class="text-xs text-muted-foreground">
-						Resource will be available when checked
-					</p>
+					<p class="text-muted-foreground text-xs">Resource will be available when checked</p>
 				</div>
 				<Checkbox id="resource-enabled" bind:checked={enabled} />
 			</div>
@@ -235,9 +236,7 @@
 
 		<DialogFooter>
 			<Button variant="outline" onclick={() => onOpenChange(false)}>Cancel</Button>
-			<Button onclick={handleSubmit} disabled={!isValid}>
-				Save Changes
-			</Button>
+			<Button onclick={handleSubmit} disabled={!isValid}>Save Changes</Button>
 		</DialogFooter>
 	</DialogContent>
 </Dialog>

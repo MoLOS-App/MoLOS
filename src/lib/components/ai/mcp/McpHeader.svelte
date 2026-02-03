@@ -13,9 +13,9 @@
 	</div>
 	{#if serverOnline}
 		<div
-			class="flex items-center gap-2 px-4 py-2 bg-success/10 text-success rounded-lg border border-success/20"
+			class="bg-success/10 text-success border-success/20 flex items-center gap-2 rounded-lg border px-4 py-2"
 		>
-			<div class="w-2 h-2 bg-success rounded-full animate-pulse"></div>
+			<div class="bg-success h-2 w-2 animate-pulse rounded-full"></div>
 			<span class="text-sm font-medium">Server Online</span>
 		</div>
 	{/if}

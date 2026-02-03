@@ -142,10 +142,7 @@ export class McpLogRepository extends BaseRepository {
 		const whereClause = conditions.length === 1 ? conditions[0] : and(...conditions);
 
 		// Get total count
-		const [{ total }] = await this.db
-			.select({ total: count() })
-			.from(aiMcpLogs)
-			.where(whereClause);
+		const [{ total }] = await this.db.select({ total: count() }).from(aiMcpLogs).where(whereClause);
 
 		// Get items
 		const items = await this.db
@@ -202,7 +199,10 @@ export class McpLogRepository extends BaseRepository {
 	/**
 	 * Get stats for a user
 	 */
-	async getStats(userId: string, apiKeyId?: string): Promise<{
+	async getStats(
+		userId: string,
+		apiKeyId?: string
+	): Promise<{
 		totalRequests: number;
 		successCount: number;
 		errorCount: number;
@@ -250,10 +250,7 @@ export class McpLogRepository extends BaseRepository {
 	 * Delete logs for a specific user
 	 */
 	async deleteByUserId(userId: string): Promise<number> {
-		const result = await this.db
-			.delete(aiMcpLogs)
-			.where(eq(aiMcpLogs.userId, userId))
-			.returning();
+		const result = await this.db.delete(aiMcpLogs).where(eq(aiMcpLogs.userId, userId)).returning();
 
 		return result.length;
 	}

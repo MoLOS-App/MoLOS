@@ -23,7 +23,7 @@
 		status: 'success' | 'error';
 		durationMs: number;
 		errorMessage?: string;
-		apiKeyId: string;
+		apiKeyId: string | null;
 		toolName?: string;
 		resourceName?: string;
 		promptName?: string;
@@ -92,17 +92,15 @@
 <div class="space-y-6">
 	<!-- Header -->
 	<div class="flex flex-wrap items-center gap-4">
-		<div class="relative flex-1 min-w-[200px] max-w-md">
-			<Search class="absolute w-4 h-4 -translate-y-1/2 left-3 top-1/2 text-muted-foreground" />
-			<Input
-				bind:value={searchQuery}
-				placeholder="Search logs..."
-				class="w-full pl-9 h-9"
-			/>
+		<div class="relative max-w-md min-w-[200px] flex-1">
+			<Search class="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+			<Input bind:value={searchQuery} placeholder="Search logs..." class="h-9 w-full pl-9" />
 		</div>
 		<Select bind:value={apiKeyFilter}>
-			<SelectTrigger class="w-40 h-9">
-				{apiKeyFilter ? apiKeyOptions.find(k => k.id === apiKeyFilter)?.name || 'All API Keys' : 'All API Keys'}
+			<SelectTrigger class="h-9 w-40">
+				{apiKeyFilter
+					? apiKeyOptions.find((k) => k.id === apiKeyFilter)?.name || 'All API Keys'
+					: 'All API Keys'}
 			</SelectTrigger>
 			<SelectContent>
 				<SelectItem value="">All API Keys</SelectItem>
@@ -112,7 +110,7 @@
 			</SelectContent>
 		</Select>
 		<Select bind:value={methodFilter}>
-			<SelectTrigger class="w-40 h-9">
+			<SelectTrigger class="h-9 w-40">
 				{methodFilter || 'All Methods'}
 			</SelectTrigger>
 			<SelectContent>
@@ -123,7 +121,7 @@
 			</SelectContent>
 		</Select>
 		<Select bind:value={statusFilter}>
-			<SelectTrigger class="w-40 h-9">
+			<SelectTrigger class="h-9 w-40">
 				{#if statusFilter === ''}
 					All Status
 				{:else if statusFilter === 'success'}
@@ -143,10 +141,10 @@
 				variant="ghost"
 				size="icon"
 				onclick={onShowHelp}
-				class="flex-shrink-0 text-muted-foreground hover:text-foreground"
+				class="text-muted-foreground flex-shrink-0 hover:text-foreground"
 				title="Show help"
 			>
-				<HelpCircle class="w-5 h-5" />
+				<HelpCircle class="h-5 w-5" />
 			</Button>
 		{/if}
 	</div>
@@ -158,7 +156,7 @@
 				<div class="p-12">
 					<Empty>
 						<EmptyMedia>
-							<Activity class="w-16 h-16 text-muted-foreground" />
+							<Activity class="text-muted-foreground h-16 w-16" />
 						</EmptyMedia>
 						<EmptyTitle>No logs found</EmptyTitle>
 					</Empty>
@@ -166,30 +164,30 @@
 			{:else}
 				<div class="overflow-x-auto">
 					<table class="w-full">
-						<thead class="border-b bg-muted/50 border-border">
+						<thead class="border-b border-border bg-muted/50">
 							<tr>
 								<th
-									class="px-6 py-3 text-xs font-bold tracking-wider text-left uppercase text-muted-foreground"
+									class="text-muted-foreground px-6 py-3 text-left text-xs font-bold tracking-wider uppercase"
 								>
 									Time
 								</th>
 								<th
-									class="px-6 py-3 text-xs font-bold tracking-wider text-left uppercase text-muted-foreground"
+									class="text-muted-foreground px-6 py-3 text-left text-xs font-bold tracking-wider uppercase"
 								>
 									Method
 								</th>
 								<th
-									class="px-6 py-3 text-xs font-bold tracking-wider text-left uppercase text-muted-foreground"
+									class="text-muted-foreground px-6 py-3 text-left text-xs font-bold tracking-wider uppercase"
 								>
 									Target
 								</th>
 								<th
-									class="px-6 py-3 text-xs font-bold tracking-wider text-left uppercase text-muted-foreground"
+									class="text-muted-foreground px-6 py-3 text-left text-xs font-bold tracking-wider uppercase"
 								>
 									Status
 								</th>
 								<th
-									class="px-6 py-3 text-xs font-bold tracking-wider text-left uppercase text-muted-foreground"
+									class="text-muted-foreground px-6 py-3 text-left text-xs font-bold tracking-wider uppercase"
 								>
 									Duration
 								</th>
@@ -212,31 +210,31 @@
 										{#if log.toolName}
 											<div class="text-sm font-medium text-foreground">{log.toolName}</div>
 										{:else if log.resourceName}
-											<code class="px-2 py-1 font-mono text-sm rounded text-foreground bg-muted">
+											<code class="rounded bg-muted px-2 py-1 font-mono text-sm text-foreground">
 												{log.resourceName}
 											</code>
 										{:else if log.promptName}
 											<div class="text-sm font-medium text-foreground">{log.promptName}</div>
 										{:else}
-											<span class="text-sm text-muted-foreground">-</span>
+											<span class="text-muted-foreground text-sm">-</span>
 										{/if}
 									</td>
 									<td class="px-6 py-4">
 										{#if log.status === 'success'}
 											<div class="flex items-center gap-2">
-												<CheckCircle class="w-4 h-4 text-success" />
-												<span class="text-sm text-success">Success</span>
+												<CheckCircle class="text-success h-4 w-4" />
+												<span class="text-success text-sm">Success</span>
 											</div>
 										{:else}
 											<div class="flex items-center gap-2">
-												<XCircle class="w-4 h-4 text-error" />
-												<span class="text-sm text-error">Error</span>
+												<XCircle class="text-error h-4 w-4" />
+												<span class="text-error text-sm">Error</span>
 											</div>
 										{/if}
 									</td>
 									<td class="px-6 py-4">
-										<div class="flex items-center gap-1 text-sm text-muted-foreground">
-											<Clock class="w-4 h-4" />
+										<div class="text-muted-foreground flex items-center gap-1 text-sm">
+											<Clock class="h-4 w-4" />
 											<span>{log.durationMs}ms</span>
 										</div>
 									</td>
@@ -248,9 +246,12 @@
 
 				<!-- Pagination -->
 				{#if totalPages > 1}
-					<div class="flex items-center justify-between px-6 py-4 border-t border-border">
-						<div class="text-sm text-muted-foreground">
-							Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredLogs.length)} of {filteredLogs.length} logs
+					<div class="flex items-center justify-between border-t border-border px-6 py-4">
+						<div class="text-muted-foreground text-sm">
+							Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(
+								currentPage * itemsPerPage,
+								filteredLogs.length
+							)} of {filteredLogs.length} logs
 						</div>
 						<div class="flex items-center gap-2">
 							<Button
@@ -260,7 +261,7 @@
 								disabled={currentPage === 1}
 								class="gap-1"
 							>
-								<ChevronLeft class="w-4 h-4" />
+								<ChevronLeft class="h-4 w-4" />
 								Previous
 							</Button>
 							<div class="flex items-center gap-1">
@@ -271,7 +272,7 @@
 											variant={page === currentPage ? 'default' : 'outline'}
 											size="sm"
 											onclick={() => goToPage(page)}
-											class="w-9 h-9"
+											class="h-9 w-9"
 										>
 											{page}
 										</Button>
@@ -288,7 +289,7 @@
 								class="gap-1"
 							>
 								Next
-								<ChevronRight class="w-4 h-4" />
+								<ChevronRight class="h-4 w-4" />
 							</Button>
 						</div>
 					</div>

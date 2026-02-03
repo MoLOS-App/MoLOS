@@ -21,14 +21,14 @@
 	];
 </script>
 
-<div class="border-b border-border overflow-x-auto">
-	<nav class="flex gap-1 min-w-max">
+<div class="overflow-x-auto border-b border-border">
+	<nav class="flex min-w-max gap-1">
 		{#each tabs as tab (tab.id)}
 			{@const Icon = tab.icon}
 			{@const isActive = activeTab === tab.id}
 			<button
 				onclick={() => onTabChange(tab.id)}
-				class="flex items-center gap-2 px-4 py-3 border-b-2 transition-all duration-200 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+				class="focus-visible:ring-ring flex items-center gap-2 border-b-2 px-4 py-3 whitespace-nowrap transition-all duration-200 focus-visible:ring-2 focus-visible:outline-none"
 				class:border-primary={isActive}
 				class:border-transparent={!isActive}
 				class:text-foreground={isActive}
@@ -36,7 +36,7 @@
 				class:hover:bg-accent={!isActive}
 				class:hover:text-foreground={!isActive}
 			>
-				<Icon class="w-4 h-4" />
+				<Icon class="h-4 w-4" />
 				<span class="text-sm font-medium">{tab.label}</span>
 			</button>
 		{/each}

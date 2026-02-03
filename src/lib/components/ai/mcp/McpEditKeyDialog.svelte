@@ -42,11 +42,14 @@
 		onOpenChange: (open: boolean) => void;
 		availableModules: Module[];
 		apiKey: ApiKey | null;
-		onUpdate: (keyId: string, data: {
-			name: string;
-			allowedModules: string[] | null;
-			expiresAt: string | null;
-		}) => void | Promise<void>;
+		onUpdate: (
+			keyId: string,
+			data: {
+				name: string;
+				allowedModules: string[] | null;
+				expiresAt: string | null;
+			}
+		) => void | Promise<void>;
 		onToggleStatus: (keyId: string, newStatus: 'active' | 'disabled') => void | Promise<void>;
 	} = $props();
 
@@ -135,11 +138,11 @@
 	const isValid = $derived(name.trim() !== '');
 </script>
 
-<Dialog {open} onOpenChange={onOpenChange}>
-	<DialogContent class="sm:max-w-md max-h-[90vh] overflow-y-auto">
+<Dialog {open} {onOpenChange}>
+	<DialogContent class="max-h-[90vh] overflow-y-auto sm:max-w-md">
 		<DialogHeader>
 			<DialogTitle class="flex items-center gap-2">
-				<Key class="w-5 h-5" />
+				<Key class="h-5 w-5" />
 				Edit API Key
 			</DialogTitle>
 		</DialogHeader>
@@ -147,13 +150,13 @@
 		{#if apiKey}
 			<form onsubmit={(e) => e.preventDefault()} class="space-y-4">
 				<!-- Status Info -->
-				<div class="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+				<div class="flex items-center justify-between rounded-lg bg-muted/50 p-3">
 					<div class="flex items-center gap-3">
 						<Badge class={getStatusBadge().class}>{getStatusBadge().label}</Badge>
 						<div class="text-sm">
 							<p class="font-medium text-foreground">{apiKey.name}</p>
 							{#if apiKey.expiresAt}
-								<p class="text-xs text-muted-foreground">
+								<p class="text-muted-foreground text-xs">
 									Expires: {new Date(apiKey.expiresAt).toLocaleDateString()}
 								</p>
 							{/if}
@@ -165,25 +168,25 @@
 				<div class="space-y-2">
 					<Label>Key Prefix</Label>
 					<div class="flex items-center gap-2">
-						<code class="flex-1 px-3 py-2 font-mono text-sm rounded text-foreground bg-muted">
+						<code class="flex-1 rounded bg-muted px-3 py-2 font-mono text-sm text-foreground">
 							mcp_live_{apiKey.keyPrefix}_********
 						</code>
 					</div>
-					<p class="text-xs text-muted-foreground">
+					<p class="text-muted-foreground text-xs">
 						This is just the prefix. The full key was only shown at creation.
 					</p>
 				</div>
 
 				<!-- Usage Info -->
 				<div class="grid grid-cols-2 gap-3">
-					<div class="p-3 rounded-lg bg-muted/50">
-						<p class="text-xs text-muted-foreground">Created</p>
+					<div class="rounded-lg bg-muted/50 p-3">
+						<p class="text-muted-foreground text-xs">Created</p>
 						<p class="text-sm font-medium text-foreground">
 							{new Date(apiKey.createdAt).toLocaleDateString()}
 						</p>
 					</div>
-					<div class="p-3 rounded-lg bg-muted/50">
-						<p class="text-xs text-muted-foreground">Last Used</p>
+					<div class="rounded-lg bg-muted/50 p-3">
+						<p class="text-muted-foreground text-xs">Last Used</p>
 						<p class="text-sm font-medium text-foreground">
 							{#if apiKey.lastUsedAt}
 								{new Date(apiKey.lastUsedAt).toLocaleDateString()}
@@ -216,41 +219,41 @@
 							<button
 								type="button"
 								onclick={() => (showModuleList = !showModuleList)}
-								class="flex items-center justify-between w-full px-3 py-2 transition-colors border rounded-lg border-border bg-background hover:bg-accent"
+								class="flex w-full items-center justify-between rounded-lg border border-border bg-background px-3 py-2 transition-colors hover:bg-accent"
 							>
 								<span class="text-sm">{getSelectionSummary()}</span>
 								{#if showModuleList}
-									<ChevronUp class="w-4 h-4 text-muted-foreground" />
+									<ChevronUp class="text-muted-foreground h-4 w-4" />
 								{:else}
-									<ChevronDown class="w-4 h-4 text-muted-foreground" />
+									<ChevronDown class="text-muted-foreground h-4 w-4" />
 								{/if}
 							</button>
 
 							<!-- Module List (Collapsible) -->
 							{#if showModuleList}
-								<div class="p-3 space-y-2 border rounded-lg border-border bg-muted/50">
+								<div class="space-y-2 rounded-lg border border-border bg-muted/50 p-3">
 									<!-- Select All Option -->
-									<div class="flex items-center gap-2 pb-2 border-b border-border">
+									<div class="flex items-center gap-2 border-b border-border pb-2">
 										<Checkbox
 											id="edit-select-all"
 											checked={selectAll}
-											onChange={toggleSelectAll}
+											onCheckedChange={toggleSelectAll}
 										/>
-										<Label for="edit-select-all" class="flex-1 text-sm font-medium cursor-pointer">
+										<Label for="edit-select-all" class="flex-1 cursor-pointer text-sm font-medium">
 											All modules ({availableModules.length})
 										</Label>
 									</div>
 
 									<!-- Individual Modules -->
-									<div class="pt-1 space-y-1">
+									<div class="space-y-1 pt-1">
 										{#each availableModules as module (module.id)}
 											<div class="flex items-center gap-2">
 												<Checkbox
 													id="edit-module-{module.id}"
 													checked={selectedModules.includes(module.id)}
-													onChange={() => toggleModule(module.id)}
+													onCheckedChange={() => toggleModule(module.id)}
 												/>
-												<Label for="edit-module-{module.id}" class="flex-1 text-sm cursor-pointer">
+												<Label for="edit-module-{module.id}" class="flex-1 cursor-pointer text-sm">
 													{module.name}
 												</Label>
 											</div>
@@ -259,7 +262,7 @@
 								</div>
 							{/if}
 						{:else}
-							<div class="p-3 text-sm italic border rounded-md text-muted-foreground">
+							<div class="text-muted-foreground rounded-md border p-3 text-sm italic">
 								No external modules available.
 							</div>
 						{/if}
@@ -268,15 +271,8 @@
 					<!-- Expiration -->
 					<div class="space-y-2">
 						<Label for="edit-key-expires">Expiration Date</Label>
-						<Input
-							id="edit-key-expires"
-							type="date"
-							bind:value={expiresAt}
-							disabled={!canEdit}
-						/>
-						<p class="text-xs text-muted-foreground">
-							Leave empty for a key that never expires
-						</p>
+						<Input id="edit-key-expires" type="date" bind:value={expiresAt} disabled={!canEdit} />
+						<p class="text-muted-foreground text-xs">Leave empty for a key that never expires</p>
 					</div>
 				{/if}
 			</form>
@@ -284,35 +280,21 @@
 			<DialogFooter class="flex-col gap-2 sm:flex-row">
 				{#if apiKey.status !== 'revoked'}
 					{#if apiKey.status === 'active'}
-						<Button
-							variant="outline"
-							onclick={handleToggleStatus}
-							class="w-full sm:w-auto"
-						>
+						<Button variant="outline" onclick={handleToggleStatus} class="w-full sm:w-auto">
 							Disable Key
 						</Button>
 					{:else}
-						<Button
-							variant="outline"
-							onclick={handleToggleStatus}
-							class="w-full sm:w-auto"
-						>
+						<Button variant="outline" onclick={handleToggleStatus} class="w-full sm:w-auto">
 							Enable Key
 						</Button>
 					{/if}
 				{/if}
 				<div class="flex w-full gap-2 sm:w-auto">
-					<Button
-						variant="outline"
-						onclick={() => onOpenChange(false)}
-						class="flex-1"
-					>
+					<Button variant="outline" onclick={() => onOpenChange(false)} class="flex-1">
 						Cancel
 					</Button>
 					{#if canEdit}
-						<Button onclick={handleSubmit} disabled={!isValid} class="flex-1">
-							Save Changes
-						</Button>
+						<Button onclick={handleSubmit} disabled={!isValid} class="flex-1">Save Changes</Button>
 					{/if}
 				</div>
 			</DialogFooter>

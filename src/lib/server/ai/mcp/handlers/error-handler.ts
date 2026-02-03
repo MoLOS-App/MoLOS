@@ -189,10 +189,15 @@ export function createTimeoutError(
 	operation: string,
 	timeout: number
 ): JSONRPCResponse {
-	return createErrorResponse(requestId, MCP_ERROR_CODES.TIMEOUT, `Operation timed out: ${operation}`, {
-		operation,
-		timeout
-	});
+	return createErrorResponse(
+		requestId,
+		MCP_ERROR_CODES.TIMEOUT,
+		`Operation timed out: ${operation}`,
+		{
+			operation,
+			timeout
+		}
+	);
 }
 
 /**

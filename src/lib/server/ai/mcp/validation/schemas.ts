@@ -65,7 +65,7 @@ export const ToolsListRequestParamsSchema = z.object({}).optional().default({});
 /**
  * Tool arguments (free-form object)
  */
-export const ToolArgumentsSchema = z.record(z.unknown());
+export const ToolArgumentsSchema = z.record(z.string(), z.unknown());
 
 /**
  * tools/call request parameters
@@ -87,17 +87,21 @@ export const ResourcesListRequestParamsSchema = z.object({}).optional().default(
 /**
  * URI validation (must be valid URI format)
  */
-const UriSchema = z.string().min(1).max(2000).refine(
-	(value) => {
-		try {
-			new URL(value);
-			return true;
-		} catch {
-			return false;
-		}
-	},
-	{ message: 'Invalid URI format' }
-);
+const UriSchema = z
+	.string()
+	.min(1)
+	.max(2000)
+	.refine(
+		(value) => {
+			try {
+				new URL(value);
+				return true;
+			} catch {
+				return false;
+			}
+		},
+		{ message: 'Invalid URI format' }
+	);
 
 /**
  * resources/read request parameters
@@ -113,7 +117,7 @@ export const ResourcesReadRequestParamsSchema = z.object({
 /**
  * Prompt arguments (free-form object)
  */
-export const PromptArgumentsSchema = z.record(z.unknown());
+export const PromptArgumentsSchema = z.record(z.string(), z.unknown());
 
 /**
  * prompts/list - no parameters required
@@ -166,7 +170,7 @@ export function zodToValidationError(
 			code: -32602, // JSON-RPC invalid_params
 			message: 'Invalid parameters',
 			data: {
-				issues: zodError.errors.map((err) => ({
+				issues: zodError.issues.map((err) => ({
 					path: err.path.map(String),
 					message: err.message
 				}))

@@ -10,7 +10,10 @@
 
 import { error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { extractApiKeyFromRequest, authenticateRequest } from '$lib/server/ai/mcp/middleware/auth-middleware';
+import {
+	extractApiKeyFromRequest,
+	authenticateRequest
+} from '$lib/server/ai/mcp/middleware/auth-middleware';
 import { handleMcpRequest, parseMcpRequest } from '$lib/server/ai/mcp/handlers';
 import { mcpRateLimiters } from '$lib/server/ai/mcp/rate-limit/sliding-window-limiter';
 import { mcpSecurityConfig } from '$lib/server/ai/mcp/config/security';
@@ -37,13 +40,14 @@ function getCorsHeaders(origin: string | null): Record<string, string> {
 			? mcpSecurityConfig.allowedOrigins.find((allowed) => {
 					if (allowed === '*') return true;
 					try {
+						if (!origin) return false;
 						const allowedUrl = new URL(allowed);
 						const originUrl = new URL(origin);
 						return allowedUrl.origin === originUrl.origin;
 					} catch {
 						return false;
 					}
-			  })
+				})
 			: null;
 
 	if (!allowedOrigin) {
@@ -84,13 +88,10 @@ export const POST: RequestHandler = async ({ request }) => {
 	// Validate Content-Type header
 	const contentType = request.headers.get('content-type');
 	if (!contentType || !contentType.includes('application/json')) {
-		return error(
-			415,
-			{
-				code: 'UNSUPPORTED_MEDIA_TYPE',
-				message: 'Content-Type must be application/json'
-			} as any
-		);
+		return error(415, {
+			code: 'UNSUPPORTED_MEDIA_TYPE',
+			message: 'Content-Type must be application/json'
+		} as any);
 	}
 
 	// Extract API key from headers

@@ -73,15 +73,11 @@
 	<div class="flex items-center justify-between">
 		<div class="flex items-center gap-4">
 			<div class="relative">
-				<Search class="absolute w-4 h-4 -translate-y-1/2 left-3 top-1/2 text-muted-foreground" />
-				<Input
-					bind:value={searchQuery}
-					placeholder="Search API keys..."
-					class="w-64 pl-9 h-9"
-				/>
+				<Search class="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+				<Input bind:value={searchQuery} placeholder="Search API keys..." class="h-9 w-64 pl-9" />
 			</div>
 			<Select bind:value={statusFilter}>
-				<SelectTrigger class="w-40 h-9">
+				<SelectTrigger class="h-9 w-40">
 					{#if statusFilter === ''}
 						All Statuses
 					{:else if statusFilter === 'active'}
@@ -103,7 +99,7 @@
 		<div class="flex items-center gap-2">
 			{#if onCreateKey}
 				<Button onclick={onCreateKey} class="gap-2">
-					<Plus class="w-4 h-4" />
+					<Plus class="h-4 w-4" />
 					Create API Key
 				</Button>
 			{/if}
@@ -112,10 +108,10 @@
 					variant="ghost"
 					size="icon"
 					onclick={onShowHelp}
-					class="flex-shrink-0 text-muted-foreground hover:text-foreground"
+					class="text-muted-foreground flex-shrink-0 hover:text-foreground"
 					title="Show help"
 				>
-					<HelpCircle class="w-5 h-5" />
+					<HelpCircle class="h-5 w-5" />
 				</Button>
 			{/if}
 		</div>
@@ -128,7 +124,7 @@
 				<div class="p-12">
 					<Empty>
 						<EmptyMedia>
-							<Key class="w-16 h-16 text-muted-foreground" />
+							<Key class="text-muted-foreground h-16 w-16" />
 						</EmptyMedia>
 						<EmptyTitle>No API keys found</EmptyTitle>
 						<EmptyContent>
@@ -143,35 +139,35 @@
 			{:else}
 				<div class="overflow-x-auto">
 					<table class="w-full">
-						<thead class="border-b bg-muted/50 border-border">
+						<thead class="border-b border-border bg-muted/50">
 							<tr>
 								<th
-									class="px-6 py-4 text-xs font-bold tracking-wider text-left uppercase text-muted-foreground"
+									class="text-muted-foreground px-6 py-4 text-left text-xs font-bold tracking-wider uppercase"
 								>
 									Name
 								</th>
 								<th
-									class="px-6 py-4 text-xs font-bold tracking-wider text-left uppercase text-muted-foreground"
+									class="text-muted-foreground px-6 py-4 text-left text-xs font-bold tracking-wider uppercase"
 								>
 									Key
 								</th>
 								<th
-									class="px-6 py-4 text-xs font-bold tracking-wider text-left uppercase text-muted-foreground"
+									class="text-muted-foreground px-6 py-4 text-left text-xs font-bold tracking-wider uppercase"
 								>
 									Modules
 								</th>
 								<th
-									class="px-6 py-4 text-xs font-bold tracking-wider text-left uppercase text-muted-foreground"
+									class="text-muted-foreground px-6 py-4 text-left text-xs font-bold tracking-wider uppercase"
 								>
 									Status
 								</th>
 								<th
-									class="px-6 py-4 text-xs font-bold tracking-wider text-left uppercase text-muted-foreground"
+									class="text-muted-foreground px-6 py-4 text-left text-xs font-bold tracking-wider uppercase"
 								>
 									Last Used
 								</th>
 								<th
-									class="px-6 py-4 text-xs font-bold tracking-wider text-right uppercase text-muted-foreground"
+									class="text-muted-foreground px-6 py-4 text-right text-xs font-bold tracking-wider uppercase"
 								>
 									Actions
 								</th>
@@ -183,13 +179,15 @@
 									<td class="px-6 py-5">
 										<div class="text-sm font-medium text-foreground">{key.name}</div>
 										{#if key.expiresAt}
-											<div class="text-xs text-muted-foreground">
+											<div class="text-muted-foreground text-xs">
 												Expires: {new Date(key.expiresAt).toLocaleDateString()}
 											</div>
 										{/if}
 									</td>
 									<td class="px-6 py-5">
-										<code class="block px-3 py-2 font-mono text-sm rounded text-foreground bg-muted">
+										<code
+											class="block rounded bg-muted px-3 py-2 font-mono text-sm text-foreground"
+										>
 											mcp_live_{key.keyPrefix}_******
 										</code>
 									</td>
@@ -202,13 +200,13 @@
 													</Badge>
 												{/each}
 												{#if key.allowedModules.length > 2}
-													<span class="text-xs text-muted-foreground">
+													<span class="text-muted-foreground text-xs">
 														+{key.allowedModules.length - 2} more
 													</span>
 												{/if}
 											</div>
 										{:else}
-											<span class="text-sm text-muted-foreground">All modules</span>
+											<span class="text-muted-foreground text-sm">All modules</span>
 										{/if}
 									</td>
 									<td class="px-6 py-5">
@@ -216,7 +214,7 @@
 											{getStatusBadge(key).label}
 										</Badge>
 									</td>
-									<td class="px-6 py-5 text-sm text-muted-foreground">
+									<td class="text-muted-foreground px-6 py-5 text-sm">
 										{#if key.lastUsedAt}
 											{new Date(key.lastUsedAt).toLocaleString()}
 										{:else}
@@ -232,7 +230,7 @@
 													onclick={() => onEditKey(key.id)}
 													title="Edit key"
 												>
-													<Edit class="w-4 h-4" />
+													<Edit class="h-4 w-4" />
 												</Button>
 											{/if}
 											{#if onRevokeKey}
@@ -243,7 +241,7 @@
 													class="text-destructive hover:text-destructive"
 													title="Revoke key"
 												>
-													<Trash2 class="w-4 h-4" />
+													<Trash2 class="h-4 w-4" />
 												</Button>
 											{/if}
 										</div>
@@ -258,14 +256,14 @@
 	</Card>
 
 	<!-- Security Disclaimer -->
-	<div class="flex items-start gap-3 p-4 border rounded-lg bg-muted/50 border-border">
-		<AlertCircle class="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
+	<div class="flex items-start gap-3 rounded-lg border border-border bg-muted/50 p-4">
+		<AlertCircle class="text-warning mt-0.5 h-5 w-5 flex-shrink-0" />
 		<div class="space-y-1 text-sm">
 			<p class="font-medium text-foreground">Important security note:</p>
 			<p class="text-muted-foreground">
-				For security reasons, the database only stores a hash of your API keys, not the full
-				secret. The complete key is only shown once at creation time. Existing keys (created
-				before this session) cannot have their full secret retrieved.
+				For security reasons, the database only stores a hash of your API keys, not the full secret.
+				The complete key is only shown once at creation time. Existing keys (created before this
+				session) cannot have their full secret retrieved.
 			</p>
 			<p class="text-muted-foreground">
 				After a page refresh or reload, only the masked version will be available again.

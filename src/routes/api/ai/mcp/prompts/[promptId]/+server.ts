@@ -72,7 +72,10 @@ export const PUT: RequestHandler = async ({ locals, params, request }) => {
 				return json({ error: 'Argument name must be less than 100 characters' }, { status: 400 });
 			}
 			if (arg.description && arg.description.length > 500) {
-				return json({ error: 'Argument description must be less than 500 characters' }, { status: 400 });
+				return json(
+					{ error: 'Argument description must be less than 500 characters' },
+					{ status: 400 }
+				);
 			}
 		}
 

@@ -73,9 +73,7 @@ export async function getMcpPrompt(context, name, args) {
 
 	return {
 		description: prompt.description,
-		messages: [
-			{ role: 'user', content: { type: 'text', text: rendered } }
-		]
+		messages: [{ role: 'user', content: { type: 'text', text: rendered } }]
 	};
 }
 ```

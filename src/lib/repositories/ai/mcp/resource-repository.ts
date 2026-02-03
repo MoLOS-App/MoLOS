@@ -201,7 +201,11 @@ export class McpResourceRepository extends BaseRepository {
 	/**
 	 * Update a resource
 	 */
-	async update(id: string, userId: string, input: UpdateResourceInput): Promise<MCPResource | null> {
+	async update(
+		id: string,
+		userId: string,
+		input: UpdateResourceInput
+	): Promise<MCPResource | null> {
 		const updateData: Record<string, unknown> = {
 			updatedAt: new Date()
 		};

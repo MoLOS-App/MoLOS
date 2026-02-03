@@ -50,8 +50,7 @@
 				prompt.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
 				prompt.description.toLowerCase().includes(searchQuery.toLowerCase());
 			const matchesModule = !moduleFilter || prompt.moduleId === moduleFilter;
-			const matchesEnabled =
-				enabledFilter === '' || prompt.enabled === (enabledFilter === 'true');
+			const matchesEnabled = enabledFilter === '' || prompt.enabled === (enabledFilter === 'true');
 			return matchesSearch && matchesModule && matchesEnabled;
 		})
 	);
@@ -62,19 +61,15 @@
 	<div class="flex items-center justify-between">
 		<div class="flex items-center gap-4">
 			<div class="relative">
-				<Search class="absolute w-4 h-4 -translate-y-1/2 left-3 top-1/2 text-muted-foreground" />
-				<Input
-					bind:value={searchQuery}
-					placeholder="Search prompts..."
-					class="w-64 pl-9 h-9"
-				/>
+				<Search class="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+				<Input bind:value={searchQuery} placeholder="Search prompts..." class="h-9 w-64 pl-9" />
 			</div>
 			<Select bind:value={moduleFilter}>
-				<SelectTrigger class="w-40 h-9">
+				<SelectTrigger class="h-9 w-40">
 					{#if moduleFilter === ''}
 						All Modules
 					{:else}
-						{availableModules.find(m => m.id === moduleFilter)?.name || 'All Modules'}
+						{availableModules.find((m) => m.id === moduleFilter)?.name || 'All Modules'}
 					{/if}
 				</SelectTrigger>
 				<SelectContent>
@@ -85,7 +80,7 @@
 				</SelectContent>
 			</Select>
 			<Select bind:value={enabledFilter}>
-				<SelectTrigger class="w-32 h-9">
+				<SelectTrigger class="h-9 w-32">
 					{#if enabledFilter === ''}
 						All Status
 					{:else if enabledFilter === 'true'}
@@ -104,7 +99,7 @@
 		<div class="flex items-center gap-2">
 			{#if onCreatePrompt}
 				<Button onclick={onCreatePrompt} class="gap-2">
-					<Plus class="w-4 h-4" />
+					<Plus class="h-4 w-4" />
 					Create Prompt
 				</Button>
 			{/if}
@@ -113,10 +108,10 @@
 					variant="ghost"
 					size="icon"
 					onclick={onShowHelp}
-					class="flex-shrink-0 text-muted-foreground hover:text-foreground"
+					class="text-muted-foreground flex-shrink-0 hover:text-foreground"
 					title="Show help"
 				>
-					<HelpCircle class="w-5 h-5" />
+					<HelpCircle class="h-5 w-5" />
 				</Button>
 			{/if}
 		</div>
@@ -129,7 +124,7 @@
 				<div class="p-12">
 					<Empty>
 						<EmptyMedia>
-							<List class="w-16 h-16 text-muted-foreground" />
+							<List class="text-muted-foreground h-16 w-16" />
 						</EmptyMedia>
 						<EmptyTitle>
 							{#if searchQuery || moduleFilter || enabledFilter}
@@ -150,35 +145,35 @@
 			{:else}
 				<div class="overflow-x-auto">
 					<table class="w-full">
-						<thead class="border-b bg-muted/50 border-border">
+						<thead class="border-b border-border bg-muted/50">
 							<tr>
 								<th
-									class="px-6 py-3 text-xs font-bold tracking-wider text-left uppercase text-muted-foreground"
+									class="text-muted-foreground px-6 py-3 text-left text-xs font-bold tracking-wider uppercase"
 								>
 									Name
 								</th>
 								<th
-									class="px-6 py-3 text-xs font-bold tracking-wider text-left uppercase text-muted-foreground"
+									class="text-muted-foreground px-6 py-3 text-left text-xs font-bold tracking-wider uppercase"
 								>
 									Description
 								</th>
 								<th
-									class="px-6 py-3 text-xs font-bold tracking-wider text-left uppercase text-muted-foreground"
+									class="text-muted-foreground px-6 py-3 text-left text-xs font-bold tracking-wider uppercase"
 								>
 									Arguments
 								</th>
 								<th
-									class="px-6 py-3 text-xs font-bold tracking-wider text-left uppercase text-muted-foreground"
+									class="text-muted-foreground px-6 py-3 text-left text-xs font-bold tracking-wider uppercase"
 								>
 									Module
 								</th>
 								<th
-									class="px-6 py-3 text-xs font-bold tracking-wider text-left uppercase text-muted-foreground"
+									class="text-muted-foreground px-6 py-3 text-left text-xs font-bold tracking-wider uppercase"
 								>
 									Status
 								</th>
 								<th
-									class="px-6 py-3 text-xs font-bold tracking-wider text-right uppercase text-muted-foreground"
+									class="text-muted-foreground px-6 py-3 text-right text-xs font-bold tracking-wider uppercase"
 								>
 									Actions
 								</th>
@@ -191,15 +186,13 @@
 										<div class="text-sm font-medium text-foreground">{prompt.name}</div>
 									</td>
 									<td class="px-6 py-4">
-										<div class="max-w-md text-sm truncate text-muted-foreground">
+										<div class="text-muted-foreground max-w-md truncate text-sm">
 											{prompt.description}
 										</div>
 									</td>
 									<td class="px-6 py-4">
-										<span class="text-sm text-muted-foreground">
-											{prompt.arguments.length} argument{prompt.arguments.length !== 1
-												? 's'
-												: ''}
+										<span class="text-muted-foreground text-sm">
+											{prompt.arguments.length} argument{prompt.arguments.length !== 1 ? 's' : ''}
 										</span>
 									</td>
 									<td class="px-6 py-4">
@@ -208,16 +201,14 @@
 												{prompt.moduleId}
 											</Badge>
 										{:else}
-											<span class="text-sm text-muted-foreground">Global</span>
+											<span class="text-muted-foreground text-sm">Global</span>
 										{/if}
 									</td>
 									<td class="px-6 py-4">
 										{#if prompt.enabled}
-											<Badge class="bg-success/10 text-success">
-												Enabled
-											</Badge>
+											<Badge class="bg-success/10 text-success">Enabled</Badge>
 										{:else}
-											<Badge variant="secondary" class="bg-muted text-muted-foreground">
+											<Badge variant="secondary" class="text-muted-foreground bg-muted">
 												Disabled
 											</Badge>
 										{/if}
@@ -225,12 +216,8 @@
 									<td class="px-6 py-4 text-right">
 										<div class="flex items-center justify-end gap-1">
 											{#if onEditPrompt}
-												<Button
-													variant="ghost"
-													size="sm"
-													onclick={() => onEditPrompt(prompt.id)}
-												>
-													<Edit class="w-4 h-4" />
+												<Button variant="ghost" size="sm" onclick={() => onEditPrompt(prompt.id)}>
+													<Edit class="h-4 w-4" />
 												</Button>
 											{/if}
 											{#if onDeletePrompt}
@@ -241,7 +228,7 @@
 													class="text-destructive hover:text-destructive"
 													title="Delete prompt"
 												>
-													<Trash2 class="w-4 h-4" />
+													<Trash2 class="h-4 w-4" />
 												</Button>
 											{/if}
 										</div>

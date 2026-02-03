@@ -184,9 +184,7 @@ export class LogQueue {
 		}
 
 		if (this.queue.length > 0) {
-			console.warn(
-				`[MCP Log Queue] Shutdown with ${this.queue.length} entries still in queue`
-			);
+			console.warn(`[MCP Log Queue] Shutdown with ${this.queue.length} entries still in queue`);
 		}
 	}
 }

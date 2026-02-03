@@ -118,9 +118,7 @@ export async function getPromptsByModule(
 /**
  * Get prompt count by module (with caching)
  */
-export async function getPromptCountByModule(context: MCPContext): Promise<
-	Record<string, number>
-> {
+export async function getPromptCountByModule(context: MCPContext): Promise<Record<string, number>> {
 	// Try cache first
 	const cached = mcpCache.get<Record<string, number>>(CACHE_KEYS.PROMPT_COUNTS, context);
 	if (cached) {

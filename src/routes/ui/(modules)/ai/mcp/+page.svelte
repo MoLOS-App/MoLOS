@@ -33,7 +33,8 @@
 		McpResourcesTable,
 		McpPromptsTable,
 		McpLogsTable,
-		McpHelpDialog
+		McpHelpDialog,
+		type HelpTabId
 	} from '$lib/components/ai/mcp';
 
 	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
@@ -46,11 +47,49 @@
 
 	let { data }: Props = $props();
 
+	// Helper to format dates
+	function formatDate(date: string | Date): string {
+		return typeof date === 'string' ? date : date.toISOString();
+	}
+
 	// Local reactive state for data
-	let localKeys = $state([...data.keys]);
-	let localResources = $state([...data.resources]);
-	let localPrompts = $state([...data.prompts]);
-	let localLogs = $state([...data.logs]);
+	// svelte-ignore state_referenced_locally
+	let localKeys = $state(
+		[...data.keys].map((k) => ({
+			...k,
+			lastUsedAt: k.lastUsedAt ? formatDate(k.lastUsedAt) : null,
+			expiresAt: k.expiresAt ? formatDate(k.expiresAt) : null,
+			createdAt: formatDate(k.createdAt)
+		}))
+	);
+	// svelte-ignore state_referenced_locally
+	let localResources = $state(
+		[...data.resources].map((r) => ({
+			...r,
+			createdAt: formatDate(r.createdAt),
+			updatedAt: formatDate(r.updatedAt)
+		}))
+	);
+	// svelte-ignore state_referenced_locally
+	let localPrompts = $state(
+		[...data.prompts].map((p) => ({
+			...p,
+			arguments: p.arguments.map((arg) => ({
+				...arg,
+				required: arg.required ?? false,
+				type: arg.type ?? 'string'
+			})),
+			createdAt: formatDate(p.createdAt),
+			updatedAt: formatDate(p.updatedAt)
+		}))
+	);
+	// svelte-ignore state_referenced_locally
+	let localLogs = $state(
+		[...data.logs].map((log) => ({
+			...log,
+			createdAt: formatDate(log.createdAt)
+		}))
+	);
 
 	// Refresh function to fetch latest data from server
 	async function refreshData() {
@@ -84,7 +123,7 @@
 	}
 
 	// Tab state - initialize from URL params to avoid prop reference warning
-	let activeTab = $state($page.url.searchParams.get('tab') || 'dashboard');
+	let activeTab = $state(($page.url.searchParams.get('tab') || 'dashboard') as HelpTabId);
 
 	// Dialog states
 	let showCreateKeyDialog = $state(false);
@@ -184,11 +223,14 @@
 	}
 
 	// API Key handlers
-	async function updateApiKey(keyId: string, formData: {
-		name: string;
-		allowedModules: string[] | null;
-		expiresAt: string | null;
-	}) {
+	async function updateApiKey(
+		keyId: string,
+		formData: {
+			name: string;
+			allowedModules: string[] | null;
+			expiresAt: string | null;
+		}
+	) {
 		const response = await fetch(`/api/ai/mcp/keys/${keyId}`, {
 			method: 'PATCH',
 			headers: { 'Content-Type': 'application/json' },
@@ -255,15 +297,18 @@
 		}
 	}
 
-	async function updateResource(resourceId: string, formData: {
-		name: string;
-		description: string;
-		uri: string;
-		moduleId: string | null;
-		resourceType: 'static' | 'url';
-		url: string | null;
-		enabled: boolean;
-	}) {
+	async function updateResource(
+		resourceId: string,
+		formData: {
+			name: string;
+			description: string;
+			uri: string;
+			moduleId: string | null;
+			resourceType: 'static' | 'url';
+			url: string | null;
+			enabled: boolean;
+		}
+	) {
 		const response = await fetch(`/api/ai/mcp/resources/${resourceId}`, {
 			method: 'PUT',
 			headers: { 'Content-Type': 'application/json' },
@@ -331,18 +376,21 @@
 		}
 	}
 
-	async function updatePrompt(promptId: string, formData: {
-		name: string;
-		description: string;
-		arguments: Array<{
+	async function updatePrompt(
+		promptId: string,
+		formData: {
 			name: string;
 			description: string;
-			required: boolean;
-			type: string;
-		}>;
-		moduleId: string | null;
-		enabled: boolean;
-	}) {
+			arguments: Array<{
+				name: string;
+				description: string;
+				required: boolean;
+				type: string;
+			}>;
+			moduleId: string | null;
+			enabled: boolean;
+		}
+	) {
 		const response = await fetch(`/api/ai/mcp/prompts/${promptId}`, {
 			method: 'PUT',
 			headers: { 'Content-Type': 'application/json' },
@@ -363,11 +411,11 @@
 				id: prompt.id,
 				name: prompt.name,
 				description: prompt.description,
-				arguments: prompt.arguments.map(arg => ({
+				arguments: prompt.arguments.map((arg) => ({
 					name: arg.name,
 					description: arg.description,
-					required: arg.required,
-					type: arg.type
+					required: arg.required ?? false,
+					type: arg.type ?? 'string'
 				})),
 				moduleId: prompt.moduleId,
 				enabled: prompt.enabled
@@ -398,7 +446,7 @@
 </svelte:head>
 
 <div class="min-h-screen bg-background">
-	<div class="p-4 mx-auto space-y-8 max-w-7xl md:p-6 lg:p-8">
+	<div class="mx-auto max-w-7xl space-y-8 p-4 md:p-6 lg:p-8">
 		<!-- Header -->
 		<div class="space-y-1">
 			<McpHeader serverOnline={true} />
@@ -415,16 +463,16 @@
 				<div class="flex items-start justify-between">
 					<div>
 						<h2 class="text-2xl font-semibold tracking-tight">Dashboard</h2>
-						<p class="mt-1 text-sm text-muted-foreground">Monitor your MCP server at a glance</p>
+						<p class="text-muted-foreground mt-1 text-sm">Monitor your MCP server at a glance</p>
 					</div>
 					<Button
 						variant="ghost"
 						size="icon"
 						onclick={() => (showHelpDialog = true)}
-						class="flex-shrink-0 text-muted-foreground hover:text-foreground"
+						class="text-muted-foreground flex-shrink-0 hover:text-foreground"
 						title="Show help"
 					>
-						<HelpCircle class="w-5 h-5" />
+						<HelpCircle class="h-5 w-5" />
 					</Button>
 				</div>
 
@@ -463,7 +511,6 @@
 
 				<!-- Main Content Grid -->
 				<div class="flex flex-col xl:grid-cols-6">
-					
 					<!-- <div class="flex flex-row justify-between w-full pb-6">
 						<McpConnectionInfo />
 
@@ -476,7 +523,6 @@
 					</div>
 				</div>
 			</div>
-
 		{:else if activeTab === 'keys'}
 			<!-- API Keys Tab -->
 			<McpApiKeyTable
@@ -491,7 +537,6 @@
 				onRevokeKey={revokeKey}
 				onShowHelp={() => (showHelpDialog = true)}
 			/>
-
 		{:else if activeTab === 'resources'}
 			<!-- Resources Tab -->
 			<McpResourcesTable
@@ -505,7 +550,6 @@
 				onDeleteResource={deleteResource}
 				onShowHelp={() => (showHelpDialog = true)}
 			/>
-
 		{:else if activeTab === 'prompts'}
 			<!-- Prompts Tab -->
 			<McpPromptsTable
@@ -519,7 +563,6 @@
 				onDeletePrompt={deletePrompt}
 				onShowHelp={() => (showHelpDialog = true)}
 			/>
-
 		{:else if activeTab === 'logs'}
 			<!-- Activity Logs Tab -->
 			<McpLogsTable
@@ -533,7 +576,7 @@
 
 <!-- Create API Key Dialog -->
 <McpCreateKeyDialog
-	bind:open={showCreateKeyDialog}
+	open={showCreateKeyDialog}
 	onOpenChange={(open) => (showCreateKeyDialog = open)}
 	availableModules={data.availableModules}
 	onCreate={createApiKey}
@@ -541,7 +584,7 @@
 
 <!-- Edit API Key Dialog -->
 <McpEditKeyDialog
-	bind:open={showEditKeyDialog}
+	open={showEditKeyDialog}
 	onOpenChange={(open) => (showEditKeyDialog = open)}
 	availableModules={data.availableModules}
 	apiKey={editingKey}
@@ -551,7 +594,7 @@
 
 <!-- Key Secret Display Dialog -->
 <McpKeySecretDialog
-	bind:open={showKeySecret}
+	open={showKeySecret}
 	onOpenChange={(open) => (showKeySecret = open)}
 	keySecret={createdKeySecret}
 	onClose={closeKeySecret}
@@ -559,7 +602,7 @@
 
 <!-- Create Resource Dialog -->
 <McpCreateResourceDialog
-	bind:open={showCreateResourceDialog}
+	open={showCreateResourceDialog}
 	onOpenChange={(open) => (showCreateResourceDialog = open)}
 	availableModules={data.availableModules}
 	onCreate={createResource}
@@ -567,7 +610,7 @@
 
 <!-- Edit Resource Dialog -->
 <McpEditResourceDialog
-	bind:open={showEditResourceDialog}
+	open={showEditResourceDialog}
 	onOpenChange={(open) => (showEditResourceDialog = open)}
 	availableModules={data.availableModules}
 	resource={editingResource}
@@ -576,7 +619,7 @@
 
 <!-- Create Prompt Dialog -->
 <McpCreatePromptDialog
-	bind:open={showCreatePromptDialog}
+	open={showCreatePromptDialog}
 	onOpenChange={(open) => (showCreatePromptDialog = open)}
 	availableModules={data.availableModules}
 	onCreate={createPrompt}
@@ -584,7 +627,7 @@
 
 <!-- Edit Prompt Dialog -->
 <McpEditPromptDialog
-	bind:open={showEditPromptDialog}
+	open={showEditPromptDialog}
 	onOpenChange={(open) => (showEditPromptDialog = open)}
 	availableModules={data.availableModules}
 	prompt={editingPrompt}
@@ -593,7 +636,7 @@
 
 <!-- Help Dialog -->
 <McpHelpDialog
-	bind:open={showHelpDialog}
+	open={showHelpDialog}
 	onOpenChange={(open) => (showHelpDialog = open)}
 	tab={activeTab}
 />

@@ -72,9 +72,7 @@ export async function getToolModules(context: MCPContext): Promise<string[]> {
 /**
  * Get tool count by module (with caching)
  */
-export async function getToolCountByModule(context: MCPContext): Promise<
-	Record<string, number>
-> {
+export async function getToolCountByModule(context: MCPContext): Promise<Record<string, number>> {
 	// Try cache first
 	const cached = mcpCache.get<Record<string, number>>(CACHE_KEYS.TOOL_COUNTS, context);
 	if (cached) {

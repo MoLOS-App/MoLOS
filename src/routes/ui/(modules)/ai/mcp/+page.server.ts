@@ -41,22 +41,24 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 
 	// Resources filters
 	const resourceId = url.searchParams.get('resourceId') ?? undefined;
-	const resourceEnabled = url.searchParams.get('resourceEnabled') === 'true'
-		? true
-		: url.searchParams.get('resourceEnabled') === 'false'
-			? false
-			: undefined;
+	const resourceEnabled =
+		url.searchParams.get('resourceEnabled') === 'true'
+			? true
+			: url.searchParams.get('resourceEnabled') === 'false'
+				? false
+				: undefined;
 	const resourceSearch = url.searchParams.get('resourceSearch') ?? undefined;
 	const resourcePage = parseInt(url.searchParams.get('resourcePage') ?? '1');
 	const resourceLimit = parseInt(url.searchParams.get('resourceLimit') ?? '50');
 
 	// Prompts filters
 	const promptId = url.searchParams.get('promptId') ?? undefined;
-	const promptEnabled = url.searchParams.get('promptEnabled') === 'true'
-		? true
-		: url.searchParams.get('promptEnabled') === 'false'
-			? false
-			: undefined;
+	const promptEnabled =
+		url.searchParams.get('promptEnabled') === 'true'
+			? true
+			: url.searchParams.get('promptEnabled') === 'false'
+				? false
+				: undefined;
 	const promptSearch = url.searchParams.get('promptSearch') ?? undefined;
 	const promptPage = parseInt(url.searchParams.get('promptPage') ?? '1');
 	const promptLimit = parseInt(url.searchParams.get('promptLimit') ?? '50');
@@ -64,21 +66,47 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	// Logs filters
 	const logApiKey = url.searchParams.get('logApiKey') ?? undefined;
 	const logMethod = url.searchParams.get('logMethod') ?? undefined;
-	const logStatus = (url.searchParams.get('logStatus') as MCPLogStatus | undefined) ?? undefined;
+	const logStatus =
+		(url.searchParams.get('logStatus') as
+			| (typeof MCPLogStatus)[keyof typeof MCPLogStatus]
+			| undefined) ?? undefined;
 	const logSearch = url.searchParams.get('logSearch') ?? undefined;
 	const logPage = parseInt(url.searchParams.get('logPage') ?? '1');
 	const logLimit = parseInt(url.searchParams.get('logLimit') ?? '50');
 
 	// Fetch all data
-	const apiKeys = await apiKeyRepo.listByUserId(locals.user.id, { status: keyStatus, search: keySearch }, { page: keyPage, limit: keyLimit });
-	const resources = await resourceRepo.listByUserId(locals.user.id, { moduleId: resourceId, enabled: resourceEnabled, search: resourceSearch }, { page: resourcePage, limit: resourceLimit });
-	const prompts = await promptRepo.listByUserId(locals.user.id, { moduleId: promptId, enabled: promptEnabled, search: promptSearch }, { page: promptPage, limit: promptLimit });
-	const logs = await logRepo.listByUserId(locals.user.id, { apiKeyId: logApiKey, method: logMethod, status: logStatus, search: logSearch }, { page: logPage, limit: logLimit });
+	const apiKeys = await apiKeyRepo.listByUserId(
+		locals.user.id,
+		{ status: keyStatus, search: keySearch },
+		{ page: keyPage, limit: keyLimit }
+	);
+	const resources = await resourceRepo.listByUserId(
+		locals.user.id,
+		{ moduleId: resourceId, enabled: resourceEnabled, search: resourceSearch },
+		{ page: resourcePage, limit: resourceLimit }
+	);
+	const prompts = await promptRepo.listByUserId(
+		locals.user.id,
+		{ moduleId: promptId, enabled: promptEnabled, search: promptSearch },
+		{ page: promptPage, limit: promptLimit }
+	);
+	const logs = await logRepo.listByUserId(
+		locals.user.id,
+		{ apiKeyId: logApiKey, method: logMethod, status: logStatus, search: logSearch },
+		{ page: logPage, limit: logLimit }
+	);
 
 	// Stats
-	const activeKeys = apiKeys.total > 0
-		? (await apiKeyRepo.listByUserId(locals.user.id, { status: MCPApiKeyStatus.ACTIVE }, { limit: 1 })).total
-		: 0;
+	const activeKeys =
+		apiKeys.total > 0
+			? (
+					await apiKeyRepo.listByUserId(
+						locals.user.id,
+						{ status: MCPApiKeyStatus.ACTIVE },
+						{ limit: 1 }
+					)
+				).total
+			: 0;
 	const stats = await logRepo.getStats(locals.user.id);
 
 	// Get available modules
@@ -95,9 +123,8 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 			activeKeys,
 			totalKeys: apiKeys.total,
 			totalRequests: stats.totalRequests,
-			successRate: stats.totalRequests > 0
-				? Math.round((stats.successCount / stats.totalRequests) * 100)
-				: 0,
+			successRate:
+				stats.totalRequests > 0 ? Math.round((stats.successCount / stats.totalRequests) * 100) : 0,
 			avgDuration: Math.round(stats.avgDuration),
 			errorCount: stats.errorCount,
 			successCount: stats.successCount

@@ -43,10 +43,7 @@ export function isResourceAllowed(moduleId: string, allowedModules: string[]): b
 /**
  * Check if a prompt is allowed based on module scope
  */
-export function isPromptAllowed(
-	promptModuleId: string | null,
-	allowedModules: string[]
-): boolean {
+export function isPromptAllowed(promptModuleId: string | null, allowedModules: string[]): boolean {
 	// If no modules are specified, allow all prompts
 	if (allowedModules.length === 0) {
 		return true;
@@ -63,10 +60,7 @@ export function isPromptAllowed(
 /**
  * Validate scope for tool access
  */
-export function validateToolScope(
-	context: MCPContext,
-	toolName: string
-): ScopeValidation {
+export function validateToolScope(context: MCPContext, toolName: string): ScopeValidation {
 	if (!isToolAllowed(toolName, context.allowedModules)) {
 		const moduleId = extractModuleIdFromToolName(toolName);
 		return {
@@ -81,10 +75,7 @@ export function validateToolScope(
 /**
  * Validate scope for resource access
  */
-export function validateResourceScope(
-	context: MCPContext,
-	moduleId: string
-): ScopeValidation {
+export function validateResourceScope(context: MCPContext, moduleId: string): ScopeValidation {
 	if (!isResourceAllowed(moduleId, context.allowedModules)) {
 		return {
 			allowed: false,
@@ -168,9 +159,7 @@ export function withToolScope(
 /**
  * Middleware: Validate scope for resource access
  */
-export function withResourceScope(
-	handler: (context: MCPContext, uri: string) => Promise<unknown>
-) {
+export function withResourceScope(handler: (context: MCPContext, uri: string) => Promise<unknown>) {
 	return async (context: MCPContext, uri: string) => {
 		// Extract module ID from URI (format: mcp://molos/{moduleId}/...)
 		const match = uri.match(/mcp:\/\/molos\/([^\/]+)/);

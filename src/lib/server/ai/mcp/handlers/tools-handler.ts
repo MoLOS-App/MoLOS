@@ -8,7 +8,7 @@ import { AiToolbox } from '../../toolbox';
 import { formatToolResult } from '../mcp-utils';
 import { createSuccessResponse, errors } from '../json-rpc';
 import { listMcpTools } from '../discovery/tools-discovery';
-import type { MCPContext, ToolsCallRequest } from '$lib/models/ai/mcp';
+import type { MCPContext, ToolsCallRequest, JSONRPCResponse } from '$lib/models/ai/mcp';
 import { ToolsCallRequestParamsSchema, validateRequest } from '../validation/schemas';
 import { withErrorHandling, createToolExecutionError, MCP_ERROR_CODES } from './error-handler';
 import { withToolTimeout, TimeoutError } from '../timeout/timeout-handler';
@@ -19,16 +19,11 @@ import { withToolTimeout, TimeoutError } from '../timeout/timeout-handler';
 export async function handleToolsList(
 	context: MCPContext,
 	requestId: number | string
-): Promise<ReturnType<typeof createSuccessResponse>> {
-	return withErrorHandling(
-		context,
-		requestId,
-		'tools/list',
-		async () => {
-			const result = await listMcpTools(context);
-			return result;
-		}
-	);
+): Promise<JSONRPCResponse> {
+	return withErrorHandling(context, requestId, 'tools/list', async () => {
+		const result = await listMcpTools(context);
+		return result;
+	});
 }
 
 /**
@@ -38,7 +33,7 @@ export async function handleToolsCall(
 	context: MCPContext,
 	requestId: number | string,
 	params: unknown
-): Promise<ReturnType<typeof createSuccessResponse> | ReturnType<typeof errors.invalidParams>> {
+): Promise<JSONRPCResponse> {
 	// Validate params first (outside of error handling wrapper)
 	const validation = validateRequest(ToolsCallRequestParamsSchema, params, requestId);
 
@@ -88,6 +83,7 @@ export async function handleToolsCall(
 			}
 		},
 		{
+			method: 'tools/call',
 			toolName: name,
 			params: args
 		}
@@ -102,7 +98,11 @@ export async function handleToolsMethod(
 	requestId: number | string,
 	params: unknown,
 	action?: string
-): Promise<ReturnType<typeof createSuccessResponse> | ReturnType<typeof errors.invalidParams> | ReturnType<typeof errors.methodNotFound>> {
+): Promise<
+	| ReturnType<typeof createSuccessResponse>
+	| ReturnType<typeof errors.invalidParams>
+	| ReturnType<typeof errors.methodNotFound>
+> {
 	if (action === 'list') {
 		return handleToolsList(context, requestId);
 	}
