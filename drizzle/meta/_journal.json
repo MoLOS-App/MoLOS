@@ -64,6 +64,20 @@
       "when": 1769987095200,
       "tag": "0008_fearless_dakota_north",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1770073079152,
+      "tag": "0009_minor_rocket_raccoon",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1770156629227,
+      "tag": "0010_messy_gambit",
+      "breakpoints": true
     }
   ]
 }

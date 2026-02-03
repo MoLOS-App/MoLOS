@@ -180,3 +180,133 @@ export const telegramMessages = sqliteTable('telegram_messages', {
 		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
 		.notNull()
 });
+
+// ============================================================================
+// MCP (Model Context Protocol) Tables
+// ============================================================================
+
+export const MCPApiKeyStatus = {
+	ACTIVE: 'active',
+	DISABLED: 'disabled',
+	REVOKED: 'revoked'
+} as const;
+
+export const MCPLogStatus = {
+	SUCCESS: 'success',
+	ERROR: 'error'
+} as const;
+
+export const MCPResourceType = {
+	STATIC: 'static',
+	URL: 'url'
+} as const;
+
+/**
+ * MCP API Keys - Scoped API keys for MCP access
+ * Stores API keys with module-level access control
+ */
+export const aiMcpApiKeys = sqliteTable('ai_mcp_api_keys', {
+	id: text('id').primaryKey(),
+	userId: text('user_id')
+		.notNull()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	name: text('name').notNull(),
+	keyPrefix: text('key_prefix').notNull(),
+	keyHash: text('key_hash').notNull(),
+	status: textEnum('status', MCPApiKeyStatus).notNull().default(MCPApiKeyStatus.ACTIVE),
+	// Scoping - which modules this key can access
+	allowedModules: text('allowed_modules', { mode: 'json' })
+		.notNull()
+		.default('[]')
+		.$type<string[]>(),
+	// Optional expiration
+	expiresAt: integer('expires_at', { mode: 'timestamp_ms' }),
+	// Last used tracking
+	lastUsedAt: integer('last_used_at', { mode: 'timestamp_ms' }),
+	usageCount: integer('usage_count').notNull().default(0),
+	// Audit
+	createdAt: integer('created_at', { mode: 'timestamp_ms' })
+		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		.notNull(),
+	updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+		.$onUpdate(() => new Date())
+		.notNull()
+});
+
+/**
+ * MCP Logs - Request/Response logging with API key tracking
+ * Stores history of MCP requests for debugging and audit trails
+ */
+export const aiMcpLogs = sqliteTable('ai_mcp_logs', {
+	id: text('id').primaryKey(),
+	userId: text('user_id')
+		.notNull()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	apiKeyId: text('api_key_id').references(() => aiMcpApiKeys.id),
+	sessionId: text('session_id').notNull(),
+	requestId: text('request_id').notNull(),
+	method: text('method').notNull(),
+	toolName: text('tool_name'),
+	resourceName: text('resource_name'),
+	promptName: text('prompt_name'),
+	params: text('params', { mode: 'json' }),
+	result: text('result'),
+	errorMessage: text('error_message'),
+	status: textEnum('status', MCPLogStatus).notNull(),
+	durationMs: integer('duration_ms'),
+	createdAt: integer('created_at', { mode: 'timestamp_ms' })
+		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		.notNull()
+});
+
+/**
+ * MCP Resources - User-defined resources for MCP access
+ * Stores resources that can be accessed via MCP protocol
+ */
+export const aiMcpResources = sqliteTable('ai_mcp_resources', {
+	id: text('id').primaryKey(),
+	userId: text('user_id')
+		.notNull()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	name: text('name').notNull(),
+	uri: text('uri').notNull(),
+	moduleId: text('module_id'),
+	description: text('description').notNull(),
+	resourceType: textEnum('resource_type', MCPResourceType)
+		.notNull()
+		.default(MCPResourceType.STATIC),
+	url: text('url'), // For URL-based resources
+	mimeType: text('mime_type').default('application/json'),
+	metadata: text('metadata', { mode: 'json' }),
+	enabled: integer('enabled', { mode: 'boolean' }).notNull().default(true),
+	createdAt: integer('created_at', { mode: 'timestamp_ms' })
+		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		.notNull(),
+	updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+		.$onUpdate(() => new Date())
+		.notNull()
+});
+
+/**
+ * MCP Prompts - User-defined prompt templates for MCP
+ * Stores prompt templates that can be accessed via MCP protocol
+ */
+export const aiMcpPrompts = sqliteTable('ai_mcp_prompts', {
+	id: text('id').primaryKey(),
+	userId: text('user_id')
+		.notNull()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	name: text('name').notNull(),
+	description: text('description').notNull(),
+	arguments: text('arguments', { mode: 'json' })
+		.notNull()
+		.$type<Array<{ name: string; description: string; required?: boolean }>>(),
+	moduleId: text('module_id'),
+	enabled: integer('enabled', { mode: 'boolean' }).notNull().default(true),
+	createdAt: integer('created_at', { mode: 'timestamp_ms' })
+		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		.notNull(),
+	updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+		.$onUpdate(() => new Date())
+		.notNull()
+});
