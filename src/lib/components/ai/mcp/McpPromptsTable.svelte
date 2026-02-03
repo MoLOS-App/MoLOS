@@ -114,7 +114,20 @@
 						<EmptyMedia>
 							<List class="w-16 h-16 text-muted-foreground" />
 						</EmptyMedia>
-						<EmptyTitle>No prompts found</EmptyTitle>
+						<EmptyTitle>
+							{#if searchQuery || moduleFilter || enabledFilter}
+								No prompts found
+							{:else}
+								No prompts yet
+							{/if}
+						</EmptyTitle>
+						<EmptyContent>
+							{#if onCreatePrompt && !searchQuery && !moduleFilter && !enabledFilter}
+								<Button variant="link" onclick={onCreatePrompt} class="mt-2">
+									Create your first prompt
+								</Button>
+							{/if}
+						</EmptyContent>
 					</Empty>
 				</div>
 			{:else}
