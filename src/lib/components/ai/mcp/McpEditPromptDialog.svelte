@@ -46,13 +46,16 @@
 		onOpenChange: (open: boolean) => void;
 		availableModules: Module[];
 		prompt: Prompt | null;
-		onUpdate: (id: string, data: {
-			name: string;
-			description: string;
-			arguments: PromptArgument[];
-			moduleId: string | null;
-			enabled: boolean;
-		}) => void | Promise<void>;
+		onUpdate: (
+			id: string,
+			data: {
+				name: string;
+				description: string;
+				arguments: PromptArgument[];
+				moduleId: string | null;
+				enabled: boolean;
+			}
+		) => void | Promise<void>;
 	} = $props();
 
 	let name = $state('');
@@ -60,6 +63,7 @@
 	let selectedModule = $state<string>('__global__');
 	let enabled = $state(true);
 	let promptArguments = $state<PromptArgument[]>([]);
+	let rows = 2;
 
 	const argumentTypes = ['string', 'number', 'boolean', 'object', 'array'];
 
@@ -70,9 +74,10 @@
 			description = prompt.description;
 			selectedModule = prompt.moduleId ?? '__global__';
 			enabled = prompt.enabled;
-			promptArguments = prompt.arguments.length > 0
-				? [...prompt.arguments]
-				: [{ name: '', description: '', required: false, type: 'string' }];
+			promptArguments =
+				prompt.arguments.length > 0
+					? [...prompt.arguments]
+					: [{ name: '', description: '', required: false, type: 'string' }];
 		}
 	});
 
@@ -94,7 +99,10 @@
 	}
 
 	function addArgument() {
-		promptArguments = [...promptArguments, { name: '', description: '', required: false, type: 'string' }];
+		promptArguments = [
+			...promptArguments,
+			{ name: '', description: '', required: false, type: 'string' }
+		];
 	}
 
 	function removeArgument(index: number) {
@@ -104,7 +112,9 @@
 	}
 
 	function updateArgument(index: number, field: keyof PromptArgument, value: string | boolean) {
-		promptArguments = promptArguments.map((arg, i) => (i === index ? { ...arg, [field]: value } : arg));
+		promptArguments = promptArguments.map((arg, i) =>
+			i === index ? { ...arg, [field]: value } : arg
+		);
 	}
 
 	function getSelectedModuleName(): string {
@@ -116,11 +126,11 @@
 	const isValid = $derived(name.trim() !== '');
 </script>
 
-<Dialog {open} onOpenChange={onOpenChange}>
-	<DialogContent class="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+<Dialog {open} {onOpenChange}>
+	<DialogContent class="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
 		<DialogHeader>
 			<DialogTitle class="flex items-center gap-2">
-				<List class="w-5 h-5" />
+				<List class="h-5 w-5" />
 				Edit Prompt
 			</DialogTitle>
 		</DialogHeader>
@@ -146,7 +156,7 @@
 					id="prompt-description"
 					bind:value={description}
 					placeholder="Describe what this prompt does..."
-					rows="2"
+					{rows}
 				/>
 			</div>
 
@@ -164,7 +174,7 @@
 						{/each}
 					</SelectContent>
 				</Select>
-				<p class="text-xs text-muted-foreground">
+				<p class="text-muted-foreground text-xs">
 					Leave as "Global" to make this prompt available to all modules
 				</p>
 			</div>
@@ -174,14 +184,14 @@
 				<div class="flex items-center justify-between">
 					<Label>Arguments</Label>
 					<Button type="button" variant="outline" size="sm" onclick={addArgument} class="gap-1">
-						<Plus class="w-3 h-3" />
+						<Plus class="h-3 w-3" />
 						Add Argument
 					</Button>
 				</div>
 
 				<div class="space-y-3">
 					{#each promptArguments as arg, index (index)}
-						<div class="p-4 border border-border rounded-lg space-y-3">
+						<div class="space-y-3 rounded-lg border border-border p-4">
 							<div class="flex items-start justify-between gap-4">
 								<div class="flex-1 space-y-3">
 									<div class="grid grid-cols-2 gap-3">
@@ -198,7 +208,7 @@
 											<Label for="arg-type-{index}">Type</Label>
 											<Select
 												bind:value={arg.type}
-												onChange={(v) => updateArgument(index, 'type', v)}
+												onValueChange={(v: string) => updateArgument(index, 'type', v)}
 											>
 												<SelectTrigger id="arg-type-{index}">
 													{arg.type}
@@ -227,20 +237,18 @@
 										variant="ghost"
 										size="sm"
 										onclick={() => removeArgument(index)}
-										class="text-destructive hover:text-destructive flex-shrink-0"
+										class="flex-shrink-0 text-destructive hover:text-destructive"
 									>
-										<Trash2 class="w-4 h-4" />
+										<Trash2 class="h-4 w-4" />
 									</Button>
 								{/if}
 							</div>
 							<div class="flex items-center gap-2">
 								<Checkbox
 									bind:checked={arg.required}
-									onChange={(v) => updateArgument(index, 'required', v)}
+									onCheckedChange={(v) => updateArgument(index, 'required', v)}
 								/>
-								<Label for="arg-required-{index}" class="text-sm cursor-pointer">
-									Required
-								</Label>
+								<Label for="arg-required-{index}" class="cursor-pointer text-sm">Required</Label>
 							</div>
 						</div>
 					{/each}
@@ -251,9 +259,7 @@
 			<div class="flex items-center justify-between">
 				<div class="space-y-0.5">
 					<Label for="prompt-enabled">Enabled</Label>
-					<p class="text-xs text-muted-foreground">
-						Prompt will be available when checked
-					</p>
+					<p class="text-muted-foreground text-xs">Prompt will be available when checked</p>
 				</div>
 				<Checkbox id="prompt-enabled" bind:checked={enabled} />
 			</div>
@@ -261,9 +267,7 @@
 
 		<DialogFooter>
 			<Button variant="outline" onclick={() => onOpenChange(false)}>Cancel</Button>
-			<Button onclick={handleSubmit} disabled={!isValid}>
-				Save Changes
-			</Button>
+			<Button onclick={handleSubmit} disabled={!isValid}>Save Changes</Button>
 		</DialogFooter>
 	</DialogContent>
 </Dialog>

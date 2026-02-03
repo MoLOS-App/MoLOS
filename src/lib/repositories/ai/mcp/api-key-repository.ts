@@ -24,20 +24,28 @@ import { mcpSecurityConfig } from '$lib/server/ai/mcp/config/security';
  * Generate a cryptographically random string
  */
 function generateRandomString(length: number): string {
-	return randomBytes(Math.ceil(length / 2)).toString('hex').slice(0, length);
+	return randomBytes(Math.ceil(length / 2))
+		.toString('hex')
+		.slice(0, length);
 }
 
 /**
  * Hash an API key
  */
 function hashApiKey(key: string): string {
-	return createHash('sha256').update(key + mcpSecurityConfig.apiKeySalt).digest('hex');
+	return createHash('sha256')
+		.update(key + mcpSecurityConfig.apiKeySalt)
+		.digest('hex');
 }
 
 /**
  * Format API key with prefix
  */
-function formatApiKey(prefix: string, suffix: string, environment: 'live' | 'test' = 'live'): string {
+function formatApiKey(
+	prefix: string,
+	suffix: string,
+	environment: 'live' | 'test' = 'live'
+): string {
 	return `mcp_${environment}_${prefix}_${suffix}`;
 }
 
@@ -119,7 +127,10 @@ export class ApiKeyRepository extends BaseRepository {
 	/**
 	 * Create a new API key
 	 */
-	async create(userId: string, input: CreateApiKeyInput): Promise<{ apiKey: MCPApiKey; fullKey: string }> {
+	async create(
+		userId: string,
+		input: CreateApiKeyInput
+	): Promise<{ apiKey: MCPApiKey; fullKey: string }> {
 		const generated = this.generateApiKey();
 
 		const now = new Date();
@@ -155,7 +166,11 @@ export class ApiKeyRepository extends BaseRepository {
 	 * Get API key by ID
 	 */
 	async getById(id: string): Promise<MCPApiKey | null> {
-		const result = await this.db.select().from(aiMcpApiKeys).where(eq(aiMcpApiKeys.id, id)).limit(1);
+		const result = await this.db
+			.select()
+			.from(aiMcpApiKeys)
+			.where(eq(aiMcpApiKeys.id, id))
+			.limit(1);
 
 		if (!result[0]) return null;
 

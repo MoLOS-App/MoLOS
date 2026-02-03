@@ -22,17 +22,17 @@
 
 <!-- Modern stats card with Google Material Design 3 style -->
 <Card
-	class="group overflow-hidden border-0 bg-card shadow-sm hover:shadow-md transition-all duration-300"
+	class="group overflow-hidden border-0 bg-card shadow-sm transition-all duration-300 hover:shadow-md"
 >
 	<CardContent class="p-6">
 		<div class="flex items-start justify-between">
-			<div class="flex-1 min-w-0">
-				<p class="text-sm font-medium text-muted-foreground mb-1">{title}</p>
+			<div class="min-w-0 flex-1">
+				<p class="text-muted-foreground mb-1 text-sm font-medium">{title}</p>
 				<p class="text-3xl font-semibold tracking-tight text-foreground">{value}</p>
 				{#if trend}
 					<p
 						class={cn(
-							'text-xs font-medium mt-2 flex items-center gap-1',
+							'mt-2 flex items-center gap-1 text-xs font-medium',
 							trendUp ? 'text-success' : 'text-destructive'
 						)}
 					>
@@ -42,12 +42,12 @@
 			</div>
 			<div
 				class={cn(
-					'flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center',
-					'bg-primary/10 group-hover:bg-primary/20 transition-colors duration-300',
+					'flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl',
+					'bg-primary/10 transition-colors duration-300 group-hover:bg-primary/20',
 					iconColor
 				)}
 			>
-				<Icon class="w-6 h-6" />
+				<Icon class="h-6 w-6" />
 			</div>
 		</div>
 	</CardContent>

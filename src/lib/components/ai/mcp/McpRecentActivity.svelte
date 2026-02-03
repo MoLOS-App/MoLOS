@@ -14,10 +14,7 @@
 		promptName?: string;
 	}
 
-	let {
-		logs = [],
-		onViewAll
-	}: { logs: LogEntry[]; onViewAll?: () => void } = $props();
+	let { logs = [], onViewAll }: { logs: LogEntry[]; onViewAll?: () => void } = $props();
 
 	function getTargetName(log: LogEntry): string {
 		return log.toolName || log.resourceName || log.promptName || '-';
@@ -27,42 +24,47 @@
 {#if logs && logs.length > 0}
 	<Card class="border-0 bg-card shadow-sm">
 		<CardContent class="p-6">
-			<div class="flex items-center justify-between mb-4">
+			<div class="mb-4 flex items-center justify-between">
 				<div class="flex items-center gap-3">
-					<div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-						<Clock class="w-4 h-4 text-primary" />
+					<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+						<Clock class="h-4 w-4 text-primary" />
 					</div>
 					<div>
-						<h3 class="font-semibold text-foreground text-sm">Recent Activity</h3>
-						<p class="text-xs text-muted-foreground">Latest MCP requests</p>
+						<h3 class="text-sm font-semibold text-foreground">Recent Activity</h3>
+						<p class="text-muted-foreground text-xs">Latest MCP requests</p>
 					</div>
 				</div>
 				{#if onViewAll}
 					<Button variant="ghost" size="sm" onclick={onViewAll} class="gap-1 text-xs">
 						View all
-						<ArrowRight class="w-3 h-3" />
+						<ArrowRight class="h-3 w-3" />
 					</Button>
 				{/if}
 			</div>
 
 			<div class="space-y-2">
 				{#each logs.slice(0, 5) as log}
-					<div class="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors group">
+					<div
+						class="group flex items-center gap-3 rounded-lg bg-muted/30 p-3 transition-colors hover:bg-muted/50"
+					>
 						{#if log.status === 'success'}
-							<CheckCircle class="w-4 h-4 text-success flex-shrink-0" />
+							<CheckCircle class="text-success h-4 w-4 flex-shrink-0" />
 						{:else}
-							<XCircle class="w-4 h-4 text-error flex-shrink-0" />
+							<XCircle class="text-error h-4 w-4 flex-shrink-0" />
 						{/if}
 
-						<div class="flex-1 min-w-0">
-							<p class="text-sm font-medium text-foreground truncate">{log.method}</p>
-							<p class="text-xs text-muted-foreground truncate">{getTargetName(log)}</p>
+						<div class="min-w-0 flex-1">
+							<p class="truncate text-sm font-medium text-foreground">{log.method}</p>
+							<p class="text-muted-foreground truncate text-xs">{getTargetName(log)}</p>
 						</div>
 
 						<div class="flex-shrink-0 text-right">
-							<p class="text-xs text-muted-foreground">{log.durationMs}ms</p>
-							<p class="text-[10px] text-muted-foreground">
-								{new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+							<p class="text-muted-foreground text-xs">{log.durationMs}ms</p>
+							<p class="text-muted-foreground text-[10px]">
+								{new Date(log.createdAt).toLocaleTimeString([], {
+									hour: '2-digit',
+									minute: '2-digit'
+								})}
 							</p>
 						</div>
 					</div>

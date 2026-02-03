@@ -6,7 +6,7 @@
 
 import { listMcpResources, readMcpResource } from '../discovery/resources-discovery';
 import { createSuccessResponse, errors } from '../json-rpc';
-import type { MCPContext } from '$lib/models/ai/mcp';
+import type { MCPContext, JSONRPCResponse } from '$lib/models/ai/mcp';
 import { ResourcesReadRequestParamsSchema, validateRequest } from '../validation/schemas';
 import { withErrorHandling, MCP_ERROR_CODES } from './error-handler';
 import { withResourceTimeout, TimeoutError } from '../timeout/timeout-handler';
@@ -17,16 +17,11 @@ import { withResourceTimeout, TimeoutError } from '../timeout/timeout-handler';
 export async function handleResourcesList(
 	context: MCPContext,
 	requestId: number | string
-): Promise<ReturnType<typeof createSuccessResponse>> {
-	return withErrorHandling(
-		context,
-		requestId,
-		'resources/list',
-		async () => {
-			const result = await listMcpResources(context);
-			return result;
-		}
-	);
+): Promise<JSONRPCResponse> {
+	return withErrorHandling(context, requestId, 'resources/list', async () => {
+		const result = await listMcpResources(context);
+		return result;
+	});
 }
 
 /**
@@ -36,7 +31,7 @@ export async function handleResourcesRead(
 	context: MCPContext,
 	requestId: number | string,
 	params: unknown
-): Promise<ReturnType<typeof createSuccessResponse> | ReturnType<typeof errors.invalidParams>> {
+): Promise<JSONRPCResponse> {
 	// Validate params first
 	const validation = validateRequest(ResourcesReadRequestParamsSchema, params, requestId);
 
@@ -54,10 +49,7 @@ export async function handleResourcesRead(
 		async () => {
 			// Read the resource with timeout
 			try {
-				const result = await withResourceTimeout(
-					readMcpResource(context, uri),
-					uri
-				);
+				const result = await withResourceTimeout(readMcpResource(context, uri), uri);
 				return result;
 			} catch (error) {
 				// Handle timeout errors specifically
@@ -71,6 +63,7 @@ export async function handleResourcesRead(
 			}
 		},
 		{
+			method: 'resources/read',
 			resourceName: uri,
 			params
 		}
@@ -85,7 +78,7 @@ export async function handleResourcesMethod(
 	requestId: number | string,
 	params: unknown,
 	action?: string
-): Promise<ReturnType<typeof createSuccessResponse> | ReturnType<typeof errors.invalidParams> | ReturnType<typeof errors.methodNotFound>> {
+): Promise<JSONRPCResponse> {
 	if (action === 'list') {
 		return handleResourcesList(context, requestId);
 	}

@@ -91,7 +91,7 @@
 	}
 </script>
 
-<Dialog {open} onOpenChange={onOpenChange}>
+<Dialog {open} {onOpenChange}>
 	<DialogContent class="sm:max-w-md">
 		<DialogHeader>
 			<DialogTitle>Create API Key</DialogTitle>
@@ -112,8 +112,8 @@
 			<!-- Allowed Modules (Multi-select) -->
 			<div class="space-y-2">
 				<Label>Allowed Modules</Label>
-				<div class="flex items-start gap-2 text-xs text-muted-foreground">
-					<Info class="w-3 h-3 flex-shrink-0 mt-0.5" />
+				<div class="text-muted-foreground flex items-start gap-2 text-xs">
+					<Info class="mt-0.5 h-3 w-3 flex-shrink-0" />
 					<p>Select specific modules to restrict access, or leave empty for all modules.</p>
 				</div>
 
@@ -122,27 +122,23 @@
 					<button
 						type="button"
 						onclick={() => (showModuleList = !showModuleList)}
-						class="w-full flex items-center justify-between px-3 py-2 border border-border rounded-lg bg-background hover:bg-accent transition-colors"
+						class="flex w-full items-center justify-between rounded-lg border border-border bg-background px-3 py-2 transition-colors hover:bg-accent"
 					>
 						<span class="text-sm">{getSelectionSummary()}</span>
 						{#if showModuleList}
-							<ChevronUp class="w-4 h-4 text-muted-foreground" />
+							<ChevronUp class="text-muted-foreground h-4 w-4" />
 						{:else}
-							<ChevronDown class="w-4 h-4 text-muted-foreground" />
+							<ChevronDown class="text-muted-foreground h-4 w-4" />
 						{/if}
 					</button>
 
 					<!-- Module List (Collapsible) -->
 					{#if showModuleList}
-						<div class="space-y-2 p-3 border border-border rounded-lg bg-muted/50">
+						<div class="space-y-2 rounded-lg border border-border bg-muted/50 p-3">
 							<!-- Select All Option -->
-							<div class="flex items-center gap-2 pb-2 border-b border-border">
-								<Checkbox
-									id="select-all"
-									checked={selectAll}
-									onChange={toggleSelectAll}
-								/>
-								<Label for="select-all" class="text-sm font-medium cursor-pointer flex-1">
+							<div class="flex items-center gap-2 border-b border-border pb-2">
+								<Checkbox id="select-all" checked={selectAll} onCheckedChange={toggleSelectAll} />
+								<Label for="select-all" class="flex-1 cursor-pointer text-sm font-medium">
 									All modules ({availableModules.length})
 								</Label>
 							</div>
@@ -154,9 +150,9 @@
 										<Checkbox
 											id="module-{module.id}"
 											checked={selectedModules.includes(module.id)}
-											onChange={() => toggleModule(module.id)}
+											onCheckedChange={() => toggleModule(module.id)}
 										/>
-										<Label for="module-{module.id}" class="text-sm cursor-pointer flex-1">
+										<Label for="module-{module.id}" class="flex-1 cursor-pointer text-sm">
 											{module.name}
 										</Label>
 									</div>
@@ -165,7 +161,7 @@
 						</div>
 					{/if}
 				{:else}
-					<div class="text-sm text-muted-foreground italic border rounded-md p-3">
+					<div class="text-muted-foreground rounded-md border p-3 text-sm italic">
 						No external modules available. The key will have access to all modules.
 					</div>
 				{/if}
@@ -175,17 +171,13 @@
 			<div class="space-y-2">
 				<Label for="key-expires">Expiration Date</Label>
 				<Input id="key-expires" type="date" bind:value={expiresAt} />
-				<p class="text-xs text-muted-foreground">
-					Leave empty for a key that never expires
-				</p>
+				<p class="text-muted-foreground text-xs">Leave empty for a key that never expires</p>
 			</div>
 		</form>
 
 		<DialogFooter>
 			<Button variant="outline" onclick={() => onOpenChange(false)}>Cancel</Button>
-			<Button onclick={handleSubmit} disabled={!name.trim()}>
-				Create Key
-			</Button>
+			<Button onclick={handleSubmit} disabled={!name.trim()}>Create Key</Button>
 		</DialogFooter>
 	</DialogContent>
 </Dialog>

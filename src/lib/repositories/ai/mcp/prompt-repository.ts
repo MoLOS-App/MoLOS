@@ -75,7 +75,11 @@ export class McpPromptRepository extends BaseRepository {
 	 * Get prompt by ID
 	 */
 	async getById(id: string): Promise<MCPPrompt | null> {
-		const [prompt] = await this.db.select().from(aiMcpPrompts).where(eq(aiMcpPrompts.id, id)).limit(1);
+		const [prompt] = await this.db
+			.select()
+			.from(aiMcpPrompts)
+			.where(eq(aiMcpPrompts.id, id))
+			.limit(1);
 
 		if (!prompt) return null;
 
@@ -197,7 +201,7 @@ export class McpPromptRepository extends BaseRepository {
 		return items.map((item) => ({
 			name: item.name,
 			description: item.description,
-			arguments: JSON.parse((item.arguments as any) as string)
+			arguments: JSON.parse(item.arguments as any as string)
 		}));
 	}
 

@@ -18,27 +18,32 @@ import { sanitizeErrorMessage } from '../mcp-utils';
  */
 export async function handleMcpRequest(
 	context: MCPContext,
-	request: JSONRPCRequest
+	request: JSONRPCRequest | { jsonrpc: '2.0'; method: string; params?: unknown }
 ): Promise<JSONRPCResponse> {
 	const startTime = Date.now();
 	let logRepo: McpLogRepository | null = null;
 
-	// Check if this is a notification (no response expected)
-	if (isNotification(request)) {
+	// Check if this is a notification (no id, no response expected)
+	const isNotificationRequest = !('id' in request) || request.id === undefined;
+
+	if (isNotificationRequest) {
 		// Notifications don't get responses
 		// But we still process them for side effects
 		try {
-			await routeRequest(context, request);
+			await routeRequest(context, request as JSONRPCRequest);
 		} catch {
 			// Ignore errors for notifications
 		}
 		// Return empty response for notifications
 		return {
 			jsonrpc: '2.0',
-			id: null,
+			id: '',
 			result: null
 		};
 	}
+
+	// At this point, we know it's a request with an id
+	const req = request as JSONRPCRequest;
 
 	// Log the request
 	try {
@@ -50,21 +55,21 @@ export async function handleMcpRequest(
 
 	try {
 		// Route and handle the request
-		const response = await routeRequest(context, request);
+		const response = await routeRequest(context, req);
 
 		// Extract result for logging
 		const result = (response as any).result;
 
 		// Log success (excluding initialize which is logged separately)
-		if (logRepo && request.method !== 'initialize') {
+		if (logRepo && req.method !== 'initialize') {
 			try {
 				await logRepo.create({
 					userId: context.userId,
 					apiKeyId: context.apiKeyId,
 					sessionId: context.sessionId,
-					requestId: String(request.id),
-					method: request.method,
-					params: request.params,
+					requestId: String(req.id),
+					method: req.method,
+					params: req.params,
 					result,
 					status: 'success',
 					durationMs: Date.now() - startTime
@@ -85,9 +90,9 @@ export async function handleMcpRequest(
 					userId: context.userId,
 					apiKeyId: context.apiKeyId,
 					sessionId: context.sessionId,
-					requestId: String(request.id),
-					method: request.method,
-					params: request.params,
+					requestId: String(req.id),
+					method: req.method,
+					params: req.params,
 					result: null,
 					status: 'error',
 					errorMessage,
@@ -101,7 +106,7 @@ export async function handleMcpRequest(
 		// Return error response
 		return {
 			jsonrpc: '2.0',
-			id: request.id,
+			id: req.id,
 			error: {
 				code: -32603,
 				message: errorMessage
@@ -113,10 +118,7 @@ export async function handleMcpRequest(
 /**
  * Route request to appropriate handler
  */
-async function routeRequest(
-	context: MCPContext,
-	request: JSONRPCRequest
-): Promise<unknown> {
+async function routeRequest(context: MCPContext, request: JSONRPCRequest): Promise<unknown> {
 	const { method, action } = parseMethod(request.method);
 
 	switch (method) {

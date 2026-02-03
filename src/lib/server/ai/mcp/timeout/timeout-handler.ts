@@ -56,11 +56,7 @@ export class TimeoutHandler {
 	/**
 	 * Execute a promise with timeout
 	 */
-	async withTimeout<T>(
-		promise: Promise<T>,
-		timeoutMs: number,
-		operation: string
-	): Promise<T> {
+	async withTimeout<T>(promise: Promise<T>, timeoutMs: number, operation: string): Promise<T> {
 		// Create a timeout promise
 		const timeoutPromise = new Promise<never>((_, reject) => {
 			const timer = setTimeout(() => {
@@ -141,29 +137,20 @@ export async function withTimeout<T>(
 /**
  * Helper function to run with tool timeout
  */
-export async function withToolTimeout<T>(
-	promise: Promise<T>,
-	toolName: string
-): Promise<T> {
+export async function withToolTimeout<T>(promise: Promise<T>, toolName: string): Promise<T> {
 	return timeoutHandler.withToolTimeout(promise, toolName);
 }
 
 /**
  * Helper function to run with resource timeout
  */
-export async function withResourceTimeout<T>(
-	promise: Promise<T>,
-	uri: string
-): Promise<T> {
+export async function withResourceTimeout<T>(promise: Promise<T>, uri: string): Promise<T> {
 	return timeoutHandler.withResourceTimeout(promise, uri);
 }
 
 /**
  * Helper function to run with database timeout
  */
-export async function withDatabaseTimeout<T>(
-	promise: Promise<T>,
-	query: string
-): Promise<T> {
+export async function withDatabaseTimeout<T>(promise: Promise<T>, query: string): Promise<T> {
 	return timeoutHandler.withDatabaseTimeout(promise, query);
 }

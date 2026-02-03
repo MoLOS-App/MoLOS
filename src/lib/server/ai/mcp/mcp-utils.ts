@@ -38,10 +38,7 @@ export function extractModuleIdFromToolName(toolName: string): string {
 /**
  * Filter tools by allowed modules
  */
-export function filterToolsByModules(
-	tools: MCPTool[],
-	allowedModules: string[]
-): MCPTool[] {
+export function filterToolsByModules(tools: MCPTool[], allowedModules: string[]): MCPTool[] {
 	if (allowedModules.length === 0) {
 		return tools;
 	}

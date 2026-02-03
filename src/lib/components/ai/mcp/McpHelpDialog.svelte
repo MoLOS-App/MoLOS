@@ -1,10 +1,5 @@
 <script lang="ts">
-	import {
-		Dialog,
-		DialogContent,
-		DialogHeader,
-		DialogTitle
-	} from '$lib/components/ui/dialog';
+	import { Dialog, DialogContent, DialogHeader, DialogTitle } from '$lib/components/ui/dialog';
 	import { Button } from '$lib/components/ui/button';
 	import { Info, Code, Terminal, BookOpen, List, Activity, Key } from 'lucide-svelte';
 
@@ -15,10 +10,10 @@
 		description: string;
 		howItWorks: string[];
 		examples: Array<{
-		title: string;
-		code?: string;
-		description: string;
-	}>;
+			title: string;
+			code?: string;
+			description: string;
+		}>;
 	}
 
 	interface TabHelp {
@@ -40,7 +35,8 @@
 	const helpContent: Record<HelpTabId, HelpContent> = {
 		dashboard: {
 			title: 'MCP Dashboard',
-			description: 'The Dashboard provides an overview of your MCP server activity, including statistics, connection information, and quick setup guides.',
+			description:
+				'The Dashboard provides an overview of your MCP server activity, including statistics, connection information, and quick setup guides.',
 			howItWorks: [
 				'Monitor your API keys usage and request statistics in real-time',
 				'View success rates and average response times',
@@ -54,13 +50,15 @@
 				},
 				{
 					title: 'Connection Info',
-					description: 'Get the transport URL and protocol version needed to configure your MCP client'
+					description:
+						'Get the transport URL and protocol version needed to configure your MCP client'
 				}
 			]
 		},
 		keys: {
 			title: 'API Keys Management',
-			description: 'API keys are used to authenticate requests to your MCP server. Each key can be restricted to specific modules and have an expiration date.',
+			description:
+				'API keys are used to authenticate requests to your MCP server. Each key can be restricted to specific modules and have an expiration date.',
 			howItWorks: [
 				'Create API keys with specific names to identify different applications',
 				'Restrict key access to specific external modules for better security',
@@ -71,20 +69,23 @@
 			examples: [
 				{
 					title: 'Creating a Key for Claude Desktop',
-					description: 'Create an API key with "Claude Desktop" as the name, select the modules it can access, and leave expiration empty for permanent access.'
+					description:
+						'Create an API key with "Claude Desktop" as the name, select the modules it can access, and leave expiration empty for permanent access.'
 				},
 				{
 					title: 'Key with Module Restrictions',
 					code: `{
   "allowedModules": ["molos-analytics", "molos-ai-tools"]
 }`,
-					description: 'This key can only access the analytics and AI tools modules, not other external modules.'
+					description:
+						'This key can only access the analytics and AI tools modules, not other external modules.'
 				}
 			]
 		},
 		resources: {
 			title: 'MCP Resources',
-			description: 'Resources are data sources that can be accessed via the MCP protocol. They represent configuration values, data stores, or any read-only data your modules expose.',
+			description:
+				'Resources are data sources that can be accessed via the MCP protocol. They represent configuration values, data stores, or any read-only data your modules expose.',
 			howItWorks: [
 				'Resources are identified by unique URIs like "config://app/settings"',
 				'Each resource can be global (available to all modules) or module-specific',
@@ -97,7 +98,8 @@
 					code: `URI: config://app/database
 Description: Database connection settings
 Module: Global`,
-					description: 'A global resource that provides database configuration to any module that requests it.'
+					description:
+						'A global resource that provides database configuration to any module that requests it.'
 				},
 				{
 					title: 'User Profile Resource',
@@ -110,7 +112,8 @@ Module: molos-users`,
 		},
 		prompts: {
 			title: 'MCP Prompts',
-			description: 'Prompts are reusable templates that AI agents can request to execute predefined tasks with specific parameters.',
+			description:
+				'Prompts are reusable templates that AI agents can request to execute predefined tasks with specific parameters.',
 			howItWorks: [
 				'Prompts have a name, description, and optional arguments with types',
 				'Arguments can be required or optional, with specific types (string, number, boolean, etc.)',
@@ -142,7 +145,8 @@ Arguments:
 		},
 		logs: {
 			title: 'Activity Logs',
-			description: 'Activity logs provide a detailed history of all MCP requests made to your server, including successful and failed requests.',
+			description:
+				'Activity logs provide a detailed history of all MCP requests made to your server, including successful and failed requests.',
 			howItWorks: [
 				'Each request is logged with the API key used, method called, and duration',
 				'Filter logs by API key, method, status, or search terms',
@@ -175,11 +179,11 @@ Prompt: generate-summary`,
 	const content = $derived(helpContent[tab]);
 </script>
 
-<Dialog {open} onOpenChange={onOpenChange}>
-	<DialogContent class="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+<Dialog {open} {onOpenChange}>
+	<DialogContent class="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
 		<DialogHeader>
 			<DialogTitle class="flex items-center gap-2">
-				<Info class="w-5 h-5 text-primary" />
+				<Info class="h-5 w-5 text-primary" />
 				{#if content}
 					{content.title}
 				{/if}
@@ -195,14 +199,14 @@ Prompt: generate-summary`,
 
 				<!-- How It Works -->
 				<div class="space-y-3">
-					<h3 class="text-sm font-semibold flex items-center gap-2">
-						<BookOpen class="w-4 h-4 text-primary" />
+					<h3 class="flex items-center gap-2 text-sm font-semibold">
+						<BookOpen class="h-4 w-4 text-primary" />
 						How It Works
 					</h3>
 					<ul class="space-y-2">
 						{#each content.howItWorks as item}
-							<li class="text-sm text-muted-foreground flex items-start gap-2">
-								<span class="text-primary mt-0.5">•</span>
+							<li class="text-muted-foreground flex items-start gap-2 text-sm">
+								<span class="mt-0.5 text-primary">•</span>
 								<span>{item}</span>
 							</li>
 						{/each}
@@ -212,18 +216,21 @@ Prompt: generate-summary`,
 				<!-- Examples -->
 				{#if content.examples.length > 0}
 					<div class="space-y-3">
-						<h3 class="text-sm font-semibold flex items-center gap-2">
-							<Terminal class="w-4 h-4 text-primary" />
+						<h3 class="flex items-center gap-2 text-sm font-semibold">
+							<Terminal class="h-4 w-4 text-primary" />
 							Examples
 						</h3>
 						<div class="space-y-4">
 							{#each content.examples as example}
-								<div class="p-4 bg-muted/50 border border-border rounded-lg space-y-2">
+								<div class="space-y-2 rounded-lg border border-border bg-muted/50 p-4">
 									<h4 class="text-sm font-medium text-foreground">{example.title}</h4>
 									{#if example.code}
-										<pre class="text-xs bg-background p-3 rounded border border-border overflow-x-auto"><code>{example.code}</code></pre>
+										<pre
+											class="overflow-x-auto rounded border border-border bg-background p-3 text-xs"><code
+												>{example.code}</code
+											></pre>
 									{/if}
-									<p class="text-sm text-muted-foreground">{example.description}</p>
+									<p class="text-muted-foreground text-sm">{example.description}</p>
 								</div>
 							{/each}
 						</div>
@@ -232,7 +239,7 @@ Prompt: generate-summary`,
 			</div>
 		{/if}
 
-		<div class="flex justify-end pt-4 border-t border-border">
+		<div class="flex justify-end border-t border-border pt-4">
 			<Button onclick={() => onOpenChange(false)}>Got it</Button>
 		</div>
 	</DialogContent>

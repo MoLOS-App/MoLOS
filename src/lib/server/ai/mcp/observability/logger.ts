@@ -138,18 +138,12 @@ class MCPStructuredLogger {
 /**
  * Singleton logger instance
  */
-export const mcpLogger = new MCPStructuredLogger(
-	(process.env.MCP_LOG_LEVEL as LogLevel) ?? 'info'
-);
+export const mcpLogger = new MCPStructuredLogger((process.env.MCP_LOG_LEVEL as LogLevel) ?? 'info');
 
 /**
  * Log a request (helper function)
  */
-export function logRequest(
-	method: string,
-	context: LogContext,
-	durationMs?: number
-): void {
+export function logRequest(method: string, context: LogContext, durationMs?: number): void {
 	mcpLogger.debug('MCP request', {
 		...context,
 		method,
@@ -160,11 +154,7 @@ export function logRequest(
 /**
  * Log a tool execution (helper function)
  */
-export function logToolExecution(
-	toolName: string,
-	context: LogContext,
-	durationMs?: number
-): void {
+export function logToolExecution(toolName: string, context: LogContext, durationMs?: number): void {
 	mcpLogger.debug('Tool executed', {
 		...context,
 		toolName,
@@ -175,11 +165,7 @@ export function logToolExecution(
 /**
  * Log a cache hit/miss (helper function)
  */
-export function logCacheHit(
-	key: string,
-	hit: boolean,
-	context?: LogContext
-): void {
+export function logCacheHit(key: string, hit: boolean, context?: LogContext): void {
 	mcpLogger.debug('Cache ' + (hit ? 'hit' : 'miss'), {
 		...context,
 		cacheKey: key,

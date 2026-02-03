@@ -13,11 +13,13 @@
 	let {
 		open,
 		onOpenChange,
-		keySecret
+		keySecret,
+		onClose
 	}: {
 		open: boolean;
 		onOpenChange: (open: boolean) => void;
 		keySecret: string;
+		onClose?: () => void;
 	} = $props();
 
 	let copied = $state(false);
@@ -56,51 +58,64 @@
 	});
 </script>
 
-<Dialog {open} onOpenChange={onOpenChange}>
+<Dialog {open} {onOpenChange}>
 	<DialogContent class="sm:max-w-md" onCloseAutoFocus={(e) => e.preventDefault()}>
 		<DialogHeader>
 			<DialogTitle class="flex items-center gap-3">
-				<CheckCircle class="w-6 h-6 text-success" />
+				<CheckCircle class="text-success h-6 w-6" />
 				API Key Created
 			</DialogTitle>
 		</DialogHeader>
 
 		<div class="space-y-4">
-			<p class="text-sm text-muted-foreground">
+			<p class="text-muted-foreground text-sm">
 				Copy this key now. You won't be able to see it again.
 			</p>
 
-			<div class="relative group">
-				<code class="block w-full p-4 pr-24 font-mono text-sm break-all transition-colors border-2 rounded-lg select-all bg-muted text-foreground border-primary/20 group-hover:border-primary/40">
+			<div class="group relative">
+				<code
+					class="block w-full rounded-lg border-2 border-primary/20 bg-muted p-4 pr-24 font-mono text-sm break-all text-foreground transition-colors select-all group-hover:border-primary/40"
+				>
 					{keySecret}
 				</code>
 				<Button
 					variant="default"
 					size="sm"
 					onclick={copyToClipboard}
-					class="absolute -translate-y-1/2 shadow-lg right-2 top-1/2"
+					class="absolute top-1/2 right-2 -translate-y-1/2 shadow-lg"
 					title="Copy to clipboard"
 				>
 					{#if copied}
-						<Check class="w-4 h-4 mr-2" />
+						<Check class="mr-2 h-4 w-4" />
 						Copied!
 					{:else}
-						<Copy class="w-4 h-4 mr-2" />
+						<Copy class="mr-2 h-4 w-4" />
 						Copy Key
 					{/if}
 				</Button>
 			</div>
 
-			<p class="flex items-center gap-1 text-xs text-muted-foreground">
-				<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+			<p class="text-muted-foreground flex items-center gap-1 text-xs">
+				<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+					/>
 				</svg>
 				This key has been copied to your clipboard. Store it securely.
 			</p>
 		</div>
 
 		<DialogFooter>
-			<Button onclick={handleClose} class="w-full">
+			<Button
+				onclick={() => {
+					handleClose();
+					onClose?.();
+				}}
+				class="w-full"
+			>
 				I've saved my key securely
 			</Button>
 		</DialogFooter>

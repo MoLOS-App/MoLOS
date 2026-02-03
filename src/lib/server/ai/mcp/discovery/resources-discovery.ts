@@ -50,7 +50,10 @@ export async function listMcpResources(context: MCPContext): Promise<{
 /**
  * Read a resource by URI
  */
-export async function readMcpResource(context: MCPContext, uri: string): Promise<{
+export async function readMcpResource(
+	context: MCPContext,
+	uri: string
+): Promise<{
 	contents: ResourceContent[];
 }> {
 	const repo = new McpResourceRepository();
@@ -73,7 +76,11 @@ export async function readMcpResource(context: MCPContext, uri: string): Promise
 	}
 
 	// Check module scope
-	if (context.allowedModules.length > 0 && !context.allowedModules.includes(resource.moduleId)) {
+	if (
+		context.allowedModules.length > 0 &&
+		resource.moduleId &&
+		!context.allowedModules.includes(resource.moduleId)
+	) {
 		throw new Error('Module not allowed for this API key');
 	}
 
@@ -84,13 +91,17 @@ export async function readMcpResource(context: MCPContext, uri: string): Promise
 	const content: ResourceContent = {
 		uri,
 		mimeType: resource.mimeType ?? 'application/json',
-		text: JSON.stringify({
-			_id: resource.id,
-			_name: resource.name,
-			_module: resource.moduleId,
-			_description: resource.description,
-			_metadata: resource.metadata
-		}, null, 2),
+		text: JSON.stringify(
+			{
+				_id: resource.id,
+				_name: resource.name,
+				_module: resource.moduleId,
+				_description: resource.description,
+				_metadata: resource.metadata
+			},
+			null,
+			2
+		),
 		metadata: resource.metadata ?? undefined
 	};
 
@@ -111,9 +122,9 @@ export async function getResourcesByModule(
 /**
  * Get resource count by module (with caching)
  */
-export async function getResourceCountByModule(context: MCPContext): Promise<
-	Record<string, number>
-> {
+export async function getResourceCountByModule(
+	context: MCPContext
+): Promise<Record<string, number>> {
 	// Try cache first
 	const cached = mcpCache.get<Record<string, number>>(CACHE_KEYS.RESOURCE_COUNTS, context);
 	if (cached) {

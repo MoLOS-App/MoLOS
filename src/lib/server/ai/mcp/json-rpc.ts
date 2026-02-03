@@ -97,7 +97,7 @@ export function isValidJSONRPCRequest(data: unknown): data is JSONRPCRequest {
 export function isNotification(
 	request: JSONRPCRequest | JSONRPCNotification
 ): request is JSONRPCNotification {
-	return request.id === undefined;
+	return !('id' in request) || request.id === undefined;
 }
 
 /**

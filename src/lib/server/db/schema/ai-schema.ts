@@ -213,9 +213,7 @@ export const aiMcpApiKeys = sqliteTable('ai_mcp_api_keys', {
 	name: text('name').notNull(),
 	keyPrefix: text('key_prefix').notNull(),
 	keyHash: text('key_hash').notNull(),
-	status: textEnum('status', MCPApiKeyStatus)
-		.notNull()
-		.default(MCPApiKeyStatus.ACTIVE),
+	status: textEnum('status', MCPApiKeyStatus).notNull().default(MCPApiKeyStatus.ACTIVE),
 	// Scoping - which modules this key can access
 	allowedModules: text('allowed_modules', { mode: 'json' })
 		.notNull()

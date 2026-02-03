@@ -269,47 +269,42 @@
 <Card class="border-0 bg-card shadow-sm">
 	<CardContent class="p-6">
 		<!-- Header -->
-		<div class="flex items-center justify-between mb-6">
+		<div class="mb-6 flex items-center justify-between">
 			<div class="flex items-center gap-3">
-				<div class="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
-					<Rocket class="w-5 h-5 text-primary" />
+				<div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/20">
+					<Rocket class="h-5 w-5 text-primary" />
 				</div>
 				<div>
 					<h3 class="font-semibold text-foreground">Quick Start</h3>
-					<p class="text-xs text-muted-foreground">Connect your AI agent</p>
+					<p class="text-muted-foreground text-xs">Connect your AI agent</p>
 				</div>
 			</div>
 		</div>
 
 		<!-- Agent Selection -->
-		<div class="space-y-3 mb-6">
-			<p class="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-				Select Agent
-			</p>
-			<div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+		<div class="mb-6 space-y-3">
+			<p class="text-muted-foreground text-xs font-medium tracking-wider uppercase">Select Agent</p>
+			<div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
 				{#each agents as agent (agent.id)}
 					<button
 						onclick={() => (selectedAgent = agent.id)}
 						class={cn(
-							'flex flex-col items-start p-3 rounded-lg border-2 transition-all duration-200 text-left',
+							'flex flex-col items-start rounded-lg border-2 p-3 text-left transition-all duration-200',
 							'hover:border-primary/50 hover:bg-primary/5',
 							selectedAgent === agent.id
 								? 'border-primary bg-primary/10 shadow-sm'
 								: 'border-border bg-card'
 						)}
 					>
-						<div class="flex items-center justify-between w-full mb-1">
-							<span class="font-medium text-sm">{agent.name}</span>
+						<div class="mb-1 flex w-full items-center justify-between">
+							<span class="text-sm font-medium">{agent.name}</span>
 							{#if agent.badge === 'Recommended'}
-								<Badge
-									variant="secondary"
-									class="text-[9px] h-4 px-1 bg-primary/20 text-primary"
-								>
+								<Badge variant="secondary" class="h-4 bg-primary/20 px-1 text-[9px] text-primary">
 									{agent.badge}
 								</Badge>
 							{/if}
 						</div>
-						<span class="text-xs text-muted-foreground">{agent.shortDesc}</span>
+						<span class="text-muted-foreground text-xs">{agent.shortDesc}</span>
 					</button>
 				{/each}
 			</div>
@@ -319,14 +314,14 @@
 		{#if !selectedApiKey}
 			<button
 				onclick={() => (showApiKeyInput = !showApiKeyInput)}
-				class="w-full flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors mb-4 group"
+				class="group mb-4 flex w-full items-center justify-between rounded-lg bg-muted/50 p-3 transition-colors hover:bg-muted"
 			>
 				<span class="text-sm text-foreground">
 					{showApiKeyInput ? 'Using custom API key' : 'Use your API key in config'}
 				</span>
 				<ChevronRight
 					class={cn(
-						'w-4 h-4 text-muted-foreground transition-transform duration-200',
+						'text-muted-foreground h-4 w-4 transition-transform duration-200',
 						showApiKeyInput && 'rotate-90'
 					)}
 				/>
@@ -336,18 +331,18 @@
 					type="text"
 					bind:value={customApiKey}
 					placeholder="Enter your API key..."
-					class="w-full px-3 py-2.5 text-sm border border-input bg-background rounded-lg focus:ring-2 focus:ring-ring focus:ring-offset-background mb-4"
+					class="border-input focus:ring-ring mb-4 w-full rounded-lg border bg-background px-3 py-2.5 text-sm focus:ring-2 focus:ring-offset-background"
 				/>
 			{/if}
 		{/if}
 
 		<!-- Instructions -->
-		<div class="p-4 bg-muted/50 rounded-lg mb-4 space-y-2">
+		<div class="mb-4 space-y-2 rounded-lg bg-muted/50 p-4">
 			<p class="text-sm font-medium text-foreground">Setup Instructions:</p>
 			{#each instructions as instruction}
-				<p class="text-sm text-muted-foreground">{instruction}</p>
+				<p class="text-muted-foreground text-sm">{instruction}</p>
 			{/each}
-			<p class="text-xs text-muted-foreground">
+			<p class="text-muted-foreground text-xs">
 				Config location: {configLocation}
 			</p>
 		</div>
@@ -356,20 +351,22 @@
 		<div class="space-y-3">
 			<!-- Type Switcher -->
 			{#if activeAgent.configType === 'cli'}
-				<div class="p-3 bg-muted rounded-lg">
-					<p class="text-xs text-muted-foreground mb-2">Run this command in your terminal:</p>
+				<div class="rounded-lg bg-muted p-3">
+					<p class="text-muted-foreground mb-2 text-xs">Run this command in your terminal:</p>
 					<pre
-						class="bg-slate-950 text-slate-50 p-4 rounded-lg text-xs font-mono overflow-x-auto border border-slate-800 whitespace-pre-wrap"
-					><code>{getCliCommand()}</code></pre>
+						class="overflow-x-auto rounded-lg border border-slate-800 bg-slate-950 p-4 font-mono text-xs whitespace-pre-wrap text-slate-50"><code
+							>{getCliCommand()}</code
+						></pre>
 				</div>
 			{:else}
-				<div class="p-3 bg-muted rounded-lg">
-					<p class="text-xs text-muted-foreground mb-2">
+				<div class="rounded-lg bg-muted p-3">
+					<p class="text-muted-foreground mb-2 text-xs">
 						JSON config for {activeAgent.name}:
 					</p>
 					<pre
-						class="bg-slate-950 text-slate-50 p-4 rounded-lg text-xs font-mono overflow-x-auto border border-slate-800 whitespace-pre-wrap"
-					><code>{getJsonConfig()}</code></pre>
+						class="overflow-x-auto rounded-lg border border-slate-800 bg-slate-950 p-4 font-mono text-xs whitespace-pre-wrap text-slate-50"><code
+							>{getJsonConfig()}</code
+						></pre>
 				</div>
 			{/if}
 
@@ -380,23 +377,24 @@
 				class="w-full gap-2"
 			>
 				{#if copiedAgent === selectedAgent}
-					<Check class="w-4 h-4" />
+					<Check class="h-4 w-4" />
 					Copied!
 				{:else}
-					<Copy class="w-4 h-4" />
+					<Copy class="h-4 w-4" />
 					Copy {activeAgent.configType === 'cli' ? 'Command' : 'Config'}
 				{/if}
 			</Button>
 		</div>
 
 		<!-- Transport Info -->
-		<div class="flex items-center gap-2 p-3 bg-primary/10 border border-primary/20 rounded-lg">
+		<div class="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/10 p-3">
 			<span class="text-xs text-primary">
 				<strong>Transport:</strong> HTTP (mcp-remote)
 			</span>
 			<span class="text-muted-foreground">•</span>
 			<span class="text-xs text-primary">
-				<strong>URL:</strong> {fullUrl}
+				<strong>URL:</strong>
+				{fullUrl}
 			</span>
 			<span class="text-muted-foreground">•</span>
 			<span class="text-xs text-primary">

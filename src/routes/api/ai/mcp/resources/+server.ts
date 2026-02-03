@@ -25,11 +25,12 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 	// Parse query parameters
 	const filters: ResourceFilters = {
 		moduleId: url.searchParams.get('moduleId') ?? undefined,
-		enabled: url.searchParams.get('enabled') === 'true'
-			? true
-			: url.searchParams.get('enabled') === 'false'
-				? false
-				: undefined,
+		enabled:
+			url.searchParams.get('enabled') === 'true'
+				? true
+				: url.searchParams.get('enabled') === 'false'
+					? false
+					: undefined,
 		search: url.searchParams.get('search') ?? undefined
 	};
 
