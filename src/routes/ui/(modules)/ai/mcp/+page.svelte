@@ -97,9 +97,11 @@
 </svelte:head>
 
 <div class="min-h-screen bg-background">
-	<div class="mx-auto max-w-7xl space-y-6 p-6">
+	<div class="mx-auto max-w-7xl space-y-8 p-4 md:p-6 lg:p-8">
 		<!-- Header -->
-		<McpHeader serverOnline={true} />
+		<div class="space-y-1">
+			<McpHeader serverOnline={true} />
+		</div>
 
 		<!-- Tabs Navigation -->
 		<McpTabs {activeTab} onTabChange={(tab) => (activeTab = tab)} />
@@ -107,10 +109,10 @@
 		<!-- Tab Content -->
 		{#if activeTab === 'dashboard'}
 			<!-- Dashboard Tab -->
-			<div class="space-y-6">
+			<div class="space-y-8">
 				<!-- Quick Stats -->
 				{#if data.stats}
-					<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+					<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 						<McpStatsCard
 							title="Active Keys"
 							value={data.stats.activeKeys}
@@ -138,7 +140,7 @@
 					</div>
 				{/if}
 
-				<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+				<div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
 					<!-- Connection Info -->
 					<McpConnectionInfo />
 
@@ -150,12 +152,12 @@
 				{#if data.availableModules && data.availableModules.length > 0}
 					<Card>
 						<CardHeader>
-							<CardTitle>Available Modules</CardTitle>
+							<CardTitle class="text-lg">Available Modules</CardTitle>
 						</CardHeader>
 						<CardContent>
-							<div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+							<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
 								{#each data.availableModules as module (module.id)}
-									<div class="px-3 py-2 bg-accent rounded-lg text-center">
+									<div class="px-3 py-2.5 bg-accent/50 hover:bg-accent rounded-lg text-center transition-colors">
 										<span class="text-sm font-medium text-foreground">{module.name}</span>
 									</div>
 								{/each}
@@ -167,27 +169,30 @@
 				<!-- Recent Activity -->
 				{#if data.recentLogs && data.recentLogs.length > 0}
 					<Card>
-						<CardHeader>
-							<CardTitle>Recent Activity</CardTitle>
+						<CardHeader class="flex flex-row items-center justify-between">
+							<CardTitle class="text-lg">Recent Activity</CardTitle>
+							<Button variant="ghost" size="sm" onclick={() => activeTab = 'logs'}>
+								View all
+							</Button>
 						</CardHeader>
 						<CardContent>
 							<div class="space-y-2">
 								{#each data.recentLogs as log (log.id)}
-									<div class="flex items-center justify-between p-3 bg-accent/50 rounded-lg">
+									<div class="flex items-center justify-between p-3 bg-accent/50 hover:bg-accent rounded-lg transition-colors">
 										<div class="flex items-center gap-3">
 											{#if log.status === 'success'}
-												<CheckCircle class="w-4 h-4 text-green-500" />
+												<CheckCircle class="w-4 h-4 text-green-500 flex-shrink-0" />
 											{:else}
-												<XCircle class="w-4 h-4 text-red-500" />
+												<XCircle class="w-4 h-4 text-red-500 flex-shrink-0" />
 											{/if}
-											<div>
-												<p class="text-sm font-medium text-foreground">{log.method}</p>
+											<div class="min-w-0">
+												<p class="text-sm font-medium text-foreground truncate">{log.method}</p>
 												{#if log.toolName}
-													<p class="text-xs text-muted-foreground">{log.toolName}</p>
+													<p class="text-xs text-muted-foreground truncate">{log.toolName}</p>
 												{/if}
 											</div>
 										</div>
-										<div class="text-right">
+										<div class="text-right flex-shrink-0">
 											<p class="text-xs text-muted-foreground">{log.durationMs}ms</p>
 											<p class="text-xs text-muted-foreground">
 												{new Date(log.createdAt).toLocaleTimeString()}
