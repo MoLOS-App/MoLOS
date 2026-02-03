@@ -6,6 +6,8 @@ export { default as McpQuickStart } from './McpQuickStart.svelte';
 export { default as McpCreateKeyDialog } from './McpCreateKeyDialog.svelte';
 export { default as McpKeySecretDialog } from './McpKeySecretDialog.svelte';
 export { default as McpApiKeyTable } from './McpApiKeyTable.svelte';
+export { default as McpCreateResourceDialog } from './McpCreateResourceDialog.svelte';
+export { default as McpEditResourceDialog } from './McpEditResourceDialog.svelte';
 export { default as McpResourcesTable } from './McpResourcesTable.svelte';
 export { default as McpPromptsTable } from './McpPromptsTable.svelte';
 export { default as McpLogsTable } from './McpLogsTable.svelte';

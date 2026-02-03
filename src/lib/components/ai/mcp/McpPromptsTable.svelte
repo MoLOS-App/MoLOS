@@ -5,7 +5,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Select, SelectTrigger, SelectContent, SelectItem } from '$lib/components/ui/select';
 	import { List, Search, Plus, Edit } from 'lucide-svelte';
-	import { Empty, EmptyMedia, EmptyTitle } from '$lib/components/ui/empty';
+	import { Empty, EmptyMedia, EmptyTitle, EmptyContent } from '$lib/components/ui/empty';
 
 	export interface PromptArgument {
 		name: string;
