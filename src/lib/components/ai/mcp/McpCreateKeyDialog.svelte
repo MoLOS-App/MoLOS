@@ -9,8 +9,8 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
-	import { Select, SelectTrigger, SelectContent, SelectItem } from '$lib/components/ui/select';
-	import { Info } from 'lucide-svelte';
+	import { Checkbox } from '$lib/components/ui/checkbox';
+	import { Info, ChevronDown, ChevronUp } from 'lucide-svelte';
 
 	interface Module {
 		id: string;
@@ -34,15 +34,39 @@
 	} = $props();
 
 	let name = $state('');
-	let selectedModule = $state<string>('__all__');
+	let selectedModules = $state<string[]>([]);
+	let selectAll = $state(false);
 	let expiresAt = $state('');
+	let showModuleList = $state(false);
 
-	// Convert to null for "all modules"
-	function getModulesForSubmit(): string[] | null {
-		if (!selectedModule || selectedModule === '__all__') {
-			return null;
+	// Handle select all toggle
+	$effect(() => {
+		if (selectAll && selectedModules.length !== availableModules.length) {
+			selectedModules = availableModules.map((m) => m.id);
+		} else if (!selectAll && selectedModules.length === availableModules.length) {
+			selectedModules = [];
 		}
-		return [selectedModule];
+	});
+
+	// Update selectAll state when individual modules change
+	$effect(() => {
+		selectAll = selectedModules.length === availableModules.length && availableModules.length > 0;
+	});
+
+	// Toggle individual module selection
+	function toggleModule(moduleId: string) {
+		if (selectedModules.includes(moduleId)) {
+			selectedModules = selectedModules.filter((id) => id !== moduleId);
+		} else {
+			selectedModules = [...selectedModules, moduleId];
+		}
+	}
+
+	// Convert to null for "all modules" (empty array means all modules for unrestricted access)
+	function getModulesForSubmit(): string[] | null {
+		// Empty array means all modules (unrestricted access)
+		// Non-empty array means specific modules only
+		return selectedModules.length > 0 ? selectedModules : null;
 	}
 
 	function handleSubmit() {
@@ -56,14 +80,16 @@
 
 		// Reset form
 		name = '';
-		selectedModule = '__all__';
+		selectedModules = [];
+		selectAll = false;
 		expiresAt = '';
+		showModuleList = false;
 	}
 
-	function getSelectedModuleName(): string {
-		if (selectedModule === '__all__') return 'All modules';
-		const module = availableModules.find((m) => m.id === selectedModule);
-		return module?.name || 'Select a module';
+	function getSelectionSummary(): string {
+		if (selectedModules.length === 0) return 'All modules';
+		if (selectedModules.length === availableModules.length) return 'All modules';
+		return `${selectedModules.length} module${selectedModules.length > 1 ? 's' : ''} selected`;
 	}
 </script>
 
@@ -85,29 +111,57 @@
 				/>
 			</div>
 
-			<!-- Allowed Module (Single Select) -->
+			<!-- Allowed Modules (Multi-select) -->
 			<div class="space-y-2">
-				<Label for="module-select">
-					Allowed Module
-					<span class="text-xs text-muted-foreground font-normal">(optional)</span>
-				</Label>
-				<div class="flex items-start gap-2 text-xs text-muted-foreground mb-2">
+				<Label>Allowed Modules</Label>
+				<div class="flex items-start gap-2 text-xs text-muted-foreground">
 					<Info class="w-3 h-3 flex-shrink-0 mt-0.5" />
-					<p>Leave as "All modules" to allow access to all external modules, or select a specific module to restrict access.</p>
+					<p>Select specific modules to restrict access, or leave empty for all modules.</p>
 				</div>
 
 				{#if availableModules.length > 0}
-					<Select bind:value={selectedModule}>
-						<SelectTrigger id="module-select">
-							{getSelectedModuleName()}
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="__all__">All modules</SelectItem>
-							{#each availableModules as module}
-								<SelectItem value={module.id}>{module.name}</SelectItem>
-							{/each}
-						</SelectContent>
-					</Select>
+					<!-- Selection Summary / Toggle Button -->
+					<button
+						type="button"
+						onclick={() => (showModuleList = !showModuleList)}
+						class="w-full flex items-center justify-between px-3 py-2 border border-border rounded-lg bg-background hover:bg-accent transition-colors"
+					>
+						<span class="text-sm">{getSelectionSummary()}</span>
+						{#if showModuleList}
+							<ChevronUp class="w-4 h-4 text-muted-foreground" />
+						{:else}
+							<ChevronDown class="w-4 h-4 text-muted-foreground" />
+						{/if}
+					</button>
+
+					<!-- Module List (Collapsible) -->
+					{#if showModuleList}
+						<div class="space-y-2 p-3 border border-border rounded-lg bg-muted/50">
+							<!-- Select All Option -->
+							<div class="flex items-center gap-2 pb-2 border-b border-border">
+								<Checkbox id="select-all" bind:checked={selectAll} />
+								<Label for="select-all" class="text-sm font-medium cursor-pointer flex-1">
+									All modules ({availableModules.length})
+								</Label>
+							</div>
+
+							<!-- Individual Modules -->
+							<div class="space-y-1 pt-1">
+								{#each availableModules as module (module.id)}
+									<div class="flex items-center gap-2">
+										<Checkbox
+											id="module-{module.id}"
+											checked={selectedModules.includes(module.id)}
+											onChange={() => toggleModule(module.id)}
+										/>
+										<Label for="module-{module.id}" class="text-sm cursor-pointer flex-1">
+											{module.name}
+										</Label>
+									</div>
+								{/each}
+							</div>
+						</div>
+					{/if}
 				{:else}
 					<div class="text-sm text-muted-foreground italic border rounded-md p-3">
 						No external modules available. The key will have access to all modules.
@@ -117,10 +171,7 @@
 
 			<!-- Expiration -->
 			<div class="space-y-2">
-				<Label for="key-expires">
-					Expiration Date
-					<span class="text-xs text-muted-foreground font-normal">(optional)</span>
-				</Label>
+				<Label for="key-expires">Expiration Date</Label>
 				<Input id="key-expires" type="date" bind:value={expiresAt} />
 				<p class="text-xs text-muted-foreground">
 					Leave empty for a key that never expires

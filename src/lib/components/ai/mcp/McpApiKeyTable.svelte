@@ -4,7 +4,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Select, SelectTrigger, SelectContent, SelectItem } from '$lib/components/ui/select';
-	import { Key, Search, Plus, Trash2, AlertCircle } from 'lucide-svelte';
+	import { Key, Search, Plus, Edit, Trash2, AlertCircle } from 'lucide-svelte';
 	import { Empty, EmptyMedia, EmptyTitle, EmptyContent } from '$lib/components/ui/empty';
 
 	export interface ApiKey {
@@ -21,11 +21,13 @@
 		keys = [],
 		availableModules = [],
 		onCreateKey,
+		onEditKey,
 		onRevokeKey
 	}: {
 		keys: ApiKey[];
 		availableModules: { id: string; name: string }[];
 		onCreateKey?: () => void;
+		onEditKey?: (keyId: string) => void;
 		onRevokeKey?: (keyId: string) => void | Promise<void>;
 	} = $props();
 
@@ -207,17 +209,29 @@
 										{/if}
 									</td>
 									<td class="px-6 py-5 text-right">
-										{#if onRevokeKey}
-											<Button
-												variant="ghost"
-												size="sm"
-												onclick={() => onRevokeKey(key.id)}
-												class="text-destructive hover:text-destructive"
-												title="Revoke key"
-											>
-												<Trash2 class="w-4 h-4" />
-											</Button>
-										{/if}
+										<div class="flex items-center justify-end gap-1">
+											{#if onEditKey}
+												<Button
+													variant="ghost"
+													size="sm"
+													onclick={() => onEditKey(key.id)}
+													title="Edit key"
+												>
+													<Edit class="w-4 h-4" />
+												</Button>
+											{/if}
+											{#if onRevokeKey}
+												<Button
+													variant="ghost"
+													size="sm"
+													onclick={() => onRevokeKey(key.id)}
+													class="text-destructive hover:text-destructive"
+													title="Revoke key"
+												>
+													<Trash2 class="w-4 h-4" />
+												</Button>
+											{/if}
+										</div>
 									</td>
 								</tr>
 							{/each}
