@@ -8,7 +8,8 @@ import type { InitializeRequestParams, InitializeResult, MCPContext } from '$lib
 import { getToolCountByModule } from '../discovery/tools-discovery';
 import { getResourceCountByModule } from '../discovery/resources-discovery';
 import { getPromptCountByModule } from '../discovery/prompts-discovery';
-import { createSuccessResponse } from '../json-rpc';
+import { createSuccessResponse, errors } from '../json-rpc';
+import { InitializeRequestParamsSchema, validateRequest } from '../validation/schemas';
 
 /**
  * MCP Server info
@@ -36,11 +37,23 @@ const SERVER_CAPABILITIES = {
 export async function handleInitialize(
 	context: MCPContext,
 	requestId: number | string,
-	params: InitializeRequestParams
-): Promise<ReturnType<typeof createSuccessResponse>> {
+	params: unknown
+): Promise<ReturnType<typeof createSuccessResponse> | ReturnType<typeof errors.invalidParams>> {
+	// Validate params
+	const validation = validateRequest(InitializeRequestParamsSchema, params, requestId);
+
+	if (!validation.success) {
+		return validation.error;
+	}
+
+	const { protocolVersion } = validation.data;
+
 	// Validate protocol version - accept 2025-* (latest spec)
-	if (!params.protocolVersion.startsWith('2025-')) {
-		throw new Error('Unsupported protocol version. Supported: 2025-*');
+	// Note: Schema already validates format, but we check the year prefix
+	if (!protocolVersion.startsWith('2025-')) {
+		return errors.invalidParams(requestId, {
+			reason: 'Unsupported protocol version. Supported: 2025-*'
+		});
 	}
 
 	// Get capabilities based on available tools/resources/prompts

@@ -138,7 +138,7 @@ async function routeRequest(
 }
 
 /**
- * Validate and parse MCP request from SSE data
+ * Validate and parse MCP request from HTTP POST data
  */
 export function parseMcpRequest(data: string): JSONRPCRequest | null {
 	try {
@@ -150,11 +150,4 @@ export function parseMcpRequest(data: string): JSONRPCRequest | null {
 	} catch {
 		return null;
 	}
-}
-
-/**
- * Create invalid request error
- */
-export function createInvalidRequestError(): JSONRPCResponse {
-	return errors.invalidRequest(null);
 }

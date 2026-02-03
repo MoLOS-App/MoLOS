@@ -80,39 +80,3 @@ export function extractApiKeyFromRequest(request: Request): string | null {
 		request.headers.get('Authorization')
 	);
 }
-
-/**
- * Create authentication error response
- */
-export function createAuthErrorResponse(message: string = 'Authentication required') {
-	return {
-		jsonrpc: '2.0',
-		id: null,
-		error: {
-			code: -32000,
-			message: 'Authentication error',
-			data: {
-				reason: message
-			}
-		}
-	};
-}
-
-/**
- * Middleware: Authenticate MCP request
- *
- * Use this in your SSE endpoint to validate the API key before processing requests.
- */
-export function withAuth<T extends { apiKeyHeader: string | null; sessionId: string }>(
-	handler: (context: MCPContext, request: T) => Promise<unknown>
-) {
-	return async (request: T) => {
-		const authResult = await authenticateRequest(request.apiKeyHeader, request.sessionId);
-
-		if (!authResult.authenticated || !authResult.context) {
-			return createAuthErrorResponse(authResult.error?.message ?? 'Authentication failed');
-		}
-
-		return handler(authResult.context, request);
-	};
-}
