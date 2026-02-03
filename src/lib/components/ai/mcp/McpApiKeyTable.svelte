@@ -3,9 +3,9 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Badge } from '$lib/components/ui/badge';
-	import { Key, Search, Plus, Trash2, Copy, Check } from 'lucide-svelte';
+	import { Select, SelectTrigger, SelectContent, SelectItem } from '$lib/components/ui/select';
+	import { Key, Search, Plus, Trash2, AlertCircle } from 'lucide-svelte';
 	import { Empty, EmptyMedia, EmptyTitle, EmptyContent } from '$lib/components/ui/empty';
-	import { toast } from 'svelte-sonner';
 
 	export interface ApiKey {
 		id: string;
@@ -31,19 +31,6 @@
 
 	let searchQuery = $state('');
 	let statusFilter = $state('');
-	let copiedKeyId = $state<string | null>(null);
-
-	async function copyKey(key: ApiKey) {
-		const keyText = `mcp_live_${key.keyPrefix}_******`;
-		try {
-			await navigator.clipboard.writeText(keyText);
-			copiedKeyId = key.id;
-			toast.success('API key prefix copied to clipboard');
-			setTimeout(() => (copiedKeyId = null), 2000);
-		} catch {
-			toast.error('Failed to copy to clipboard');
-		}
-	}
 
 	const filteredKeys = $derived(
 		keys.filter((key) => {
@@ -89,15 +76,25 @@
 					class="w-64 pl-9 h-9"
 				/>
 			</div>
-			<select
-				bind:value={statusFilter}
-				class="px-3 py-2 text-sm border border-input bg-background text-foreground rounded-lg focus:ring-2 focus:ring-ring"
-			>
-				<option value="">All Statuses</option>
-				<option value="active">Active</option>
-				<option value="disabled">Disabled</option>
-				<option value="revoked">Revoked</option>
-			</select>
+			<Select bind:value={statusFilter}>
+				<SelectTrigger class="h-9 w-40">
+					{#if statusFilter === ''}
+						All Statuses
+					{:else if statusFilter === 'active'}
+						Active
+					{:else if statusFilter === 'disabled'}
+						Disabled
+					{:else if statusFilter === 'revoked'}
+						Revoked
+					{/if}
+				</SelectTrigger>
+				<SelectContent>
+					<SelectItem value="">All Statuses</SelectItem>
+					<SelectItem value="active">Active</SelectItem>
+					<SelectItem value="disabled">Disabled</SelectItem>
+					<SelectItem value="revoked">Revoked</SelectItem>
+				</SelectContent>
+			</Select>
 		</div>
 		{#if onCreateKey}
 			<Button onclick={onCreateKey} class="gap-2">
@@ -132,32 +129,32 @@
 						<thead class="bg-muted/50 border-b border-border">
 							<tr>
 								<th
-									class="px-6 py-3 text-left text-xs font-bold tracking-wider text-muted-foreground uppercase"
+									class="px-6 py-4 text-left text-xs font-bold tracking-wider text-muted-foreground uppercase"
 								>
 									Name
 								</th>
 								<th
-									class="px-6 py-3 text-left text-xs font-bold tracking-wider text-muted-foreground uppercase"
+									class="px-6 py-4 text-left text-xs font-bold tracking-wider text-muted-foreground uppercase"
 								>
-									Key Prefix
+									Key
 								</th>
 								<th
-									class="px-6 py-3 text-left text-xs font-bold tracking-wider text-muted-foreground uppercase"
+									class="px-6 py-4 text-left text-xs font-bold tracking-wider text-muted-foreground uppercase"
 								>
 									Modules
 								</th>
 								<th
-									class="px-6 py-3 text-left text-xs font-bold tracking-wider text-muted-foreground uppercase"
+									class="px-6 py-4 text-left text-xs font-bold tracking-wider text-muted-foreground uppercase"
 								>
 									Status
 								</th>
 								<th
-									class="px-6 py-3 text-left text-xs font-bold tracking-wider text-muted-foreground uppercase"
+									class="px-6 py-4 text-left text-xs font-bold tracking-wider text-muted-foreground uppercase"
 								>
 									Last Used
 								</th>
 								<th
-									class="px-6 py-3 text-right text-xs font-bold tracking-wider text-muted-foreground uppercase"
+									class="px-6 py-4 text-right text-xs font-bold tracking-wider text-muted-foreground uppercase"
 								>
 									Actions
 								</th>
@@ -166,7 +163,7 @@
 						<tbody class="divide-y divide-border">
 							{#each filteredKeys as key}
 								<tr class="hover:bg-accent/50">
-									<td class="px-6 py-4">
+									<td class="px-6 py-5">
 										<div class="text-sm font-medium text-foreground">{key.name}</div>
 										{#if key.expiresAt}
 											<div class="text-xs text-muted-foreground">
@@ -174,12 +171,12 @@
 											</div>
 										{/if}
 									</td>
-									<td class="px-6 py-4">
-										<code class="text-sm font-mono text-foreground bg-muted px-2 py-1 rounded">
+									<td class="px-6 py-5">
+										<code class="text-sm font-mono text-foreground bg-muted px-3 py-2 rounded block">
 											mcp_live_{key.keyPrefix}_******
 										</code>
 									</td>
-									<td class="px-6 py-4">
+									<td class="px-6 py-5">
 										{#if key.allowedModules && key.allowedModules.length > 0}
 											<div class="flex flex-wrap gap-1">
 												{#each key.allowedModules.slice(0, 2) as moduleId (moduleId)}
@@ -197,45 +194,30 @@
 											<span class="text-sm text-muted-foreground">All modules</span>
 										{/if}
 									</td>
-									<td class="px-6 py-4">
+									<td class="px-6 py-5">
 										<Badge class={getStatusBadge(key).class}>
 											{getStatusBadge(key).label}
 										</Badge>
 									</td>
-									<td class="px-6 py-4 text-sm text-muted-foreground">
+									<td class="px-6 py-5 text-sm text-muted-foreground">
 										{#if key.lastUsedAt}
 											{new Date(key.lastUsedAt).toLocaleString()}
 										{:else}
 											Never
 										{/if}
 									</td>
-									<td class="px-6 py-4 text-right">
-										<div class="flex items-center justify-end gap-1">
+									<td class="px-6 py-5 text-right">
+										{#if onRevokeKey}
 											<Button
 												variant="ghost"
 												size="sm"
-												onclick={() => copyKey(key)}
-												class="gap-1"
-												title="Copy key prefix"
+												onclick={() => onRevokeKey(key.id)}
+												class="text-destructive hover:text-destructive"
+												title="Revoke key"
 											>
-												{#if copiedKeyId === key.id}
-													<Check class="w-4 h-4 text-success" />
-												{:else}
-													<Copy class="w-4 h-4" />
-												{/if}
+												<Trash2 class="w-4 h-4" />
 											</Button>
-											{#if onRevokeKey}
-												<Button
-													variant="ghost"
-													size="sm"
-													onclick={() => onRevokeKey(key.id)}
-													class="text-destructive hover:text-destructive"
-													title="Revoke key"
-												>
-													<Trash2 class="w-4 h-4" />
-												</Button>
-											{/if}
-										</div>
+										{/if}
 									</td>
 								</tr>
 							{/each}
@@ -245,4 +227,20 @@
 			{/if}
 		</CardContent>
 	</Card>
+
+	<!-- Security Disclaimer -->
+	<div class="flex items-start gap-3 p-4 bg-muted/50 border border-border rounded-lg">
+		<AlertCircle class="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
+		<div class="space-y-1 text-sm">
+			<p class="font-medium text-foreground">Important security note:</p>
+			<p class="text-muted-foreground">
+				For security reasons, the database only stores a hash of your API keys, not the full
+				secret. The complete key is only shown once at creation time. Existing keys (created
+				before this session) cannot have their full secret retrieved.
+			</p>
+			<p class="text-muted-foreground">
+				After a page refresh or reload, only the masked version will be available again.
+			</p>
+		</div>
+	</div>
 </div>
