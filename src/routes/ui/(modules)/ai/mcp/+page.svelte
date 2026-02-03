@@ -46,6 +46,43 @@
 
 	let { data }: Props = $props();
 
+	// Local reactive state for data
+	let localKeys = $state([...data.keys]);
+	let localResources = $state([...data.resources]);
+	let localPrompts = $state([...data.prompts]);
+	let localLogs = $state([...data.logs]);
+
+	// Refresh function to fetch latest data from server
+	async function refreshData() {
+		try {
+			// Fetch keys - returns { items: [...], total, page, limit, hasMore }
+			const keysResponse = await fetch('/api/ai/mcp/keys?limit=100');
+			if (keysResponse.ok) {
+				const keysData = await keysResponse.json();
+				localKeys = [...keysData.items];
+			}
+
+			// Fetch resources - returns { items: [...], total, page, limit, hasMore }
+			const resourcesResponse = await fetch('/api/ai/mcp/resources?limit=100');
+			if (resourcesResponse.ok) {
+				const resourcesData = await resourcesResponse.json();
+				localResources = [...resourcesData.items];
+			}
+
+			// Fetch prompts - returns { items: [...], total, page, limit, hasMore }
+			const promptsResponse = await fetch('/api/ai/mcp/prompts?limit=100');
+			if (promptsResponse.ok) {
+				const promptsData = await promptsResponse.json();
+				localPrompts = [...promptsData.items];
+			}
+
+			// Logs can't be refreshed via API - they're only loaded server-side
+			// For a full refresh including logs, user would need to reload the page
+		} catch (error) {
+			console.error('Failed to refresh data:', error);
+		}
+	}
+
 	// Tab state - initialize from URL params to avoid prop reference warning
 	let activeTab = $state($page.url.searchParams.get('tab') || 'dashboard');
 
@@ -122,7 +159,8 @@
 			createdKeySecret = result.fullKey;
 			showCreateKeyDialog = false;
 			showKeySecret = true;
-			window.location.reload();
+			// Don't reload - let user view the secret first
+			// Table will be refreshed when they close the modal
 		}
 	}
 
@@ -134,13 +172,15 @@
 		});
 
 		if (response.ok) {
-			window.location.reload();
+			await refreshData();
 		}
 	}
 
-	function closeKeySecret() {
+	async function closeKeySecret() {
 		showKeySecret = false;
 		createdKeySecret = '';
+		// Refresh data after closing the secret modal
+		await refreshData();
 	}
 
 	// API Key handlers
@@ -158,7 +198,7 @@
 		if (response.ok) {
 			showEditKeyDialog = false;
 			editingKey = null;
-			window.location.reload();
+			await refreshData();
 		}
 	}
 
@@ -172,12 +212,12 @@
 		if (response.ok) {
 			showEditKeyDialog = false;
 			editingKey = null;
-			window.location.reload();
+			await refreshData();
 		}
 	}
 
 	function openEditKey(keyId: string) {
-		const key = data.keys.find((k) => k.id === keyId);
+		const key = localKeys.find((k) => k.id === keyId);
 		if (key) {
 			editingKey = {
 				id: key.id,
@@ -211,7 +251,7 @@
 
 		if (response.ok) {
 			showCreateResourceDialog = false;
-			window.location.reload();
+			await refreshData();
 		}
 	}
 
@@ -233,12 +273,12 @@
 		if (response.ok) {
 			showEditResourceDialog = false;
 			editingResource = null;
-			window.location.reload();
+			await refreshData();
 		}
 	}
 
 	function openEditResource(resourceId: string) {
-		const resource = data.resources.find((r) => r.id === resourceId);
+		const resource = localResources.find((r) => r.id === resourceId);
 		if (resource) {
 			editingResource = {
 				id: resource.id,
@@ -262,7 +302,7 @@
 		});
 
 		if (response.ok) {
-			window.location.reload();
+			await refreshData();
 		}
 	}
 
@@ -287,7 +327,7 @@
 
 		if (response.ok) {
 			showCreatePromptDialog = false;
-			window.location.reload();
+			await refreshData();
 		}
 	}
 
@@ -312,12 +352,12 @@
 		if (response.ok) {
 			showEditPromptDialog = false;
 			editingPrompt = null;
-			window.location.reload();
+			await refreshData();
 		}
 	}
 
 	function openEditPrompt(promptId: string) {
-		const prompt = data.prompts.find((p) => p.id === promptId);
+		const prompt = localPrompts.find((p) => p.id === promptId);
 		if (prompt) {
 			editingPrompt = {
 				id: prompt.id,
@@ -344,7 +384,7 @@
 		});
 
 		if (response.ok) {
-			window.location.reload();
+			await refreshData();
 		}
 	}
 
@@ -358,7 +398,7 @@
 </svelte:head>
 
 <div class="min-h-screen bg-background">
-	<div class="mx-auto max-w-7xl space-y-8 p-4 md:p-6 lg:p-8">
+	<div class="p-4 mx-auto space-y-8 max-w-7xl md:p-6 lg:p-8">
 		<!-- Header -->
 		<div class="space-y-1">
 			<McpHeader serverOnline={true} />
@@ -375,7 +415,7 @@
 				<div class="flex items-start justify-between">
 					<div>
 						<h2 class="text-2xl font-semibold tracking-tight">Dashboard</h2>
-						<p class="text-sm text-muted-foreground mt-1">Monitor your MCP server at a glance</p>
+						<p class="mt-1 text-sm text-muted-foreground">Monitor your MCP server at a glance</p>
 					</div>
 					<Button
 						variant="ghost"
@@ -390,7 +430,7 @@
 
 				<!-- Quick Stats - Modern Cards -->
 				{#if data.stats}
-					<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+					<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
 						<McpStatsCard
 							title="Active Keys"
 							value={data.stats.activeKeys}
@@ -422,26 +462,17 @@
 				{/if}
 
 				<!-- Main Content Grid -->
-				<div class="grid grid-cols-1 xl:grid-cols-6 gap-6">
-					<!-- Left Column -->
-					<div class="xl:col-span-4 space-y-6">
-						<!-- Quick Start -->
-						<McpQuickStart />
-
-						<!-- Recent Activity -->
-						<McpRecentActivity
-							logs={data.recentLogs}
-							onViewAll={() => (activeTab = 'logs')}
-						/>
-					</div>
-
-					<!-- Right Column -->
-					<div class="xl:col-span-2 space-y-6">
-						<!-- Connection Info -->
+				<div class="flex flex-col xl:grid-cols-6">
+					
+					<!-- <div class="flex flex-row justify-between w-full pb-6">
 						<McpConnectionInfo />
 
-						<!-- Available Modules -->
 						<McpModulesGrid modules={data.availableModules} />
+					</div> -->
+
+					<div class="space-y-6 xl:col-span-4">
+						<!-- Quick Start -->
+						<McpQuickStart />
 					</div>
 				</div>
 			</div>
@@ -449,7 +480,7 @@
 		{:else if activeTab === 'keys'}
 			<!-- API Keys Tab -->
 			<McpApiKeyTable
-				keys={data.keys.map((k) => ({
+				keys={localKeys.map((k) => ({
 					...k,
 					// Map to expected format
 					status: k.status as 'active' | 'disabled' | 'revoked'
@@ -464,7 +495,7 @@
 		{:else if activeTab === 'resources'}
 			<!-- Resources Tab -->
 			<McpResourcesTable
-				resources={data.resources.map((r) => ({
+				resources={localResources.map((r) => ({
 					...r,
 					moduleId: r.moduleId ?? null
 				}))}
@@ -478,7 +509,7 @@
 		{:else if activeTab === 'prompts'}
 			<!-- Prompts Tab -->
 			<McpPromptsTable
-				prompts={data.prompts.map((p) => ({
+				prompts={localPrompts.map((p) => ({
 					...p,
 					moduleId: p.moduleId ?? null
 				}))}
@@ -492,7 +523,7 @@
 		{:else if activeTab === 'logs'}
 			<!-- Activity Logs Tab -->
 			<McpLogsTable
-				logs={data.logs}
+				logs={localLogs}
 				apiKeyOptions={data.apiKeysForFilter}
 				onShowHelp={() => (showHelpDialog = true)}
 			/>

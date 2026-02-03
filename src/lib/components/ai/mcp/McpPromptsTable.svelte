@@ -62,7 +62,7 @@
 	<div class="flex items-center justify-between">
 		<div class="flex items-center gap-4">
 			<div class="relative">
-				<Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+				<Search class="absolute w-4 h-4 -translate-y-1/2 left-3 top-1/2 text-muted-foreground" />
 				<Input
 					bind:value={searchQuery}
 					placeholder="Search prompts..."
@@ -70,7 +70,7 @@
 				/>
 			</div>
 			<Select bind:value={moduleFilter}>
-				<SelectTrigger class="h-9 w-40">
+				<SelectTrigger class="w-40 h-9">
 					{#if moduleFilter === ''}
 						All Modules
 					{:else}
@@ -85,7 +85,7 @@
 				</SelectContent>
 			</Select>
 			<Select bind:value={enabledFilter}>
-				<SelectTrigger class="h-9 w-32">
+				<SelectTrigger class="w-32 h-9">
 					{#if enabledFilter === ''}
 						All Status
 					{:else if enabledFilter === 'true'}
@@ -123,7 +123,7 @@
 	</div>
 
 	<!-- Table -->
-	<Card>
+	<Card class="p-0">
 		<CardContent class="p-0">
 			{#if filteredPrompts.length === 0}
 				<div class="p-12">
@@ -150,35 +150,35 @@
 			{:else}
 				<div class="overflow-x-auto">
 					<table class="w-full">
-						<thead class="bg-muted/50 border-b border-border">
+						<thead class="border-b bg-muted/50 border-border">
 							<tr>
 								<th
-									class="px-6 py-3 text-left text-xs font-bold tracking-wider text-muted-foreground uppercase"
+									class="px-6 py-3 text-xs font-bold tracking-wider text-left uppercase text-muted-foreground"
 								>
 									Name
 								</th>
 								<th
-									class="px-6 py-3 text-left text-xs font-bold tracking-wider text-muted-foreground uppercase"
+									class="px-6 py-3 text-xs font-bold tracking-wider text-left uppercase text-muted-foreground"
 								>
 									Description
 								</th>
 								<th
-									class="px-6 py-3 text-left text-xs font-bold tracking-wider text-muted-foreground uppercase"
+									class="px-6 py-3 text-xs font-bold tracking-wider text-left uppercase text-muted-foreground"
 								>
 									Arguments
 								</th>
 								<th
-									class="px-6 py-3 text-left text-xs font-bold tracking-wider text-muted-foreground uppercase"
+									class="px-6 py-3 text-xs font-bold tracking-wider text-left uppercase text-muted-foreground"
 								>
 									Module
 								</th>
 								<th
-									class="px-6 py-3 text-left text-xs font-bold tracking-wider text-muted-foreground uppercase"
+									class="px-6 py-3 text-xs font-bold tracking-wider text-left uppercase text-muted-foreground"
 								>
 									Status
 								</th>
 								<th
-									class="px-6 py-3 text-right text-xs font-bold tracking-wider text-muted-foreground uppercase"
+									class="px-6 py-3 text-xs font-bold tracking-wider text-right uppercase text-muted-foreground"
 								>
 									Actions
 								</th>
@@ -191,7 +191,7 @@
 										<div class="text-sm font-medium text-foreground">{prompt.name}</div>
 									</td>
 									<td class="px-6 py-4">
-										<div class="text-sm text-muted-foreground max-w-md truncate">
+										<div class="max-w-md text-sm truncate text-muted-foreground">
 											{prompt.description}
 										</div>
 									</td>

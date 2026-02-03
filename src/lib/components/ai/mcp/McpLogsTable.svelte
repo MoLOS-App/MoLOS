@@ -91,9 +91,9 @@
 
 <div class="space-y-6">
 	<!-- Header -->
-	<div class="flex items-center gap-4 flex-wrap">
+	<div class="flex flex-wrap items-center gap-4">
 		<div class="relative flex-1 min-w-[200px] max-w-md">
-			<Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+			<Search class="absolute w-4 h-4 -translate-y-1/2 left-3 top-1/2 text-muted-foreground" />
 			<Input
 				bind:value={searchQuery}
 				placeholder="Search logs..."
@@ -101,7 +101,7 @@
 			/>
 		</div>
 		<Select bind:value={apiKeyFilter}>
-			<SelectTrigger class="h-9 w-40">
+			<SelectTrigger class="w-40 h-9">
 				{apiKeyFilter ? apiKeyOptions.find(k => k.id === apiKeyFilter)?.name || 'All API Keys' : 'All API Keys'}
 			</SelectTrigger>
 			<SelectContent>
@@ -112,7 +112,7 @@
 			</SelectContent>
 		</Select>
 		<Select bind:value={methodFilter}>
-			<SelectTrigger class="h-9 w-40">
+			<SelectTrigger class="w-40 h-9">
 				{methodFilter || 'All Methods'}
 			</SelectTrigger>
 			<SelectContent>
@@ -123,7 +123,7 @@
 			</SelectContent>
 		</Select>
 		<Select bind:value={statusFilter}>
-			<SelectTrigger class="h-9 w-40">
+			<SelectTrigger class="w-40 h-9">
 				{#if statusFilter === ''}
 					All Status
 				{:else if statusFilter === 'success'}
@@ -152,7 +152,7 @@
 	</div>
 
 	<!-- Table -->
-	<Card>
+	<Card class="p-0">
 		<CardContent class="p-0">
 			{#if filteredLogs.length === 0}
 				<div class="p-12">
@@ -166,30 +166,30 @@
 			{:else}
 				<div class="overflow-x-auto">
 					<table class="w-full">
-						<thead class="bg-muted/50 border-b border-border">
+						<thead class="border-b bg-muted/50 border-border">
 							<tr>
 								<th
-									class="px-6 py-3 text-left text-xs font-bold tracking-wider text-muted-foreground uppercase"
+									class="px-6 py-3 text-xs font-bold tracking-wider text-left uppercase text-muted-foreground"
 								>
 									Time
 								</th>
 								<th
-									class="px-6 py-3 text-left text-xs font-bold tracking-wider text-muted-foreground uppercase"
+									class="px-6 py-3 text-xs font-bold tracking-wider text-left uppercase text-muted-foreground"
 								>
 									Method
 								</th>
 								<th
-									class="px-6 py-3 text-left text-xs font-bold tracking-wider text-muted-foreground uppercase"
+									class="px-6 py-3 text-xs font-bold tracking-wider text-left uppercase text-muted-foreground"
 								>
 									Target
 								</th>
 								<th
-									class="px-6 py-3 text-left text-xs font-bold tracking-wider text-muted-foreground uppercase"
+									class="px-6 py-3 text-xs font-bold tracking-wider text-left uppercase text-muted-foreground"
 								>
 									Status
 								</th>
 								<th
-									class="px-6 py-3 text-left text-xs font-bold tracking-wider text-muted-foreground uppercase"
+									class="px-6 py-3 text-xs font-bold tracking-wider text-left uppercase text-muted-foreground"
 								>
 									Duration
 								</th>
@@ -204,7 +204,7 @@
 										</div>
 									</td>
 									<td class="px-6 py-4">
-										<Badge variant="secondary" class="text-xs font-mono">
+										<Badge variant="secondary" class="font-mono text-xs">
 											{log.method}
 										</Badge>
 									</td>
@@ -212,7 +212,7 @@
 										{#if log.toolName}
 											<div class="text-sm font-medium text-foreground">{log.toolName}</div>
 										{:else if log.resourceName}
-											<code class="text-sm font-mono text-foreground bg-muted px-2 py-1 rounded">
+											<code class="px-2 py-1 font-mono text-sm rounded text-foreground bg-muted">
 												{log.resourceName}
 											</code>
 										{:else if log.promptName}
