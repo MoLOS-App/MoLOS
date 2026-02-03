@@ -5,20 +5,27 @@
  */
 
 import { listMcpPrompts, getMcpPrompt } from '../discovery/prompts-discovery';
-import { McpLogRepository } from '$lib/repositories/ai/mcp';
-import { createSuccessResponse, errors, parseMethod } from '../json-rpc';
-import { sanitizeErrorMessage } from '../mcp-utils';
-import type { MCPContext, PromptsListRequest, PromptsGetRequest } from '$lib/models/ai/mcp';
+import { createSuccessResponse, errors } from '../json-rpc';
+import type { MCPContext } from '$lib/models/ai/mcp';
+import { PromptsGetRequestParamsSchema, validateRequest } from '../validation/schemas';
+import { withErrorHandling, MCP_ERROR_CODES } from './error-handler';
 
 /**
  * Handle prompts/list request
  */
 export async function handlePromptsList(
 	context: MCPContext,
-	_requestId: number | string
+	requestId: number | string
 ): Promise<ReturnType<typeof createSuccessResponse>> {
-	const result = await listMcpPrompts(context);
-	return createSuccessResponse(_requestId, result);
+	return withErrorHandling(
+		context,
+		requestId,
+		'prompts/list',
+		async () => {
+			const result = await listMcpPrompts(context);
+			return result;
+		}
+	);
 }
 
 /**
@@ -27,68 +34,32 @@ export async function handlePromptsList(
 export async function handlePromptsGet(
 	context: MCPContext,
 	requestId: number | string,
-	params: PromptsGetRequest['params']
+	params: unknown
 ): Promise<ReturnType<typeof createSuccessResponse> | ReturnType<typeof errors.invalidParams>> {
-	const { name, arguments: args = {} } = params;
+	// Validate params first
+	const validation = validateRequest(PromptsGetRequestParamsSchema, params, requestId);
 
-	if (!name) {
-		return errors.invalidParams(requestId, {
-			reason: 'Missing prompt name'
-		});
+	if (!validation.success) {
+		return validation.error;
 	}
 
-	const startTime = Date.now();
-	let logRepo: McpLogRepository | null = null;
+	const { name, arguments: args } = validation.data;
 
-	try {
-		// Get the prompt
-		const result = await getMcpPrompt(context, name, args);
-
-		// Log success
-		logRepo = new McpLogRepository();
-		await logRepo.create({
-			userId: context.userId,
-			apiKeyId: context.apiKeyId,
-			sessionId: context.sessionId,
-			requestId: String(requestId),
-			method: 'prompts/get',
+	// Use error handling wrapper
+	return withErrorHandling(
+		context,
+		requestId,
+		'prompts/get',
+		async () => {
+			// Get the prompt
+			const result = await getMcpPrompt(context, name, args);
+			return result;
+		},
+		{
 			promptName: name,
-			params: args,
-			result,
-			status: 'success',
-			durationMs: Date.now() - startTime
-		});
-
-		return createSuccessResponse(requestId, result);
-	} catch (error) {
-		// Log error
-		if (!logRepo) {
-			logRepo = new McpLogRepository();
+			params: args
 		}
-
-		try {
-			await logRepo.create({
-				userId: context.userId,
-				apiKeyId: context.apiKeyId,
-				sessionId: context.sessionId,
-				requestId: String(requestId),
-				method: 'prompts/get',
-				promptName: name,
-				params: args,
-				result: null,
-				status: 'error',
-				errorMessage: sanitizeErrorMessage(error),
-				durationMs: Date.now() - startTime
-			});
-		} catch {
-			// Ignore logging errors
-		}
-
-		// Return error response
-		return errors.internalError(requestId, {
-			reason: sanitizeErrorMessage(error)
-		});
-	}
+	);
 }
 
 /**
@@ -105,7 +76,7 @@ export async function handlePromptsMethod(
 	}
 
 	if (action === 'get') {
-		return handlePromptsGet(context, requestId, params as PromptsGetRequest['params']);
+		return handlePromptsGet(context, requestId, params);
 	}
 
 	return errors.methodNotFound(requestId);

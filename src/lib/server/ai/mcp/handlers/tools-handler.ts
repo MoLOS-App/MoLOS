@@ -5,21 +5,29 @@
  */
 
 import { AiToolbox } from '../../toolbox';
-import { formatToolResult, sanitizeErrorMessage } from '../mcp-utils';
-import { createSuccessResponse, errors, parseMethod } from '../json-rpc';
+import { formatToolResult } from '../mcp-utils';
+import { createSuccessResponse, errors } from '../json-rpc';
 import { listMcpTools } from '../discovery/tools-discovery';
-import { McpLogRepository } from '$lib/repositories/ai/mcp';
-import type { MCPContext, ToolsListRequest, ToolsCallRequest } from '$lib/models/ai/mcp';
+import type { MCPContext, ToolsCallRequest } from '$lib/models/ai/mcp';
+import { ToolsCallRequestParamsSchema, validateRequest } from '../validation/schemas';
+import { withErrorHandling, createToolExecutionError, MCP_ERROR_CODES } from './error-handler';
 
 /**
  * Handle tools/list request
  */
 export async function handleToolsList(
 	context: MCPContext,
-	_requestId: number | string
+	requestId: number | string
 ): Promise<ReturnType<typeof createSuccessResponse>> {
-	const result = await listMcpTools(context);
-	return createSuccessResponse(_requestId, result);
+	return withErrorHandling(
+		context,
+		requestId,
+		'tools/list',
+		async () => {
+			const result = await listMcpTools(context);
+			return result;
+		}
+	);
 }
 
 /**
@@ -28,92 +36,50 @@ export async function handleToolsList(
 export async function handleToolsCall(
 	context: MCPContext,
 	requestId: number | string,
-	params: ToolsCallRequest['params']
+	params: unknown
 ): Promise<ReturnType<typeof createSuccessResponse> | ReturnType<typeof errors.invalidParams>> {
-	const { name, arguments: args = {} } = params;
+	// Validate params first (outside of error handling wrapper)
+	const validation = validateRequest(ToolsCallRequestParamsSchema, params, requestId);
 
-	if (!name) {
-		return errors.invalidParams(requestId, {
-			reason: 'Missing tool name'
-		});
+	if (!validation.success) {
+		return validation.error;
 	}
 
-	const startTime = Date.now();
-	let logRepo: McpLogRepository | null = null;
+	const { name, arguments: args } = validation.data;
 
-	try {
-		// Get the toolbox
-		const toolbox = new AiToolbox();
+	// Use error handling wrapper for the actual execution
+	return withErrorHandling(
+		context,
+		requestId,
+		'tools/call',
+		async () => {
+			// Get the toolbox
+			const toolbox = new AiToolbox();
 
-		// Get all available tools for this user
-		const tools = await toolbox.getTools(context.userId, context.allowedModules);
+			// Get all available tools for this user
+			const tools = await toolbox.getTools(context.userId, context.allowedModules);
 
-		// Find the tool
-		const tool = tools.find((t) => t.name === name);
+			// Find the tool
+			const tool = tools.find((t) => t.name === name);
 
-		if (!tool) {
-			return errors.methodNotFound(requestId);
-		}
+			if (!tool) {
+				// Throw to be caught by error handler
+				const error = new Error(`Tool not found: ${name}`);
+				(error as any).code = MCP_ERROR_CODES.TOOL_NOT_FOUND;
+				throw error;
+			}
 
-		// Execute the tool
-		const result = await tool.execute(args);
+			// Execute the tool
+			const result = await tool.execute(args);
 
-		// Format for MCP response
-		const formatted = formatToolResult(result);
-
-		// Log success
-		logRepo = new McpLogRepository();
-		await logRepo.create({
-			userId: context.userId,
-			apiKeyId: context.apiKeyId,
-			sessionId: context.sessionId,
-			requestId: String(requestId),
-			method: 'tools/call',
+			// Format for MCP response
+			return formatToolResult(result);
+		},
+		{
 			toolName: name,
-			params: args,
-			result,
-			status: 'success',
-			durationMs: Date.now() - startTime
-		});
-
-		return createSuccessResponse(requestId, formatted);
-	} catch (error) {
-		// Log error
-		if (!logRepo) {
-			logRepo = new McpLogRepository();
+			params: args
 		}
-
-		try {
-			await logRepo.create({
-				userId: context.userId,
-				apiKeyId: context.apiKeyId,
-				sessionId: context.sessionId,
-				requestId: String(requestId),
-				method: 'tools/call',
-				toolName: name,
-				params: args,
-				result: null,
-				status: 'error',
-				errorMessage: sanitizeErrorMessage(error),
-				durationMs: Date.now() - startTime
-			});
-		} catch {
-			// Ignore logging errors
-		}
-
-		// Return error response
-		return createSuccessResponse(requestId, {
-			content: [
-				{
-					type: 'text',
-					text: JSON.stringify({
-						error: sanitizeErrorMessage(error)
-					})
-				}
-			],
-			isError: true
-		});
-	}
+	);
 }
 
 /**
@@ -130,7 +96,7 @@ export async function handleToolsMethod(
 	}
 
 	if (action === 'call') {
-		return handleToolsCall(context, requestId, params as ToolsCallRequest['params']);
+		return handleToolsCall(context, requestId, params);
 	}
 
 	return errors.methodNotFound(requestId);

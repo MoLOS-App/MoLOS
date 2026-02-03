@@ -5,20 +5,27 @@
  */
 
 import { listMcpResources, readMcpResource } from '../discovery/resources-discovery';
-import { McpLogRepository } from '$lib/repositories/ai/mcp';
-import { createSuccessResponse, errors, parseMethod } from '../json-rpc';
-import { sanitizeErrorMessage } from '../mcp-utils';
-import type { MCPContext, ResourcesListRequest, ResourcesReadRequest } from '$lib/models/ai/mcp';
+import { createSuccessResponse, errors } from '../json-rpc';
+import type { MCPContext } from '$lib/models/ai/mcp';
+import { ResourcesReadRequestParamsSchema, validateRequest } from '../validation/schemas';
+import { withErrorHandling, MCP_ERROR_CODES } from './error-handler';
 
 /**
  * Handle resources/list request
  */
 export async function handleResourcesList(
 	context: MCPContext,
-	_requestId: number | string
+	requestId: number | string
 ): Promise<ReturnType<typeof createSuccessResponse>> {
-	const result = await listMcpResources(context);
-	return createSuccessResponse(_requestId, result);
+	return withErrorHandling(
+		context,
+		requestId,
+		'resources/list',
+		async () => {
+			const result = await listMcpResources(context);
+			return result;
+		}
+	);
 }
 
 /**
@@ -27,68 +34,32 @@ export async function handleResourcesList(
 export async function handleResourcesRead(
 	context: MCPContext,
 	requestId: number | string,
-	params: ResourcesReadRequest['params']
+	params: unknown
 ): Promise<ReturnType<typeof createSuccessResponse> | ReturnType<typeof errors.invalidParams>> {
-	const { uri } = params;
+	// Validate params first
+	const validation = validateRequest(ResourcesReadRequestParamsSchema, params, requestId);
 
-	if (!uri) {
-		return errors.invalidParams(requestId, {
-			reason: 'Missing URI'
-		});
+	if (!validation.success) {
+		return validation.error;
 	}
 
-	const startTime = Date.now();
-	let logRepo: McpLogRepository | null = null;
+	const { uri } = validation.data;
 
-	try {
-		// Read the resource
-		const result = await readMcpResource(context, uri);
-
-		// Log success
-		logRepo = new McpLogRepository();
-		await logRepo.create({
-			userId: context.userId,
-			apiKeyId: context.apiKeyId,
-			sessionId: context.sessionId,
-			requestId: String(requestId),
-			method: 'resources/read',
+	// Use error handling wrapper
+	return withErrorHandling(
+		context,
+		requestId,
+		'resources/read',
+		async () => {
+			// Read the resource
+			const result = await readMcpResource(context, uri);
+			return result;
+		},
+		{
 			resourceName: uri,
-			params,
-			result,
-			status: 'success',
-			durationMs: Date.now() - startTime
-		});
-
-		return createSuccessResponse(requestId, result);
-	} catch (error) {
-		// Log error
-		if (!logRepo) {
-			logRepo = new McpLogRepository();
+			params
 		}
-
-		try {
-			await logRepo.create({
-				userId: context.userId,
-				apiKeyId: context.apiKeyId,
-				sessionId: context.sessionId,
-				requestId: String(requestId),
-				method: 'resources/read',
-				resourceName: uri,
-				params,
-				result: null,
-				status: 'error',
-				errorMessage: sanitizeErrorMessage(error),
-				durationMs: Date.now() - startTime
-			});
-		} catch {
-			// Ignore logging errors
-		}
-
-		// Return error response
-		return errors.internalError(requestId, {
-			reason: sanitizeErrorMessage(error)
-		});
-	}
+	);
 }
 
 /**
@@ -105,7 +76,7 @@ export async function handleResourcesMethod(
 	}
 
 	if (action === 'read') {
-		return handleResourcesRead(context, requestId, params as ResourcesReadRequest['params']);
+		return handleResourcesRead(context, requestId, params);
 	}
 
 	return errors.methodNotFound(requestId);
