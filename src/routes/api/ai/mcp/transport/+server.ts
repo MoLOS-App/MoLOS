@@ -12,8 +12,9 @@ import { error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { extractApiKeyFromRequest, authenticateRequest } from '$lib/server/ai/mcp/middleware/auth-middleware';
 import { handleMcpRequest, parseMcpRequest } from '$lib/server/ai/mcp/handlers';
-import { defaultRateLimiter } from '$lib/server/ai/mcp/mcp-utils';
+import { mcpRateLimiters } from '$lib/server/ai/mcp/rate-limit/sliding-window-limiter';
 import { mcpSecurityConfig } from '$lib/server/ai/mcp/config/security';
+import { createErrorResponse } from '$lib/server/ai/mcp/json-rpc';
 
 /**
  * Generate a unique request ID for tracing
@@ -108,9 +109,32 @@ export const POST: RequestHandler = async ({ request }) => {
 
 	const context = authResult.context;
 
-	// Check rate limit
-	if (!defaultRateLimiter.check(context.apiKeyId ?? context.userId)) {
-		return error(429, 'Rate limit exceeded');
+	// Check rate limit (returns JSON-RPC error if rate limited)
+	const rateLimitKey = context.apiKeyId ?? context.userId;
+	const rateLimitCheck = mcpRateLimiters.default.check(rateLimitKey);
+
+	if (!rateLimitCheck.allowed) {
+		// Return JSON-RPC error response for rate limit
+		const rateLimitErrorResponse = createErrorResponse(
+			1, // Will be replaced with actual request ID
+			-32001, // MCP rate limit error code
+			'Rate limit exceeded',
+			{
+				retryAfter: rateLimitCheck.retryAfter,
+				limit: mcpSecurityConfig.rateLimit.defaultMaxRequests,
+				window: `${mcpSecurityConfig.rateLimit.windowMs / 1000}s`
+			}
+		);
+
+		return new Response(JSON.stringify(rateLimitErrorResponse), {
+			status: 200, // Always return 200 for JSON-RPC
+			headers: {
+				'Content-Type': 'application/json',
+				'X-Request-ID': requestId,
+				'Retry-After': String(rateLimitCheck.retryAfter),
+				...getCorsHeaders(origin)
+			}
+		});
 	}
 
 	// Parse request body with size limit
@@ -160,6 +184,10 @@ export const POST: RequestHandler = async ({ request }) => {
 		'Content-Type': 'application/json',
 		'X-Request-ID': requestId
 	};
+
+	// Add rate limit info headers
+	headers['X-RateLimit-Remaining'] = String(rateLimitCheck.remaining);
+	headers['X-RateLimit-Reset'] = new Date(rateLimitCheck.resetAt).toISOString();
 
 	// Add CORS headers if enabled
 	const corsHeaders = getCorsHeaders(origin);
