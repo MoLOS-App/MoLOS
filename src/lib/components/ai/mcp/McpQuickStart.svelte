@@ -197,20 +197,20 @@
 
 			case 'cline':
 				return [
-					1. Open Cline in VS Code`,
-					2. Click the MCP icon in the sidebar',
-					3. Click "Edit MCP Settings"',
-					4. Add the JSON config below to your mcpServers',
-					5. Replace "your-api-key-here" with your API key
+					`1. Open Cline in VS Code`,
+					`2. Click the MCP icon in the sidebar`,
+					`3. Click "Edit MCP Settings"`,
+					`4. Add the JSON config below to your mcpServers`,
+					`5. Replace "your-api-key-here" with your API key`
 				];
 
 			case 'windsurf':
 				return [
-					1. Open Windsurf IDE',
-					2. Click the MCPs icon in the top right menu',
-					3. Click "Add new global MCP server" or edit mcp_config.json',
-					4. Add the JSON config below (replace "your-api-key-here")`,
-					5. Save and the server will be available in Cascade
+					`1. Open Windsurf IDE`,
+					`2. Click the MCPs icon in the top right menu`,
+					`3. Click "Add new global MCP server" or edit mcp_config.json`,
+					`4. Add the JSON config below (replace "your-api-key-here")`,
+					`5. Save and the server will be available in Cascade`
 				];
 
 			default:
