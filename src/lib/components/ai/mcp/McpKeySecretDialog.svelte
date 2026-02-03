@@ -30,11 +30,7 @@
 
 			// Show toast with longer duration (10 seconds)
 			toast.success('API key copied to clipboard', {
-				duration: 10000,
-				action: {
-					label: 'Dismiss',
-					onClick: () => {}
-				}
+				duration: 10000
 			});
 
 			// Reset the copied state after toast disappears
@@ -75,14 +71,14 @@
 			</p>
 
 			<div class="relative group">
-				<code class="block w-full p-4 bg-muted text-foreground text-sm font-mono rounded-lg break-all pr-24 select-all border-2 border-primary/20 group-hover:border-primary/40 transition-colors">
+				<code class="block w-full p-4 pr-24 font-mono text-sm break-all transition-colors border-2 rounded-lg select-all bg-muted text-foreground border-primary/20 group-hover:border-primary/40">
 					{keySecret}
 				</code>
 				<Button
 					variant="default"
 					size="sm"
 					onclick={copyToClipboard}
-					class="absolute right-2 top-1/2 -translate-y-1/2 shadow-lg"
+					class="absolute -translate-y-1/2 shadow-lg right-2 top-1/2"
 					title="Copy to clipboard"
 				>
 					{#if copied}
@@ -95,7 +91,7 @@
 				</Button>
 			</div>
 
-			<p class="text-xs text-muted-foreground flex items-center gap-1">
+			<p class="flex items-center gap-1 text-xs text-muted-foreground">
 				<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
 				</svg>
