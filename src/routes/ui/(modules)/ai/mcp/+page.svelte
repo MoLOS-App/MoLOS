@@ -10,7 +10,8 @@
 		Clock,
 		HelpCircle,
 		TrendingUp,
-		Server
+		Server,
+		AlertTriangle
 	} from 'lucide-svelte';
 
 	// MCP components
@@ -40,6 +41,16 @@
 	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
+	import {
+		AlertDialog,
+		AlertDialogAction,
+		AlertDialogCancel,
+		AlertDialogContent,
+		AlertDialogDescription,
+		AlertDialogFooter,
+		AlertDialogHeader,
+		AlertDialogTitle
+	} from '$lib/components/ui/alert-dialog';
 
 	interface Props {
 		data: PageData;
@@ -175,6 +186,12 @@
 	// Help dialog state
 	let showHelpDialog = $state(false);
 
+	// Confirmation dialog state
+	let showDeleteConfirmDialog = $state(false);
+	let deleteConfirmType = $state<'key' | 'resource' | 'prompt' | null>(null);
+	let deleteConfirmId = $state<string | null>(null);
+	let deleteConfirmName = $state<string>('');
+
 	// Update URL when tab changes
 	$effect(() => {
 		const params = new URLSearchParams($page.url.searchParams);
@@ -203,9 +220,17 @@
 		}
 	}
 
-	async function revokeKey(keyId: string) {
-		if (!confirm('Are you sure you want to revoke this API key?')) return;
+	function confirmRevokeKey(keyId: string) {
+		const key = localKeys.find((k) => k.id === keyId);
+		if (key) {
+			deleteConfirmType = 'key';
+			deleteConfirmId = keyId;
+			deleteConfirmName = key.name;
+			showDeleteConfirmDialog = true;
+		}
+	}
 
+	async function revokeKey(keyId: string) {
 		const response = await fetch(`/api/ai/mcp/keys/${keyId}`, {
 			method: 'DELETE'
 		});
@@ -339,9 +364,17 @@
 		}
 	}
 
-	async function deleteResource(resourceId: string) {
-		if (!confirm('Are you sure you want to delete this resource?')) return;
+	function confirmDeleteResource(resourceId: string) {
+		const resource = localResources.find((r) => r.id === resourceId);
+		if (resource) {
+			deleteConfirmType = 'resource';
+			deleteConfirmId = resourceId;
+			deleteConfirmName = resource.name;
+			showDeleteConfirmDialog = true;
+		}
+	}
 
+	async function deleteResource(resourceId: string) {
 		const response = await fetch(`/api/ai/mcp/resources/${resourceId}`, {
 			method: 'DELETE'
 		});
@@ -424,9 +457,17 @@
 		}
 	}
 
-	async function deletePrompt(promptId: string) {
-		if (!confirm('Are you sure you want to delete this prompt?')) return;
+	function confirmDeletePrompt(promptId: string) {
+		const prompt = localPrompts.find((p) => p.id === promptId);
+		if (prompt) {
+			deleteConfirmType = 'prompt';
+			deleteConfirmId = promptId;
+			deleteConfirmName = prompt.name;
+			showDeleteConfirmDialog = true;
+		}
+	}
 
+	async function deletePrompt(promptId: string) {
 		const response = await fetch(`/api/ai/mcp/prompts/${promptId}`, {
 			method: 'DELETE'
 		});
@@ -534,7 +575,7 @@
 				availableModules={data.availableModules}
 				onCreateKey={() => (showCreateKeyDialog = true)}
 				onEditKey={openEditKey}
-				onRevokeKey={revokeKey}
+				onRevokeKey={confirmRevokeKey}
 				onShowHelp={() => (showHelpDialog = true)}
 			/>
 		{:else if activeTab === 'resources'}
@@ -547,7 +588,7 @@
 				availableModules={data.availableModules}
 				onCreateResource={() => (showCreateResourceDialog = true)}
 				onEditResource={openEditResource}
-				onDeleteResource={deleteResource}
+				onDeleteResource={confirmDeleteResource}
 				onShowHelp={() => (showHelpDialog = true)}
 			/>
 		{:else if activeTab === 'prompts'}
@@ -560,7 +601,7 @@
 				availableModules={data.availableModules}
 				onCreatePrompt={() => (showCreatePromptDialog = true)}
 				onEditPrompt={openEditPrompt}
-				onDeletePrompt={deletePrompt}
+				onDeletePrompt={confirmDeletePrompt}
 				onShowHelp={() => (showHelpDialog = true)}
 			/>
 		{:else if activeTab === 'logs'}
@@ -640,3 +681,43 @@
 	onOpenChange={(open) => (showHelpDialog = open)}
 	tab={activeTab}
 />
+
+<!-- Delete Confirmation Dialog -->
+<AlertDialog bind:open={showDeleteConfirmDialog}>
+	<AlertDialogContent>
+		<AlertDialogHeader>
+			<AlertDialogTitle class="flex items-center gap-2">
+				<AlertTriangle class="h-5 w-5 text-destructive" />
+				Confirm {deleteConfirmType === 'key' ? 'Revoke' : 'Delete'}
+			</AlertDialogTitle>
+			<AlertDialogDescription>
+				Are you sure you want to {deleteConfirmType === 'key' ? 'revoke' : 'delete'}
+				{deleteConfirmType === 'key' ? ' this API key' : ` this ${deleteConfirmType}`}
+				<strong>"{deleteConfirmName}"</strong>? This action cannot be undone.
+			</AlertDialogDescription>
+		</AlertDialogHeader>
+		<AlertDialogFooter>
+			<AlertDialogCancel>Cancel</AlertDialogCancel>
+			<AlertDialogAction
+				class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+				onclick={async () => {
+					if (deleteConfirmId && deleteConfirmType) {
+						if (deleteConfirmType === 'key') {
+							await revokeKey(deleteConfirmId);
+						} else if (deleteConfirmType === 'resource') {
+							await deleteResource(deleteConfirmId);
+						} else if (deleteConfirmType === 'prompt') {
+							await deletePrompt(deleteConfirmId);
+						}
+					}
+					showDeleteConfirmDialog = false;
+					deleteConfirmType = null;
+					deleteConfirmId = null;
+					deleteConfirmName = '';
+				}}
+			>
+				{deleteConfirmType === 'key' ? 'Revoke' : 'Delete'}
+			</AlertDialogAction>
+		</AlertDialogFooter>
+	</AlertDialogContent>
+</AlertDialog>
