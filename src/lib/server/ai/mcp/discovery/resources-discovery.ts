@@ -6,24 +6,35 @@
 
 import { McpResourceRepository } from '$lib/repositories/ai/mcp';
 import type { MCPProtocolResource, ResourceContent, MCPContext } from '$lib/models/ai/mcp';
+import { mcpCache, CACHE_KEYS } from '../cache/mcp-cache';
 
 /**
- * Get available resources for MCP protocol
+ * Get available resources for MCP protocol (with caching)
  *
  * Returns resources that match the context's allowed modules.
  */
 export async function getMcpResources(context: MCPContext): Promise<MCPProtocolResource[]> {
-	const repo = new McpResourceRepository();
+	// Try cache first
+	const cached = mcpCache.get<MCPProtocolResource[]>(CACHE_KEYS.RESOURCES_LIST, context);
+	if (cached) {
+		return cached;
+	}
 
-	// Get enabled resources scoped to user and allowed modules
+	// Cache miss - fetch from database
+	const repo = new McpResourceRepository();
 	const resources = await repo.listEnabledForMcp(context.userId, context.allowedModules);
 
-	return resources.map((r) => ({
+	const formatted = resources.map((r) => ({
 		uri: r.uri,
 		name: r.name,
 		description: r.description,
 		mimeType: r.mimeType ?? 'application/json'
 	}));
+
+	// Store in cache
+	mcpCache.set(CACHE_KEYS.RESOURCES_LIST, context, formatted, 300); // 5 minutes
+
+	return formatted;
 }
 
 /**
@@ -98,11 +109,17 @@ export async function getResourcesByModule(
 }
 
 /**
- * Get resource count by module
+ * Get resource count by module (with caching)
  */
 export async function getResourceCountByModule(context: MCPContext): Promise<
-Record<string, number>
+	Record<string, number>
 > {
+	// Try cache first
+	const cached = mcpCache.get<Record<string, number>>(CACHE_KEYS.RESOURCE_COUNTS, context);
+	if (cached) {
+		return cached;
+	}
+
 	const resources = await getMcpResources(context);
 
 	const counts: Record<string, number> = {};
@@ -115,5 +132,17 @@ Record<string, number>
 		}
 	}
 
+	// Store in cache
+	mcpCache.set(CACHE_KEYS.RESOURCE_COUNTS, context, counts, 300); // 5 minutes
+
 	return counts;
+}
+
+/**
+ * Invalidate resources cache for a user
+ * Call this when resources are added/removed/updated
+ */
+export function invalidateResourcesCache(context: MCPContext): void {
+	mcpCache.invalidate(CACHE_KEYS.RESOURCES_LIST, context);
+	mcpCache.invalidate(CACHE_KEYS.RESOURCE_COUNTS, context);
 }

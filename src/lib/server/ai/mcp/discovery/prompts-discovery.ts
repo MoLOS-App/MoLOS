@@ -6,17 +6,26 @@
 
 import { McpPromptRepository } from '$lib/repositories/ai/mcp';
 import type { MCPProtocolPrompt, PromptMessage, MCPContext } from '$lib/models/ai/mcp';
+import { mcpCache, CACHE_KEYS } from '../cache/mcp-cache';
 
 /**
- * Get available prompts for MCP protocol
+ * Get available prompts for MCP protocol (with caching)
  *
  * Returns prompts that match the context's allowed modules.
  */
 export async function getMcpPrompts(context: MCPContext): Promise<MCPProtocolPrompt[]> {
-	const repo = new McpPromptRepository();
+	// Try cache first
+	const cached = mcpCache.get<MCPProtocolPrompt[]>(CACHE_KEYS.PROMPTS_LIST, context);
+	if (cached) {
+		return cached;
+	}
 
-	// Get enabled prompts scoped to user and allowed modules
+	// Cache miss - fetch from database
+	const repo = new McpPromptRepository();
 	const prompts = await repo.listEnabledForMcp(context.userId, context.allowedModules);
+
+	// Store in cache
+	mcpCache.set(CACHE_KEYS.PROMPTS_LIST, context, prompts, 300); // 5 minutes
 
 	return prompts;
 }
@@ -107,11 +116,17 @@ export async function getPromptsByModule(
 }
 
 /**
- * Get prompt count by module
+ * Get prompt count by module (with caching)
  */
 export async function getPromptCountByModule(context: MCPContext): Promise<
-Record<string, number>
+	Record<string, number>
 > {
+	// Try cache first
+	const cached = mcpCache.get<Record<string, number>>(CACHE_KEYS.PROMPT_COUNTS, context);
+	if (cached) {
+		return cached;
+	}
+
 	const repo = new McpPromptRepository();
 
 	// Get all prompts (not just MCP format) to count by module
@@ -124,5 +139,17 @@ Record<string, number>
 		counts[moduleId] = (counts[moduleId] ?? 0) + 1;
 	}
 
+	// Store in cache
+	mcpCache.set(CACHE_KEYS.PROMPT_COUNTS, context, counts, 300); // 5 minutes
+
 	return counts;
+}
+
+/**
+ * Invalidate prompts cache for a user
+ * Call this when prompts are added/removed/updated
+ */
+export function invalidatePromptsCache(context: MCPContext): void {
+	mcpCache.invalidate(CACHE_KEYS.PROMPTS_LIST, context);
+	mcpCache.invalidate(CACHE_KEYS.PROMPT_COUNTS, context);
 }

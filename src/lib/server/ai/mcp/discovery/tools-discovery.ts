@@ -7,20 +7,27 @@
 import { AiToolbox } from '../../toolbox';
 import { toolDefinitionToMCPTool, filterToolsByModules } from '../mcp-utils';
 import type { MCPTool, MCPContext } from '$lib/models/ai/mcp';
+import { mcpCache, CACHE_KEYS } from '../cache/mcp-cache';
 
 /**
- * Get available tools for MCP protocol
+ * Get available tools for MCP protocol (with caching)
  *
  * Filters tools by the context's allowed modules.
  */
 export async function getMcpTools(context: MCPContext): Promise<MCPTool[]> {
+	// Try cache first
+	const cached = mcpCache.get<MCPTool[]>(CACHE_KEYS.TOOLS_LIST, context);
+	if (cached) {
+		return cached;
+	}
+
+	// Cache miss - fetch from toolbox
 	const toolbox = new AiToolbox();
-
-	// Get tools from AiToolbox (with user's active modules)
 	const tools = await toolbox.getTools(context.userId, context.allowedModules);
-
-	// Convert to MCP format
 	const mcpTools = tools.map(toolDefinitionToMCPTool);
+
+	// Store in cache
+	mcpCache.set(CACHE_KEYS.TOOLS_LIST, context, mcpTools, 300); // 5 minutes
 
 	return mcpTools;
 }
@@ -37,7 +44,7 @@ export async function getMcpToolByName(
 }
 
 /**
- * List tools for MCP tools/list endpoint
+ * List tools for MCP tools/list endpoint (with caching)
  */
 export async function listMcpTools(context: MCPContext): Promise<{ tools: MCPTool[] }> {
 	const tools = await getMcpTools(context);
@@ -45,7 +52,7 @@ export async function listMcpTools(context: MCPContext): Promise<{ tools: MCPToo
 }
 
 /**
- * Get available modules that provide tools
+ * Get available modules that provide tools (with caching)
  */
 export async function getToolModules(context: MCPContext): Promise<string[]> {
 	const tools = await getMcpTools(context);
@@ -63,11 +70,17 @@ export async function getToolModules(context: MCPContext): Promise<string[]> {
 }
 
 /**
- * Get tool count by module
+ * Get tool count by module (with caching)
  */
 export async function getToolCountByModule(context: MCPContext): Promise<
-Record<string, number>
+	Record<string, number>
 > {
+	// Try cache first
+	const cached = mcpCache.get<Record<string, number>>(CACHE_KEYS.TOOL_COUNTS, context);
+	if (cached) {
+		return cached;
+	}
+
 	const tools = await getMcpTools(context);
 
 	const counts: Record<string, number> = {};
@@ -78,5 +91,17 @@ Record<string, number>
 		counts[moduleId] = (counts[moduleId] ?? 0) + 1;
 	}
 
+	// Store in cache
+	mcpCache.set(CACHE_KEYS.TOOL_COUNTS, context, counts, 300); // 5 minutes
+
 	return counts;
+}
+
+/**
+ * Invalidate tools cache for a user
+ * Call this when tools are added/removed/updated
+ */
+export function invalidateToolsCache(context: MCPContext): void {
+	mcpCache.invalidate(CACHE_KEYS.TOOLS_LIST, context);
+	mcpCache.invalidate(CACHE_KEYS.TOOL_COUNTS, context);
 }
