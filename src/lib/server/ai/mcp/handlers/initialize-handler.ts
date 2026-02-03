@@ -8,6 +8,7 @@ import type { InitializeRequestParams, InitializeResult, MCPContext } from '$lib
 import { getToolCountByModule } from '../discovery/tools-discovery';
 import { getResourceCountByModule } from '../discovery/resources-discovery';
 import { getPromptCountByModule } from '../discovery/prompts-discovery';
+import { createSuccessResponse } from '../json-rpc';
 
 /**
  * MCP Server info
@@ -30,12 +31,13 @@ const SERVER_CAPABILITIES = {
 
 /**
  * Handle initialize request
- * Returns the raw result data (not a full JSON-RPC response)
+ * Returns a full JSON-RPC response
  */
 export async function handleInitialize(
 	context: MCPContext,
+	requestId: number | string,
 	params: InitializeRequestParams
-): Promise<InitializeResult> {
+): Promise<ReturnType<typeof createSuccessResponse>> {
 	// Validate protocol version - accept 2025-* (latest spec)
 	if (!params.protocolVersion.startsWith('2025-')) {
 		throw new Error('Unsupported protocol version. Supported: 2025-*');
@@ -46,7 +48,7 @@ export async function handleInitialize(
 	const resourceCounts = await getResourceCountByModule(context);
 	const promptCounts = await getPromptCountByModule(context);
 
-	return {
+	const result: InitializeResult = {
 		protocolVersion: '2025-06-18',
 		capabilities: {
 			tools: {},
@@ -56,6 +58,8 @@ export async function handleInitialize(
 			...SERVER_INFO
 		}
 	};
+
+	return createSuccessResponse(requestId, result);
 }
 
 /**

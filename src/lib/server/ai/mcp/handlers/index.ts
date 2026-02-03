@@ -50,7 +50,10 @@ export async function handleMcpRequest(
 
 	try {
 		// Route and handle the request
-		const result = await routeRequest(context, request);
+		const response = await routeRequest(context, request);
+
+		// Extract result for logging
+		const result = (response as any).result;
 
 		// Log success (excluding initialize which is logged separately)
 		if (logRepo && request.method !== 'initialize') {
@@ -71,11 +74,7 @@ export async function handleMcpRequest(
 			}
 		}
 
-		return {
-			jsonrpc: '2.0',
-			id: request.id,
-			result
-		};
+		return response as JSONRPCResponse;
 	} catch (error) {
 		const errorMessage = sanitizeErrorMessage(error);
 
@@ -122,16 +121,16 @@ async function routeRequest(
 
 	switch (method) {
 		case 'initialize':
-			return handleInitialize(context, request.params as any);
+			return handleInitialize(context, request.id, request.params as any);
 
 		case 'tools':
-			return handleToolsMethod(context, request.id, request.params);
+			return handleToolsMethod(context, request.id, request.params, action);
 
 		case 'resources':
-			return handleResourcesMethod(context, request.id, request.params);
+			return handleResourcesMethod(context, request.id, request.params, action);
 
 		case 'prompts':
-			return handlePromptsMethod(context, request.id, request.params);
+			return handlePromptsMethod(context, request.id, request.params, action);
 
 		default:
 			return errors.methodNotFound(request.id);

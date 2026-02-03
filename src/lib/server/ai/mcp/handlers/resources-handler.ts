@@ -97,10 +97,9 @@ export async function handleResourcesRead(
 export async function handleResourcesMethod(
 	context: MCPContext,
 	requestId: number | string,
-	params: unknown
+	params: unknown,
+	action?: string
 ): Promise<ReturnType<typeof createSuccessResponse> | ReturnType<typeof errors.invalidParams> | ReturnType<typeof errors.methodNotFound>> {
-	const { action } = parseMethod('resources');
-
 	if (action === 'list') {
 		return handleResourcesList(context, requestId);
 	}

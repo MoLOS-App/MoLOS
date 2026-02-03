@@ -97,10 +97,9 @@ export async function handlePromptsGet(
 export async function handlePromptsMethod(
 	context: MCPContext,
 	requestId: number | string,
-	params: unknown
+	params: unknown,
+	action?: string
 ): Promise<ReturnType<typeof createSuccessResponse> | ReturnType<typeof errors.invalidParams> | ReturnType<typeof errors.methodNotFound>> {
-	const { action } = parseMethod('prompts');
-
 	if (action === 'list') {
 		return handlePromptsList(context, requestId);
 	}
