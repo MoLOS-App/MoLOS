@@ -32,7 +32,6 @@
 		McpApiKeyTable,
 		McpResourcesTable,
 		McpPromptsTable,
-		McpLogDetailDialog,
 		McpLogsTable,
 		McpHelpDialog
 	} from '$lib/components/ai/mcp';
@@ -95,25 +94,6 @@
 		}>;
 		moduleId: string | null;
 		enabled: boolean;
-	} | null>(null);
-
-	// Log detail dialog state
-	let showLogDetailDialog = $state(false);
-	let viewingLog = $state<{
-		id: string;
-		createdAt: string;
-		method: string;
-		status: 'success' | 'error';
-		durationMs: number;
-		errorMessage?: string;
-		errorStack?: string;
-		requestData?: unknown;
-		responseData?: unknown;
-		apiKeyId: string;
-		apiKeyName?: string;
-		toolName?: string;
-		resourceName?: string;
-		promptName?: string;
 	} | null>(null);
 
 	// Help dialog state
@@ -368,29 +348,6 @@
 		}
 	}
 
-	// Log detail handler
-	function viewLogDetail(logId: string) {
-		const log = data.logs.find((l) => l.id === logId);
-		if (log) {
-			viewingLog = {
-				id: log.id,
-				createdAt: log.createdAt,
-				method: log.method,
-				status: log.status,
-				durationMs: log.durationMs,
-				errorMessage: log.errorMessage,
-				errorStack: log.errorStack,
-				requestData: log.requestData,
-				responseData: log.responseData,
-				apiKeyId: log.apiKeyId,
-				toolName: log.toolName,
-				resourceName: log.resourceName,
-				promptName: log.promptName
-			};
-			showLogDetailDialog = true;
-		}
-	}
-
 	// Note: Full API key secrets are only shown once at creation time for security.
 	// Existing keys cannot have their full secret retrieved from the database.
 </script>
@@ -537,7 +494,6 @@
 			<McpLogsTable
 				logs={data.logs}
 				apiKeyOptions={data.apiKeysForFilter}
-				onViewDetails={viewLogDetail}
 				onShowHelp={() => (showHelpDialog = true)}
 			/>
 		{/if}
@@ -602,13 +558,6 @@
 	availableModules={data.availableModules}
 	prompt={editingPrompt}
 	onUpdate={updatePrompt}
-/>
-
-<!-- Log Detail Dialog -->
-<McpLogDetailDialog
-	bind:open={showLogDetailDialog}
-	onOpenChange={(open) => (showLogDetailDialog = open)}
-	log={viewingLog}
 />
 
 <!-- Help Dialog -->

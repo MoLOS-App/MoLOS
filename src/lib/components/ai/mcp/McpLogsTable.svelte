@@ -10,8 +10,9 @@
 		CheckCircle,
 		XCircle,
 		Clock,
-		Eye,
-		HelpCircle
+		HelpCircle,
+		ChevronLeft,
+		ChevronRight
 	} from 'lucide-svelte';
 	import { Empty, EmptyMedia, EmptyTitle } from '$lib/components/ui/empty';
 
@@ -36,12 +37,10 @@
 	let {
 		logs = [],
 		apiKeyOptions = [],
-		onViewDetails,
 		onShowHelp
 	}: {
 		logs: McpLog[];
 		apiKeyOptions: ApiKeyOption[];
-		onViewDetails?: (logId: string) => void;
 		onShowHelp?: () => void;
 	} = $props();
 
@@ -49,6 +48,8 @@
 	let apiKeyFilter = $state('');
 	let methodFilter = $state('');
 	let statusFilter = $state('');
+	let currentPage = $state(1);
+	const itemsPerPage = 10;
 
 	const filteredLogs = $derived(
 		logs.filter((log) => {
@@ -65,7 +66,23 @@
 		})
 	);
 
+	const totalPages = $derived(Math.ceil(filteredLogs.length / itemsPerPage));
+	const paginatedLogs = $derived(
+		filteredLogs.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+	);
+
+	// Reset to page 1 when filters change
+	$effect(() => {
+		currentPage = 1;
+	}, [searchQuery, apiKeyFilter, methodFilter, statusFilter]);
+
 	const uniqueMethods = $derived(Array.from(new Set(logs.map((log) => log.method))).sort());
+
+	function goToPage(page: number) {
+		if (page >= 1 && page <= totalPages) {
+			currentPage = page;
+		}
+	}
 </script>
 
 <div class="space-y-6">
@@ -172,15 +189,10 @@
 								>
 									Duration
 								</th>
-								<th
-									class="px-6 py-3 text-right text-xs font-bold tracking-wider text-muted-foreground uppercase"
-								>
-									Actions
-								</th>
 							</tr>
 						</thead>
 						<tbody class="divide-y divide-border">
-							{#each filteredLogs as log}
+							{#each paginatedLogs as log}
 								<tr class="hover:bg-accent/50">
 									<td class="px-6 py-4">
 										<div class="text-sm text-foreground">
@@ -224,22 +236,59 @@
 											<span>{log.durationMs}ms</span>
 										</div>
 									</td>
-									<td class="px-6 py-4 text-right">
-										{#if onViewDetails}
-											<Button
-												variant="ghost"
-												size="sm"
-												onclick={() => onViewDetails(log.id)}
-											>
-												<Eye class="w-4 h-4" />
-											</Button>
-										{/if}
-									</td>
 								</tr>
 							{/each}
 						</tbody>
 					</table>
 				</div>
+
+				<!-- Pagination -->
+				{#if totalPages > 1}
+					<div class="flex items-center justify-between px-6 py-4 border-t border-border">
+						<div class="text-sm text-muted-foreground">
+							Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredLogs.length)} of {filteredLogs.length} logs
+						</div>
+						<div class="flex items-center gap-2">
+							<Button
+								variant="outline"
+								size="sm"
+								onclick={() => goToPage(currentPage - 1)}
+								disabled={currentPage === 1}
+								class="gap-1"
+							>
+								<ChevronLeft class="w-4 h-4" />
+								Previous
+							</Button>
+							<div class="flex items-center gap-1">
+								{#each Array(totalPages) as _, i}
+									{@const page = i + 1}
+									{#if page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)}
+										<Button
+											variant={page === currentPage ? 'default' : 'outline'}
+											size="sm"
+											onclick={() => goToPage(page)}
+											class="w-9 h-9"
+										>
+											{page}
+										</Button>
+									{:else if page === currentPage - 2 || page === currentPage + 2}
+										<span class="text-muted-foreground">...</span>
+									{/if}
+								{/each}
+							</div>
+							<Button
+								variant="outline"
+								size="sm"
+								onclick={() => goToPage(currentPage + 1)}
+								disabled={currentPage === totalPages}
+								class="gap-1"
+							>
+								Next
+								<ChevronRight class="w-4 h-4" />
+							</Button>
+						</div>
+					</div>
+				{/if}
 			{/if}
 		</CardContent>
 	</Card>
