@@ -4,7 +4,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Select, SelectTrigger, SelectContent, SelectItem } from '$lib/components/ui/select';
-	import { List, Search, Plus, Edit } from 'lucide-svelte';
+	import { List, Search, Plus, Edit, Trash2 } from 'lucide-svelte';
 	import { Empty, EmptyMedia, EmptyTitle, EmptyContent } from '$lib/components/ui/empty';
 
 	export interface PromptArgument {
@@ -27,12 +27,14 @@
 		prompts = [],
 		availableModules = [],
 		onCreatePrompt,
-		onEditPrompt
+		onEditPrompt,
+		onDeletePrompt
 	}: {
 		prompts: McpPrompt[];
 		availableModules: { id: string; name: string }[];
 		onCreatePrompt?: () => void;
 		onEditPrompt?: (promptId: string) => void;
+		onDeletePrompt?: (promptId: string) => void | Promise<void>;
 	} = $props();
 
 	let searchQuery = $state('');
@@ -206,15 +208,28 @@
 										{/if}
 									</td>
 									<td class="px-6 py-4 text-right">
-										{#if onEditPrompt}
-											<Button
-												variant="ghost"
-												size="sm"
-												onclick={() => onEditPrompt(prompt.id)}
-											>
-												<Edit class="w-4 h-4" />
-											</Button>
-										{/if}
+										<div class="flex items-center justify-end gap-1">
+											{#if onEditPrompt}
+												<Button
+													variant="ghost"
+													size="sm"
+													onclick={() => onEditPrompt(prompt.id)}
+												>
+													<Edit class="w-4 h-4" />
+												</Button>
+											{/if}
+											{#if onDeletePrompt}
+												<Button
+													variant="ghost"
+													size="sm"
+													onclick={() => onDeletePrompt(prompt.id)}
+													class="text-destructive hover:text-destructive"
+													title="Delete prompt"
+												>
+													<Trash2 class="w-4 h-4" />
+												</Button>
+											{/if}
+										</div>
 									</td>
 								</tr>
 							{/each}

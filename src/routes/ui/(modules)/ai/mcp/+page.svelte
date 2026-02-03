@@ -21,6 +21,8 @@
 		McpKeySecretDialog,
 		McpCreateResourceDialog,
 		McpEditResourceDialog,
+		McpCreatePromptDialog,
+		McpEditPromptDialog,
 		McpApiKeyTable,
 		McpResourcesTable,
 		McpPromptsTable,
@@ -53,6 +55,23 @@
 		name: string;
 		description: string;
 		uri: string;
+		moduleId: string | null;
+		enabled: boolean;
+	} | null>(null);
+
+	// Prompt dialog states
+	let showCreatePromptDialog = $state(false);
+	let showEditPromptDialog = $state(false);
+	let editingPrompt = $state<{
+		id: string;
+		name: string;
+		description: string;
+		arguments: Array<{
+			name: string;
+			description: string;
+			required: boolean;
+			type: string;
+		}>;
 		moduleId: string | null;
 		enabled: boolean;
 	} | null>(null);
@@ -160,6 +179,88 @@
 		if (!confirm('Are you sure you want to delete this resource?')) return;
 
 		const response = await fetch(`/api/ai/mcp/resources/${resourceId}`, {
+			method: 'DELETE'
+		});
+
+		if (response.ok) {
+			window.location.reload();
+		}
+	}
+
+	// Prompt handlers
+	async function createPrompt(formData: {
+		name: string;
+		description: string;
+		arguments: Array<{
+			name: string;
+			description: string;
+			required: boolean;
+			type: string;
+		}>;
+		moduleId: string | null;
+		enabled: boolean;
+	}) {
+		const response = await fetch('/api/ai/mcp/prompts', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(formData)
+		});
+
+		if (response.ok) {
+			showCreatePromptDialog = false;
+			window.location.reload();
+		}
+	}
+
+	async function updatePrompt(promptId: string, formData: {
+		name: string;
+		description: string;
+		arguments: Array<{
+			name: string;
+			description: string;
+			required: boolean;
+			type: string;
+		}>;
+		moduleId: string | null;
+		enabled: boolean;
+	}) {
+		const response = await fetch(`/api/ai/mcp/prompts/${promptId}`, {
+			method: 'PUT',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(formData)
+		});
+
+		if (response.ok) {
+			showEditPromptDialog = false;
+			editingPrompt = null;
+			window.location.reload();
+		}
+	}
+
+	function openEditPrompt(promptId: string) {
+		const prompt = data.prompts.find((p) => p.id === promptId);
+		if (prompt) {
+			editingPrompt = {
+				id: prompt.id,
+				name: prompt.name,
+				description: prompt.description,
+				arguments: prompt.arguments.map(arg => ({
+					name: arg.name,
+					description: arg.description,
+					required: arg.required,
+					type: arg.type
+				})),
+				moduleId: prompt.moduleId,
+				enabled: prompt.enabled
+			};
+			showEditPromptDialog = true;
+		}
+	}
+
+	async function deletePrompt(promptId: string) {
+		if (!confirm('Are you sure you want to delete this prompt?')) return;
+
+		const response = await fetch(`/api/ai/mcp/prompts/${promptId}`, {
 			method: 'DELETE'
 		});
 
@@ -321,6 +422,9 @@
 					moduleId: p.moduleId ?? null
 				}))}
 				availableModules={data.availableModules}
+				onCreatePrompt={() => (showCreatePromptDialog = true)}
+				onEditPrompt={openEditPrompt}
+				onDeletePrompt={deletePrompt}
 			/>
 
 		{:else if activeTab === 'logs'}
@@ -361,4 +465,21 @@
 	availableModules={data.availableModules}
 	resource={editingResource}
 	onUpdate={updateResource}
+/>
+
+<!-- Create Prompt Dialog -->
+<McpCreatePromptDialog
+	bind:open={showCreatePromptDialog}
+	onOpenChange={(open) => (showCreatePromptDialog = open)}
+	availableModules={data.availableModules}
+	onCreate={createPrompt}
+/>
+
+<!-- Edit Prompt Dialog -->
+<McpEditPromptDialog
+	bind:open={showEditPromptDialog}
+	onOpenChange={(open) => (showEditPromptDialog = open)}
+	availableModules={data.availableModules}
+	prompt={editingPrompt}
+	onUpdate={updatePrompt}
 />
