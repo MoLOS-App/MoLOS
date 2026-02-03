@@ -75,13 +75,14 @@
 	});
 
 	async function handleSubmit() {
-		if (!resource || !name.trim() || !uri.trim()) return;
+		if (!resource || !name.trim()) return;
+		if (resourceType === 'static' && !uri.trim()) return;
 		if (resourceType === 'url' && !url.trim()) return;
 
 		await onUpdate(resource.id, {
 			name: name.trim(),
 			description: description.trim(),
-			uri: uri.trim(),
+			uri: resourceType === 'static' ? uri.trim() : `url://${url.trim()}`,
 			moduleId: selectedModule === '__global__' ? null : selectedModule,
 			resourceType,
 			url: resourceType === 'url' ? url.trim() : null,
@@ -99,8 +100,9 @@
 
 	const isValid = $derived(
 		name.trim() !== '' &&
-			uri.trim() !== '' &&
-			(resourceType !== 'url' || url.trim() !== '')
+			(resourceType === 'static'
+				? uri.trim() !== ''
+				: resourceType === 'url' && url.trim() !== '')
 	);
 </script>
 
@@ -164,21 +166,23 @@
 				</p>
 			</div>
 
-			<!-- URI -->
-			<div class="space-y-2">
-				<Label for="resource-uri">
-					URI <span class="text-destructive">*</span>
-				</Label>
-				<Input
-					id="resource-uri"
-					bind:value={uri}
-					placeholder="e.g., config://user/profile"
-					autocomplete="off"
-				/>
-				<p class="text-xs text-muted-foreground">
-					The unique URI identifier for this resource (e.g., config://app/settings)
-				</p>
-			</div>
+			<!-- URI (only for Static type) -->
+			{#if resourceType === 'static'}
+				<div class="space-y-2">
+					<Label for="resource-uri">
+						URI <span class="text-destructive">*</span>
+					</Label>
+					<Input
+						id="resource-uri"
+						bind:value={uri}
+						placeholder="e.g., config://user/profile"
+						autocomplete="off"
+					/>
+					<p class="text-xs text-muted-foreground">
+						The unique URI identifier for this resource (e.g., config://app/settings)
+					</p>
+				</div>
+			{/if}
 
 			<!-- URL (only for URL type) -->
 			{#if resourceType === 'url'}
