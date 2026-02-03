@@ -54,7 +54,6 @@
 	let selectedModules = $state<string[]>([]);
 	let expiresAt = $state('');
 	let showModuleList = $state(false);
-	let showKey = $state(false);
 
 	// Populate form when apiKey changes
 	$effect(() => {
@@ -112,17 +111,6 @@
 		onOpenChange(false);
 	}
 
-	async function copyKeyPrefix() {
-		if (!apiKey) return;
-		const keyPrefix = `mcp_live_${apiKey.keyPrefix}_`;
-		try {
-			await navigator.clipboard.writeText(keyPrefix);
-			toast.success('Key prefix copied to clipboard');
-		} catch {
-			toast.error('Failed to copy');
-		}
-	}
-
 	function getSelectionSummary(): string {
 		if (selectedModules.length === 0) return 'All modules';
 		if (selectedModules.length === availableModules.length) return 'All modules';
@@ -159,7 +147,7 @@
 		{#if apiKey}
 			<form onsubmit={(e) => e.preventDefault()} class="space-y-4">
 				<!-- Status Info -->
-				<div class="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+				<div class="flex items-center justify-between p-3 rounded-lg bg-muted/50">
 					<div class="flex items-center gap-3">
 						<Badge class={getStatusBadge().class}>{getStatusBadge().label}</Badge>
 						<div class="text-sm">
@@ -177,33 +165,9 @@
 				<div class="space-y-2">
 					<Label>Key Prefix</Label>
 					<div class="flex items-center gap-2">
-						<code class="flex-1 text-sm font-mono text-foreground bg-muted px-3 py-2 rounded">
-							{#if showKey}
-								mcp_live_{apiKey.keyPrefix}_********
-							{:else}
-								mcp_live_{apiKey.keyPrefix}_******
-							{/if}
+						<code class="flex-1 px-3 py-2 font-mono text-sm rounded text-foreground bg-muted">
+							mcp_live_{apiKey.keyPrefix}_********
 						</code>
-						<Button
-							variant="ghost"
-							size="sm"
-							onclick={() => (showKey = !showKey)}
-							class="flex-shrink-0"
-						>
-							{#if showKey}
-								<EyeOff class="w-4 h-4" />
-							{:else}
-								<Eye class="w-4 h-4" />
-							{/if}
-						</Button>
-						<Button
-							variant="ghost"
-							size="sm"
-							onclick={copyKeyPrefix}
-							class="flex-shrink-0"
-						>
-							<Copy class="w-4 h-4" />
-						</Button>
 					</div>
 					<p class="text-xs text-muted-foreground">
 						This is just the prefix. The full key was only shown at creation.
@@ -212,13 +176,13 @@
 
 				<!-- Usage Info -->
 				<div class="grid grid-cols-2 gap-3">
-					<div class="p-3 bg-muted/50 rounded-lg">
+					<div class="p-3 rounded-lg bg-muted/50">
 						<p class="text-xs text-muted-foreground">Created</p>
 						<p class="text-sm font-medium text-foreground">
 							{new Date(apiKey.createdAt).toLocaleDateString()}
 						</p>
 					</div>
-					<div class="p-3 bg-muted/50 rounded-lg">
+					<div class="p-3 rounded-lg bg-muted/50">
 						<p class="text-xs text-muted-foreground">Last Used</p>
 						<p class="text-sm font-medium text-foreground">
 							{#if apiKey.lastUsedAt}
@@ -252,7 +216,7 @@
 							<button
 								type="button"
 								onclick={() => (showModuleList = !showModuleList)}
-								class="w-full flex items-center justify-between px-3 py-2 border border-border rounded-lg bg-background hover:bg-accent transition-colors"
+								class="flex items-center justify-between w-full px-3 py-2 transition-colors border rounded-lg border-border bg-background hover:bg-accent"
 							>
 								<span class="text-sm">{getSelectionSummary()}</span>
 								{#if showModuleList}
@@ -264,7 +228,7 @@
 
 							<!-- Module List (Collapsible) -->
 							{#if showModuleList}
-								<div class="space-y-2 p-3 border border-border rounded-lg bg-muted/50">
+								<div class="p-3 space-y-2 border rounded-lg border-border bg-muted/50">
 									<!-- Select All Option -->
 									<div class="flex items-center gap-2 pb-2 border-b border-border">
 										<Checkbox
@@ -272,13 +236,13 @@
 											checked={selectAll}
 											onChange={toggleSelectAll}
 										/>
-										<Label for="edit-select-all" class="text-sm font-medium cursor-pointer flex-1">
+										<Label for="edit-select-all" class="flex-1 text-sm font-medium cursor-pointer">
 											All modules ({availableModules.length})
 										</Label>
 									</div>
 
 									<!-- Individual Modules -->
-									<div class="space-y-1 pt-1">
+									<div class="pt-1 space-y-1">
 										{#each availableModules as module (module.id)}
 											<div class="flex items-center gap-2">
 												<Checkbox
@@ -286,7 +250,7 @@
 													checked={selectedModules.includes(module.id)}
 													onChange={() => toggleModule(module.id)}
 												/>
-												<Label for="edit-module-{module.id}" class="text-sm cursor-pointer flex-1">
+												<Label for="edit-module-{module.id}" class="flex-1 text-sm cursor-pointer">
 													{module.name}
 												</Label>
 											</div>
@@ -295,7 +259,7 @@
 								</div>
 							{/if}
 						{:else}
-							<div class="text-sm text-muted-foreground italic border rounded-md p-3">
+							<div class="p-3 text-sm italic border rounded-md text-muted-foreground">
 								No external modules available.
 							</div>
 						{/if}
@@ -317,7 +281,7 @@
 				{/if}
 			</form>
 
-			<DialogFooter class="flex-col sm:flex-row gap-2">
+			<DialogFooter class="flex-col gap-2 sm:flex-row">
 				{#if apiKey.status !== 'revoked'}
 					{#if apiKey.status === 'active'}
 						<Button
@@ -337,7 +301,7 @@
 						</Button>
 					{/if}
 				{/if}
-				<div class="flex gap-2 w-full sm:w-auto">
+				<div class="flex w-full gap-2 sm:w-auto">
 					<Button
 						variant="outline"
 						onclick={() => onOpenChange(false)}

@@ -73,7 +73,7 @@
 	<div class="flex items-center justify-between">
 		<div class="flex items-center gap-4">
 			<div class="relative">
-				<Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+				<Search class="absolute w-4 h-4 -translate-y-1/2 left-3 top-1/2 text-muted-foreground" />
 				<Input
 					bind:value={searchQuery}
 					placeholder="Search API keys..."
@@ -81,7 +81,7 @@
 				/>
 			</div>
 			<Select bind:value={statusFilter}>
-				<SelectTrigger class="h-9 w-40">
+				<SelectTrigger class="w-40 h-9">
 					{#if statusFilter === ''}
 						All Statuses
 					{:else if statusFilter === 'active'}
@@ -122,7 +122,7 @@
 	</div>
 
 	<!-- Table -->
-	<Card>
+	<Card class="p-0">
 		<CardContent class="p-0">
 			{#if filteredKeys.length === 0}
 				<div class="p-12">
@@ -143,35 +143,35 @@
 			{:else}
 				<div class="overflow-x-auto">
 					<table class="w-full">
-						<thead class="bg-muted/50 border-b border-border">
+						<thead class="border-b bg-muted/50 border-border">
 							<tr>
 								<th
-									class="px-6 py-4 text-left text-xs font-bold tracking-wider text-muted-foreground uppercase"
+									class="px-6 py-4 text-xs font-bold tracking-wider text-left uppercase text-muted-foreground"
 								>
 									Name
 								</th>
 								<th
-									class="px-6 py-4 text-left text-xs font-bold tracking-wider text-muted-foreground uppercase"
+									class="px-6 py-4 text-xs font-bold tracking-wider text-left uppercase text-muted-foreground"
 								>
 									Key
 								</th>
 								<th
-									class="px-6 py-4 text-left text-xs font-bold tracking-wider text-muted-foreground uppercase"
+									class="px-6 py-4 text-xs font-bold tracking-wider text-left uppercase text-muted-foreground"
 								>
 									Modules
 								</th>
 								<th
-									class="px-6 py-4 text-left text-xs font-bold tracking-wider text-muted-foreground uppercase"
+									class="px-6 py-4 text-xs font-bold tracking-wider text-left uppercase text-muted-foreground"
 								>
 									Status
 								</th>
 								<th
-									class="px-6 py-4 text-left text-xs font-bold tracking-wider text-muted-foreground uppercase"
+									class="px-6 py-4 text-xs font-bold tracking-wider text-left uppercase text-muted-foreground"
 								>
 									Last Used
 								</th>
 								<th
-									class="px-6 py-4 text-right text-xs font-bold tracking-wider text-muted-foreground uppercase"
+									class="px-6 py-4 text-xs font-bold tracking-wider text-right uppercase text-muted-foreground"
 								>
 									Actions
 								</th>
@@ -189,7 +189,7 @@
 										{/if}
 									</td>
 									<td class="px-6 py-5">
-										<code class="text-sm font-mono text-foreground bg-muted px-3 py-2 rounded block">
+										<code class="block px-3 py-2 font-mono text-sm rounded text-foreground bg-muted">
 											mcp_live_{key.keyPrefix}_******
 										</code>
 									</td>
@@ -258,7 +258,7 @@
 	</Card>
 
 	<!-- Security Disclaimer -->
-	<div class="flex items-start gap-3 p-4 bg-muted/50 border border-border rounded-lg">
+	<div class="flex items-start gap-3 p-4 border rounded-lg bg-muted/50 border-border">
 		<AlertCircle class="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
 		<div class="space-y-1 text-sm">
 			<p class="font-medium text-foreground">Important security note:</p>
