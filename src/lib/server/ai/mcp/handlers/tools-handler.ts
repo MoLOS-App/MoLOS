@@ -11,6 +11,7 @@ import { listMcpTools } from '../discovery/tools-discovery';
 import type { MCPContext, ToolsCallRequest } from '$lib/models/ai/mcp';
 import { ToolsCallRequestParamsSchema, validateRequest } from '../validation/schemas';
 import { withErrorHandling, createToolExecutionError, MCP_ERROR_CODES } from './error-handler';
+import { withToolTimeout, TimeoutError } from '../timeout/timeout-handler';
 
 /**
  * Handle tools/list request
@@ -69,11 +70,22 @@ export async function handleToolsCall(
 				throw error;
 			}
 
-			// Execute the tool
-			const result = await tool.execute(args);
+			// Execute the tool with timeout
+			try {
+				const result = await withToolTimeout(tool.execute(args), name);
 
-			// Format for MCP response
-			return formatToolResult(result);
+				// Format for MCP response
+				return formatToolResult(result);
+			} catch (error) {
+				// Handle timeout errors specifically
+				if (error instanceof TimeoutError) {
+					const timeoutError = new Error(`Tool execution timed out: ${name}`);
+					(timeoutError as any).code = MCP_ERROR_CODES.TIMEOUT;
+					(timeoutError as any).timeout = error.timeout;
+					throw timeoutError;
+				}
+				throw error;
+			}
 		},
 		{
 			toolName: name,
