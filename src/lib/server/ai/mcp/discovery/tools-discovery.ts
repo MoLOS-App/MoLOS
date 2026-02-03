@@ -26,8 +26,8 @@ export async function getMcpTools(context: MCPContext): Promise<MCPTool[]> {
 	const tools = await toolbox.getTools(context.userId, context.allowedModules);
 	const mcpTools = tools.map(toolDefinitionToMCPTool);
 
-	// Store in cache
-	mcpCache.set(CACHE_KEYS.TOOLS_LIST, context, mcpTools, 300); // 5 minutes
+	// Store in cache with shorter TTL (1 minute) for faster updates
+	mcpCache.set(CACHE_KEYS.TOOLS_LIST, context, mcpTools, 60); // 1 minute
 
 	return mcpTools;
 }

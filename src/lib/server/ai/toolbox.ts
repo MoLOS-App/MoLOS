@@ -4,7 +4,7 @@ import type { ToolDefinition } from '$lib/models/ai';
 import { TtlCache } from './agent-utils';
 
 const externalToolLoaders = import.meta.glob('./external_modules/*/ai-tools.ts');
-const TOOLBOX_CACHE_TTL_MS = Number(process.env.AI_AGENT_TOOLBOX_CACHE_TTL_MS || 15_000);
+const TOOLBOX_CACHE_TTL_MS = Number(process.env.AI_AGENT_TOOLBOX_CACHE_TTL_MS || 10_000);
 const TOOLBOX_CACHE_SIZE = Number(process.env.AI_AGENT_TOOLBOX_CACHE_SIZE || 64);
 const toolCache = new TtlCache<ToolDefinition[]>(TOOLBOX_CACHE_SIZE);
 const promptCache = new TtlCache<string>(TOOLBOX_CACHE_SIZE);
