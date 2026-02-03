@@ -8,7 +8,9 @@
 		CheckCircle,
 		XCircle,
 		Clock,
-		HelpCircle
+		HelpCircle,
+		TrendingUp,
+		Server
 	} from 'lucide-svelte';
 
 	// MCP components
@@ -18,6 +20,8 @@
 		McpStatsCard,
 		McpConnectionInfo,
 		McpQuickStart,
+		McpModulesGrid,
+		McpRecentActivity,
 		McpCreateKeyDialog,
 		McpEditKeyDialog,
 		McpKeySecretDialog,
@@ -408,13 +412,13 @@
 
 		<!-- Tab Content -->
 		{#if activeTab === 'dashboard'}
-			<!-- Dashboard Tab -->
-			<div class="space-y-8">
+			<!-- Dashboard Tab - Modern Material Design 3 Layout -->
+			<div class="space-y-6">
 				<!-- Tab Header with Help Button -->
 				<div class="flex items-start justify-between">
-					<div class="space-y-1">
-						<h2 class="text-xl font-semibold">Dashboard Overview</h2>
-						<p class="text-sm text-muted-foreground">Monitor your MCP server activity and performance</p>
+					<div>
+						<h2 class="text-2xl font-semibold tracking-tight">Dashboard</h2>
+						<p class="text-sm text-muted-foreground mt-1">Monitor your MCP server at a glance</p>
 					</div>
 					<Button
 						variant="ghost"
@@ -426,100 +430,63 @@
 						<HelpCircle class="w-5 h-5" />
 					</Button>
 				</div>
-				<!-- Quick Stats -->
+
+				<!-- Quick Stats - Modern Cards -->
 				{#if data.stats}
 					<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 						<McpStatsCard
 							title="Active Keys"
 							value={data.stats.activeKeys}
 							icon={Key}
-							iconColor="text-blue-500"
+							iconColor="text-primary"
 						/>
 						<McpStatsCard
 							title="Total Requests"
 							value={data.stats.totalRequests}
 							icon={Activity}
-							iconColor="text-green-500"
+							iconColor="text-primary"
+							trend="All time"
 						/>
 						<McpStatsCard
 							title="Success Rate"
 							value="{data.stats.successRate}%"
 							icon={CheckCircle}
-							iconColor="text-green-500"
+							iconColor="text-success"
+							trend="Last 24h"
+							trendUp={true}
 						/>
 						<McpStatsCard
 							title="Avg Duration"
 							value="{data.stats.avgDuration}ms"
 							icon={Clock}
-							iconColor="text-purple-500"
+							iconColor="text-primary"
 						/>
 					</div>
 				{/if}
 
-				<div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-					<!-- Connection Info -->
-					<McpConnectionInfo />
+				<!-- Main Content Grid -->
+				<div class="grid grid-cols-1 xl:grid-cols-6 gap-6">
+					<!-- Left Column -->
+					<div class="xl:col-span-4 space-y-6">
+						<!-- Quick Start -->
+						<McpQuickStart />
 
-					<!-- Quick Start -->
-					<McpQuickStart />
+						<!-- Recent Activity -->
+						<McpRecentActivity
+							logs={data.recentLogs}
+							onViewAll={() => (activeTab = 'logs')}
+						/>
+					</div>
+
+					<!-- Right Column -->
+					<div class="xl:col-span-2 space-y-6">
+						<!-- Connection Info -->
+						<McpConnectionInfo />
+
+						<!-- Available Modules -->
+						<McpModulesGrid modules={data.availableModules} />
+					</div>
 				</div>
-
-				<!-- Available Modules -->
-				{#if data.availableModules && data.availableModules.length > 0}
-					<Card>
-						<CardHeader>
-							<CardTitle class="text-lg">Available Modules</CardTitle>
-						</CardHeader>
-						<CardContent>
-							<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
-								{#each data.availableModules as module (module.id)}
-									<div class="px-3 py-2.5 bg-accent/50 hover:bg-accent rounded-lg text-center transition-colors">
-										<span class="text-sm font-medium text-foreground">{module.name}</span>
-									</div>
-								{/each}
-							</div>
-						</CardContent>
-					</Card>
-				{/if}
-
-				<!-- Recent Activity -->
-				{#if data.recentLogs && data.recentLogs.length > 0}
-					<Card>
-						<CardHeader class="flex flex-row items-center justify-between">
-							<CardTitle class="text-lg">Recent Activity</CardTitle>
-							<Button variant="ghost" size="sm" onclick={() => activeTab = 'logs'}>
-								View all
-							</Button>
-						</CardHeader>
-						<CardContent>
-							<div class="space-y-2">
-								{#each data.recentLogs as log (log.id)}
-									<div class="flex items-center justify-between p-3 bg-accent/50 hover:bg-accent rounded-lg transition-colors">
-										<div class="flex items-center gap-3">
-											{#if log.status === 'success'}
-												<CheckCircle class="w-4 h-4 text-green-500 flex-shrink-0" />
-											{:else}
-												<XCircle class="w-4 h-4 text-red-500 flex-shrink-0" />
-											{/if}
-											<div class="min-w-0">
-												<p class="text-sm font-medium text-foreground truncate">{log.method}</p>
-												{#if log.toolName}
-													<p class="text-xs text-muted-foreground truncate">{log.toolName}</p>
-												{/if}
-											</div>
-										</div>
-										<div class="text-right flex-shrink-0">
-											<p class="text-xs text-muted-foreground">{log.durationMs}ms</p>
-											<p class="text-xs text-muted-foreground">
-												{new Date(log.createdAt).toLocaleTimeString()}
-											</p>
-										</div>
-									</div>
-								{/each}
-							</div>
-						</CardContent>
-					</Card>
-				{/if}
 			</div>
 
 		{:else if activeTab === 'keys'}

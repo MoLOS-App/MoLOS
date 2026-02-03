@@ -3,6 +3,8 @@ export { default as McpTabs } from './McpTabs.svelte';
 export { default as McpStatsCard } from './McpStatsCard.svelte';
 export { default as McpConnectionInfo } from './McpConnectionInfo.svelte';
 export { default as McpQuickStart } from './McpQuickStart.svelte';
+export { default as McpModulesGrid } from './McpModulesGrid.svelte';
+export { default as McpRecentActivity } from './McpRecentActivity.svelte';
 export { default as McpCreateKeyDialog } from './McpCreateKeyDialog.svelte';
 export { default as McpEditKeyDialog } from './McpEditKeyDialog.svelte';
 export { default as McpKeySecretDialog } from './McpKeySecretDialog.svelte';

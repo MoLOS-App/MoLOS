@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
-	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
-	import { Copy, Check, Rocket, Terminal } from 'lucide-svelte';
+	import { Copy, Check, Rocket, Terminal, FileJson, ChevronRight } from 'lucide-svelte';
 	import { toast } from 'svelte-sonner';
 	import { cn } from '$lib/utils';
+	import { Card, CardContent } from '$lib/components/ui/card';
 
 	export type Agent = 'claude-code' | 'claude-desktop' | 'cursor' | 'windsurf' | 'cline';
 
@@ -13,11 +13,8 @@
 		id: Agent;
 		name: string;
 		badge: string;
-		description: string;
-		commandTemplate: (configJson: string) => string;
-		configTemplate: (baseUrl: string, apiKey: string) => string;
-		outputType: 'json' | 'command';
-		transportType: 'stdio';
+		shortDesc: string;
+		icon: typeof Rocket;
 	}
 
 	let {
@@ -25,91 +22,41 @@
 		selectedApiKey
 	}: { baseUrl?: string; selectedApiKey?: string } = $props();
 
-	// Generate the JSON configuration for stdio/mcp-remote
-	function getMcpConfigJson(url: string, key: string): string {
-		const displayKey = key || 'your-api-key-here';
-		return JSON.stringify(
-			{
-				mcpServers: {
-					'molos-mcp': {
-						command: 'npx',
-						args: ['-y', 'mcp-remote', url, '--header', `MOLOS_MCP_API_KEY: ${displayKey}`],
-						env: {
-							MOLOS_MCP_API_KEY: displayKey
-						}
-					}
-				}
-			},
-			null,
-			2
-		);
-	}
-
 	const agents: AgentConfig[] = [
 		{
 			id: 'claude-desktop',
 			name: 'Claude Desktop',
 			badge: 'Recommended',
-			description: 'Configure Claude Desktop to connect to MCP using stdio transport',
-			configTemplate: (url, key) => getMcpConfigJson(url, key),
-			commandTemplate: (url, key) => {
-				const displayKey = key || 'your-api-key-here';
-				return `npx -y mcp-remote ${url} --header "MOLOS_MCP_API_KEY: ${displayKey}"`;
-			},
-			outputType: 'json',
-			transportType: 'stdio'
+			shortDesc: 'Native desktop app integration',
+			icon: Rocket
 		},
 		{
 			id: 'claude-code',
 			name: 'Claude Code',
-			badge: 'CLI Tool',
-			description: 'Add MCP server using Claude Code CLI',
-			configTemplate: (url, key) => getMcpConfigJson(url, key),
-			commandTemplate: (url, key) => {
-				const displayKey = key || 'your-api-key-here';
-				return `claude mcp add molos-mcp -- npx -y mcp-remote ${url} --header "MOLOS_MCP_API_KEY: ${displayKey}"`;
-			},
-			outputType: 'command',
-			transportType: 'stdio'
+			badge: 'CLI',
+			shortDesc: 'Command-line interface',
+			icon: Terminal
 		},
 		{
 			id: 'cursor',
 			name: 'Cursor',
-			badge: 'AI Editor',
-			description: 'Add MCP server to Cursor settings',
-			configTemplate: (url, key) => getMcpConfigJson(url, key),
-			commandTemplate: (url, key) => {
-				const displayKey = key || 'your-api-key-here';
-				return `npx -y mcp-remote ${url} --header "MOLOS_MCP_API_KEY: ${displayKey}"`;
-			},
-			outputType: 'command',
-			transportType: 'stdio'
+			badge: 'Editor',
+			shortDesc: 'AI-powered code editor',
+			icon: Terminal
 		},
 		{
 			id: 'cline',
 			name: 'Cline',
-			badge: 'VS Code Extension',
-			description: 'Add MCP server to Cline settings',
-			configTemplate: (url, key) => getMcpConfigJson(url, key),
-			commandTemplate: (url, key) => {
-				const displayKey = key || 'your-api-key-here';
-				return `npx -y mcp-remote ${url} --header "MOLOS_MCP_API_KEY: ${displayKey}"`;
-			},
-			outputType: 'command',
-			transportType: 'stdio'
+			badge: 'VS Code',
+			shortDesc: 'VS Code extension',
+			icon: Terminal
 		},
 		{
 			id: 'windsurf',
 			name: 'Windsurf',
-			badge: 'Codeium Editor',
-			description: 'Add MCP server to Windsurf settings',
-			configTemplate: (url, key) => getMcpConfigJson(url, key),
-			commandTemplate: (url, key) => {
-				const displayKey = key || 'your-api-key-here';
-				return `npx -y mcp-remote ${url} --header "MOLOS_MCP_API_KEY: ${displayKey}"`;
-			},
-			outputType: 'command',
-			transportType: 'stdio'
+			badge: 'Codeium',
+			shortDesc: 'AI IDE by Codeium',
+			icon: Terminal
 		}
 	];
 
@@ -119,28 +66,39 @@
 	let customApiKey = $state('');
 	let configTab = $state<'cli' | 'json'>('cli');
 
-	// Get the full URL - only available on browser to avoid hydration mismatch
 	const fullUrl = $derived(
 		browser && typeof window !== 'undefined' ? `${window.location.origin}${baseUrl}` : baseUrl
 	);
 
-	function getCliOutput(agent: AgentConfig): string {
+	function getCliCommand(): string {
 		const key = selectedApiKey || customApiKey || 'your-api-key-here';
-		return agent.commandTemplate(fullUrl, key);
+		return `claude mcp add molos-mcp -- npx -y mcp-remote ${fullUrl} --header "MOLOS_MCP_API_KEY: ${key}"`;
 	}
 
-	function getJsonOutput(): string {
+	function getJsonConfig(): string {
 		const key = selectedApiKey || customApiKey || 'your-api-key-here';
-		return getMcpConfigJson(fullUrl, key);
+		return JSON.stringify(
+			{
+				mcpServers: {
+					'molos-mcp': {
+						command: 'npx',
+						args: ['-y', 'mcp-remote', fullUrl, '--header', `MOLOS_MCP_API_KEY: ${key}`],
+						env: { MOLOS_MCP_API_KEY: key }
+					}
+				}
+			},
+			null,
+			2
+		);
 	}
 
-	async function copyCommand() {
+	async function copyConfig() {
 		if (!browser) return;
-		const output = configTab === 'cli' ? getCliOutput(activeAgent) : getJsonOutput();
+		const output = configTab === 'cli' ? getCliCommand() : getJsonConfig();
 		try {
 			await navigator.clipboard.writeText(output);
-			copiedAgent = activeAgent.id;
-			toast.success(`${configTab === 'cli' ? 'Command' : 'Config'} copied!`);
+			copiedAgent = selectedAgent;
+			toast.success('Copied to clipboard!');
 			setTimeout(() => (copiedAgent = null), 2000);
 		} catch {
 			toast.error('Failed to copy');
@@ -150,131 +108,133 @@
 	const activeAgent = $derived(agents.find((a) => a.id === selectedAgent)!);
 </script>
 
-<Card>
-	<CardHeader>
-		<CardTitle class="flex items-center gap-2">
-			<Rocket class="w-5 h-5" />
-			Quick Start Guide
-		</CardTitle>
-	</CardHeader>
-	<CardContent class="space-y-6">
+<!-- Modern quick start guide -->
+<Card class="border-0 bg-card shadow-sm">
+	<CardContent class="p-6">
+		<!-- Header -->
+		<div class="flex items-center justify-between mb-6">
+			<div class="flex items-center gap-3">
+				<div class="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
+					<Rocket class="w-5 h-5 text-primary" />
+				</div>
+				<div>
+					<h3 class="font-semibold text-foreground">Quick Start</h3>
+					<p class="text-xs text-muted-foreground">Connect your AI agent</p>
+				</div>
+			</div>
+		</div>
+
 		<!-- Agent Selection -->
-		<div class="space-y-3">
-			<p class="text-sm text-muted-foreground">Select your AI coding agent:</p>
-			<div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+		<div class="space-y-3 mb-6">
+			<p class="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+				Select Agent
+			</p>
+			<div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
 				{#each agents as agent (agent.id)}
 					<button
 						onclick={() => (selectedAgent = agent.id)}
 						class={cn(
-							'flex items-center justify-between p-3 rounded-lg border-2 transition-colors text-left',
+							'flex flex-col items-start p-3 rounded-lg border-2 transition-all duration-200 text-left',
+							'hover:border-primary/50 hover:bg-primary/5',
 							selectedAgent === agent.id
-								? 'border-primary bg-primary/5'
-								: 'border-border hover:bg-accent'
+								? 'border-primary bg-primary/10 shadow-sm'
+								: 'border-border bg-card'
 						)}
 					>
-						<span class="font-medium text-sm">{agent.name}</span>
-						<Badge variant="secondary" class="text-[10px] h-5">{agent.badge}</Badge>
+						<div class="flex items-center justify-between w-full mb-1">
+							<span class="font-medium text-sm">{agent.name}</span>
+							{#if agent.badge === 'Recommended'}
+								<Badge
+									variant="secondary"
+									class="text-[9px] h-4 px-1 bg-primary/20 text-primary"
+								>
+									{agent.badge}
+								</Badge>
+							{/if}
+						</div>
+						<span class="text-xs text-muted-foreground">{agent.shortDesc}</span>
 					</button>
 				{/each}
 			</div>
 		</div>
 
-		<!-- Agent Description -->
-		<div class="p-4 bg-muted/50 rounded-lg">
-			<p class="text-sm text-foreground">{activeAgent.description}</p>
-		</div>
-
-		<!-- API Key Input -->
+		<!-- API Key Notice -->
 		{#if !selectedApiKey}
-			<div class="space-y-2">
-				<button
-					onclick={() => (showApiKeyInput = !showApiKeyInput)}
-					class="text-sm text-primary hover:underline"
-				>
-					{showApiKeyInput ? '- Hide' : '+ Enter'} API Key for command
-				</button>
-				{#if showApiKeyInput}
-					<input
-						type="text"
-						bind:value={customApiKey}
-						placeholder="Enter your API key..."
-						class="w-full px-3 py-2 border border-input bg-background text-foreground rounded-lg focus:ring-2 focus:ring-ring focus:ring-offset-background"
-					/>
-				{/if}
-			</div>
+			<button
+				onclick={() => (showApiKeyInput = !showApiKeyInput)}
+				class="w-full flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors mb-4 group"
+			>
+				<span class="text-sm text-foreground">
+					{showApiKeyInput ? 'Using custom API key' : 'Use your API key in command'}
+				</span>
+				<ChevronRight
+					class={cn(
+						'w-4 h-4 text-muted-foreground transition-transform duration-200',
+						showApiKeyInput && 'rotate-90'
+					)}
+				/>
+			</button>
+			{#if showApiKeyInput}
+				<input
+					type="text"
+					bind:value={customApiKey}
+					placeholder="Enter your API key..."
+					class="w-full px-3 py-2.5 text-sm border border-input bg-background rounded-lg focus:ring-2 focus:ring-ring focus:ring-offset-background mb-4"
+				/>
+			{/if}
 		{/if}
 
-		<!-- Configuration Display -->
+		<!-- Config Output -->
 		<div class="space-y-3">
-			<!-- Tabs -->
-			<div class="flex items-center justify-between">
-				<div class="flex items-center gap-1 border-b border-border">
-					<button
-						onclick={() => (configTab = 'cli')}
-						class="flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors"
-						class:border-primary={configTab === 'cli'}
-						class:border-transparent={configTab !== 'cli'}
-						class:text-foreground={configTab === 'cli'}
-						class:text-muted-foreground={configTab !== 'cli'}
-						class:hover:text-foreground={configTab !== 'cli'}
-					>
-						<Terminal class="w-4 h-4" />
-						CLI Command
-					</button>
-					<button
-						onclick={() => (configTab = 'json')}
-						class="flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors"
-						class:border-primary={configTab === 'json'}
-						class:border-transparent={configTab !== 'json'}
-						class:text-foreground={configTab === 'json'}
-						class:text-muted-foreground={configTab !== 'json'}
-						class:hover:text-foreground={configTab !== 'json'}
-					>
-						<Copy class="w-4 h-4" />
-						JSON Config
-					</button>
-				</div>
-				<Button
-					variant="outline"
-					size="sm"
-					onclick={copyCommand}
-					class="gap-2"
+			<!-- Tab Switcher -->
+			<div class="flex items-center gap-1 p-1 bg-muted rounded-lg">
+				<button
+					onclick={() => (configTab = 'cli')}
+					class={cn(
+						'flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-all duration-200',
+						configTab === 'cli'
+							? 'bg-background text-foreground shadow-sm'
+							: 'text-muted-foreground hover:text-foreground hover:bg-background/50'
+					)}
 				>
-					{#if copiedAgent === activeAgent.id}
-						<Check class="w-4 h-4 text-success" />
-						Copied!
-					{:else}
-						<Copy class="w-4 h-4" />
-						Copy
-					{/if}
-				</Button>
+					<Terminal class="w-4 h-4" />
+					Command
+				</button>
+				<button
+					onclick={() => (configTab = 'json')}
+					class={cn(
+						'flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-all duration-200',
+						configTab === 'json'
+							? 'bg-background text-foreground shadow-sm'
+							: 'text-muted-foreground hover:text-foreground hover:bg-background/50'
+					)}
+				>
+					<FileJson class="w-4 h-4" />
+					JSON
+				</button>
 			</div>
 
-			<!-- Content -->
-			{#if configTab === 'cli'}
+			<!-- Code Output -->
+			<div class="relative group">
 				<pre
-					class="bg-muted p-4 rounded-lg text-xs font-mono overflow-x-auto border border-border whitespace-pre-wrap"
-				><code>{getCliOutput(activeAgent)}</code></pre>
-			{:else}
-				<pre
-					class="bg-muted p-4 rounded-lg text-xs font-mono overflow-x-auto border border-border whitespace-pre-wrap"
-				><code>{getJsonOutput()}</code></pre>
-			{/if}
-		</div>
+					class="p-4 bg-slate-950 text-slate-50 rounded-lg text-xs font-mono overflow-x-auto border border-slate-800"
+				><code>{configTab === 'cli' ? getCliCommand() : getJsonConfig()}</code></pre>
+			</div>
 
-		<!-- Transport Info -->
-		<div class="flex items-center gap-2 p-3 bg-primary/10 border border-primary/20 rounded-lg">
-			<span class="text-xs text-primary">
-				<strong>Transport:</strong> {activeAgent.transportType.toUpperCase()} (mcp-remote)
-			</span>
-			<span class="text-muted-foreground">•</span>
-			<span class="text-xs text-primary">
-				<strong>URL:</strong> {fullUrl}
-			</span>
-			<span class="text-muted-foreground">•</span>
-			<span class="text-xs text-primary">
-				<strong>Header:</strong> MOLOS_MCP_API_KEY
-			</span>
+			<!-- Copy Button -->
+			<Button
+				variant="default"
+				onclick={copyConfig}
+				class="w-full gap-2"
+			>
+				{#if copiedAgent === selectedAgent}
+					<Check class="w-4 h-4" />
+					Copied!
+				{:else}
+					<Copy class="w-4 h-4" />
+					Copy {configTab === 'cli' ? 'Command' : 'Config'}
+				{/if}
+			</Button>
 		</div>
 	</CardContent>
 </Card>
