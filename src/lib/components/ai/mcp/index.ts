@@ -15,3 +15,4 @@ export { default as McpEditPromptDialog } from './McpEditPromptDialog.svelte';
 export { default as McpPromptsTable } from './McpPromptsTable.svelte';
 export { default as McpLogDetailDialog } from './McpLogDetailDialog.svelte';
 export { default as McpLogsTable } from './McpLogsTable.svelte';
+export { default as McpHelpDialog } from './McpHelpDialog.svelte';

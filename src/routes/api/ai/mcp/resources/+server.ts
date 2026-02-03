@@ -57,6 +57,8 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 		description: body.description ?? '',
 		uri: body.uri,
 		moduleId: body.moduleId ?? null,
+		resourceType: body.resourceType ?? 'static',
+		url: body.url ?? null,
 		enabled: body.enabled ?? true
 	};
 
@@ -81,6 +83,21 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 	// Validate description
 	if (input.description && input.description.length > 1000) {
 		return json({ error: 'Description must be less than 1000 characters' }, { status: 400 });
+	}
+
+	// Validate resource type and URL
+	if (input.resourceType === 'url') {
+		if (!input.url || input.url.trim().length === 0) {
+			return json({ error: 'URL is required for URL-based resources' }, { status: 400 });
+		}
+		try {
+			new URL(input.url);
+		} catch {
+			return json({ error: 'Invalid URL format' }, { status: 400 });
+		}
+		if (input.url.length > 2000) {
+			return json({ error: 'URL must be less than 2000 characters' }, { status: 400 });
+		}
 	}
 
 	const repo = new McpResourceRepository();

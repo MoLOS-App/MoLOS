@@ -196,6 +196,11 @@ export const MCPLogStatus = {
 	ERROR: 'error'
 } as const;
 
+export const MCPResourceType = {
+	STATIC: 'static',
+	URL: 'url'
+} as const;
+
 /**
  * MCP API Keys - Scoped API keys for MCP access
  * Stores API keys with module-level access control
@@ -267,8 +272,12 @@ export const aiMcpResources = sqliteTable('ai_mcp_resources', {
 		.references(() => user.id, { onDelete: 'cascade' }),
 	name: text('name').notNull(),
 	uri: text('uri').notNull(),
-	moduleId: text('module_id').notNull(),
+	moduleId: text('module_id'),
 	description: text('description').notNull(),
+	resourceType: textEnum('resource_type', MCPResourceType)
+		.notNull()
+		.default(MCPResourceType.STATIC),
+	url: text('url'), // For URL-based resources
 	mimeType: text('mime_type').default('application/json'),
 	metadata: text('metadata', { mode: 'json' }),
 	enabled: integer('enabled', { mode: 'boolean' }).notNull().default(true),

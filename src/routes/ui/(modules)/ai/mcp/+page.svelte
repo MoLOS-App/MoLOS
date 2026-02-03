@@ -71,6 +71,8 @@
 		description: string;
 		uri: string;
 		moduleId: string | null;
+		resourceType: 'static' | 'url';
+		url: string | null;
 		enabled: boolean;
 	} | null>(null);
 
@@ -213,6 +215,8 @@
 		description: string;
 		uri: string;
 		moduleId: string | null;
+		resourceType: 'static' | 'url';
+		url: string | null;
 		enabled: boolean;
 	}) {
 		const response = await fetch('/api/ai/mcp/resources', {
@@ -232,6 +236,8 @@
 		description: string;
 		uri: string;
 		moduleId: string | null;
+		resourceType: 'static' | 'url';
+		url: string | null;
 		enabled: boolean;
 	}) {
 		const response = await fetch(`/api/ai/mcp/resources/${resourceId}`, {
@@ -256,6 +262,8 @@
 				description: resource.description,
 				uri: resource.uri,
 				moduleId: resource.moduleId,
+				resourceType: (resource as any).resourceType ?? 'static',
+				url: (resource as any).url ?? null,
 				enabled: resource.enabled
 			};
 			showEditResourceDialog = true;

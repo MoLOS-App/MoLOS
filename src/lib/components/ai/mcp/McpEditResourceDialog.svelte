@@ -12,7 +12,8 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Select, SelectTrigger, SelectContent, SelectItem } from '$lib/components/ui/select';
 	import { Checkbox } from '$lib/components/ui/checkbox';
-	import { ScrollText } from 'lucide-svelte';
+	import { RadioGroup, RadioGroupItem } from '$lib/components/ui/radio-group';
+	import { ScrollText, Globe, FileCode } from 'lucide-svelte';
 
 	interface Module {
 		id: string;
@@ -25,6 +26,8 @@
 		description: string;
 		uri: string;
 		moduleId: string | null;
+		resourceType: 'static' | 'url';
+		url: string | null;
 		enabled: boolean;
 	}
 
@@ -44,6 +47,8 @@
 			description: string;
 			uri: string;
 			moduleId: string | null;
+			resourceType: 'static' | 'url';
+			url: string | null;
 			enabled: boolean;
 		}) => void | Promise<void>;
 	} = $props();
@@ -51,6 +56,8 @@
 	let name = $state('');
 	let description = $state('');
 	let uri = $state('');
+	let resourceType = $state<'static' | 'url'>('static');
+	let url = $state('');
 	let selectedModule = $state<string>('__global__');
 	let enabled = $state(true);
 
@@ -60,6 +67,8 @@
 			name = resource.name;
 			description = resource.description;
 			uri = resource.uri;
+			resourceType = resource.resourceType ?? 'static';
+			url = resource.url ?? '';
 			selectedModule = resource.moduleId ?? '__global__';
 			enabled = resource.enabled;
 		}
@@ -67,12 +76,15 @@
 
 	async function handleSubmit() {
 		if (!resource || !name.trim() || !uri.trim()) return;
+		if (resourceType === 'url' && !url.trim()) return;
 
 		await onUpdate(resource.id, {
 			name: name.trim(),
 			description: description.trim(),
 			uri: uri.trim(),
 			moduleId: selectedModule === '__global__' ? null : selectedModule,
+			resourceType,
+			url: resourceType === 'url' ? url.trim() : null,
 			enabled
 		});
 
@@ -85,7 +97,11 @@
 		return module?.name || 'Select a module';
 	}
 
-	const isValid = $derived(name.trim() !== '' && uri.trim() !== '');
+	const isValid = $derived(
+		name.trim() !== '' &&
+			uri.trim() !== '' &&
+			(resourceType !== 'url' || url.trim() !== '')
+	);
 </script>
 
 <Dialog {open} onOpenChange={onOpenChange}>
@@ -122,6 +138,32 @@
 				/>
 			</div>
 
+			<!-- Resource Type -->
+			<div class="space-y-2">
+				<Label>Resource Type</Label>
+				<RadioGroup bind:value={resourceType} class="flex gap-4">
+					<div class="flex items-center gap-2">
+						<RadioGroupItem value="static" id="type-static" />
+						<Label for="type-static" class="flex items-center gap-2 cursor-pointer">
+							<FileCode class="w-4 h-4" />
+							<span>Static</span>
+						</Label>
+					</div>
+					<div class="flex items-center gap-2">
+						<RadioGroupItem value="url" id="type-url" />
+						<Label for="type-url" class="flex items-center gap-2 cursor-pointer">
+							<Globe class="w-4 h-4" />
+							<span>URL</span>
+						</Label>
+					</div>
+				</RadioGroup>
+				<p class="text-xs text-muted-foreground">
+					{resourceType === 'static'
+						? 'Static resources return predefined content. Use for configuration and static data.'
+						: 'URL resources fetch content from an HTTP/HTTPS URL on demand.'}
+				</p>
+			</div>
+
 			<!-- URI -->
 			<div class="space-y-2">
 				<Label for="resource-uri">
@@ -134,9 +176,27 @@
 					autocomplete="off"
 				/>
 				<p class="text-xs text-muted-foreground">
-					The unique URI identifier for this resource
+					The unique URI identifier for this resource (e.g., config://app/settings)
 				</p>
 			</div>
+
+			<!-- URL (only for URL type) -->
+			{#if resourceType === 'url'}
+				<div class="space-y-2">
+					<Label for="resource-url">
+						Content URL <span class="text-destructive">*</span>
+					</Label>
+					<Input
+						id="resource-url"
+						bind:value={url}
+						placeholder="https://example.com/data.json"
+						autocomplete="off"
+					/>
+					<p class="text-xs text-muted-foreground">
+						The HTTP/HTTPS URL to fetch content from. The content will be served when the resource is read.
+					</p>
+				</div>
+			{/if}
 
 			<!-- Module -->
 			<div class="space-y-2">

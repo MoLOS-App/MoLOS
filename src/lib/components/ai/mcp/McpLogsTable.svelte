@@ -10,7 +10,8 @@
 		CheckCircle,
 		XCircle,
 		Clock,
-		Eye
+		Eye,
+		HelpCircle
 	} from 'lucide-svelte';
 	import { Empty, EmptyMedia, EmptyTitle } from '$lib/components/ui/empty';
 
@@ -35,11 +36,13 @@
 	let {
 		logs = [],
 		apiKeyOptions = [],
-		onViewDetails
+		onViewDetails,
+		onShowHelp
 	}: {
 		logs: McpLog[];
 		apiKeyOptions: ApiKeyOption[];
 		onViewDetails?: (logId: string) => void;
+		onShowHelp?: () => void;
 	} = $props();
 
 	let searchQuery = $state('');
@@ -114,6 +117,17 @@
 				<SelectItem value="error">Error</SelectItem>
 			</SelectContent>
 		</Select>
+		{#if onShowHelp}
+			<Button
+				variant="ghost"
+				size="icon"
+				onclick={onShowHelp}
+				class="flex-shrink-0 text-muted-foreground hover:text-foreground"
+				title="Show help"
+			>
+				<HelpCircle class="w-5 h-5" />
+			</Button>
+		{/if}
 	</div>
 
 	<!-- Table -->
