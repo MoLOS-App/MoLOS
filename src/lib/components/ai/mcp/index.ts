@@ -13,4 +13,5 @@ export { default as McpResourcesTable } from './McpResourcesTable.svelte';
 export { default as McpCreatePromptDialog } from './McpCreatePromptDialog.svelte';
 export { default as McpEditPromptDialog } from './McpEditPromptDialog.svelte';
 export { default as McpPromptsTable } from './McpPromptsTable.svelte';
+export { default as McpLogDetailDialog } from './McpLogDetailDialog.svelte';
 export { default as McpLogsTable } from './McpLogsTable.svelte';
