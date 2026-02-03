@@ -75,8 +75,32 @@ export const PUT: RequestHandler = async ({ locals, params, request }) => {
 		input.moduleId = body.moduleId;
 	}
 
+	if (body.resourceType !== undefined) {
+		input.resourceType = body.resourceType;
+	}
+
+	if (body.url !== undefined) {
+		input.url = body.url;
+	}
+
 	if (body.enabled !== undefined) {
 		input.enabled = body.enabled;
+	}
+
+	// Validate URL if resource type is 'url'
+	if (body.resourceType === 'url' || input.resourceType === 'url') {
+		const urlToCheck = body.url ?? input.url;
+		if (!urlToCheck || urlToCheck.trim().length === 0) {
+			return json({ error: 'URL is required for URL-based resources' }, { status: 400 });
+		}
+		try {
+			new URL(urlToCheck);
+		} catch {
+			return json({ error: 'Invalid URL format' }, { status: 400 });
+		}
+		if (urlToCheck.length > 2000) {
+			return json({ error: 'URL must be less than 2000 characters' }, { status: 400 });
+		}
 	}
 
 	const repo = new McpResourceRepository();

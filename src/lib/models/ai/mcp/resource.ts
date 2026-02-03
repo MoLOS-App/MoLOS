@@ -4,6 +4,8 @@
  * Types for MCP resource management.
  */
 
+export type MCPResourceType = 'static' | 'url';
+
 /**
  * MCP Resource entity
  */
@@ -12,8 +14,10 @@ export interface MCPResource {
 	userId: string;
 	name: string;
 	uri: string;
-	moduleId: string;
+	moduleId: string | null;
 	description: string;
+	resourceType: MCPResourceType;
+	url?: string | null;
 	mimeType: string;
 	metadata: Record<string, unknown> | null;
 	enabled: boolean;
@@ -27,8 +31,10 @@ export interface MCPResource {
 export interface CreateResourceInput {
 	name: string;
 	uri: string;
-	moduleId: string;
+	moduleId?: string | null;
 	description: string;
+	resourceType?: MCPResourceType;
+	url?: string | null;
 	mimeType?: string;
 	metadata?: Record<string, unknown>;
 	enabled?: boolean;
@@ -40,8 +46,10 @@ export interface CreateResourceInput {
 export interface UpdateResourceInput {
 	name?: string;
 	uri?: string;
-	moduleId?: string;
+	moduleId?: string | null;
 	description?: string;
+	resourceType?: MCPResourceType;
+	url?: string | null;
 	mimeType?: string;
 	metadata?: Record<string, unknown>;
 	enabled?: boolean;

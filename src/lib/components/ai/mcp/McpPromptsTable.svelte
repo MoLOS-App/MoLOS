@@ -4,7 +4,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Select, SelectTrigger, SelectContent, SelectItem } from '$lib/components/ui/select';
-	import { List, Search, Plus, Edit, Trash2 } from 'lucide-svelte';
+	import { List, Search, Plus, Edit, Trash2, HelpCircle } from 'lucide-svelte';
 	import { Empty, EmptyMedia, EmptyTitle, EmptyContent } from '$lib/components/ui/empty';
 
 	export interface PromptArgument {
@@ -28,13 +28,15 @@
 		availableModules = [],
 		onCreatePrompt,
 		onEditPrompt,
-		onDeletePrompt
+		onDeletePrompt,
+		onShowHelp
 	}: {
 		prompts: McpPrompt[];
 		availableModules: { id: string; name: string }[];
 		onCreatePrompt?: () => void;
 		onEditPrompt?: (promptId: string) => void;
 		onDeletePrompt?: (promptId: string) => void | Promise<void>;
+		onShowHelp?: () => void;
 	} = $props();
 
 	let searchQuery = $state('');
@@ -99,12 +101,25 @@
 				</SelectContent>
 			</Select>
 		</div>
-		{#if onCreatePrompt}
-			<Button onclick={onCreatePrompt} class="gap-2">
-				<Plus class="w-4 h-4" />
-				Create Prompt
-			</Button>
-		{/if}
+		<div class="flex items-center gap-2">
+			{#if onCreatePrompt}
+				<Button onclick={onCreatePrompt} class="gap-2">
+					<Plus class="w-4 h-4" />
+					Create Prompt
+				</Button>
+			{/if}
+			{#if onShowHelp}
+				<Button
+					variant="ghost"
+					size="icon"
+					onclick={onShowHelp}
+					class="flex-shrink-0 text-muted-foreground hover:text-foreground"
+					title="Show help"
+				>
+					<HelpCircle class="w-5 h-5" />
+				</Button>
+			{/if}
+		</div>
 	</div>
 
 	<!-- Table -->

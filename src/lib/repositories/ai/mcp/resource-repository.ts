@@ -33,8 +33,10 @@ export class McpResourceRepository extends BaseRepository {
 				userId,
 				name: input.name,
 				uri: input.uri,
-				moduleId: input.moduleId,
+				moduleId: input.moduleId ?? null,
 				description: input.description,
+				resourceType: input.resourceType ?? 'static',
+				url: input.url ?? null,
 				mimeType: input.mimeType ?? 'application/json',
 				metadata: input.metadata ? JSON.stringify(input.metadata) : null,
 				enabled: input.enabled ?? true,
@@ -208,6 +210,8 @@ export class McpResourceRepository extends BaseRepository {
 		if (input.uri !== undefined) updateData.uri = input.uri;
 		if (input.moduleId !== undefined) updateData.moduleId = input.moduleId;
 		if (input.description !== undefined) updateData.description = input.description;
+		if (input.resourceType !== undefined) updateData.resourceType = input.resourceType;
+		if (input.url !== undefined) updateData.url = input.url;
 		if (input.mimeType !== undefined) updateData.mimeType = input.mimeType;
 		if (input.metadata !== undefined)
 			updateData.metadata = input.metadata ? JSON.stringify(input.metadata) : null;

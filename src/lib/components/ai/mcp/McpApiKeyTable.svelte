@@ -4,7 +4,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Select, SelectTrigger, SelectContent, SelectItem } from '$lib/components/ui/select';
-	import { Key, Search, Plus, Edit, Trash2, AlertCircle } from 'lucide-svelte';
+	import { Key, Search, Plus, Edit, Trash2, AlertCircle, HelpCircle } from 'lucide-svelte';
 	import { Empty, EmptyMedia, EmptyTitle, EmptyContent } from '$lib/components/ui/empty';
 
 	export interface ApiKey {
@@ -22,13 +22,15 @@
 		availableModules = [],
 		onCreateKey,
 		onEditKey,
-		onRevokeKey
+		onRevokeKey,
+		onShowHelp
 	}: {
 		keys: ApiKey[];
 		availableModules: { id: string; name: string }[];
 		onCreateKey?: () => void;
 		onEditKey?: (keyId: string) => void;
 		onRevokeKey?: (keyId: string) => void | Promise<void>;
+		onShowHelp?: () => void;
 	} = $props();
 
 	let searchQuery = $state('');
@@ -98,12 +100,25 @@
 				</SelectContent>
 			</Select>
 		</div>
-		{#if onCreateKey}
-			<Button onclick={onCreateKey} class="gap-2">
-				<Plus class="w-4 h-4" />
-				Create API Key
-			</Button>
-		{/if}
+		<div class="flex items-center gap-2">
+			{#if onCreateKey}
+				<Button onclick={onCreateKey} class="gap-2">
+					<Plus class="w-4 h-4" />
+					Create API Key
+				</Button>
+			{/if}
+			{#if onShowHelp}
+				<Button
+					variant="ghost"
+					size="icon"
+					onclick={onShowHelp}
+					class="flex-shrink-0 text-muted-foreground hover:text-foreground"
+					title="Show help"
+				>
+					<HelpCircle class="w-5 h-5" />
+				</Button>
+			{/if}
+		</div>
 	</div>
 
 	<!-- Table -->
