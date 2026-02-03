@@ -35,23 +35,22 @@
 
 	let name = $state('');
 	let selectedModules = $state<string[]>([]);
-	let selectAll = $state(false);
 	let expiresAt = $state('');
 	let showModuleList = $state(false);
 
-	// Handle select all toggle
-	$effect(() => {
-		if (selectAll && selectedModules.length !== availableModules.length) {
-			selectedModules = availableModules.map((m) => m.id);
-		} else if (!selectAll && selectedModules.length === availableModules.length) {
-			selectedModules = [];
-		}
-	});
+	// Computed value for select all - not reactive
+	const selectAll = $derived(
+		selectedModules.length === availableModules.length && availableModules.length > 0
+	);
 
-	// Update selectAll state when individual modules change
-	$effect(() => {
-		selectAll = selectedModules.length === availableModules.length && availableModules.length > 0;
-	});
+	// Handle select all toggle
+	function toggleSelectAll() {
+		if (selectAll) {
+			selectedModules = [];
+		} else {
+			selectedModules = availableModules.map((m) => m.id);
+		}
+	}
 
 	// Toggle individual module selection
 	function toggleModule(moduleId: string) {
@@ -81,7 +80,6 @@
 		// Reset form
 		name = '';
 		selectedModules = [];
-		selectAll = false;
 		expiresAt = '';
 		showModuleList = false;
 	}
@@ -139,7 +137,11 @@
 						<div class="space-y-2 p-3 border border-border rounded-lg bg-muted/50">
 							<!-- Select All Option -->
 							<div class="flex items-center gap-2 pb-2 border-b border-border">
-								<Checkbox id="select-all" bind:checked={selectAll} />
+								<Checkbox
+									id="select-all"
+									checked={selectAll}
+									onChange={toggleSelectAll}
+								/>
 								<Label for="select-all" class="text-sm font-medium cursor-pointer flex-1">
 									All modules ({availableModules.length})
 								</Label>
