@@ -87,9 +87,8 @@
 		createdKeySecret = '';
 	}
 
-	// Get selected API key for quick start
-	const firstActiveKey = $derived(data.keys.find((k) => k.status === 'active'));
-	const firstActiveKeyFullSecret = $derived(undefined);
+	// Note: Full API key secrets are only shown once at creation time for security.
+	// Existing keys cannot have their full secret retrieved from the database.
 </script>
 
 <svelte:head>
@@ -144,7 +143,7 @@
 					<McpConnectionInfo />
 
 					<!-- Quick Start -->
-					<McpQuickStart selectedApiKey={firstActiveKeyFullSecret} />
+					<McpQuickStart />
 				</div>
 
 				<!-- Available Modules -->
