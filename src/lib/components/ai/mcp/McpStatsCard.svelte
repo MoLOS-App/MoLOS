@@ -15,14 +15,16 @@
 	} = $props();
 </script>
 
-<Card class="p-6 shadow-sm border border-border">
-	<CardContent class="p-0">
-		<div class="flex items-center justify-between">
-			<div>
-				<p class="text-sm text-muted-foreground">{title}</p>
-				<p class="text-2xl font-bold tracking-tight mt-1">{value}</p>
+<Card class="shadow-sm border border-border hover:shadow-md transition-shadow">
+	<CardContent class="p-6">
+		<div class="flex items-center justify-between gap-4">
+			<div class="min-w-0 flex-1">
+				<p class="text-sm font-medium text-muted-foreground">{title}</p>
+				<p class="text-2xl md:text-3xl font-bold tracking-tight mt-1 truncate">{value}</p>
 			</div>
-			<Icon class="w-8 h-8 {iconColor}" />
+			<div class="flex-shrink-0">
+				<Icon class="w-10 h-10 md:w-12 md:h-12 {iconColor}" />
+			</div>
 		</div>
 	</CardContent>
 </Card>
