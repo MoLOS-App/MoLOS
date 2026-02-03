@@ -18,6 +18,7 @@
 		McpConnectionInfo,
 		McpQuickStart,
 		McpCreateKeyDialog,
+		McpEditKeyDialog,
 		McpKeySecretDialog,
 		McpCreateResourceDialog,
 		McpEditResourceDialog,
@@ -44,8 +45,19 @@
 
 	// Dialog states
 	let showCreateKeyDialog = $state(false);
+	let showEditKeyDialog = $state(false);
 	let showKeySecret = $state(false);
 	let createdKeySecret = $state('');
+	let editingKey = $state<{
+		id: string;
+		name: string;
+		keyPrefix: string;
+		status: 'active' | 'disabled' | 'revoked';
+		allowedModules: string[] | null;
+		lastUsedAt: string | null;
+		expiresAt: string | null;
+		createdAt: string;
+	} | null>(null);
 
 	// Resource dialog states
 	let showCreateResourceDialog = $state(false);
@@ -118,6 +130,56 @@
 	function closeKeySecret() {
 		showKeySecret = false;
 		createdKeySecret = '';
+	}
+
+	// API Key handlers
+	async function updateApiKey(keyId: string, formData: {
+		name: string;
+		allowedModules: string[] | null;
+		expiresAt: string | null;
+	}) {
+		const response = await fetch(`/api/ai/mcp/keys/${keyId}`, {
+			method: 'PATCH',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(formData)
+		});
+
+		if (response.ok) {
+			showEditKeyDialog = false;
+			editingKey = null;
+			window.location.reload();
+		}
+	}
+
+	async function toggleKeyStatus(keyId: string, newStatus: 'active' | 'disabled') {
+		const response = await fetch(`/api/ai/mcp/keys/${keyId}`, {
+			method: 'PATCH',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ status: newStatus })
+		});
+
+		if (response.ok) {
+			showEditKeyDialog = false;
+			editingKey = null;
+			window.location.reload();
+		}
+	}
+
+	function openEditKey(keyId: string) {
+		const key = data.keys.find((k) => k.id === keyId);
+		if (key) {
+			editingKey = {
+				id: key.id,
+				name: key.name,
+				keyPrefix: key.keyPrefix,
+				status: key.status as 'active' | 'disabled' | 'revoked',
+				allowedModules: key.allowedModules,
+				lastUsedAt: key.lastUsedAt,
+				expiresAt: key.expiresAt,
+				createdAt: key.createdAt
+			};
+			showEditKeyDialog = true;
+		}
 	}
 
 	// Resource handlers
@@ -398,6 +460,7 @@
 				}))}
 				availableModules={data.availableModules}
 				onCreateKey={() => (showCreateKeyDialog = true)}
+				onEditKey={openEditKey}
 				onRevokeKey={revokeKey}
 			/>
 
@@ -440,6 +503,16 @@
 	onOpenChange={(open) => (showCreateKeyDialog = open)}
 	availableModules={data.availableModules}
 	onCreate={createApiKey}
+/>
+
+<!-- Edit API Key Dialog -->
+<McpEditKeyDialog
+	bind:open={showEditKeyDialog}
+	onOpenChange={(open) => (showEditKeyDialog = open)}
+	availableModules={data.availableModules}
+	apiKey={editingKey}
+	onUpdate={updateApiKey}
+	onToggleStatus={toggleKeyStatus}
 />
 
 <!-- Key Secret Display Dialog -->
