@@ -74,7 +74,11 @@ export async function authenticateRequest(
  * Extract API key from request headers
  */
 export function extractApiKeyFromRequest(request: Request): string | null {
-	return request.headers.get('X-API-Key') ?? request.headers.get('Authorization');
+	return (
+		request.headers.get('MOLOS_MCP_API_KEY') ??
+		request.headers.get('X-API-Key') ??
+		request.headers.get('Authorization')
+	);
 }
 
 /**

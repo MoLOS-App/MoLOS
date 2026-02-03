@@ -35,8 +35,8 @@
 
 	let { data }: Props = $props();
 
-	// Tab state
-	let activeTab = $state(data.tab || 'dashboard');
+	// Tab state - initialize from URL params to avoid prop reference warning
+	let activeTab = $state($page.url.searchParams.get('tab') || 'dashboard');
 
 	// Dialog states
 	let showCreateKeyDialog = $state(false);

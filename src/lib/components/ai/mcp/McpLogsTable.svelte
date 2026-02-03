@@ -3,6 +3,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Badge } from '$lib/components/ui/badge';
+	import { Select, SelectTrigger, SelectContent, SelectItem } from '$lib/components/ui/select';
 	import {
 		Activity,
 		Search,
@@ -75,32 +76,44 @@
 				class="w-full pl-9 h-9"
 			/>
 		</div>
-		<select
-			bind:value={apiKeyFilter}
-			class="px-3 py-2 text-sm border border-input bg-background text-foreground rounded-lg focus:ring-2 focus:ring-ring"
-		>
-			<option value="">All API Keys</option>
-			{#each apiKeyOptions as key}
-				<option value={key.id}>{key.name}</option>
-			{/each}
-		</select>
-		<select
-			bind:value={methodFilter}
-			class="px-3 py-2 text-sm border border-input bg-background text-foreground rounded-lg focus:ring-2 focus:ring-ring"
-		>
-			<option value="">All Methods</option>
-			{#each uniqueMethods as method}
-				<option value={method}>{method}</option>
-			{/each}
-		</select>
-		<select
-			bind:value={statusFilter}
-			class="px-3 py-2 text-sm border border-input bg-background text-foreground rounded-lg focus:ring-2 focus:ring-ring"
-		>
-			<option value="">All Status</option>
-			<option value="success">Success</option>
-			<option value="error">Error</option>
-		</select>
+		<Select bind:value={apiKeyFilter}>
+			<SelectTrigger class="h-9 w-40">
+				{apiKeyFilter ? apiKeyOptions.find(k => k.id === apiKeyFilter)?.name || 'All API Keys' : 'All API Keys'}
+			</SelectTrigger>
+			<SelectContent>
+				<SelectItem value="">All API Keys</SelectItem>
+				{#each apiKeyOptions as key}
+					<SelectItem value={key.id}>{key.name}</SelectItem>
+				{/each}
+			</SelectContent>
+		</Select>
+		<Select bind:value={methodFilter}>
+			<SelectTrigger class="h-9 w-40">
+				{methodFilter || 'All Methods'}
+			</SelectTrigger>
+			<SelectContent>
+				<SelectItem value="">All Methods</SelectItem>
+				{#each uniqueMethods as method}
+					<SelectItem value={method}>{method}</SelectItem>
+				{/each}
+			</SelectContent>
+		</Select>
+		<Select bind:value={statusFilter}>
+			<SelectTrigger class="h-9 w-40">
+				{#if statusFilter === ''}
+					All Status
+				{:else if statusFilter === 'success'}
+					Success
+				{:else if statusFilter === 'error'}
+					Error
+				{/if}
+			</SelectTrigger>
+			<SelectContent>
+				<SelectItem value="">All Status</SelectItem>
+				<SelectItem value="success">Success</SelectItem>
+				<SelectItem value="error">Error</SelectItem>
+			</SelectContent>
+		</Select>
 	</div>
 
 	<!-- Table -->

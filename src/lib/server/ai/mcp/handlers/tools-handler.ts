@@ -4,7 +4,7 @@
  * Handles tools/list and tools/call methods.
  */
 
-import { AiToolbox } from '../toolbox';
+import { AiToolbox } from '../../toolbox';
 import { formatToolResult, sanitizeErrorMessage } from '../mcp-utils';
 import { createSuccessResponse, errors, parseMethod } from '../json-rpc';
 import { listMcpTools } from '../discovery/tools-discovery';

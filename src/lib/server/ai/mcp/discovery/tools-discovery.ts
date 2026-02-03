@@ -4,7 +4,7 @@
  * Discovers and formats tools from the AiToolbox for MCP protocol.
  */
 
-import { AiToolbox } from '../toolbox';
+import { AiToolbox } from '../../toolbox';
 import { toolDefinitionToMCPTool, filterToolsByModules } from '../mcp-utils';
 import type { MCPTool, MCPContext } from '$lib/models/ai/mcp';
 
