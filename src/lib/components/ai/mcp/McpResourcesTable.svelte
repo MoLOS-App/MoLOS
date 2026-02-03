@@ -4,7 +4,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Select, SelectTrigger, SelectContent, SelectItem } from '$lib/components/ui/select';
-	import { ScrollText, Search, Plus, Edit } from 'lucide-svelte';
+	import { ScrollText, Search, Plus, Edit, Trash2 } from 'lucide-svelte';
 	import { Empty, EmptyMedia, EmptyTitle, EmptyContent } from '$lib/components/ui/empty';
 
 	export interface McpResource {
@@ -20,12 +20,14 @@
 		resources = [],
 		availableModules = [],
 		onCreateResource,
-		onEditResource
+		onEditResource,
+		onDeleteResource
 	}: {
 		resources: McpResource[];
 		availableModules: { id: string; name: string }[];
 		onCreateResource?: () => void;
 		onEditResource?: (resourceId: string) => void;
+		onDeleteResource?: (resourceId: string) => void | Promise<void>;
 	} = $props();
 
 	let searchQuery = $state('');
@@ -188,15 +190,28 @@
 										{/if}
 									</td>
 									<td class="px-6 py-4 text-right">
-										{#if onEditResource}
-											<Button
-												variant="ghost"
-												size="sm"
-												onclick={() => onEditResource(resource.id)}
-											>
-												<Edit class="w-4 h-4" />
-											</Button>
-										{/if}
+										<div class="flex items-center justify-end gap-1">
+											{#if onEditResource}
+												<Button
+													variant="ghost"
+													size="sm"
+													onclick={() => onEditResource(resource.id)}
+												>
+													<Edit class="w-4 h-4" />
+												</Button>
+											{/if}
+											{#if onDeleteResource}
+												<Button
+													variant="ghost"
+													size="sm"
+													onclick={() => onDeleteResource(resource.id)}
+													class="text-destructive hover:text-destructive"
+													title="Delete resource"
+												>
+													<Trash2 class="w-4 h-4" />
+												</Button>
+											{/if}
+										</div>
 									</td>
 								</tr>
 							{/each}

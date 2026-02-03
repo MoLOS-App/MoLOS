@@ -19,6 +19,8 @@
 		McpQuickStart,
 		McpCreateKeyDialog,
 		McpKeySecretDialog,
+		McpCreateResourceDialog,
+		McpEditResourceDialog,
 		McpApiKeyTable,
 		McpResourcesTable,
 		McpPromptsTable,
@@ -42,6 +44,18 @@
 	let showCreateKeyDialog = $state(false);
 	let showKeySecret = $state(false);
 	let createdKeySecret = $state('');
+
+	// Resource dialog states
+	let showCreateResourceDialog = $state(false);
+	let showEditResourceDialog = $state(false);
+	let editingResource = $state<{
+		id: string;
+		name: string;
+		description: string;
+		uri: string;
+		moduleId: string | null;
+		enabled: boolean;
+	} | null>(null);
 
 	// Update URL when tab changes
 	$effect(() => {
@@ -85,6 +99,73 @@
 	function closeKeySecret() {
 		showKeySecret = false;
 		createdKeySecret = '';
+	}
+
+	// Resource handlers
+	async function createResource(formData: {
+		name: string;
+		description: string;
+		uri: string;
+		moduleId: string | null;
+		enabled: boolean;
+	}) {
+		const response = await fetch('/api/ai/mcp/resources', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(formData)
+		});
+
+		if (response.ok) {
+			showCreateResourceDialog = false;
+			window.location.reload();
+		}
+	}
+
+	async function updateResource(resourceId: string, formData: {
+		name: string;
+		description: string;
+		uri: string;
+		moduleId: string | null;
+		enabled: boolean;
+	}) {
+		const response = await fetch(`/api/ai/mcp/resources/${resourceId}`, {
+			method: 'PUT',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(formData)
+		});
+
+		if (response.ok) {
+			showEditResourceDialog = false;
+			editingResource = null;
+			window.location.reload();
+		}
+	}
+
+	function openEditResource(resourceId: string) {
+		const resource = data.resources.find((r) => r.id === resourceId);
+		if (resource) {
+			editingResource = {
+				id: resource.id,
+				name: resource.name,
+				description: resource.description,
+				uri: resource.uri,
+				moduleId: resource.moduleId,
+				enabled: resource.enabled
+			};
+			showEditResourceDialog = true;
+		}
+	}
+
+	async function deleteResource(resourceId: string) {
+		if (!confirm('Are you sure you want to delete this resource?')) return;
+
+		const response = await fetch(`/api/ai/mcp/resources/${resourceId}`, {
+			method: 'DELETE'
+		});
+
+		if (response.ok) {
+			window.location.reload();
+		}
 	}
 
 	// Note: Full API key secrets are only shown once at creation time for security.
@@ -227,6 +308,9 @@
 					moduleId: r.moduleId ?? null
 				}))}
 				availableModules={data.availableModules}
+				onCreateResource={() => (showCreateResourceDialog = true)}
+				onEditResource={openEditResource}
+				onDeleteResource={deleteResource}
 			/>
 
 		{:else if activeTab === 'prompts'}
@@ -260,4 +344,21 @@
 	onOpenChange={(open) => (showKeySecret = open)}
 	keySecret={createdKeySecret}
 	onClose={closeKeySecret}
+/>
+
+<!-- Create Resource Dialog -->
+<McpCreateResourceDialog
+	bind:open={showCreateResourceDialog}
+	onOpenChange={(open) => (showCreateResourceDialog = open)}
+	availableModules={data.availableModules}
+	onCreate={createResource}
+/>
+
+<!-- Edit Resource Dialog -->
+<McpEditResourceDialog
+	bind:open={showEditResourceDialog}
+	onOpenChange={(open) => (showEditResourceDialog = open)}
+	availableModules={data.availableModules}
+	resource={editingResource}
+	onUpdate={updateResource}
 />
