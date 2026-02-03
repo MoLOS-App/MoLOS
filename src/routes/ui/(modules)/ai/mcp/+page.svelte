@@ -7,7 +7,8 @@
 		Activity,
 		CheckCircle,
 		XCircle,
-		Clock
+		Clock,
+		HelpCircle
 	} from 'lucide-svelte';
 
 	// MCP components
@@ -28,7 +29,8 @@
 		McpResourcesTable,
 		McpPromptsTable,
 		McpLogDetailDialog,
-		McpLogsTable
+		McpLogsTable,
+		McpHelpDialog
 	} from '$lib/components/ai/mcp';
 
 	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
@@ -107,6 +109,9 @@
 		resourceName?: string;
 		promptName?: string;
 	} | null>(null);
+
+	// Help dialog state
+	let showHelpDialog = $state(false);
 
 	// Update URL when tab changes
 	$effect(() => {
@@ -397,6 +402,22 @@
 		{#if activeTab === 'dashboard'}
 			<!-- Dashboard Tab -->
 			<div class="space-y-8">
+				<!-- Tab Header with Help Button -->
+				<div class="flex items-start justify-between">
+					<div class="space-y-1">
+						<h2 class="text-xl font-semibold">Dashboard Overview</h2>
+						<p class="text-sm text-muted-foreground">Monitor your MCP server activity and performance</p>
+					</div>
+					<Button
+						variant="ghost"
+						size="icon"
+						onclick={() => (showHelpDialog = true)}
+						class="flex-shrink-0 text-muted-foreground hover:text-foreground"
+						title="Show help"
+					>
+						<HelpCircle class="w-5 h-5" />
+					</Button>
+				</div>
 				<!-- Quick Stats -->
 				{#if data.stats}
 					<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -505,6 +526,7 @@
 				onCreateKey={() => (showCreateKeyDialog = true)}
 				onEditKey={openEditKey}
 				onRevokeKey={revokeKey}
+				onShowHelp={() => (showHelpDialog = true)}
 			/>
 
 		{:else if activeTab === 'resources'}
@@ -518,6 +540,7 @@
 				onCreateResource={() => (showCreateResourceDialog = true)}
 				onEditResource={openEditResource}
 				onDeleteResource={deleteResource}
+				onShowHelp={() => (showHelpDialog = true)}
 			/>
 
 		{:else if activeTab === 'prompts'}
@@ -531,6 +554,7 @@
 				onCreatePrompt={() => (showCreatePromptDialog = true)}
 				onEditPrompt={openEditPrompt}
 				onDeletePrompt={deletePrompt}
+				onShowHelp={() => (showHelpDialog = true)}
 			/>
 
 		{:else if activeTab === 'logs'}
@@ -539,6 +563,7 @@
 				logs={data.logs}
 				apiKeyOptions={data.apiKeysForFilter}
 				onViewDetails={viewLogDetail}
+				onShowHelp={() => (showHelpDialog = true)}
 			/>
 		{/if}
 	</div>
@@ -609,4 +634,11 @@
 	bind:open={showLogDetailDialog}
 	onOpenChange={(open) => (showLogDetailDialog = open)}
 	log={viewingLog}
+/>
+
+<!-- Help Dialog -->
+<McpHelpDialog
+	bind:open={showHelpDialog}
+	onOpenChange={(open) => (showHelpDialog = open)}
+	tab={activeTab}
 />
