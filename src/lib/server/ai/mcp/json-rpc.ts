@@ -101,28 +101,6 @@ export function isNotification(
 }
 
 /**
- * Parse SSE message as JSON-RPC request
- */
-export function parseSSEMessage(message: string): JSONRPCRequest | null {
-	try {
-		const data = JSON.parse(message);
-		if (isValidJSONRPCRequest(data)) {
-			return data;
-		}
-		return null;
-	} catch {
-		return null;
-	}
-}
-
-/**
- * Format response as SSE message
- */
-export function formatSSEMessage(response: JSONRPCResponse): string {
-	return `data: ${JSON.stringify(response)}\n\n`;
-}
-
-/**
  * Extract method name from request (e.g., "tools/list" -> method="tools", action="list")
  */
 export function parseMethod(method: string): { method: string; action?: string } {

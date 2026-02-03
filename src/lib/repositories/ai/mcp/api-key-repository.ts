@@ -18,8 +18,7 @@ import type {
 import { createHash, randomBytes } from 'crypto';
 import { BaseRepository } from '../../base-repository';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
-
-const SECRET_SALT = process.env.MCP_API_KEY_SALT || 'molos-mcp-default-salt-change-in-production';
+import { mcpSecurityConfig } from '$lib/server/ai/mcp/config/security';
 
 /**
  * Generate a cryptographically random string
@@ -32,7 +31,7 @@ function generateRandomString(length: number): string {
  * Hash an API key
  */
 function hashApiKey(key: string): string {
-	return createHash('sha256').update(key + SECRET_SALT).digest('hex');
+	return createHash('sha256').update(key + mcpSecurityConfig.apiKeySalt).digest('hex');
 }
 
 /**

@@ -12,7 +12,63 @@ import { error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { extractApiKeyFromRequest, authenticateRequest } from '$lib/server/ai/mcp/middleware/auth-middleware';
 import { handleMcpRequest, parseMcpRequest } from '$lib/server/ai/mcp/handlers';
-import { defaultRateLimiter, parseApiKeyFromHeader } from '$lib/server/ai/mcp/mcp-utils';
+import { defaultRateLimiter } from '$lib/server/ai/mcp/mcp-utils';
+import { mcpSecurityConfig } from '$lib/server/ai/mcp/config/security';
+
+/**
+ * Generate a unique request ID for tracing
+ */
+function generateRequestId(): string {
+	return `req_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
+}
+
+/**
+ * Get CORS headers for the response
+ */
+function getCorsHeaders(origin: string | null): Record<string, string> {
+	if (!mcpSecurityConfig.enableCors) {
+		return {};
+	}
+
+	// Check if origin is allowed
+	const allowedOrigin =
+		mcpSecurityConfig.allowedOrigins.length > 0
+			? mcpSecurityConfig.allowedOrigins.find((allowed) => {
+					if (allowed === '*') return true;
+					try {
+						const allowedUrl = new URL(allowed);
+						const originUrl = new URL(origin);
+						return allowedUrl.origin === originUrl.origin;
+					} catch {
+						return false;
+					}
+			  })
+			: null;
+
+	if (!allowedOrigin) {
+		return {};
+	}
+
+	return {
+		'Access-Control-Allow-Origin': allowedOrigin === '*' ? '*' : origin || '',
+		'Access-Control-Allow-Methods': 'POST, OPTIONS',
+		'Access-Control-Allow-Headers': 'Content-Type, MOLOS_MCP_API_KEY, X-API-Key, Authorization',
+		'Access-Control-Max-Age': '86400' // 24 hours
+	};
+}
+
+/**
+ * OPTIONS handler - CORS preflight
+ */
+export const OPTIONS: RequestHandler = async ({ request }) => {
+	const origin = request.headers.get('origin');
+	const corsHeaders = getCorsHeaders(origin);
+
+	return new Response(null, {
+		status: 204,
+		headers: corsHeaders
+	});
+};
 
 /**
  * POST handler - Process JSON-RPC requests
@@ -21,6 +77,21 @@ import { defaultRateLimiter, parseApiKeyFromHeader } from '$lib/server/ai/mcp/mc
  * Returns responses directly in HTTP body (no SSE needed for basic operation)
  */
 export const POST: RequestHandler = async ({ request }) => {
+	const requestId = generateRequestId();
+	const origin = request.headers.get('origin');
+
+	// Validate Content-Type header
+	const contentType = request.headers.get('content-type');
+	if (!contentType || !contentType.includes('application/json')) {
+		return error(
+			415,
+			{
+				code: 'UNSUPPORTED_MEDIA_TYPE',
+				message: 'Content-Type must be application/json'
+			} as any
+		);
+	}
+
 	// Extract API key from headers
 	const apiKeyHeader = extractApiKeyFromRequest(request);
 
@@ -42,10 +113,30 @@ export const POST: RequestHandler = async ({ request }) => {
 		return error(429, 'Rate limit exceeded');
 	}
 
-	// Parse request body
+	// Parse request body with size limit
 	let requestBody: string;
 	try {
+		// Get content length for validation
+		const contentLength = request.headers.get('content-length');
+		if (contentLength) {
+			const size = parseInt(contentLength, 10);
+			if (size > mcpSecurityConfig.maxRequestSize) {
+				return error(
+					413,
+					`Request body too large. Maximum size is ${mcpSecurityConfig.maxRequestSize} bytes`
+				);
+			}
+		}
+
 		requestBody = await request.text();
+
+		// Double-check actual size
+		if (requestBody.length > mcpSecurityConfig.maxRequestSize) {
+			return error(
+				413,
+				`Request body too large. Maximum size is ${mcpSecurityConfig.maxRequestSize} bytes`
+			);
+		}
 	} catch {
 		return error(400, 'Invalid request body');
 	}
@@ -64,10 +155,20 @@ export const POST: RequestHandler = async ({ request }) => {
 	// Handle the request
 	const response = await handleMcpRequest(context, mcpRequest);
 
+	// Prepare response headers
+	const headers: Record<string, string> = {
+		'Content-Type': 'application/json',
+		'X-Request-ID': requestId
+	};
+
+	// Add CORS headers if enabled
+	const corsHeaders = getCorsHeaders(origin);
+	Object.assign(headers, corsHeaders);
+
 	// Return the JSON-RPC response directly
 	return new Response(JSON.stringify(response), {
 		status: 200,
-		headers: { 'Content-Type': 'application/json' }
+		headers
 	});
 };
 
