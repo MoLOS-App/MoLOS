@@ -9,6 +9,7 @@ import { createSuccessResponse, errors } from '../json-rpc';
 import type { MCPContext } from '$lib/models/ai/mcp';
 import { ResourcesReadRequestParamsSchema, validateRequest } from '../validation/schemas';
 import { withErrorHandling, MCP_ERROR_CODES } from './error-handler';
+import { withResourceTimeout, TimeoutError } from '../timeout/timeout-handler';
 
 /**
  * Handle resources/list request
@@ -51,9 +52,23 @@ export async function handleResourcesRead(
 		requestId,
 		'resources/read',
 		async () => {
-			// Read the resource
-			const result = await readMcpResource(context, uri);
-			return result;
+			// Read the resource with timeout
+			try {
+				const result = await withResourceTimeout(
+					readMcpResource(context, uri),
+					uri
+				);
+				return result;
+			} catch (error) {
+				// Handle timeout errors specifically
+				if (error instanceof TimeoutError) {
+					const timeoutError = new Error(`Resource read timed out: ${uri}`);
+					(timeoutError as any).code = MCP_ERROR_CODES.TIMEOUT;
+					(timeoutError as any).timeout = error.timeout;
+					throw timeoutError;
+				}
+				throw error;
+			}
 		},
 		{
 			resourceName: uri,
