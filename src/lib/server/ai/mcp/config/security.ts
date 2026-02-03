@@ -4,42 +4,56 @@
  * Centralized security settings for the MCP server.
  */
 
-/**
- * Validate required security environment variables
- */
-function validateSecurityConfig(): void {
-	const salt = process.env.MCP_API_KEY_SALT;
+import { randomBytes } from 'crypto';
 
+/**
+ * Default salt for development only (never use in production)
+ */
+const DEV_DEFAULT_SALT = 'molos-mcp-dev-salt-change-in-production';
+
+/**
+ * Get or generate the API key salt
+ */
+function getApiKeySalt(): string {
+	const salt = process.env.MCP_API_KEY_SALT;
+	const isProduction = process.env.NODE_ENV === 'production';
+
+	// No salt set - use default in development, warn in production
 	if (!salt) {
-		throw new Error(
-			'MCP_API_KEY_SALT environment variable is required. Set it to a secure random string.'
+		if (isProduction) {
+			throw new Error(
+				'MCP_API_KEY_SALT environment variable is required in production. Set it to a secure random string.'
+			);
+		}
+		console.warn(
+			'[MCP Security] MCP_API_KEY_SALT not set. Using development default. This is NOT safe for production!'
 		);
+		return DEV_DEFAULT_SALT;
 	}
 
-	if (salt.includes('default') || salt.includes('change-in-production')) {
-		if (process.env.NODE_ENV === 'production') {
+	// Salt contains default placeholder - warn about it
+	if (salt.includes('default') || salt.includes('change-in-production') || salt.includes('dev-')) {
+		if (isProduction) {
 			throw new Error(
 				'MCP_API_KEY_SALT must be set to a secure random string in production. The default value is not safe.'
 			);
 		}
-		// Warn in development
 		console.warn(
-			'[MCP Security] Using default MCP_API_KEY_SALT. This is not safe for production!'
+			'[MCP Security] MCP_API_KEY_SALT appears to be a default value. This is NOT safe for production!'
 		);
 	}
-}
 
-// Validate on import
-validateSecurityConfig();
+	return salt;
+}
 
 /**
  * Security configuration
  */
 export const mcpSecurityConfig = {
 	/**
-	 * Salt for API key hashing (from env var, validated above)
+	 * Salt for API key hashing
 	 */
-	apiKeySalt: process.env.MCP_API_KEY_SALT!,
+	apiKeySalt: getApiKeySalt(),
 
 	/**
 	 * Maximum request body size in bytes (default: 1MB)
