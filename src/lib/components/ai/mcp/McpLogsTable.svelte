@@ -66,15 +66,19 @@
 		})
 	);
 
+	// Reset to page 1 when filters change
+	$effect(() => {
+		searchQuery;
+		apiKeyFilter;
+		methodFilter;
+		statusFilter;
+		currentPage = 1;
+	});
+
 	const totalPages = $derived(Math.ceil(filteredLogs.length / itemsPerPage));
 	const paginatedLogs = $derived(
 		filteredLogs.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 	);
-
-	// Reset to page 1 when filters change
-	$effect(() => {
-		currentPage = 1;
-	}, [searchQuery, apiKeyFilter, methodFilter, statusFilter]);
 
 	const uniqueMethods = $derived(Array.from(new Set(logs.map((log) => log.method))).sort());
 
