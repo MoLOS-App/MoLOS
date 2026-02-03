@@ -7,7 +7,7 @@
 import type { JSONRPCResponse, MCPContext } from '$lib/models/ai/mcp';
 import { createErrorResponse, createSuccessResponse } from '../json-rpc';
 import { sanitizeErrorMessage } from '../mcp-utils';
-import { McpLogRepository } from '$lib/repositories/ai/mcp';
+import { logRequest } from '../logging/log-queue';
 
 /**
  * MCP-specific error codes (in JSON-RPC custom error range -32000 to -32099)
@@ -38,7 +38,7 @@ export const MCP_ERROR_CODES = {
 	TIMEOUT: -32012,
 
 	// Request validation
-REQUEST_TOO_LARGE: -32013,
+	REQUEST_TOO_LARGE: -32013,
 	INVALID_CONTENT_TYPE: -32014
 } as const;
 
@@ -67,6 +67,8 @@ export interface LogData {
 /**
  * Base handler wrapper that handles logging and errors
  *
+ * Uses async logging queue for non-blocking log writes.
+ *
  * @param context - MCP request context
  * @param requestId - JSON-RPC request ID
  * @param method - MCP method name (for logging)
@@ -82,30 +84,23 @@ export async function withErrorHandling<T>(
 	logData?: LogData
 ): Promise<JSONRPCResponse> {
 	const startTime = Date.now();
-	let logRepo: McpLogRepository | null = null;
 
 	try {
 		// Execute the handler
 		const result = await handler();
 
-		// Log success (excluding initialize which is less critical)
+		// Log success asynchronously (excluding initialize which is less critical)
 		if (method !== 'initialize') {
-			try {
-				logRepo = new McpLogRepository();
-				await logRepo.create({
-					userId: context.userId,
-					apiKeyId: context.apiKeyId,
-					sessionId: context.sessionId,
-					requestId: String(requestId),
-					method,
-					...logData,
-					result,
-					status: 'success',
-					durationMs: Date.now() - startTime
-				});
-			} catch {
-				// Ignore logging errors
-			}
+			logRequest(
+				context,
+				String(requestId),
+				method,
+				result,
+				'success',
+				Date.now() - startTime,
+				undefined,
+				logData
+			);
 		}
 
 		// Return success response
@@ -113,27 +108,18 @@ export async function withErrorHandling<T>(
 	} catch (error) {
 		const errorMessage = sanitizeErrorMessage(error);
 
-		// Log error
+		// Log error asynchronously (excluding initialize)
 		if (method !== 'initialize') {
-			try {
-				if (!logRepo) {
-					logRepo = new McpLogRepository();
-				}
-				await logRepo.create({
-					userId: context.userId,
-					apiKeyId: context.apiKeyId,
-					sessionId: context.sessionId,
-					requestId: String(requestId),
-					method,
-					...logData,
-					result: null,
-					status: 'error',
-					errorMessage,
-					durationMs: Date.now() - startTime
-				});
-			} catch {
-				// Ignore logging errors
-			}
+			logRequest(
+				context,
+				String(requestId),
+				method,
+				null,
+				'error',
+				Date.now() - startTime,
+				errorMessage,
+				logData
+			);
 		}
 
 		// Determine error code based on error message
@@ -158,7 +144,8 @@ export async function withErrorHandling<T>(
 			}
 		} else if (errorMessage.includes('timeout') || errorMessage.includes('timed out')) {
 			errorCode = MCP_ERROR_CODES.TIMEOUT;
-			errorData = { timeout: true };
+			const timeoutError = error as { timeout?: number };
+			errorData = { timeout: timeoutError.timeout };
 		}
 
 		// Return error response
