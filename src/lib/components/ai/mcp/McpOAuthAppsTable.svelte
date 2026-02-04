@@ -166,10 +166,10 @@
 											<div
 												class="bg-primary/10 text-primary flex h-10 w-10 items-center justify-center rounded-lg font-semibold"
 											>
-												{app.name.slice(0, 2).toUpperCase()}
+												{(app.name || 'App').slice(0, 2).toUpperCase()}
 											</div>
 											<div>
-												<div class="font-medium">{app.name}</div>
+												<div class="font-medium">{app.name || 'Unnamed App'}</div>
 											</div>
 										</div>
 									</td>
@@ -186,15 +186,15 @@
 									<!-- Redirect URIs -->
 									<td class="px-6 py-4">
 										<div class="flex flex-col gap-1">
-											{#each app.redirect_uris.slice(0, 2) as uri}
+											{#each (app.redirect_uris || []).slice(0, 2) as uri}
 												<div class="text-muted-foreground flex items-center gap-1 text-xs">
 													<ExternalLink class="h-3 w-3" />
 													<span class="max-w-[150px] truncate">{uri}</span>
 												</div>
 											{/each}
-											{#if app.redirect_uris.length > 2}
+											{#if (app.redirect_uris || []).length > 2}
 												<span class="text-muted-foreground text-xs"
-													>+{app.redirect_uris.length - 2} more</span
+													>+{(app.redirect_uris || []).length - 2} more</span
 												>
 											{/if}
 										</div>
