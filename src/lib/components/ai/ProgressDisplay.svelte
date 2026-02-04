@@ -63,7 +63,7 @@
 		{/if}
 
 		<!-- Current Action (prominently displayed) -->
-		{#if progress.currentAction}
+		{#if progress.currentAction && progress.currentAction.type !== 'thinking'}
 			<div class="flex items-center gap-3 text-sm text-muted-foreground" in:fade>
 				<div class="h-2 w-2 animate-pulse rounded-full bg-primary" class:bg-destructive={isCancelling}></div>
 				<span>
