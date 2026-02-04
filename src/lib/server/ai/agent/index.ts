@@ -372,7 +372,8 @@ export class AiAgent {
 				toolExecutor,
 				reflector,
 				streamer,
-				llmClient
+				llmClient,
+				completionMessages
 			);
 
 			actions.push(...stepResult.actions);
@@ -391,6 +392,7 @@ export class AiAgent {
 		let summaryMessage = verification.reason;
 		console.log('[Agent] Plan execution complete. Actions taken:', actions.length);
 		console.log('[Agent] Verification result:', verification);
+		console.log('[Agent] Completion messages:', completionMessages);
 
 		if (actions.length > 0 || planTracker?.getPlan()) {
 			try {
@@ -399,7 +401,8 @@ export class AiAgent {
 				const summaryPrompt = this.buildSummaryPrompt(
 					userContent,
 					actions,
-					planTracker?.getPlan() || null
+					planTracker?.getPlan() || null,
+					completionMessages
 				);
 
 				console.log('[Agent] Calling LLM for summary generation...');
@@ -439,7 +442,8 @@ export class AiAgent {
 		toolExecutor: ToolExecutor,
 		reflector: SelfReflector,
 		streamer: ProgressStreamer,
-		llmClient: LlmClient
+		llmClient: LlmClient,
+		completionMessages: string[]
 	): Promise<{ result: any; actions: any[] }> {
 		const actions: any[] = [];
 		const stepNumber = planTracker.getCompletedCount() + 1;
@@ -466,8 +470,10 @@ export class AiAgent {
 					planTracker.completeStep(step.id, result.result);
 					await streamer.streamStepCompleted(step, stepNumber, totalSteps, result.result);
 
-					// Send a descriptive message about what was done
-					await streamer.streamThinking(`✓ ${step.description}`);
+					// Track completion message for summary
+					const completionMsg = `[${stepNumber}/${totalSteps}] ✓ ${step.description}`;
+					completionMessages.push(completionMsg);
+					await streamer.streamThinking(completionMsg);
 
 					// Reflection
 					const reflection = await reflector.reflectOnActionResult(
@@ -493,8 +499,10 @@ export class AiAgent {
 					planTracker.failStep(step.id, result.error || 'Execution failed');
 					await streamer.streamStepFailed(step, stepNumber, totalSteps, result.error || 'Unknown error');
 
-					// Send a descriptive message about the failure
-					await streamer.streamThinking(`✗ Failed: ${step.description} - ${result.error || 'Unknown error'}`);
+					// Track failure message for summary
+					const failureMsg = `[${stepNumber}/${totalSteps}] ✗ Failed: ${step.description} - ${result.error || 'Unknown error'}`;
+					completionMessages.push(failureMsg);
+					await streamer.streamThinking(failureMsg);
 
 					actions.push({
 						type: 'error',
@@ -654,7 +662,7 @@ If you complete the user's request, provide a clear summary of what you did.`;
 	/**
 	 * Build prompt for generating execution summary
 	 */
-	private buildSummaryPrompt(userRequest: string, actions: any[], plan: any): string {
+	private buildSummaryPrompt(userRequest: string, actions: any[], plan: any, completionMessages: string[] = []): string {
 		const actionsSummary = actions.map((a, i) => {
 			const status = a.status === 'executed' ? '✓' : a.status === 'failed' ? '✗' : '○';
 			return `${i + 1}. ${status} ${a.description}`;
@@ -667,11 +675,15 @@ Steps: ${plan.steps.length} total, ${plan.steps.filter((s: any) => s.status === 
 `
 			: '';
 
+		const completionLog = completionMessages.length > 0
+			? `\nExecution log:\n${completionMessages.join('\n')}\n`
+			: '';
+
 		return `The user asked: "${userRequest}"
 
 ${planInfo}Actions taken:
 ${actionsSummary || 'No actions taken'}
-
+${completionLog}
 Provide a clear, conversational summary to the user explaining:
 1. What you found or accomplished
 2. Any important details from the actions

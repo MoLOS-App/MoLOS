@@ -36,6 +36,21 @@
 		const planMatch = content.match(/<plan>([\s\S]*?)<\/plan>/);
 		let plan = planMatch ? planMatch[1].trim() : metadata.plan || null;
 
+		// If plan is an object, format it for display
+		if (plan && typeof plan === 'object') {
+			const steps = plan.steps || [];
+			const completedCount = steps.filter((s: any) => s.status === 'completed').length;
+			const failedCount = steps.filter((s: any) => s.status === 'failed').length;
+
+			plan = `Plan: ${plan.goal}
+Steps: ${completedCount}/${steps.length} completed${failedCount > 0 ? `, ${failedCount} failed` : ''}
+
+${steps.map((s: any, i: number) => {
+				const status = s.status === 'completed' ? '✓' : s.status === 'failed' ? '✗' : '○';
+				return `${i + 1}. ${status} ${s.description}`;
+			}).join('\n')}`;
+		}
+
 		let cleanContent = content
 			.replace(/<thought>[\s\S]*?<\/thought>/, '')
 			.replace(/<plan>[\s\S]*?<\/plan>/, '')
