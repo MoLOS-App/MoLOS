@@ -10,6 +10,9 @@ import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { oauthClientsStore } from '$lib/server/ai/mcp/oauth';
 
+// Maximum logo size: 10KB (ChatGPT requirement)
+const MAX_LOGO_SIZE = 10 * 1024;
+
 /**
  * POST handler - Register a new OAuth client
  */
@@ -77,6 +80,21 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		return error(400, `Invalid token_endpoint_auth_method: ${token_endpoint_auth_method}`);
 	}
 
+	// Validate logo_uri size if provided
+	let validLogoUri: URL | undefined = undefined;
+	if (logo_uri) {
+		try {
+			validLogoUri = new URL(logo_uri as string);
+			// We can't validate the actual logo size here without fetching it,
+			// but we can reject obviously problematic URLs
+			if (validLogoUri.protocol !== 'https:' && validLogoUri.protocol !== 'http:') {
+				return error(400, 'logo_uri must use https or http protocol');
+			}
+		} catch {
+			return error(400, `Invalid logo_uri: ${logo_uri}`);
+		}
+	}
+
 	// Build client metadata
 	const clientMetadata = {
 		redirect_uris: validRedirectUris,
@@ -85,7 +103,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		response_types: Array.isArray(response_types) ? response_types as string[] : ['code'],
 		client_name: client_name ? String(client_name) : 'Unnamed Client',
 		client_uri: client_uri ? new URL(client_uri as string) : undefined,
-		logo_uri: logo_uri ? new URL(logo_uri as string) : undefined,
+		logo_uri: validLogoUri,
 		scope: scope ? String(scope) : undefined,
 		contacts: Array.isArray(contacts) ? contacts as string[] : undefined,
 		tos_uri: tos_uri ? String(tos_uri) : undefined,
