@@ -61,14 +61,22 @@
 		}
 	}
 
-	async function loadMessages(sessionId: string) {
+	async function loadMessages(sessionId: string, preserveProgressMessages = false) {
+		// If preserving progress messages, save them before loading
+		const progressMessagesToPreserve = preserveProgressMessages
+			? messages.filter((m) => m.metadata?.isTemporary && tempProgressMessageIds.includes(m.id))
+			: [];
+
 		const res = await fetch(`/api/ai/chat?sessionId=${sessionId}`);
 		if (res.ok) {
 			const data = await res.json();
 			messages = data.messages || [];
 			currentSessionId = sessionId;
-			// Clear temporary progress message IDs when loading fresh messages
-			tempProgressMessageIds = [];
+
+			// Restore progress messages if we're preserving them
+			if (preserveProgressMessages && progressMessagesToPreserve.length > 0) {
+				messages = [...messages, ...progressMessagesToPreserve];
+			}
 			await scrollToBottom();
 		}
 	}
@@ -381,7 +389,8 @@
 				isStreaming = true;
 				await handleStreamResponse(res, assistantMessageId);
 				if (currentSessionId) {
-					await loadMessages(currentSessionId);
+					// Preserve progress messages when loading after execution completes
+					await loadMessages(currentSessionId, true);
 				}
 				await loadSessions();
 			} else if (res.ok) {
@@ -406,8 +415,7 @@
 			isStreaming = false;
 			isCancelling = false;
 			abortController = null;
-			// Clean up temporary progress messages after execution completes
-			tempProgressMessageIds = [];
+			// Keep progress messages in chat - don't clear them
 			await scrollToBottom();
 		}
 	}
