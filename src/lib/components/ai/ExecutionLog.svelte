@@ -4,8 +4,12 @@
 	import { ChevronDown, ChevronRight } from 'lucide-svelte';
 	import type { ProgressState } from './progress-types';
 	import { getLogEntryIcon, getLogEntryClasses, getEntryDuration } from './progress-types';
+	import ExecutionLogActions from './ExecutionLogActions.svelte';
 
-	let { progress }: { progress: ProgressState } = $props();
+	let { progress, onRetry }: {
+		progress: ProgressState;
+		onRetry?: (failedSteps: typeof progress.executionLog) => void;
+	} = $props();
 
 	let logContainer: HTMLElement;
 	let lastLogLength = $state(0);
@@ -134,4 +138,7 @@
 			{/each}
 		</div>
 	</div>
+
+	<!-- Actions (Export, Retry) -->
+	<ExecutionLogActions {progress} {onRetry} />
 {/if}
