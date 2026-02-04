@@ -197,6 +197,9 @@
 		const { eventType, data: eventData } = event;
 		const now = Date.now();
 
+		// Debug log to see what events are being received
+		console.log('[Progress Event]', eventType, eventData);
+
 		switch (eventType) {
 			case 'plan':
 				currentProgress.status = 'planning';
