@@ -60,6 +60,7 @@ export interface AiMessage {
 	attachments?: { name: string }[];
 	parts?: unknown[];
 	createdAt: Date;
+	metadata?: Record<string, unknown>; // For UI-only metadata like temporary progress messages
 }
 
 export interface AiChatResponse {

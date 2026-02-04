@@ -446,7 +446,8 @@ export class AiAgent {
 		completionMessages: string[]
 	): Promise<{ result: any; actions: any[] }> {
 		const actions: any[] = [];
-		const stepNumber = planTracker.getCompletedCount() + 1;
+		// Use the step's position in the plan for the step number, not completed count
+		const stepNumber = planTracker.getStepNumber(step.id);
 		const totalSteps = planTracker.getTotalCount();
 
 		await streamer.streamStepStarting(step, stepNumber, totalSteps);
