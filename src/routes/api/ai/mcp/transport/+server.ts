@@ -11,7 +11,7 @@
 import { error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import {
-	extractApiKeyFromRequest,
+	extractAuthHeader,
 	authenticateRequest
 } from '$lib/server/ai/mcp/middleware/auth-middleware';
 import { handleMcpRequest, parseMcpRequest } from '$lib/server/ai/mcp/handlers';
@@ -57,7 +57,7 @@ function getCorsHeaders(origin: string | null): Record<string, string> {
 	return {
 		'Access-Control-Allow-Origin': allowedOrigin === '*' ? '*' : origin || '',
 		'Access-Control-Allow-Methods': 'POST, OPTIONS',
-		'Access-Control-Allow-Headers': 'Content-Type, MOLOS_MCP_API_KEY, X-API-Key, Authorization',
+		'Access-Control-Allow-Headers': 'Content-Type, Authorization, MOLOS_MCP_API_KEY, X-API-Key',
 		'Access-Control-Max-Age': '86400' // 24 hours
 	};
 }
@@ -94,15 +94,15 @@ export const POST: RequestHandler = async ({ request }) => {
 		} as any);
 	}
 
-	// Extract API key from headers
-	const apiKeyHeader = extractApiKeyFromRequest(request);
+	// Extract auth header (supports both API key and OAuth Bearer)
+	const authHeader = extractAuthHeader(request);
 
-	if (!apiKeyHeader) {
-		return error(401, 'Missing API key. Provide MOLOS_MCP_API_KEY header.');
+	if (!authHeader) {
+		return error(401, 'Missing authentication. Provide Authorization header or MOLOS_MCP_API_KEY.');
 	}
 
-	// Authenticate
-	const authResult = await authenticateRequest(apiKeyHeader, getSessionId(request.url));
+	// Authenticate (auto-detects API key or OAuth Bearer)
+	const authResult = await authenticateRequest(authHeader, getSessionId(request.url));
 
 	if (!authResult.authenticated || !authResult.context) {
 		return error(401, authResult.error?.message ?? 'Authentication failed');

@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { Dialog, DialogContent, DialogHeader, DialogTitle } from '$lib/components/ui/dialog';
 	import { Button } from '$lib/components/ui/button';
-	import { Info, Code, Terminal, BookOpen, List, Activity, Key } from 'lucide-svelte';
+	import { Info, Code, Terminal, BookOpen, List, Activity, Key, Shield } from 'lucide-svelte';
 
-	export type HelpTabId = 'dashboard' | 'keys' | 'resources' | 'prompts' | 'logs';
+	export type HelpTabId = 'dashboard' | 'keys' | 'resources' | 'prompts' | 'logs' | 'oauth';
 
 	export interface HelpContent {
 		title: string;
@@ -171,6 +171,38 @@ Error: Missing required argument 'content'
 Duration: 8ms
 Prompt: generate-summary`,
 					description: 'A failed request due to missing required arguments in the prompt call.'
+				}
+			]
+		},
+		oauth: {
+			title: 'OAuth Applications',
+			description:
+				'OAuth 2.0 allows third-party applications to access your MCP server without sharing your API keys. Applications use access tokens with scoped permissions.',
+			howItWorks: [
+				'Register an OAuth application with a name and redirect URIs',
+				'Applications redirect users to your authorization endpoint for consent',
+				'After approval, applications receive an authorization code',
+				'Applications exchange the code for an access token (PKCE enabled)',
+				'Tokens can be scoped to specific modules (e.g., "mcp:analytics")'
+			],
+			examples: [
+				{
+					title: 'Registering an OAuth App',
+					code: `Name: My MCP Client
+Redirect URIs: http://localhost:3000/callback
+Token Auth: none (PKCE)
+Scopes: mcp:analytics mcp:tasks`,
+					description: 'Create a public client that uses PKCE for secure token exchange.'
+				},
+				{
+					title: 'Authorization Flow',
+					code: `1. Redirect user to authorize endpoint
+2. User approves the request
+3. Redirect back with authorization code
+4. Exchange code for access token
+5. Use token in Authorization header`,
+					description:
+						'The standard OAuth 2.0 authorization code flow with PKCE for public clients.'
 				}
 			]
 		}

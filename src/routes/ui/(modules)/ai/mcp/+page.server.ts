@@ -5,6 +5,8 @@ import { McpResourceRepository } from '$lib/repositories/ai/mcp';
 import { McpPromptRepository } from '$lib/repositories/ai/mcp';
 import { MCPApiKeyStatus, MCPLogStatus } from '$lib/server/db/schema';
 import { getAllModules } from '$lib/config';
+import { oauthClientsStore } from '$lib/server/ai/mcp/oauth';
+import { getAvailableScopes } from '$lib/server/ai/mcp/oauth';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
 	if (!locals.user) {
@@ -21,7 +23,9 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 			logs: [],
 			totalLogs: 0,
 			availableModules: [],
-			apiKeysForFilter: []
+			apiKeysForFilter: [],
+			oauthApps: [],
+			availableScopes: []
 		};
 	}
 
@@ -116,6 +120,12 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	// Get API keys for logs filtering
 	const apiKeysForFilter = await apiKeyRepo.listByUserId(locals.user.id, {}, { limit: 100 });
 
+	// Get OAuth clients
+	const oauthApps = await oauthClientsStore.listClientsByUserId(locals.user.id);
+
+	// Get available OAuth scopes
+	const availableScopes = getAvailableScopes();
+
 	return {
 		user: locals.user,
 		tab,
@@ -151,6 +161,8 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		logLimit: logs.limit,
 		logHasMore: logs.hasMore,
 		availableModules: availableModules.map((m) => ({ id: m.id, name: m.name })),
-		apiKeysForFilter: apiKeysForFilter.items
+		apiKeysForFilter: apiKeysForFilter.items,
+		oauthApps,
+		availableScopes
 	};
 };

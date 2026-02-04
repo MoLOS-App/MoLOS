@@ -35,6 +35,8 @@
 		McpPromptsTable,
 		McpLogsTable,
 		McpHelpDialog,
+		McpOAuthAppsTable,
+		McpCreateOAuthAppDialog,
 		type HelpTabId
 	} from '$lib/components/ai/mcp';
 
@@ -99,6 +101,13 @@
 		[...data.logs].map((log) => ({
 			...log,
 			createdAt: formatDate(log.createdAt)
+		}))
+	);
+	// svelte-ignore state_referenced_locally
+	let localOAuthApps = $state(
+		[...data.oauthApps].map((app) => ({
+			...app,
+			redirect_uris: app.redirect_uris.map((u) => u.toString())
 		}))
 	);
 
@@ -183,12 +192,15 @@
 		enabled: boolean;
 	} | null>(null);
 
+	// OAuth dialog states
+	let showCreateOAuthAppDialog = $state(false);
+
 	// Help dialog state
 	let showHelpDialog = $state(false);
 
 	// Confirmation dialog state
 	let showDeleteConfirmDialog = $state(false);
-	let deleteConfirmType = $state<'key' | 'resource' | 'prompt' | null>(null);
+	let deleteConfirmType = $state<'key' | 'resource' | 'prompt' | 'oauth' | null>(null);
 	let deleteConfirmId = $state<string | null>(null);
 	let deleteConfirmName = $state<string>('');
 
@@ -467,6 +479,49 @@
 		}
 	}
 
+	// OAuth handlers
+	async function createOAuthApp(formData: {
+		name: string;
+		redirectUris: string[];
+		scopes: string[];
+		tokenEndpointAuthMethod: string;
+	}) {
+		const response = await fetch('/api/ai/mcp/oauth/register', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				client_name: formData.name,
+				redirect_uris: formData.redirectUris,
+				scope: formData.scopes.join(' '),
+				token_endpoint_auth_method: formData.tokenEndpointAuthMethod,
+				grant_types: ['authorization_code', 'refresh_token'],
+				response_types: ['code']
+			})
+		});
+
+		if (response.ok) {
+			const result = await response.json();
+			showCreateOAuthAppDialog = false;
+			// Refresh the OAuth apps list
+			const appsResponse = await fetch('/api/ai/mcp/oauth/register');
+			if (appsResponse.ok) {
+				const appsData = await appsResponse.json();
+				localOAuthApps = appsData.items;
+			}
+			return result;
+		}
+	}
+
+	function confirmDeleteOAuthApp(clientId: string) {
+		const app = localOAuthApps.find((a) => a.client_id === clientId);
+		if (app) {
+			deleteConfirmType = 'oauth';
+			deleteConfirmId = clientId;
+			deleteConfirmName = app.name;
+			showDeleteConfirmDialog = true;
+		}
+	}
+
 	async function deletePrompt(promptId: string) {
 		const response = await fetch(`/api/ai/mcp/prompts/${promptId}`, {
 			method: 'DELETE'
@@ -474,6 +529,21 @@
 
 		if (response.ok) {
 			await refreshData();
+		}
+	}
+
+	async function deleteOAuthApp(clientId: string) {
+		const response = await fetch(`/api/ai/mcp/oauth/apps/${clientId}`, {
+			method: 'DELETE'
+		});
+
+		if (response.ok) {
+			// Refresh the OAuth apps list
+			const appsResponse = await fetch('/api/ai/mcp/oauth/register');
+			if (appsResponse.ok) {
+				const appsData = await appsResponse.json();
+				localOAuthApps = appsData.items;
+			}
 		}
 	}
 
@@ -611,6 +681,14 @@
 				apiKeyOptions={data.apiKeysForFilter}
 				onShowHelp={() => (showHelpDialog = true)}
 			/>
+		{:else if activeTab === 'oauth'}
+			<!-- OAuth Apps Tab -->
+			<McpOAuthAppsTable
+				apps={localOAuthApps}
+				onCreateApp={() => (showCreateOAuthAppDialog = true)}
+				onDeleteApp={confirmDeleteOAuthApp}
+				onShowHelp={() => (showHelpDialog = true)}
+			/>
 		{/if}
 	</div>
 </div>
@@ -675,6 +753,14 @@
 	onUpdate={updatePrompt}
 />
 
+<!-- Create OAuth App Dialog -->
+<McpCreateOAuthAppDialog
+	open={showCreateOAuthAppDialog}
+	onOpenChange={(open) => (showCreateOAuthAppDialog = open)}
+	availableScopes={data.availableScopes}
+	onCreate={createOAuthApp}
+/>
+
 <!-- Help Dialog -->
 <McpHelpDialog
 	open={showHelpDialog}
@@ -708,6 +794,8 @@
 							await deleteResource(deleteConfirmId);
 						} else if (deleteConfirmType === 'prompt') {
 							await deletePrompt(deleteConfirmId);
+						} else if (deleteConfirmType === 'oauth') {
+							await deleteOAuthApp(deleteConfirmId);
 						}
 					}
 					showDeleteConfirmDialog = false;
