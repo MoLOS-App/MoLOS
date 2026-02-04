@@ -46,8 +46,8 @@ export const ClientCapabilitiesSchema = z.object({
  * Initialize request parameters
  */
 export const InitializeRequestParamsSchema = z.object({
-	protocolVersion: z.string().regex(/^2025-\d{2}-\d{2}$/, {
-		message: 'Protocol version must be in format 2025-MM-DD'
+	protocolVersion: z.string().regex(/^202(4|5)-\d{2}-\d{2}$/, {
+		message: 'Protocol version must be in format 2024-MM-DD or 2025-MM-DD'
 	}),
 	capabilities: ClientCapabilitiesSchema,
 	clientInfo: ClientInfoSchema
