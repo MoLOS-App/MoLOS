@@ -13,7 +13,12 @@
 
 	const expandedThoughts = $state<Record<string, boolean>>({});
 	const expandedPlans = $state<Record<string, boolean>>({});
+	const expandedProgressLog = $state<Record<string, boolean>>({});
 	let copied = $state(false);
+
+	// Extract progress log from metadata if available
+	const progressLog = $derived((message.metadata?.progressLog || []) as string[]);
+	const hasProgressLog = $derived(progressLog.length > 0);
 
 	const processed = $derived(processMessage(message));
 	const isThinkingPlaceholder = $derived(
@@ -24,10 +29,6 @@
 			processed.attachments.length === 0 &&
 			processed.parts.length === 0
 	);
-
-	// Check if this is a temporary progress message
-	const isProgressMessage = $derived(message.metadata?.isTemporary === true);
-	const progressType = $derived(message.metadata?.type || 'info');
 
 	function processMessage(msg: AiMessage) {
 		const content = msg.content || '';
@@ -85,6 +86,10 @@ ${steps.map((s: any, i: number) => {
 		expandedPlans[msgId] = !expandedPlans[msgId];
 	}
 
+	function toggleProgressLog(msgId: string) {
+		expandedProgressLog[msgId] = !expandedProgressLog[msgId];
+	}
+
 	function formatTime(value: Date | string) {
 		const date = typeof value === 'string' ? new Date(value) : value;
 		if (Number.isNaN(date.getTime())) return '';
@@ -131,15 +136,7 @@ ${steps.map((s: any, i: number) => {
 			class="bubble-container relative max-w-[92%] min-w-0 rounded-2xl px-4 py-3 text-[14px] leading-relaxed transition-all duration-200 {message.role ===
 			'user'
 				? 'user-bubble bg-primary text-primary-foreground'
-				: isProgressMessage
-					? 'progress-bubble border-l-4 ' + (progressType === 'success'
-							? 'border-green-500 bg-green-500/10'
-							: progressType === 'error'
-								? 'border-destructive bg-destructive/10'
-								: progressType === 'warning'
-									? 'border-yellow-500 bg-yellow-500/10'
-									: 'border-border/60 bg-muted/20')
-					: 'assistant-bubble border border-border/60 bg-muted/20 text-foreground'}"
+				: 'assistant-bubble border border-border/60 bg-muted/20 text-foreground'}"
 		>
 			{#if message.role === 'user'}
 				<div class="overflow-wrap-anywhere flex flex-col gap-2">
@@ -167,16 +164,9 @@ ${steps.map((s: any, i: number) => {
 						</span>
 					</div>
 				{:else if processed.content.trim() !== ''}
-					{#if isProgressMessage}
-						<!-- For progress messages, use preformatted text -->
-						<div class="whitespace-pre-wrap text-sm">
-							{processed.content}
-						</div>
-					{:else}
-						<div class="prose-sm prose prose-custom dark:prose-invert max-w-none">
-							<SvelteMarkdown source={processed.content} {renderers} />
-						</div>
-					{/if}
+					<div class="prose-sm prose prose-custom dark:prose-invert max-w-none">
+						<SvelteMarkdown source={processed.content} {renderers} />
+					</div>
 				{/if}
 
 				{#if processed.thought || processed.plan}
@@ -226,28 +216,53 @@ ${steps.map((s: any, i: number) => {
 								{/if}
 							</div>
 						{/if}
+
+						<!-- Progress Log Accordion (shown at bottom of assistant messages) -->
+						{#if hasProgressLog && message.role === 'assistant'}
+							<div class="mt-4 space-y-2">
+								<button
+									class="text-muted-foreground/70 flex items-center gap-2 text-[11px] font-medium transition-colors hover:text-foreground"
+									onclick={() => toggleProgressLog(message.id)}
+								>
+									<ListChecks class="h-3 w-3" />
+									{expandedProgressLog[message.id] ? 'Hide Execution Log' : 'Show Execution Log'}
+									<span class="ml-1 rounded-full bg-muted/50 px-1.5 py-0.5 text-[9px]">
+										{progressLog.length} {progressLog.length === 1 ? 'entry' : 'entries'}
+									</span>
+								</button>
+
+								{#if expandedProgressLog[message.id]}
+									<div
+										class="text-muted-foreground/90 max-h-64 overflow-y-auto rounded-xl border border-border/50 bg-muted/20 p-3 font-mono text-[11px]"
+										transition:slide
+									>
+										{#each progressLog as line, index (index)}
+											<div class="mb-1 last:mb-0">{line}</div>
+										{/each}
+									</div>
+								{/if}
+							</div>
+						{/if}
 					</div>
 				{/if}
 			{/if}
 
-			<!-- Message Actions (hidden for progress messages) -->
-			{#if !isProgressMessage}
-				<div
-					class="absolute top-0 -right-12 flex flex-col gap-1 opacity-0 transition-opacity group-hover/msg:opacity-100"
+			<!-- Message Actions -->
+			<div
+				class="absolute top-0 -right-12 flex flex-col gap-1 opacity-0 transition-opacity group-hover/msg:opacity-100"
+			>
+				<button
+					class="text-muted-foreground flex h-8 w-8 items-center justify-center rounded-full border border-border/60 bg-background/90 hover:bg-muted/30 hover:text-foreground"
+					onclick={copyToClipboard}
+					title="Copy message"
 				>
-					<button
-						class="text-muted-foreground flex h-8 w-8 items-center justify-center rounded-full border border-border/60 bg-background/90 hover:bg-muted/30 hover:text-foreground"
-						onclick={copyToClipboard}
-						title="Copy message"
-					>
-						{#if copied}
-							<Check class="h-3.5 w-3.5 text-green-500" />
-						{:else}
-							<Copy class="h-3.5 w-3.5" />
-						{/if}
-					</button>
-				</div>
-			{/if}
+					{#if copied}
+						<Check class="h-3.5 w-3.5 text-green-500" />
+					{:else}
+						<Copy class="h-3.5 w-3.5" />
+					{/if}
+				</button>
+			</div>
 		</div>
 
 		{#if processed.actions.length > 0}
@@ -289,11 +304,6 @@ ${steps.map((s: any, i: number) => {
 
 	.assistant-bubble {
 		border-radius: 1.25rem 1.25rem 1.25rem 0.25rem;
-	}
-
-	.progress-bubble {
-		border-radius: 0.75rem 0.75rem 0.75rem 0.25rem;
-		border-left-width: 4px;
 	}
 
 	:global(.prose-custom) {
