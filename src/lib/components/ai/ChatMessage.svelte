@@ -13,7 +13,12 @@
 
 	const expandedThoughts = $state<Record<string, boolean>>({});
 	const expandedPlans = $state<Record<string, boolean>>({});
+	const expandedProgressLog = $state<Record<string, boolean>>({});
 	let copied = $state(false);
+
+	// Extract progress log from metadata if available
+	const progressLog = $derived((message.metadata?.progressLog || []) as string[]);
+	const hasProgressLog = $derived(progressLog.length > 0);
 
 	const processed = $derived(processMessage(message));
 	const isThinkingPlaceholder = $derived(
@@ -79,6 +84,10 @@ ${steps.map((s: any, i: number) => {
 
 	function togglePlan(msgId: string) {
 		expandedPlans[msgId] = !expandedPlans[msgId];
+	}
+
+	function toggleProgressLog(msgId: string) {
+		expandedProgressLog[msgId] = !expandedProgressLog[msgId];
 	}
 
 	function formatTime(value: Date | string) {
@@ -203,6 +212,33 @@ ${steps.map((s: any, i: number) => {
 										transition:slide
 									>
 										{processed.plan}
+									</div>
+								{/if}
+							</div>
+						{/if}
+
+						<!-- Progress Log Accordion (shown for messages with progress log) -->
+						{#if hasProgressLog}
+							<div class="mt-4 space-y-2">
+								<button
+									class="text-muted-foreground/70 flex items-center gap-2 text-[11px] font-medium transition-colors hover:text-foreground"
+									onclick={() => toggleProgressLog(message.id)}
+								>
+									<ListChecks class="h-3 w-3" />
+									{expandedProgressLog[message.id] ? 'Hide Execution Log' : 'Show Execution Log'}
+									<span class="ml-1 rounded-full bg-muted/50 px-1.5 py-0.5 text-[9px]">
+										{progressLog.length} {progressLog.length === 1 ? 'entry' : 'entries'}
+									</span>
+								</button>
+
+								{#if expandedProgressLog[message.id]}
+									<div
+										class="text-muted-foreground/90 max-h-64 overflow-y-auto rounded-xl border border-border/50 bg-muted/20 p-3 font-mono text-[11px]"
+										transition:slide
+									>
+										{#each progressLog as line, index (index)}
+											<div class="mb-1 last:mb-0">{line}</div>
+										{/each}
 									</div>
 								{/if}
 							</div>
