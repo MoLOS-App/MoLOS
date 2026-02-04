@@ -22,24 +22,29 @@ export class AiToolbox {
 	 * This includes core tools and tools from active external modules.
 	 */
 	async getTools(userId: string, activeModuleIds: string[] = []): Promise<ToolDefinition[]> {
+		console.log('[AiToolbox] getTools called with userId:', userId, 'activeModuleIds:', activeModuleIds);
 		const cacheKey = `${userId}:${[...activeModuleIds].sort().join(',') || 'core'}`;
 		const cached = toolCache.get(cacheKey);
-		if (cached) return cached;
+		if (cached) {
+			console.log('[AiToolbox] Returning cached tools, count:', cached.length);
+			return cached;
+		}
 
 		// 1. Start with core tools (global/system level)
 		let tools = getCoreAiTools(userId);
-		logDebug('[AiToolbox] Core tools loaded:', tools.length);
+		console.log('[AiToolbox] Core tools loaded:', tools.length);
 
 		// 2. Discover tools from all registered modules (core and external)
 		const allModules = getAllModules();
-		logDebug(
+		console.log(
 			'[AiToolbox] All modules found:',
 			allModules.map((m) => ({ id: m.id, name: m.name, isExternal: m.isExternal }))
 		);
 
 		// We include all core modules by default, and external modules only if active
 		const modulesToLoad = allModules.filter((m) => !m.isExternal || activeModuleIds.includes(m.id));
-		logDebug(
+		console.log('[AiToolbox] activeModuleIds:', activeModuleIds);
+		console.log(
 			'[AiToolbox] Modules to load:',
 			modulesToLoad.map((m) => m.id)
 		);
@@ -199,4 +204,12 @@ Use the provided tools to interact with the database. Your goal is to make the u
 		promptCache.set(cacheKey, prompt, TOOLBOX_CACHE_TTL_MS);
 		return prompt;
 	}
+}
+
+/**
+ * Clear the tool cache (for debugging)
+ */
+export function clearToolboxCache() {
+	toolCache.clear();
+	console.log('[AiToolbox] Cache cleared');
 }
