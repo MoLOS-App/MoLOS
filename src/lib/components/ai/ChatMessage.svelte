@@ -25,6 +25,10 @@
 			processed.parts.length === 0
 	);
 
+	// Check if this is a temporary progress message
+	const isProgressMessage = $derived(message.metadata?.isTemporary === true);
+	const progressType = $derived(message.metadata?.type || 'info');
+
 	function processMessage(msg: AiMessage) {
 		const content = msg.content || '';
 		const metadata = msg.contextMetadata ? JSON.parse(msg.contextMetadata) : {};
@@ -127,7 +131,15 @@ ${steps.map((s: any, i: number) => {
 			class="bubble-container relative max-w-[92%] min-w-0 rounded-2xl px-4 py-3 text-[14px] leading-relaxed transition-all duration-200 {message.role ===
 			'user'
 				? 'user-bubble bg-primary text-primary-foreground'
-				: 'assistant-bubble border border-border/60 bg-muted/20 text-foreground'}"
+				: isProgressMessage
+					? 'progress-bubble border-l-4 ' + (progressType === 'success'
+							? 'border-green-500 bg-green-500/10'
+							: progressType === 'error'
+								? 'border-destructive bg-destructive/10'
+								: progressType === 'warning'
+									? 'border-yellow-500 bg-yellow-500/10'
+									: 'border-border/60 bg-muted/20')
+					: 'assistant-bubble border border-border/60 bg-muted/20 text-foreground'}"
 		>
 			{#if message.role === 'user'}
 				<div class="overflow-wrap-anywhere flex flex-col gap-2">
@@ -155,9 +167,16 @@ ${steps.map((s: any, i: number) => {
 						</span>
 					</div>
 				{:else if processed.content.trim() !== ''}
-					<div class="prose-sm prose prose-custom dark:prose-invert max-w-none">
-						<SvelteMarkdown source={processed.content} {renderers} />
-					</div>
+					{#if isProgressMessage}
+						<!-- For progress messages, use preformatted text -->
+						<div class="whitespace-pre-wrap text-sm">
+							{processed.content}
+						</div>
+					{:else}
+						<div class="prose-sm prose prose-custom dark:prose-invert max-w-none">
+							<SvelteMarkdown source={processed.content} {renderers} />
+						</div>
+					{/if}
 				{/if}
 
 				{#if processed.thought || processed.plan}
@@ -211,22 +230,24 @@ ${steps.map((s: any, i: number) => {
 				{/if}
 			{/if}
 
-			<!-- Message Actions -->
-			<div
-				class="absolute top-0 -right-12 flex flex-col gap-1 opacity-0 transition-opacity group-hover/msg:opacity-100"
-			>
-				<button
-					class="text-muted-foreground flex h-8 w-8 items-center justify-center rounded-full border border-border/60 bg-background/90 hover:bg-muted/30 hover:text-foreground"
-					onclick={copyToClipboard}
-					title="Copy message"
+			<!-- Message Actions (hidden for progress messages) -->
+			{#if !isProgressMessage}
+				<div
+					class="absolute top-0 -right-12 flex flex-col gap-1 opacity-0 transition-opacity group-hover/msg:opacity-100"
 				>
-					{#if copied}
-						<Check class="h-3.5 w-3.5 text-green-500" />
-					{:else}
-						<Copy class="h-3.5 w-3.5" />
-					{/if}
-				</button>
-			</div>
+					<button
+						class="text-muted-foreground flex h-8 w-8 items-center justify-center rounded-full border border-border/60 bg-background/90 hover:bg-muted/30 hover:text-foreground"
+						onclick={copyToClipboard}
+						title="Copy message"
+					>
+						{#if copied}
+							<Check class="h-3.5 w-3.5 text-green-500" />
+						{:else}
+							<Copy class="h-3.5 w-3.5" />
+						{/if}
+					</button>
+				</div>
+			{/if}
 		</div>
 
 		{#if processed.actions.length > 0}
@@ -268,6 +289,11 @@ ${steps.map((s: any, i: number) => {
 
 	.assistant-bubble {
 		border-radius: 1.25rem 1.25rem 1.25rem 0.25rem;
+	}
+
+	.progress-bubble {
+		border-radius: 0.75rem 0.75rem 0.75rem 0.25rem;
+		border-left-width: 4px;
 	}
 
 	:global(.prose-custom) {
