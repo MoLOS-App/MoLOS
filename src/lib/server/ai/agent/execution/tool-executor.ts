@@ -42,6 +42,7 @@ export class ToolExecutor {
 		// Validate parameters
 		const validation = validateToolParams(tool, call.parameters);
 		if (!validation.ok) {
+			console.error('[ToolExecutor] Parameter validation failed for tool:', tool.name, 'missing:', validation.missing);
 			return {
 				success: false,
 				result: { error: 'Missing required parameters', missing: validation.missing },
@@ -82,10 +83,12 @@ export class ToolExecutor {
 				durationMs: Date.now() - startTime
 			};
 		} catch (error) {
+			const errorMsg = error instanceof Error ? error.message : String(error);
+			console.error('[ToolExecutor] Tool execution failed for:', tool.name, 'error:', errorMsg, 'full error:', error);
 			return {
 				success: false,
 				result: { error: 'Tool execution failed' },
-				error: error instanceof Error ? error.message : String(error),
+				error: errorMsg || 'Unknown error',
 				durationMs: Date.now() - startTime
 			};
 		}
