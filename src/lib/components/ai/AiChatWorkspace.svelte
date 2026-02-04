@@ -36,8 +36,11 @@
 	// Progress state for agent execution tracking
 	let currentProgress = $state<ProgressState>({ ...INITIAL_PROGRESS_STATE });
 
-	// Progress log to be shown in accordion after completion
+	// Progress log to be shown in accordion
 	let progressLog = $state<string[]>([]);
+
+	// Track the current assistant message ID for real-time updates
+	let currentAssistantMessageId = $state<string | null>(null);
 
 	let activeModuleIds = $derived($page.data.activeExternalIds || []);
 
@@ -88,6 +91,7 @@
 		// Reset progress state
 		currentProgress = { ...INITIAL_PROGRESS_STATE };
 		progressLog = [];
+		currentAssistantMessageId = null;
 	}
 
 	function startActionTimer() {
@@ -202,9 +206,17 @@
 		// Debug log to see what events are being received
 		console.log('[Progress Event]', eventType, eventData);
 
-		// Helper function to add a line to the progress log
+		// Helper function to add a line to the progress log and update the message
 		function addProgressLine(content: string) {
 			progressLog = [...progressLog, content];
+			// Update the assistant message content with the progress log
+			if (currentAssistantMessageId) {
+				messages = messages.map(msg =>
+					msg.id === currentAssistantMessageId
+						? { ...msg, content: progressLog.join('\n\n') }
+						: msg
+				);
+			}
 		}
 
 		switch (eventType) {
@@ -308,6 +320,8 @@
 		currentProgress = { ...INITIAL_PROGRESS_STATE, status: 'thinking' };
 		// Reset progress log
 		progressLog = [];
+		// Reset current assistant message ID
+		currentAssistantMessageId = null;
 
 		// Create AbortController for this request
 		abortController = new AbortController();
@@ -324,6 +338,7 @@
 		let assistantMessageId: string | null = null;
 		if (streamEnabled) {
 			assistantMessageId = uuid();
+			currentAssistantMessageId = assistantMessageId;
 			const tempAssistantMsg: AiMessage = {
 				id: assistantMessageId,
 				userId: '',
@@ -364,24 +379,6 @@
 				await handleStreamResponse(res, assistantMessageId);
 				if (currentSessionId) {
 					await loadMessages(currentSessionId);
-					// Attach progress log to the last assistant message
-					if (progressLog.length > 0) {
-						const lastAssistantMsg = [...messages].reverse().find(m => m.role === 'assistant');
-						if (lastAssistantMsg) {
-							// Update the message with progress log in metadata
-							messages = messages.map(m =>
-								m.id === lastAssistantMsg.id
-									? {
-											...m,
-											metadata: {
-												...m.metadata,
-												progressLog: progressLog
-											}
-										}
-									: m
-							);
-						}
-					}
 				}
 				await loadSessions();
 			} else if (res.ok) {
