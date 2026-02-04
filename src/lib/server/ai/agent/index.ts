@@ -60,6 +60,53 @@ import {
 import { uuid } from '$lib/utils/uuid';
 
 /**
+ * Detect if a user query is a simple conversational message that doesn't need planning
+ * Simple queries are: greetings, thanks, short acknowledgments
+ * Action requests are: create, delete, update, list, show, remove, etc.
+ */
+function isSimpleConversationalQuery(content: string): boolean {
+	const trimmed = content.toLowerCase().trim();
+
+	// Action keywords that mean this is NOT a simple query
+	const actionPatterns = [
+		/create|add|make|new|generate|build/i,
+		/delete|remove|clear|erase|destroy|clean/i,
+		/update|edit|modify|change|set/i,
+		/list|show|get|fetch|find|search|what|tell me/i,
+		/help|need|want|can you|could you/i
+	];
+
+	// Check for action patterns first
+	for (const pattern of actionPatterns) {
+		if (pattern.test(trimmed)) return false; // Has action keyword = NOT simple
+	}
+
+	// Simple conversational patterns
+	const simplePatterns = [
+		/^(hi|hello|hey|greetings|howdy|yo)/i,
+		/^(thanks?|thank you|thx)/i,
+		/^(ok|okay|sure|alright|got it|understood)/i,
+		/^(yes|no|yep|nope|maybe)/i,
+		/^(what'?s up|sup|how are you|how'?s it going)/i,
+		/^(bye|goodbye|see you|later|cya)/i,
+		/^(cool|awesome|great|nice|amazing)/i,
+		/^(wow|oh|oh my|wowza)/i
+	];
+
+	// Check against simple patterns
+	for (const pattern of simplePatterns) {
+		if (pattern.test(trimmed)) return true;
+	}
+
+	// Very short messages without action words (under 30 chars, no question mark)
+	if (trimmed.length < 30 && !trimmed.includes('?')) {
+		return true;
+	}
+
+	return false;
+}
+
+/**
  * The Architect v2.0 - Autonomous AI Agent
  */
 export class AiAgent {
@@ -270,11 +317,18 @@ export class AiAgent {
 				return null;
 			}
 
-			await streamer.streamThinking("Let me break down your request into a plan...");
+			// Skip planning for simple conversational queries - go straight to direct response
+			if (isSimpleConversationalQuery(userContent)) {
+				console.log('[Agent] Simple conversational query detected, skipping plan generation');
+				return null;
+			}
+
+			// Don't emit the planning thinking message - it's redundant noise
+			// await streamer.streamThinking("Let me break down your request into a plan...");
 
 			const plan = await planGenerator.generatePlan(
 				userContent,
-				toolNames,
+				tools, // Pass full tool definitions instead of just names
 				async (prompt) => {
 					const response = await llmClient.call([{ role: 'user', content: prompt }]);
 					return response.content;
@@ -394,9 +448,20 @@ export class AiAgent {
 		console.log('[Agent] Verification result:', verification);
 		console.log('[Agent] Completion messages:', completionMessages);
 
-		if (actions.length > 0 || planTracker?.getPlan()) {
+		// Skip LLM summary generation if:
+		// 1. No actions were taken, OR
+		// 2. All actions failed, OR
+		// 3. No plan was created (direct mode)
+		// 4. Most actions failed (more than 50% failed) - use simple fallback instead
+		const hasSuccessfulActions = actions.some(a => a.status === 'executed');
+		const failedActionsCount = actions.filter(a => a.status === 'failed').length;
+		const mostActionsFailed = actions.length > 0 && (failedActionsCount / actions.length) > 0.5;
+		const shouldGenerateLLMSummary = actions.length > 0 && hasSuccessfulActions && !mostActionsFailed && planTracker?.getPlan();
+
+		if (shouldGenerateLLMSummary) {
 			try {
-				await streamer.streamThinking("Preparing a summary of what I've accomplished...");
+				// Removed: redundant thinking event
+				// await streamer.streamThinking("Preparing a summary of what I've accomplished...");
 
 				const summaryPrompt = this.buildSummaryPrompt(
 					userContent,
@@ -418,6 +483,8 @@ export class AiAgent {
 				console.warn('[Agent] Failed to generate summary, using fallback:', summaryError);
 				// Keep the default verification reason
 			}
+		} else {
+			console.log('[Agent] Skipping LLM summary - using simple fallback');
 		}
 
 		console.log('[Agent] Final summary message:', summaryMessage.substring(0, 200));
@@ -430,6 +497,85 @@ export class AiAgent {
 			telemetry,
 			events: []
 		});
+	}
+
+	/**
+	 * Correct step parameters using LLM after a failure
+	 */
+	private async correctStepParameters(
+		step: any,
+		tool: any,
+		error: string,
+		llmClient: LlmClient
+	): Promise<any | null> {
+		try {
+			// Format tool parameters for the prompt
+			const toolParams = tool.parameters?.properties
+				? Object.entries(tool.parameters.properties)
+						.map(([name, schema]: [string, any]) => {
+							const required = (tool.parameters?.required || []).includes(name) ? ' (required)' : ' (optional)';
+							const typeInfo = schema.type === 'array' ? `array of ${schema.items?.type || 'objects'}` : schema.type || 'any';
+							return `  - ${name}${required}: ${typeInfo}`;
+						})
+						.join('\n')
+				: '  (no parameters)';
+
+			const correctionPrompt = `A step in my execution plan failed. I need you to fix the parameters.
+
+Step description: ${step.description}
+Tool: ${tool.name}
+Tool parameters:
+${toolParams}
+
+Current (incorrect) parameters:
+${JSON.stringify(step.parameters || {}, null, 2)}
+
+Error that occurred: ${error}
+
+Please provide the CORRECTED parameters for this step. Extract the actual values from the step description above.
+
+IMPORTANT:
+- For array parameters, make sure to include ALL items mentioned in the description
+- For required parameters, NEVER leave them empty or null
+- Response format MUST be valid JSON only, no markdown
+
+Respond with ONLY the corrected parameters as a JSON object:
+{
+  "param1": "value1",
+  "param2": ["item1", "item2"],
+  ...
+}`;
+
+			const response = await llmClient.call([{ role: 'user', content: correctionPrompt }]);
+
+			if (!response.content) {
+				console.warn('[Agent] LLM returned empty response for parameter correction');
+				return null;
+			}
+
+			// Extract JSON from response (may be wrapped in markdown)
+			const jsonMatch = response.content.match(/```json\n([\s\S]*?)\n```/) ||
+				response.content.match(/```\n([\s\S]*?)\n```/) ||
+				response.content.match(/\{[\s\S]*\}/);
+
+			if (!jsonMatch) {
+				console.warn('[Agent] LLM response did not contain valid JSON:', response.content.substring(0, 200));
+				return null;
+			}
+
+			const jsonStr = jsonMatch[1] || jsonMatch[0];
+			const correctedParams = JSON.parse(jsonStr);
+
+			console.log('[Agent] Corrected parameters:', JSON.stringify(correctedParams, null, 2));
+
+			return {
+				...step,
+				parameters: correctedParams
+			};
+		} catch (parseError) {
+			console.warn('[Agent] Failed to parse corrected parameters:', parseError);
+			return null;
+		}
 	}
 
 	/**
@@ -452,8 +598,8 @@ export class AiAgent {
 
 		await streamer.streamStepStarting(step, stepNumber, totalSteps);
 
-		// Send a descriptive message about what we're doing
-		await streamer.streamThinking(`[${stepNumber}/${totalSteps}] ${step.description}...`);
+		// Removed: redundant thinking message - step_start already provides this info
+		// await streamer.streamThinking(`[${stepNumber}/${totalSteps}] ${step.description}...`);
 
 		planTracker.startStep(step.id);
 
@@ -471,10 +617,11 @@ export class AiAgent {
 					planTracker.completeStep(step.id, result.result);
 					await streamer.streamStepCompleted(step, stepNumber, totalSteps, result.result);
 
-					// Track completion message for summary
+					// Track completion message for summary (but don't emit as thinking event)
 					const completionMsg = `[${stepNumber}/${totalSteps}] ✓ ${step.description}`;
 					completionMessages.push(completionMsg);
-					await streamer.streamThinking(completionMsg);
+					// Removed: redundant thinking event
+					// await streamer.streamThinking(completionMsg);
 
 					// Reflection
 					const reflection = await reflector.reflectOnActionResult(
@@ -497,13 +644,45 @@ export class AiAgent {
 
 					return { result, actions };
 				} else {
-					planTracker.failStep(step.id, result.error || 'Execution failed');
+					// Auto-retry with corrected parameters
 					await streamer.streamStepFailed(step, stepNumber, totalSteps, result.error || 'Unknown error');
 
-					// Track failure message for summary
+					// Try to fix the parameters using LLM
+					console.log('[Agent] Step failed, attempting auto-retry with corrected parameters...');
+					const correctedStep = await this.correctStepParameters(step, tool, result.error || 'Unknown error', llmClient);
+
+					if (correctedStep && correctedStep.parameters) {
+						console.log('[Agent] LLM provided corrected parameters, retrying...');
+						const retryResult = await toolExecutor.executeTool(
+							tool,
+							{ id: uuid(), name: step.toolName, parameters: correctedStep.parameters || {} },
+							this.userId
+						);
+
+						if (retryResult.success) {
+							planTracker.completeStep(step.id, retryResult.result);
+							await streamer.streamStepCompleted(step, stepNumber, totalSteps, retryResult.result);
+
+							const completionMsg = `[${stepNumber}/${totalSteps}] ✓ ${step.description} (retried with corrected parameters)`;
+							completionMessages.push(completionMsg);
+
+							actions.push({
+								type: 'read',
+								entity: step.toolName,
+								description: step.description,
+								status: 'executed',
+								data: { toolName: step.toolName, result: retryResult.result, retried: true }
+							});
+
+							return { result: retryResult, actions };
+						}
+					}
+
+					// Retry also failed, mark as permanently failed
+					planTracker.failStep(step.id, result.error || 'Execution failed');
+
 					const failureMsg = `[${stepNumber}/${totalSteps}] ✗ Failed: ${step.description} - ${result.error || 'Unknown error'}`;
 					completionMessages.push(failureMsg);
-					await streamer.streamThinking(failureMsg);
 
 					actions.push({
 						type: 'error',
@@ -540,8 +719,22 @@ export class AiAgent {
 		responseBuilder: ResponseBuilder,
 		recordEvent: (event: any) => void,
 		telemetry: any,
-		actions: any[]
+		actions: any[],
+		iteration: number = 0
 	): Promise<ExecutionResult> {
+		// Safety: prevent infinite loops
+		const maxReactIterations = 10;
+		if (iteration >= maxReactIterations) {
+			console.warn('[Agent] Max ReAct iterations reached, returning current results');
+			return responseBuilder.buildExecutionResult({
+				success: false,
+				baseMessage: 'I\'ve processed your request through multiple steps. Let me provide an update on what I\'ve accomplished so far.',
+				actions,
+				plan: null,
+				telemetry,
+				events: []
+			});
+		}
 		// Build messages for LLM
 		const systemPrompt = settings.systemPrompt || this.buildDefaultSystemPrompt(tools);
 		const messages = [
@@ -614,20 +807,81 @@ export class AiAgent {
 				}
 			}
 
-			// If we have write calls, return for confirmation
+			// AUTONOMOUS: Execute write calls automatically without confirmation
 			if (writeCalls.length > 0) {
-				return responseBuilder.buildExecutionResult({
-					success: true,
-					baseMessage: response.content || `I need your confirmation for ${writeCalls.length} action(s).`,
-					actions,
-					plan: null,
+				console.log(`[Agent] Executing ${writeCalls.length} write call(s) autonomously...`);
+
+				for (const call of writeCalls) {
+					const tool = tools.find((t) => t.name === call.name);
+					if (tool) {
+						const result = await toolExecutor.executeTool(tool, call, this.userId);
+						actions.push({
+							type: 'write',
+							entity: call.name.split('_')[1] || 'data',
+							description: `Writing ${call.name.replace('_', ' ')}`,
+							status: result.success ? 'executed' : 'failed',
+							data: { toolName: call.name, result: result.result, error: result.error }
+						});
+
+						// Update state manager with tool result for next iteration
+						stateManager.addMessage({
+							role: 'tool',
+							content: JSON.stringify(result.result || { error: result.error }),
+							toolCallId: call.id
+						});
+					}
+				}
+
+				// Continue the ReAct loop - call LLM again with tool results to see if more actions needed
+				console.log('[Agent] Write calls completed, continuing ReAct loop...');
+				return await this.executeReactLoop(
+					userContent,
+					tools,
+					settings,
+					runtime,
+					stateManager,
+					toolExecutor,
+					streamer,
+					llmClient,
+					responseBuilder,
+					recordEvent,
 					telemetry,
-					events: []
-				});
+					actions,
+					iteration + 1
+				);
 			}
 
-			// Continue the loop with read results
-			// (In a full implementation, we'd continue the ReAct loop here)
+			// Only read calls were made - continue loop to see if more actions needed
+			if (readCalls.length > 0) {
+				// Add tool results to state and continue
+				for (const call of readCalls) {
+					const action = actions.find(a => a.data?.toolName === call.name);
+					if (action) {
+						stateManager.addMessage({
+							role: 'tool',
+							content: JSON.stringify(action.data?.result || {}),
+							toolCallId: call.id
+						});
+					}
+				}
+
+				console.log('[Agent] Read calls completed, continuing ReAct loop...');
+				return await this.executeReactLoop(
+					userContent,
+					tools,
+					settings,
+					runtime,
+					stateManager,
+					toolExecutor,
+					streamer,
+					llmClient,
+					responseBuilder,
+					recordEvent,
+					telemetry,
+					actions,
+					iteration + 1
+				);
+			}
 		}
 
 		// No more tool calls - return the response
@@ -662,35 +916,23 @@ If you complete the user's request, provide a clear summary of what you did.`;
 
 	/**
 	 * Build prompt for generating execution summary
+	 * Made more concise to avoid truncation issues
 	 */
 	private buildSummaryPrompt(userRequest: string, actions: any[], plan: any, completionMessages: string[] = []): string {
-		const actionsSummary = actions.map((a, i) => {
-			const status = a.status === 'executed' ? '✓' : a.status === 'failed' ? '✗' : '○';
-			return `${i + 1}. ${status} ${a.description}`;
-		}).join('\n');
+		const successfulActions = actions.filter(a => a.status === 'executed');
+		const failedActions = actions.filter(a => a.status === 'failed');
 
 		const planInfo = plan
-			? `
-Plan: ${plan.goal}
-Steps: ${plan.steps.length} total, ${plan.steps.filter((s: any) => s.status === 'completed').length} completed
-`
+			? `Plan: ${plan.goal} (${plan.steps.filter((s: any) => s.status === 'completed').length}/${plan.steps.length} steps completed)`
 			: '';
 
-		const completionLog = completionMessages.length > 0
-			? `\nExecution log:\n${completionMessages.join('\n')}\n`
-			: '';
+		return `User request: "${userRequest.substring(0, 200)}${userRequest.length > 200 ? '...' : ''}"
 
-		return `The user asked: "${userRequest}"
+${planInfo}
+Completed: ${successfulActions.length} actions
+${failedActions.length > 0 ? `Failed: ${failedActions.length} actions` : ''}
 
-${planInfo}Actions taken:
-${actionsSummary || 'No actions taken'}
-${completionLog}
-Provide a clear, conversational summary to the user explaining:
-1. What you found or accomplished
-2. Any important details from the actions
-3. The current status
-
-Be concise but informative. Start with a brief overview, then provide the key findings. Do NOT use markdown headers or bullet points - just write a natural, conversational response.`;
+Provide a brief, natural summary of what was accomplished. Be conversational and concise. Do NOT use markdown.`;
 	}
 
 	/**
