@@ -20,4 +20,5 @@ export { default as McpLogsTable } from './McpLogsTable.svelte';
 export { default as McpHelpDialog } from './McpHelpDialog.svelte';
 export { default as McpOAuthAppsTable } from './McpOAuthAppsTable.svelte';
 export { default as McpCreateOAuthAppDialog } from './McpCreateOAuthAppDialog.svelte';
+export { default as McpEditOAuthAppDialog } from './McpEditOAuthAppDialog.svelte';
 export type { HelpTabId } from './McpHelpDialog.svelte';

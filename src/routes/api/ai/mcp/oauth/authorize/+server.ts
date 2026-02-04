@@ -11,17 +11,18 @@
  * - Processes user consent and generates authorization code
  */
 
-import { error, json, redirect } from '@sveltejs/kit';
+import { error, json, redirect, isRedirect } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { oauthClientsStore } from '$lib/server/ai/mcp/oauth';
 import { oauthAuthorizationService } from '$lib/server/ai/mcp/oauth';
 
 /**
  * GET handler - Show authorization/consent screen
+ * For non-interactive clients like ChatGPT, auto-approve if user is authenticated
  */
 export const GET: RequestHandler = async ({ url, locals }) => {
 	if (!locals.user) {
-		return redirect(302, `/login?redirect=${encodeURIComponent(url.pathname + url.search)}`);
+		return redirect(302, `/ui/login?redirect=${encodeURIComponent(url.pathname + url.search)}`);
 	}
 
 	// Parse authorization request parameters
@@ -46,9 +47,44 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 
 	// Validate redirect URI
 	const redirectUrl = new URL(redirectUri);
-	const isValidRedirect = client.redirect_uris.some(
-		(uri) => uri.origin === redirectUrl.origin && uri.pathname === redirectUrl.pathname
-	);
+
+	// Log redirect URI validation details
+	console.log('[OAuth] Redirect URI validation:', {
+		requestedRedirectUri: redirectUri,
+		requestedOrigin: redirectUrl.origin,
+		requestedHostname: redirectUrl.hostname,
+		requestedPathname: redirectUrl.pathname,
+		registeredRedirectUris: client.redirect_uris.map((u) => u.toString())
+	});
+
+	// Check if this is a ChatGPT redirect (trusted)
+	const chatgptRedirectHosts = [
+		'chatgpt.com',
+		'chat.openai.com',
+		'auth0.openai.com'
+	];
+
+	// For ChatGPT, we allow any redirect to the registered hostname
+	// since ChatGPT adds dynamic query parameters (state, etc.)
+	const isChatgptRedirect = chatgptRedirectHosts.includes(redirectUrl.hostname);
+
+	let isValidRedirect: boolean;
+	if (isChatgptRedirect) {
+		// For ChatGPT, only check origin (protocol + hostname + port)
+		isValidRedirect = client.redirect_uris.some((uri) => uri.origin === redirectUrl.origin);
+	} else {
+		// For other clients, check both origin and pathname
+		isValidRedirect = client.redirect_uris.some(
+			(uri) => uri.origin === redirectUrl.origin && uri.pathname === redirectUrl.pathname
+		);
+	}
+
+	console.log('[OAuth] Redirect URI validation result:', {
+		isChatgptRedirect,
+		isValidRedirect,
+		clientRedirectUris: client.redirect_uris.map((u) => ({ origin: u.origin, pathname: u.pathname }))
+	});
+
 	if (!isValidRedirect) {
 		return error(400, 'Invalid redirect_uri');
 	}
@@ -56,7 +92,66 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 	// Parse scopes
 	const scopes = scope ? scope.split(' ') : [];
 
-	// Return HTML for consent screen
+	// Check for non-interactive flow (ChatGPT MCP connector)
+	// Auto-approve for trusted ChatGPT redirect URIs when user is authenticated
+	if (isChatgptRedirect) {
+		try {
+			const authCode = await oauthAuthorizationService.createAuthorizationCode(
+				client,
+				locals.user.id,
+				{
+					redirectUri,
+					codeChallenge,
+					codeChallengeMethod,
+					state: state ?? undefined,
+					scopes: scopes,
+					resource: resource ?? undefined
+				}
+			);
+
+			// Auto-approve: redirect back with authorization code
+			const finalRedirectUrl = new URL(redirectUri);
+			finalRedirectUrl.searchParams.set('code', authCode.code);
+			if (state) {
+				finalRedirectUrl.searchParams.set('state', state);
+			}
+
+			console.log('[OAuth] Redirecting back to ChatGPT with authorization code:', {
+				redirectUrl: finalRedirectUrl.toString(),
+				code: authCode.code,
+				state,
+				registeredRedirectUris: client.redirect_uris.map((u) => u.toString())
+			});
+
+			return redirect(302, finalRedirectUrl.toString());
+		} catch (err) {
+			// If this is a redirect exception, re-throw it
+			if (isRedirect(err)) {
+				throw err;
+			}
+
+			// Log the actual error for debugging
+			console.error('[OAuth] Failed to generate authorization code:', err);
+			console.error('[OAuth] Error details:', {
+				message: err instanceof Error ? err.message : String(err),
+				stack: err instanceof Error ? err.stack : undefined,
+				clientId,
+				userId: locals.user.id,
+				scopes,
+				redirectUri
+			});
+
+			const errorRedirectUrl = new URL(redirectUri);
+			errorRedirectUrl.searchParams.set('error', 'server_error');
+			errorRedirectUrl.searchParams.set('error_description', 'Failed to generate authorization code');
+			if (state) {
+				errorRedirectUrl.searchParams.set('state', state);
+			}
+			return redirect(302, errorRedirectUrl.toString());
+		}
+	}
+
+	// Return HTML for consent screen (for interactive clients)
 	return new Response(
 		`
 <!DOCTYPE html>
@@ -167,7 +262,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 				codeChallenge,
 				codeChallengeMethod,
 				state: state ?? undefined,
-				scopes: scopes.length > 0 ? scopes : undefined,
+				// Always pass array (empty array is valid for DB schema which requires non-null)
+				scopes: scopes,
 				resource: resource ?? undefined
 			}
 		);
@@ -180,6 +276,22 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		}
 		return redirect(302, redirectUrl.toString());
 	} catch (err) {
+		// If this is a redirect exception, re-throw it
+		if (isRedirect(err)) {
+			throw err;
+		}
+
+		// Log the actual error for debugging
+		console.error('[OAuth POST] Failed to generate authorization code:', err);
+		console.error('[OAuth POST] Error details:', {
+			message: err instanceof Error ? err.message : String(err),
+			stack: err instanceof Error ? err.stack : undefined,
+			clientId,
+			userId: locals.user.id,
+			scopes,
+			redirectUri
+		});
+
 		const redirectUrl = new URL(redirectUri);
 		redirectUrl.searchParams.set('error', 'server_error');
 		redirectUrl.searchParams.set('error_description', 'Failed to generate authorization code');

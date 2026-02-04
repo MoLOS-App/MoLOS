@@ -3,7 +3,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Badge } from '$lib/components/ui/badge';
-	import { Shield, Search, Plus, Trash2, HelpCircle, Copy, ExternalLink } from 'lucide-svelte';
+	import { Shield, Search, Plus, Trash2, HelpCircle, Copy, ExternalLink, Pencil } from 'lucide-svelte';
 	import { Empty, EmptyMedia, EmptyTitle, EmptyContent } from '$lib/components/ui/empty';
 
 	export interface OAuthApp {
@@ -21,11 +21,13 @@
 		apps = [],
 		onCreateApp,
 		onDeleteApp,
+		onEditApp,
 		onShowHelp
 	}: {
 		apps: OAuthApp[];
 		onCreateApp?: () => void;
 		onDeleteApp?: (clientId: string) => void | Promise<void>;
+		onEditApp?: (app: OAuthApp) => void | Promise<void>;
 		onShowHelp?: () => void;
 	} = $props();
 
@@ -222,6 +224,17 @@
 									<!-- Actions -->
 									<td class="px-6 py-4">
 										<div class="flex items-center justify-end gap-2">
+											{#if onEditApp}
+												<Button
+													variant="ghost"
+													size="icon"
+													onclick={() => onEditApp(app)}
+													class="h-8 w-8"
+													title="Edit app"
+												>
+													<Pencil class="h-4 w-4" />
+												</Button>
+											{/if}
 											<Button
 												variant="ghost"
 												size="icon"
