@@ -310,3 +310,132 @@ export const aiMcpPrompts = sqliteTable('ai_mcp_prompts', {
 		.$onUpdate(() => new Date())
 		.notNull()
 });
+
+// ============================================================================
+// MCP OAuth 2.0 Tables
+// ============================================================================
+
+export const MCPOAuthClientStatus = {
+	ACTIVE: 'active',
+	DISABLED: 'disabled',
+	REVOKED: 'revoked'
+} as const;
+
+export const MCPOAuthGrantType = {
+	AUTHORIZATION_CODE: 'authorization_code',
+	REFRESH_TOKEN: 'refresh_token',
+	CLIENT_CREDENTIALS: 'client_credentials'
+} as const;
+
+export const MCPOAuthTokenType = {
+	ACCESS: 'access',
+	REFRESH: 'refresh'
+} as const;
+
+/**
+ * MCP OAuth Clients - Dynamic client registration
+ * Stores OAuth 2.0 client applications that can access MCP
+ */
+export const aiMcpOAuthClients = sqliteTable('ai_mcp_oauth_clients', {
+	id: text('id').primaryKey(), // client_id
+	userId: text('user_id')
+		.notNull()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	name: text('name').notNull(),
+	clientSecret: text('client_secret'), // hashed, null for public/PKCE clients
+	redirectUris: text('redirect_uris', { mode: 'json' })
+		.notNull()
+		.$type<string[]>(),
+	scopes: text('scopes', { mode: 'json' })
+		.$type<string[]>(),
+	grantTypes: text('grant_types', { mode: 'json' })
+		.notNull()
+		.$type<string[]>(),
+	tokenEndpointAuthMethod: text('token_endpoint_auth_method').notNull().default('none'),
+	status: textEnum('status', MCPOAuthClientStatus)
+		.notNull()
+		.default(MCPOAuthClientStatus.ACTIVE),
+	// Client secret expiration (0 = no expiration, per RFC 7591)
+	clientSecretExpiresAt: integer('client_secret_expires_at', { mode: 'timestamp_ms' }),
+	// Metadata
+	clientUri: text('client_uri'),
+	logoUri: text('logo_uri'),
+	contacts: text('contacts', { mode: 'json' }).$type<string[]>(),
+	tosUri: text('tos_uri'),
+	policyUri: text('policy_uri'),
+	softwareId: text('software_id'),
+	softwareVersion: text('software_version'),
+	// Audit
+	issuedAt: integer('issued_at', { mode: 'timestamp_ms' })
+		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		.notNull(),
+	createdAt: integer('created_at', { mode: 'timestamp_ms' })
+		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		.notNull(),
+	updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+		.$onUpdate(() => new Date())
+		.notNull()
+});
+
+/**
+ * MCP OAuth Authorization Codes - PKCE flow
+ * Stores temporary authorization codes for the OAuth flow
+ */
+export const aiMcpOAuthCodes = sqliteTable('ai_mcp_oauth_codes', {
+	id: text('id').primaryKey(),
+	code: text('code').notNull().unique(),
+	clientId: text('client_id')
+		.notNull()
+		.references(() => aiMcpOAuthClients.id),
+	userId: text('user_id')
+		.notNull()
+		.references(() => user.id),
+	redirectUri: text('redirect_uri').notNull(),
+	scopes: text('scopes', { mode: 'json' })
+		.notNull()
+		.$type<string[]>(),
+	// PKCE support
+	codeChallenge: text('code_challenge').notNull(),
+	codeChallengeMethod: text('code_challenge_method').notNull().default('S256'),
+	// State for CSRF protection
+	state: text('state'),
+	// Resource indicator (RFC 8707)
+	resource: text('resource'),
+	// Expiration and consumption
+	expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull(),
+	consumedAt: integer('consumed_at', { mode: 'timestamp_ms' }),
+	createdAt: integer('created_at', { mode: 'timestamp_ms' })
+		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		.notNull()
+});
+
+/**
+ * MCP OAuth Tokens - Access and refresh tokens
+ * Stores OAuth tokens issued to clients
+ */
+export const aiMcpOAuthTokens = sqliteTable('ai_mcp_oauth_tokens', {
+	id: text('id').primaryKey(),
+	clientId: text('client_id')
+		.notNull()
+		.references(() => aiMcpOAuthClients.id),
+	userId: text('user_id')
+		.notNull()
+		.references(() => user.id),
+	tokenType: textEnum('token_type', MCPOAuthTokenType)
+		.notNull()
+		.default(MCPOAuthTokenType.ACCESS),
+	token: text('token').notNull().unique(),
+	scopes: text('scopes', { mode: 'json' })
+		.notNull()
+		.$type<string[]>(),
+	// Token expiration
+	expiresAt: integer('expires_at', { mode: 'timestamp_ms' }),
+	// Refresh token linkage (for access tokens)
+	refreshTokenId: text('refresh_token_id').references(() => aiMcpOAuthTokens.id),
+	// Revocation
+	revokedAt: integer('revoked_at', { mode: 'timestamp_ms' }),
+	// Audit
+	createdAt: integer('created_at', { mode: 'timestamp_ms' })
+		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		.notNull()
+});
