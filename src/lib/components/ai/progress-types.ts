@@ -11,6 +11,8 @@ export interface ExecutionLogEntry {
 	step?: number;
 	total?: number;
 	timestamp: number;
+	startTime?: number; // When the step started
+	endTime?: number; // When the step completed
 }
 
 export interface CurrentAction {
@@ -25,6 +27,8 @@ export interface ProgressState {
 	status: ProgressStatus;
 	currentAction: CurrentAction | null;
 	executionLog: ExecutionLogEntry[];
+	planGoal?: string; // Goal of the current plan
+	totalSteps?: number; // Total number of steps in the plan
 }
 
 export const INITIAL_PROGRESS_STATE: ProgressState = {
@@ -87,4 +91,23 @@ export function getStatusText(status: ProgressStatus): string {
 		default:
 			return 'Working';
 	}
+}
+
+/**
+ * Format duration in milliseconds to human-readable format
+ */
+export function formatDuration(ms: number): string {
+	if (ms < 1000) return `${ms}ms`;
+	if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
+	return `${(ms / 60000).toFixed(1)}m`;
+}
+
+/**
+ * Get duration for an execution log entry
+ */
+export function getEntryDuration(entry: ExecutionLogEntry): string {
+	if (!entry.startTime) return '';
+	const endTime = entry.endTime || entry.timestamp;
+	const duration = endTime - entry.startTime;
+	return formatDuration(duration);
 }
