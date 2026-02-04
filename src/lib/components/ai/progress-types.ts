@@ -13,6 +13,11 @@ export interface ExecutionLogEntry {
 	timestamp: number;
 	startTime?: number; // When the step started
 	endTime?: number; // When the step completed
+	// Additional details for expansion
+	toolName?: string; // Name of the tool being executed
+	parameters?: Record<string, unknown>; // Parameters passed to the tool
+	result?: unknown; // Result from the tool
+	errorDetail?: string; // Detailed error message
 }
 
 export interface CurrentAction {

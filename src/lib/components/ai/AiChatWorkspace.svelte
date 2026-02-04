@@ -220,7 +220,7 @@
 					total: eventData.totalSteps,
 					timestamp: now
 				};
-				// Add pending entry to log with startTime
+				// Add pending entry to log with startTime and tool details
 				currentProgress.executionLog.push({
 					id: `step-${eventData.stepNumber}-${now}`,
 					type: 'pending',
@@ -228,7 +228,9 @@
 					step: eventData.stepNumber,
 					total: eventData.totalSteps,
 					timestamp: now,
-					startTime: now
+					startTime: now,
+					toolName: eventData.toolName,
+					parameters: eventData.parameters
 				});
 				break;
 
@@ -252,6 +254,7 @@
 					existingEntry.message = `[${stepNumber}/${eventData.totalSteps}] ✓ ${eventData.description || 'Completed'}`;
 					existingEntry.timestamp = now;
 					existingEntry.endTime = now; // Record completion time
+					existingEntry.result = eventData.result; // Store result
 				} else {
 					currentProgress.executionLog.push({
 						id: `step-${stepNumber}-${now}`,
@@ -260,7 +263,8 @@
 						step: stepNumber,
 						total: eventData.totalSteps,
 						timestamp: now,
-						endTime: now
+						endTime: now,
+						result: eventData.result
 					});
 				}
 				break;
@@ -285,6 +289,7 @@
 					failedEntry.message = `[${failedStep}/${eventData.totalSteps}] ✗ ${eventData.description || 'Failed'}: ${errorMsg}`;
 					failedEntry.timestamp = now;
 					failedEntry.endTime = now; // Record failure time
+					failedEntry.errorDetail = errorMsg; // Store detailed error
 				} else {
 					currentProgress.executionLog.push({
 						id: `step-${failedStep}-${now}`,
@@ -293,7 +298,8 @@
 						step: failedStep,
 						total: eventData.totalSteps,
 						timestamp: now,
-						endTime: now
+						endTime: now,
+						errorDetail: errorMsg
 					});
 				}
 				break;
