@@ -15,14 +15,12 @@ import { error, json, redirect } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { oauthClientsStore } from '$lib/server/ai/mcp/oauth';
 import { oauthAuthorizationService } from '$lib/server/ai/mcp/oauth';
-import { localsToUser } from '$lib/server/auth/auth-utils';
 
 /**
  * GET handler - Show authorization/consent screen
  */
 export const GET: RequestHandler = async ({ url, locals }) => {
-	const user = localsToUser(locals);
-	if (!user) {
+	if (!locals.user) {
 		return redirect(302, `/login?redirect=${encodeURIComponent(url.pathname + url.search)}`);
 	}
 
@@ -121,8 +119,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
  * POST handler - Process consent and generate authorization code
  */
 export const POST: RequestHandler = async ({ request, locals }) => {
-	const user = localsToUser(locals);
-	if (!user) {
+	if (!locals.user) {
 		return error(401, 'Authentication required');
 	}
 
@@ -164,7 +161,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	try {
 		const authCode = await oauthAuthorizationService.createAuthorizationCode(
 			client,
-			user.id,
+			locals.user.id,
 			{
 				redirectUri,
 				codeChallenge,

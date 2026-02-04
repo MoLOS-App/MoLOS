@@ -106,8 +106,14 @@
 	// svelte-ignore state_referenced_locally
 	let localOAuthApps = $state(
 		[...data.oauthApps].map((app) => ({
-			...app,
-			redirect_uris: app.redirect_uris.map((u) => u.toString())
+			client_id: app.client_id,
+			client_id_issued_at: app.client_id_issued_at,
+			name: app.client_name || app.name || 'Unnamed App',
+			redirect_uris: (app.redirect_uris || []).map((u) => u.toString()),
+			scopes: app.scope ? app.scope.split(' ') : [],
+			token_endpoint_auth_method: app.token_endpoint_auth_method || 'none',
+			client_secret: app.client_secret,
+			client_secret_expires_at: app.client_secret_expires_at
 		}))
 	);
 
@@ -506,7 +512,16 @@
 			const appsResponse = await fetch('/api/ai/mcp/oauth/register');
 			if (appsResponse.ok) {
 				const appsData = await appsResponse.json();
-				localOAuthApps = appsData.items;
+				localOAuthApps = appsData.items.map((app: any) => ({
+					client_id: app.client_id,
+					client_id_issued_at: app.client_id_issued_at,
+					name: app.client_name || app.name || 'Unnamed App',
+					redirect_uris: (app.redirect_uris || []).map((u: URL) => u.toString()),
+					scopes: app.scope ? app.scope.split(' ') : [],
+					token_endpoint_auth_method: app.token_endpoint_auth_method || 'none',
+					client_secret: app.client_secret,
+					client_secret_expires_at: app.client_secret_expires_at
+				}));
 			}
 			return result;
 		}
@@ -542,7 +557,16 @@
 			const appsResponse = await fetch('/api/ai/mcp/oauth/register');
 			if (appsResponse.ok) {
 				const appsData = await appsResponse.json();
-				localOAuthApps = appsData.items;
+				localOAuthApps = appsData.items.map((app: any) => ({
+					client_id: app.client_id,
+					client_id_issued_at: app.client_id_issued_at,
+					name: app.client_name || app.name || 'Unnamed App',
+					redirect_uris: (app.redirect_uris || []).map((u: URL) => u.toString()),
+					scopes: app.scope ? app.scope.split(' ') : [],
+					token_endpoint_auth_method: app.token_endpoint_auth_method || 'none',
+					client_secret: app.client_secret,
+					client_secret_expires_at: app.client_secret_expires_at
+				}));
 			}
 		}
 	}

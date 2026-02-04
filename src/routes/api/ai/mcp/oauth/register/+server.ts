@@ -9,14 +9,12 @@
 import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { oauthClientsStore } from '$lib/server/ai/mcp/oauth';
-import { localsToUser } from '$lib/server/auth/auth-utils';
 
 /**
  * POST handler - Register a new OAuth client
  */
 export const POST: RequestHandler = async ({ request, locals }) => {
-	const user = localsToUser(locals);
-	if (!user) {
+	if (!locals.user) {
 		return error(401, 'Authentication required');
 	}
 
@@ -97,7 +95,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	};
 
 	try {
-		const client = await oauthClientsStore.registerClient(user.id, clientMetadata);
+		const client = await oauthClientsStore.registerClient(locals.user.id, clientMetadata);
 
 		// Return client information
 		return json(client, { status: 201 });
@@ -118,12 +116,11 @@ export const POST: RequestHandler = async ({ request, locals }) => {
  * GET handler - List registered clients for the current user
  */
 export const GET: RequestHandler = async ({ locals }) => {
-	const user = localsToUser(locals);
-	if (!user) {
+	if (!locals.user) {
 		return error(401, 'Authentication required');
 	}
 
-	const clients = await oauthClientsStore.listClientsByUserId(user.id);
+	const clients = await oauthClientsStore.listClientsByUserId(locals.user.id);
 
 	return json({
 		items: clients,
