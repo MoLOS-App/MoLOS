@@ -3,12 +3,16 @@
 	import { fade } from 'svelte/transition';
 	import { page } from '$app/stores';
 	import type { AiAction, AiMessage, AiSession } from '$lib/models/ai';
-	import { Bot, LoaderCircle, Menu, ArrowDown } from 'lucide-svelte';
+	import { Bot, Menu, ArrowDown } from 'lucide-svelte';
 	import ChatMessage from '$lib/components/ai/ChatMessage.svelte';
 	import ChatInput from '$lib/components/ai/ChatInput.svelte';
 	import ReviewChangesOverlay from '$lib/components/ai/ReviewChangesOverlay.svelte';
 	import ChatSidebar from '$lib/components/ai/ChatSidebar.svelte';
+	import ProgressDisplay from '$lib/components/ai/ProgressDisplay.svelte';
+	import ExecutionLog from '$lib/components/ai/ExecutionLog.svelte';
 	import { uuid } from '$lib/utils/uuid';
+	import type { ProgressState } from './progress-types';
+	import { INITIAL_PROGRESS_STATE } from './progress-types';
 
 	let { userName } = $props<{ userName?: string }>();
 
@@ -26,35 +30,8 @@
 	let isSidebarOpen = $state(false);
 	let showScrollButton = $state(false);
 
-	// Enhanced progress state with execution tracking
-	type ProgressStatus = 'idle' | 'thinking' | 'planning' | 'executing' | 'complete' | 'error';
-
-	interface ExecutionLogEntry {
-		id: string;
-		type: 'info' | 'success' | 'error' | 'warning' | 'pending';
-		message: string;
-		step?: number;
-		total?: number;
-		timestamp: number;
-	}
-
-	interface CurrentAction {
-		type: 'plan' | 'step_start' | 'step_complete' | 'step_failed' | 'thinking';
-		message: string;
-		step?: number;
-		total?: number;
-		timestamp: number;
-	}
-
-	let currentProgress = $state<{
-		status: ProgressStatus;
-		currentAction: CurrentAction | null;
-		executionLog: ExecutionLogEntry[];
-	}>({
-		status: 'idle',
-		currentAction: null,
-		executionLog: []
-	});
+	// Progress state for agent execution tracking
+	let currentProgress = $state<ProgressState>({ ...INITIAL_PROGRESS_STATE });
 
 	let activeModuleIds = $derived($page.data.activeExternalIds || []);
 
@@ -97,11 +74,7 @@
 		isStreaming = false;
 		isSidebarOpen = false;
 		// Reset progress state
-		currentProgress = {
-			status: 'idle',
-			currentAction: null,
-			executionLog: []
-		};
+		currentProgress = { ...INITIAL_PROGRESS_STATE };
 	}
 
 	function startActionTimer() {
@@ -357,11 +330,7 @@
 		isLoading = true;
 		isStreaming = false;
 		// Reset progress state for new message
-		currentProgress = {
-			status: 'thinking',
-			currentAction: null,
-			executionLog: []
-		};
+		currentProgress = { ...INITIAL_PROGRESS_STATE, status: 'thinking' };
 
 		const tempUserMsg: AiMessage = {
 			id: uuid(),
@@ -562,101 +531,9 @@
 									<ChatMessage message={msg} />
 								{/each}
 
-								<!-- Enhanced Progress Display -->
-								{#if isLoading || currentProgress.status !== 'idle'}
-									<div class="flex flex-col gap-3" in:fade>
-										<!-- Loader with Status -->
-										{#if isLoading && !isStreaming}
-											<div class="flex items-start">
-												<div
-													class="text-muted-foreground flex animate-pulse items-center gap-3 rounded-2xl border border-border/60 bg-muted/35 px-4 py-3 text-sm font-bold tracking-wide uppercase shadow-sm"
-												>
-													<LoaderCircle class="h-4 w-4 animate-spin" />
-													{#if currentProgress.status === 'thinking'}
-														Thinking
-													{:else if currentProgress.status === 'planning'}
-														Planning
-													{:else if currentProgress.status === 'executing'}
-														Executing
-													{:else if currentProgress.status === 'complete'}
-														Complete
-													{:else if currentProgress.status === 'error'}
-														Error
-													{:else}
-														Working
-													{/if}
-													<span class="inline-flex gap-1">
-														<span
-															class="h-1 w-1 animate-[pulse_1.2s_ease-in-out_infinite] rounded-full bg-current opacity-40"
-														></span>
-														<span
-															class="h-1 w-1 animate-[pulse_1.2s_ease-in-out_infinite] rounded-full bg-current opacity-40 [animation-delay:0.2s]"
-														></span>
-														<span
-															class="h-1 w-1 animate-[pulse_1.2s_ease-in-out_infinite] rounded-full bg-current opacity-40 [animation-delay:0.4s]"
-														></span>
-													</span>
-												</div>
-											</div>
-										{/if}
-
-										<!-- Current Action (prominently displayed) -->
-										{#if currentProgress.currentAction}
-											<div class="flex items-center gap-3 text-sm text-muted-foreground" in:fade>
-												<div class="h-2 w-2 animate-pulse rounded-full bg-primary"></div>
-												<span>
-													{#if currentProgress.currentAction.step && currentProgress.currentAction.total}
-														[{currentProgress.currentAction.step}/{currentProgress.currentAction.total}] {currentProgress.currentAction.message}
-													{:else}
-														{currentProgress.currentAction.message}
-													{/if}
-												</span>
-											</div>
-										{/if}
-									</div>
-								{/if}
-
-								<!-- Execution Log (persistent) -->
-								{#if currentProgress.executionLog.length > 0}
-									<div class="rounded-xl border border-border/50 bg-muted/20 p-3">
-										<div class="mb-2 flex items-center justify-between">
-											<span class="text-xs font-semibold uppercase text-muted-foreground">
-												Execution Log
-											</span>
-											<span class="text-muted-foreground text-[10px]">
-												{currentProgress.executionLog.length} {currentProgress.executionLog.length === 1 ? 'entry' : 'entries'}
-											</span>
-										</div>
-										<div class="max-h-64 space-y-1 overflow-y-auto">
-											{#each currentProgress.executionLog as entry (entry.id)}
-												<div
-													class="flex items-start gap-2 rounded-lg px-2 py-1.5 text-xs transition-colors hover:bg-muted/40 {entry.type === 'error'
-														? 'text-destructive'
-														: entry.type === 'success'
-															? 'text-green-600 dark:text-green-400'
-															: entry.type === 'warning'
-																? 'text-yellow-600 dark:text-yellow-400'
-																: 'text-muted-foreground'}"
-												>
-													<span class="flex-shrink-0">
-														{#if entry.type === 'success'}
-															✓
-														{:else if entry.type === 'error'}
-															✗
-														{:else if entry.type === 'pending'}
-															⟳
-														{:else if entry.type === 'warning'}
-															⚠
-														{:else}
-															•
-														{/if}
-													</span>
-													<span class="flex-1">{entry.message}</span>
-												</div>
-											{/each}
-										</div>
-									</div>
-								{/if}
+								<!-- Progress Display and Execution Log -->
+								<ProgressDisplay {isLoading} {isStreaming} progress={currentProgress} />
+								<ExecutionLog progress={currentProgress} />
 							</div>
 						{/if}
 					</div>
