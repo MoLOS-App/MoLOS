@@ -25,12 +25,36 @@
 	let timerInterval = $state<number | null>(null);
 	let isSidebarOpen = $state(false);
 	let showScrollButton = $state(false);
-	let currentProgress = $state<{
-		type: string;
+
+	// Enhanced progress state with execution tracking
+	type ProgressStatus = 'idle' | 'thinking' | 'planning' | 'executing' | 'complete' | 'error';
+
+	interface ExecutionLogEntry {
+		id: string;
+		type: 'info' | 'success' | 'error' | 'warning' | 'pending';
 		message: string;
 		step?: number;
 		total?: number;
-	} | null>(null);
+		timestamp: number;
+	}
+
+	interface CurrentAction {
+		type: 'plan' | 'step_start' | 'step_complete' | 'step_failed' | 'thinking';
+		message: string;
+		step?: number;
+		total?: number;
+		timestamp: number;
+	}
+
+	let currentProgress = $state<{
+		status: ProgressStatus;
+		currentAction: CurrentAction | null;
+		executionLog: ExecutionLogEntry[];
+	}>({
+		status: 'idle',
+		currentAction: null,
+		executionLog: []
+	});
 
 	let activeModuleIds = $derived($page.data.activeExternalIds || []);
 
@@ -72,6 +96,12 @@
 		isLoading = false;
 		isStreaming = false;
 		isSidebarOpen = false;
+		// Reset progress state
+		currentProgress = {
+			status: 'idle',
+			currentAction: null,
+			executionLog: []
+		};
 	}
 
 	function startActionTimer() {
@@ -181,65 +211,141 @@
 
 	function handleProgressEvent(event: any) {
 		const { eventType, data: eventData } = event;
+		const now = Date.now();
 
 		switch (eventType) {
 			case 'plan':
-				currentProgress = {
+				currentProgress.status = 'planning';
+				currentProgress.currentAction = {
 					type: 'plan',
 					message: `Creating plan: ${eventData.goal}`,
 					step: 0,
-					total: eventData.totalSteps
+					total: eventData.totalSteps,
+					timestamp: now
 				};
 				break;
+
 			case 'step_start':
-				currentProgress = {
-					type: 'step',
+				currentProgress.status = 'executing';
+				currentProgress.currentAction = {
+					type: 'step_start',
 					message: eventData.description || 'Working...',
 					step: eventData.stepNumber,
-					total: eventData.totalSteps
+					total: eventData.totalSteps,
+					timestamp: now
 				};
-				break;
-			case 'step_complete':
-				currentProgress = {
-					type: 'complete',
-					message: `Completed: ${eventData.description?.substring(0, 50)}...`,
+				// Add pending entry to log
+				currentProgress.executionLog.push({
+					id: `step-${eventData.stepNumber}-${now}`,
+					type: 'pending',
+					message: eventData.description || 'Working...',
 					step: eventData.stepNumber,
-					total: eventData.totalSteps
-				};
+					total: eventData.totalSteps,
+					timestamp: now
+				});
 				break;
-			case 'step_failed':
-				currentProgress = {
-					type: 'error',
-					message: `Failed: ${eventData.error || 'Unknown error'}`
-				};
-				break;
-			case 'thinking':
-				currentProgress = {
-					type: 'thinking',
-					message: eventData.thought || 'Thinking...'
-				};
-				break;
-			case 'complete':
-				currentProgress = {
-					type: 'done',
-					message: 'All done!'
-				};
-				break;
-			case 'error':
-				currentProgress = {
-					type: 'error',
-					message: eventData.error || 'Something went wrong'
-				};
-				break;
-		}
 
-		// Auto-clear progress after a delay
-		if (currentProgress) {
-			setTimeout(() => {
-				if (currentProgress?.type !== 'plan' && currentProgress?.type !== 'step') {
-					currentProgress = null;
+			case 'step_complete':
+				currentProgress.status = 'executing';
+				const stepNumber = eventData.stepNumber;
+				const completeMsg = `Completed: ${eventData.description?.substring(0, 50) || 'Step'}`;
+				currentProgress.currentAction = {
+					type: 'step_complete',
+					message: completeMsg,
+					step: stepNumber,
+					total: eventData.totalSteps,
+					timestamp: now
+				};
+				// Update or add success entry to log
+				const existingEntry = currentProgress.executionLog.find(
+					e => e.step === stepNumber && e.type === 'pending'
+				);
+				if (existingEntry) {
+					existingEntry.type = 'success';
+					existingEntry.message = `[${stepNumber}/${eventData.totalSteps}] ✓ ${eventData.description || 'Completed'}`;
+					existingEntry.timestamp = now;
+				} else {
+					currentProgress.executionLog.push({
+						id: `step-${stepNumber}-${now}`,
+						type: 'success',
+						message: `[${stepNumber}/${eventData.totalSteps}] ✓ ${eventData.description || 'Completed'}`,
+						step: stepNumber,
+						total: eventData.totalSteps,
+						timestamp: now
+					});
 				}
-			}, 3000);
+				break;
+
+			case 'step_failed':
+				currentProgress.status = 'error';
+				const failedStep = eventData.stepNumber;
+				const errorMsg = eventData.error || 'Unknown error';
+				currentProgress.currentAction = {
+					type: 'step_failed',
+					message: `Failed: ${errorMsg}`,
+					step: failedStep,
+					total: eventData.totalSteps,
+					timestamp: now
+				};
+				// Update or add error entry to log
+				const failedEntry = currentProgress.executionLog.find(
+					e => e.step === failedStep && e.type === 'pending'
+				);
+				if (failedEntry) {
+					failedEntry.type = 'error';
+					failedEntry.message = `[${failedStep}/${eventData.totalSteps}] ✗ ${eventData.description || 'Failed'}: ${errorMsg}`;
+					failedEntry.timestamp = now;
+				} else {
+					currentProgress.executionLog.push({
+						id: `step-${failedStep}-${now}`,
+						type: 'error',
+						message: `[${failedStep}/${eventData.totalSteps}] ✗ ${eventData.description || 'Failed'}: ${errorMsg}`,
+						step: failedStep,
+						total: eventData.totalSteps,
+						timestamp: now
+					});
+				}
+				break;
+
+			case 'thinking':
+				currentProgress.status = 'thinking';
+				currentProgress.currentAction = {
+					type: 'thinking',
+					message: eventData.thought || 'Thinking...',
+					timestamp: now
+				};
+				// Add thinking to log
+				currentProgress.executionLog.push({
+					id: `thinking-${now}`,
+					type: 'info',
+					message: eventData.thought || 'Thinking...',
+					timestamp: now
+				});
+				break;
+
+			case 'complete':
+				currentProgress.status = 'complete';
+				currentProgress.currentAction = {
+					type: 'step_complete',
+					message: 'All done!',
+					timestamp: now
+				};
+				break;
+
+			case 'error':
+				currentProgress.status = 'error';
+				currentProgress.currentAction = {
+					type: 'step_failed',
+					message: eventData.error || 'Something went wrong',
+					timestamp: now
+				};
+				currentProgress.executionLog.push({
+					id: `error-${now}`,
+					type: 'error',
+					message: `Error: ${eventData.error || 'Something went wrong'}`,
+					timestamp: now
+				});
+				break;
 		}
 	}
 
@@ -250,6 +356,12 @@
 		input = '';
 		isLoading = true;
 		isStreaming = false;
+		// Reset progress state for new message
+		currentProgress = {
+			status: 'thinking',
+			currentAction: null,
+			executionLog: []
+		};
 
 		const tempUserMsg: AiMessage = {
 			id: uuid(),
@@ -449,36 +561,99 @@
 								{#each messages.filter((m) => m.role === 'user' || (m.role === 'assistant' && (m.content?.trim() !== '' || m.contextMetadata || m.parts || m.attachments))) as msg (msg.id)}
 									<ChatMessage message={msg} />
 								{/each}
-								{#if currentProgress}
-									<div class="flex items-center gap-3 text-sm text-muted-foreground" in:fade>
-										<div class="h-2 w-2 animate-pulse rounded-full bg-primary"></div>
-										<span>
-											{#if currentProgress.step && currentProgress.total}
-												[{currentProgress.step}/{currentProgress.total}] {currentProgress.message}
-											{:else}
-												{currentProgress.message}
-											{/if}
-										</span>
+
+								<!-- Enhanced Progress Display -->
+								{#if isLoading || currentProgress.status !== 'idle'}
+									<div class="flex flex-col gap-3" in:fade>
+										<!-- Loader with Status -->
+										{#if isLoading && !isStreaming}
+											<div class="flex items-start">
+												<div
+													class="text-muted-foreground flex animate-pulse items-center gap-3 rounded-2xl border border-border/60 bg-muted/35 px-4 py-3 text-sm font-bold tracking-wide uppercase shadow-sm"
+												>
+													<LoaderCircle class="h-4 w-4 animate-spin" />
+													{#if currentProgress.status === 'thinking'}
+														Thinking
+													{:else if currentProgress.status === 'planning'}
+														Planning
+													{:else if currentProgress.status === 'executing'}
+														Executing
+													{:else if currentProgress.status === 'complete'}
+														Complete
+													{:else if currentProgress.status === 'error'}
+														Error
+													{:else}
+														Working
+													{/if}
+													<span class="inline-flex gap-1">
+														<span
+															class="h-1 w-1 animate-[pulse_1.2s_ease-in-out_infinite] rounded-full bg-current opacity-40"
+														></span>
+														<span
+															class="h-1 w-1 animate-[pulse_1.2s_ease-in-out_infinite] rounded-full bg-current opacity-40 [animation-delay:0.2s]"
+														></span>
+														<span
+															class="h-1 w-1 animate-[pulse_1.2s_ease-in-out_infinite] rounded-full bg-current opacity-40 [animation-delay:0.4s]"
+														></span>
+													</span>
+												</div>
+											</div>
+										{/if}
+
+										<!-- Current Action (prominently displayed) -->
+										{#if currentProgress.currentAction}
+											<div class="flex items-center gap-3 text-sm text-muted-foreground" in:fade>
+												<div class="h-2 w-2 animate-pulse rounded-full bg-primary"></div>
+												<span>
+													{#if currentProgress.currentAction.step && currentProgress.currentAction.total}
+														[{currentProgress.currentAction.step}/{currentProgress.currentAction.total}] {currentProgress.currentAction.message}
+													{:else}
+														{currentProgress.currentAction.message}
+													{/if}
+												</span>
+											</div>
+										{/if}
 									</div>
 								{/if}
-								{#if isLoading && !isStreaming && !currentProgress}
-									<div class="flex items-start" in:fade>
-										<div
-											class="text-muted-foreground flex animate-pulse items-center gap-3 rounded-2xl border border-border/60 bg-muted/35 px-4 py-3 text-sm font-bold tracking-wide uppercase shadow-sm"
-										>
-											<LoaderCircle class="h-4 w-4 animate-spin" />
-											Thinking
-											<span class="inline-flex gap-1">
-												<span
-													class="h-1 w-1 animate-[pulse_1.2s_ease-in-out_infinite] rounded-full bg-current opacity-40"
-												></span>
-												<span
-													class="h-1 w-1 animate-[pulse_1.2s_ease-in-out_infinite] rounded-full bg-current opacity-40 [animation-delay:0.2s]"
-												></span>
-												<span
-													class="h-1 w-1 animate-[pulse_1.2s_ease-in-out_infinite] rounded-full bg-current opacity-40 [animation-delay:0.4s]"
-												></span>
+
+								<!-- Execution Log (persistent) -->
+								{#if currentProgress.executionLog.length > 0}
+									<div class="rounded-xl border border-border/50 bg-muted/20 p-3">
+										<div class="mb-2 flex items-center justify-between">
+											<span class="text-xs font-semibold uppercase text-muted-foreground">
+												Execution Log
 											</span>
+											<span class="text-muted-foreground text-[10px]">
+												{currentProgress.executionLog.length} {currentProgress.executionLog.length === 1 ? 'entry' : 'entries'}
+											</span>
+										</div>
+										<div class="max-h-64 space-y-1 overflow-y-auto">
+											{#each currentProgress.executionLog as entry (entry.id)}
+												<div
+													class="flex items-start gap-2 rounded-lg px-2 py-1.5 text-xs transition-colors hover:bg-muted/40 {entry.type === 'error'
+														? 'text-destructive'
+														: entry.type === 'success'
+															? 'text-green-600 dark:text-green-400'
+															: entry.type === 'warning'
+																? 'text-yellow-600 dark:text-yellow-400'
+																: 'text-muted-foreground'}"
+												>
+													<span class="flex-shrink-0">
+														{#if entry.type === 'success'}
+															✓
+														{:else if entry.type === 'error'}
+															✗
+														{:else if entry.type === 'pending'}
+															⟳
+														{:else if entry.type === 'warning'}
+															⚠
+														{:else}
+															•
+														{/if}
+													</span>
+													<span class="flex-1">{entry.message}</span>
+												</div>
+											{/each}
 										</div>
 									</div>
 								{/if}
