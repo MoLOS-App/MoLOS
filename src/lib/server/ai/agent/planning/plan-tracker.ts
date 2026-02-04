@@ -186,6 +186,14 @@ export class PlanTracker {
 				: undefined
 		};
 	}
+
+	/**
+	 * Get the step number (1-based index) for a given step ID
+	 */
+	getStepNumber(stepId: string): number {
+		const index = this.plan.steps.findIndex((s) => s.id === stepId);
+		return index >= 0 ? index + 1 : 1;
+	}
 }
 
 /**

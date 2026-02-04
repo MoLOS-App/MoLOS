@@ -9,8 +9,6 @@
 	import ReviewChangesOverlay from '$lib/components/ai/ReviewChangesOverlay.svelte';
 	import ChatSidebar from '$lib/components/ai/ChatSidebar.svelte';
 	import ProgressDisplay from '$lib/components/ai/ProgressDisplay.svelte';
-	import ExecutionLog from '$lib/components/ai/ExecutionLog.svelte';
-	import PlanVisualization from '$lib/components/ai/PlanVisualization.svelte';
 	import { uuid } from '$lib/utils/uuid';
 	import type { ProgressState } from './progress-types';
 	import { INITIAL_PROGRESS_STATE } from './progress-types';
@@ -37,6 +35,9 @@
 
 	// Progress state for agent execution tracking
 	let currentProgress = $state<ProgressState>({ ...INITIAL_PROGRESS_STATE });
+
+	// Track temporary progress message IDs to clean them up after execution
+	let tempProgressMessageIds = $state<string[]>([]);
 
 	let activeModuleIds = $derived($page.data.activeExternalIds || []);
 
@@ -66,6 +67,8 @@
 			const data = await res.json();
 			messages = data.messages || [];
 			currentSessionId = sessionId;
+			// Clear temporary progress message IDs when loading fresh messages
+			tempProgressMessageIds = [];
 			await scrollToBottom();
 		}
 	}
@@ -86,6 +89,7 @@
 		}
 		// Reset progress state
 		currentProgress = { ...INITIAL_PROGRESS_STATE };
+		tempProgressMessageIds = [];
 	}
 
 	function startActionTimer() {
@@ -200,6 +204,23 @@
 		// Debug log to see what events are being received
 		console.log('[Progress Event]', eventType, eventData);
 
+		// Helper function to add a temporary progress message
+		function addProgressMessage(content: string, type: 'info' | 'success' | 'error' = 'info') {
+			const msgId = `progress-${uuid()}`;
+			const progressMsg: AiMessage = {
+				id: msgId,
+				userId: '',
+				sessionId: currentSessionId || '',
+				role: 'assistant',
+				content,
+				createdAt: new Date(),
+				// Mark as temporary so we can clean it up later
+				metadata: { isTemporary: true, type }
+			};
+			messages = [...messages, progressMsg];
+			tempProgressMessageIds = [...tempProgressMessageIds, msgId];
+		}
+
 		switch (eventType) {
 			case 'plan':
 				currentProgress.status = 'planning';
@@ -212,6 +233,7 @@
 					total: eventData.totalSteps,
 					timestamp: now
 				};
+				addProgressMessage(`📋 Plan: ${eventData.goal}\n\nSteps: ${eventData.totalSteps || 'Unknown'}`, 'info');
 				break;
 
 			case 'step_start':
@@ -223,24 +245,15 @@
 					total: eventData.totalSteps,
 					timestamp: now
 				};
-				// Add pending entry to log with startTime and tool details
-				currentProgress.executionLog.push({
-					id: `step-${eventData.stepNumber}-${now}`,
-					type: 'pending',
-					message: eventData.description || 'Working...',
-					step: eventData.stepNumber,
-					total: eventData.totalSteps,
-					timestamp: now,
-					startTime: now,
-					toolName: eventData.toolName,
-					parameters: eventData.parameters
-				});
+				// Add step start message
+				const stepMsg = `[${eventData.stepNumber}/${eventData.totalSteps}] ▸ ${eventData.description || 'Working...'}`;
+				addProgressMessage(stepMsg, 'info');
 				break;
 
 			case 'step_complete':
 				currentProgress.status = 'executing';
 				const stepNumber = eventData.stepNumber;
-				const completeMsg = `Completed: ${eventData.description?.substring(0, 50) || 'Step'}`;
+				const completeMsg = `✓ Completed: ${eventData.description || 'Step'}`;
 				currentProgress.currentAction = {
 					type: 'step_complete',
 					message: completeMsg,
@@ -248,28 +261,9 @@
 					total: eventData.totalSteps,
 					timestamp: now
 				};
-				// Update or add success entry to log
-				const existingEntry = currentProgress.executionLog.find(
-					e => e.step === stepNumber && e.type === 'pending'
-				);
-				if (existingEntry) {
-					existingEntry.type = 'success';
-					existingEntry.message = `[${stepNumber}/${eventData.totalSteps}] ✓ ${eventData.description || 'Completed'}`;
-					existingEntry.timestamp = now;
-					existingEntry.endTime = now; // Record completion time
-					existingEntry.result = eventData.result; // Store result
-				} else {
-					currentProgress.executionLog.push({
-						id: `step-${stepNumber}-${now}`,
-						type: 'success',
-						message: `[${stepNumber}/${eventData.totalSteps}] ✓ ${eventData.description || 'Completed'}`,
-						step: stepNumber,
-						total: eventData.totalSteps,
-						timestamp: now,
-						endTime: now,
-						result: eventData.result
-					});
-				}
+				// Add completion message
+				const completionText = `[${stepNumber}/${eventData.totalSteps}] ✓ ${eventData.description || 'Completed'}`;
+				addProgressMessage(completionText, 'success');
 				break;
 
 			case 'step_failed':
@@ -283,28 +277,9 @@
 					total: eventData.totalSteps,
 					timestamp: now
 				};
-				// Update or add error entry to log
-				const failedEntry = currentProgress.executionLog.find(
-					e => e.step === failedStep && e.type === 'pending'
-				);
-				if (failedEntry) {
-					failedEntry.type = 'error';
-					failedEntry.message = `[${failedStep}/${eventData.totalSteps}] ✗ ${eventData.description || 'Failed'}: ${errorMsg}`;
-					failedEntry.timestamp = now;
-					failedEntry.endTime = now; // Record failure time
-					failedEntry.errorDetail = errorMsg; // Store detailed error
-				} else {
-					currentProgress.executionLog.push({
-						id: `step-${failedStep}-${now}`,
-						type: 'error',
-						message: `[${failedStep}/${eventData.totalSteps}] ✗ ${eventData.description || 'Failed'}: ${errorMsg}`,
-						step: failedStep,
-						total: eventData.totalSteps,
-						timestamp: now,
-						endTime: now,
-						errorDetail: errorMsg
-					});
-				}
+				// Add failure message
+				const failureText = `[${failedStep}/${eventData.totalSteps}] ✗ Failed: ${eventData.description || 'Step'}\n\nError: ${errorMsg}`;
+				addProgressMessage(failureText, 'error');
 				break;
 
 			case 'thinking':
@@ -314,13 +289,10 @@
 					message: eventData.thought || 'Thinking...',
 					timestamp: now
 				};
-				// Add thinking to log
-				currentProgress.executionLog.push({
-					id: `thinking-${now}`,
-					type: 'info',
-					message: eventData.thought || 'Thinking...',
-					timestamp: now
-				});
+				// Add thinking message (only if it's substantial)
+				if (eventData.thought && eventData.thought.length > 10) {
+					addProgressMessage(`💭 ${eventData.thought}`, 'info');
+				}
 				break;
 
 			case 'complete':
@@ -339,12 +311,7 @@
 					message: eventData.error || 'Something went wrong',
 					timestamp: now
 				};
-				currentProgress.executionLog.push({
-					id: `error-${now}`,
-					type: 'error',
-					message: `Error: ${eventData.error || 'Something went wrong'}`,
-					timestamp: now
-				});
+				addProgressMessage(`❌ Error: ${eventData.error || 'Something went wrong'}`, 'error');
 				break;
 		}
 	}
@@ -439,6 +406,8 @@
 			isStreaming = false;
 			isCancelling = false;
 			abortController = null;
+			// Clean up temporary progress messages after execution completes
+			tempProgressMessageIds = [];
 			await scrollToBottom();
 		}
 	}
@@ -447,13 +416,17 @@
 		if (abortController && !isCancelling) {
 			isCancelling = true;
 			abortController.abort();
-			// Add cancellation entry to execution log
-			currentProgress.executionLog.push({
-				id: `cancel-${Date.now()}`,
-				type: 'warning',
-				message: 'Execution cancelled by user',
-				timestamp: Date.now()
-			});
+			// Add cancellation message to chat
+			const cancelMsg: AiMessage = {
+				id: `progress-${uuid()}`,
+				userId: '',
+				sessionId: currentSessionId || '',
+				role: 'assistant',
+				content: '⚠️ Execution cancelled by user',
+				createdAt: new Date(),
+				metadata: { isTemporary: true, type: 'warning' }
+			};
+			messages = [...messages, cancelMsg];
 			// Update progress status
 			currentProgress.status = 'error';
 			currentProgress.currentAction = {
@@ -462,76 +435,6 @@
 				timestamp: Date.now()
 			};
 		}
-	}
-
-	async function retryFailedSteps(failedSteps: typeof currentProgress.executionLog) {
-		// Mark retry in execution log
-		const retryId = `retry-${Date.now()}`;
-		currentProgress.executionLog.push({
-			id: retryId,
-			type: 'warning',
-			message: `Retrying ${failedSteps.length} failed step${failedSteps.length === 1 ? '' : 's'}...`,
-			timestamp: Date.now()
-		});
-
-		// For each failed step, create a retry entry
-		// In a full implementation, this would re-execute the actual tool calls
-		for (const step of failedSteps) {
-			if (step.step !== undefined && step.toolName && step.parameters) {
-				currentProgress.executionLog.push({
-					id: `retry-${step.step}-${Date.now()}`,
-					type: 'pending',
-					message: `[Retry] Step ${step.step}: ${step.toolName}`,
-					step: step.step,
-					total: step.total,
-					timestamp: Date.now(),
-					startTime: Date.now(),
-					toolName: step.toolName,
-					parameters: step.parameters
-				});
-
-				// Simulate retry execution (in real implementation, this would call the actual tool)
-				// For now, we'll mark it as successful after a delay
-				await new Promise((resolve) => setTimeout(resolve, 500));
-
-				const success = Math.random() > 0.3; // Simulate 70% success rate
-
-				if (success) {
-					const retryEntry = currentProgress.executionLog.find(
-						e => e.id === `retry-${step.step}-${Date.now() - 500}`.substring(0, 20)
-					);
-					if (retryEntry) {
-						retryEntry.type = 'success';
-						retryEntry.message = `[Retry] Step ${step.step}: ✓ ${step.toolName} succeeded`;
-						retryEntry.endTime = Date.now();
-					}
-				} else {
-					const retryEntry = currentProgress.executionLog.find(
-						e => e.id === `retry-${step.step}-${Date.now() - 500}`.substring(0, 20)
-					);
-					if (retryEntry) {
-						retryEntry.type = 'error';
-						retryEntry.message = `[Retry] Step ${step.step}: ✗ ${step.toolName} still failing`;
-						retryEntry.endTime = Date.now();
-						retryEntry.errorDetail = step.errorDetail || 'Retry failed';
-					}
-				}
-			}
-		}
-
-		// Add retry summary
-		const retrySuccessCount = currentProgress.executionLog.filter(
-			e => e.message?.includes('[Retry]') && e.type === 'success'
-		).length;
-		currentProgress.executionLog.push({
-			id: `retry-summary-${Date.now()}`,
-			type: retrySuccessCount === failedSteps.length ? 'success' : 'warning',
-			message: `Retry complete: ${retrySuccessCount}/${failedSteps.length} steps succeeded`,
-			timestamp: Date.now()
-		});
-
-		// Scroll to bottom to show retry results
-		await scrollToBottom();
 	}
 
 	async function scrollToBottom() {
@@ -664,22 +567,13 @@
 									<ChatMessage message={msg} />
 								{/each}
 
-								<!-- Progress Display and Execution Log -->
+								<!-- Progress Display -->
 								<ProgressDisplay
 									{isLoading}
 									{isStreaming}
 									{isCancelling}
 									progress={currentProgress}
 									onCancel={cancelExecution}
-								/>
-								<PlanVisualization
-									executionLog={currentProgress.executionLog}
-									goal={currentProgress.planGoal}
-									totalSteps={currentProgress.totalSteps}
-								/>
-								<ExecutionLog
-									progress={currentProgress}
-									onRetry={retryFailedSteps}
 								/>
 							</div>
 						{/if}
