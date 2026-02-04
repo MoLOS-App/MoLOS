@@ -25,6 +25,12 @@
 	let timerInterval = $state<number | null>(null);
 	let isSidebarOpen = $state(false);
 	let showScrollButton = $state(false);
+	let currentProgress = $state<{
+		type: string;
+		message: string;
+		step?: number;
+		total?: number;
+	} | null>(null);
 
 	let activeModuleIds = $derived($page.data.activeExternalIds || []);
 
@@ -147,9 +153,10 @@
 				if (payload === '[DONE]') {
 					return;
 				}
-				let data: { type?: string; content?: string; message?: string } & {
+				let data: { type?: string; content?: string; message?: string; eventType?: string; timestamp?: number; data?: any } & {
 					sessionId?: string;
 					actions?: AiAction[];
+					progressEvents?: any[];
 				};
 				try {
 					data = JSON.parse(payload);
@@ -160,12 +167,79 @@
 					content += data.content || '';
 					updateAssistantMessage(assistantMessageId, content);
 					await scrollToBottom();
+				} else if (data.type === 'progress') {
+					// Handle progress events from the new agent
+					handleProgressEvent(data);
 				} else if (data.type === 'meta') {
 					applyStreamMeta(data);
 				} else if (data.type === 'error') {
 					throw new Error(data.message || 'Streaming failed');
 				}
 			}
+		}
+	}
+
+	function handleProgressEvent(event: any) {
+		const { eventType, data: eventData } = event;
+
+		switch (eventType) {
+			case 'plan':
+				currentProgress = {
+					type: 'plan',
+					message: `Creating plan: ${eventData.goal}`,
+					step: 0,
+					total: eventData.totalSteps
+				};
+				break;
+			case 'step_start':
+				currentProgress = {
+					type: 'step',
+					message: eventData.description || 'Working...',
+					step: eventData.stepNumber,
+					total: eventData.totalSteps
+				};
+				break;
+			case 'step_complete':
+				currentProgress = {
+					type: 'complete',
+					message: `Completed: ${eventData.description?.substring(0, 50)}...`,
+					step: eventData.stepNumber,
+					total: eventData.totalSteps
+				};
+				break;
+			case 'step_failed':
+				currentProgress = {
+					type: 'error',
+					message: `Failed: ${eventData.error || 'Unknown error'}`
+				};
+				break;
+			case 'thinking':
+				currentProgress = {
+					type: 'thinking',
+					message: eventData.thought || 'Thinking...'
+				};
+				break;
+			case 'complete':
+				currentProgress = {
+					type: 'done',
+					message: 'All done!'
+				};
+				break;
+			case 'error':
+				currentProgress = {
+					type: 'error',
+					message: eventData.error || 'Something went wrong'
+				};
+				break;
+		}
+
+		// Auto-clear progress after a delay
+		if (currentProgress) {
+			setTimeout(() => {
+				if (currentProgress?.type !== 'plan' && currentProgress?.type !== 'step') {
+					currentProgress = null;
+				}
+			}, 3000);
 		}
 	}
 
@@ -375,7 +449,19 @@
 								{#each messages.filter((m) => m.role === 'user' || (m.role === 'assistant' && (m.content?.trim() !== '' || m.contextMetadata || m.parts || m.attachments))) as msg (msg.id)}
 									<ChatMessage message={msg} />
 								{/each}
-								{#if isLoading && !isStreaming}
+								{#if currentProgress}
+									<div class="flex items-center gap-3 text-sm text-muted-foreground" in:fade>
+										<div class="h-2 w-2 animate-pulse rounded-full bg-primary"></div>
+										<span>
+											{#if currentProgress.step && currentProgress.total}
+												[{currentProgress.step}/{currentProgress.total}] {currentProgress.message}
+											{:else}
+												{currentProgress.message}
+											{/if}
+										</span>
+									</div>
+								{/if}
+								{#if isLoading && !isStreaming && !currentProgress}
 									<div class="flex items-start" in:fade>
 										<div
 											class="text-muted-foreground flex animate-pulse items-center gap-3 rounded-2xl border border-border/60 bg-muted/35 px-4 py-3 text-sm font-bold tracking-wide uppercase shadow-sm"
