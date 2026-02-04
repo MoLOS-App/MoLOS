@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { fade } from 'svelte/transition';
 	import type { ProgressState } from './progress-types';
-	import { getLogEntryIcon, getLogEntryClasses } from './progress-types';
+	import { getLogEntryIcon, getLogEntryClasses, getEntryDuration } from './progress-types';
 
 	let { progress }: { progress: ProgressState } = $props();
 </script>
@@ -21,6 +21,9 @@
 				<div class={getLogEntryClasses(entry.type)}>
 					<span class="flex-shrink-0">{getLogEntryIcon(entry.type)}</span>
 					<span class="flex-1">{entry.message}</span>
+					{#if getEntryDuration(entry)}
+						<span class="text-muted-foreground/60 text-[10px]">{getEntryDuration(entry)}</span>
+					{/if}
 				</div>
 			{/each}
 		</div>

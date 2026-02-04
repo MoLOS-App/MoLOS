@@ -10,6 +10,7 @@
 	import ChatSidebar from '$lib/components/ai/ChatSidebar.svelte';
 	import ProgressDisplay from '$lib/components/ai/ProgressDisplay.svelte';
 	import ExecutionLog from '$lib/components/ai/ExecutionLog.svelte';
+	import PlanVisualization from '$lib/components/ai/PlanVisualization.svelte';
 	import { uuid } from '$lib/utils/uuid';
 	import type { ProgressState } from './progress-types';
 	import { INITIAL_PROGRESS_STATE } from './progress-types';
@@ -189,6 +190,8 @@
 		switch (eventType) {
 			case 'plan':
 				currentProgress.status = 'planning';
+				currentProgress.planGoal = eventData.goal;
+				currentProgress.totalSteps = eventData.totalSteps;
 				currentProgress.currentAction = {
 					type: 'plan',
 					message: `Creating plan: ${eventData.goal}`,
@@ -207,14 +210,15 @@
 					total: eventData.totalSteps,
 					timestamp: now
 				};
-				// Add pending entry to log
+				// Add pending entry to log with startTime
 				currentProgress.executionLog.push({
 					id: `step-${eventData.stepNumber}-${now}`,
 					type: 'pending',
 					message: eventData.description || 'Working...',
 					step: eventData.stepNumber,
 					total: eventData.totalSteps,
-					timestamp: now
+					timestamp: now,
+					startTime: now
 				});
 				break;
 
@@ -237,6 +241,7 @@
 					existingEntry.type = 'success';
 					existingEntry.message = `[${stepNumber}/${eventData.totalSteps}] ✓ ${eventData.description || 'Completed'}`;
 					existingEntry.timestamp = now;
+					existingEntry.endTime = now; // Record completion time
 				} else {
 					currentProgress.executionLog.push({
 						id: `step-${stepNumber}-${now}`,
@@ -244,7 +249,8 @@
 						message: `[${stepNumber}/${eventData.totalSteps}] ✓ ${eventData.description || 'Completed'}`,
 						step: stepNumber,
 						total: eventData.totalSteps,
-						timestamp: now
+						timestamp: now,
+						endTime: now
 					});
 				}
 				break;
@@ -268,6 +274,7 @@
 					failedEntry.type = 'error';
 					failedEntry.message = `[${failedStep}/${eventData.totalSteps}] ✗ ${eventData.description || 'Failed'}: ${errorMsg}`;
 					failedEntry.timestamp = now;
+					failedEntry.endTime = now; // Record failure time
 				} else {
 					currentProgress.executionLog.push({
 						id: `step-${failedStep}-${now}`,
@@ -275,7 +282,8 @@
 						message: `[${failedStep}/${eventData.totalSteps}] ✗ ${eventData.description || 'Failed'}: ${errorMsg}`,
 						step: failedStep,
 						total: eventData.totalSteps,
-						timestamp: now
+						timestamp: now,
+						endTime: now
 					});
 				}
 				break;
@@ -533,6 +541,11 @@
 
 								<!-- Progress Display and Execution Log -->
 								<ProgressDisplay {isLoading} {isStreaming} progress={currentProgress} />
+								<PlanVisualization
+									executionLog={currentProgress.executionLog}
+									goal={currentProgress.planGoal}
+									totalSteps={currentProgress.totalSteps}
+								/>
 								<ExecutionLog progress={currentProgress} />
 							</div>
 						{/if}
