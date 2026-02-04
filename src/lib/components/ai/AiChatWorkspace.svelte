@@ -36,9 +36,8 @@
 	// Progress state for agent execution tracking
 	let currentProgress = $state<ProgressState>({ ...INITIAL_PROGRESS_STATE });
 
-	// Single combined progress message that gets updated
-	let progressMessageId = $state<string | null>(null);
-	let progressContent = $state<string[]>([]);
+	// Progress log to be shown in accordion after completion
+	let progressLog = $state<string[]>([]);
 
 	let activeModuleIds = $derived($page.data.activeExternalIds || []);
 
@@ -62,22 +61,12 @@
 		}
 	}
 
-	async function loadMessages(sessionId: string, preserveProgressMessages = false) {
-		// If preserving progress messages, save the current progress message
-		const progressMsgToPreserve = preserveProgressMessages && progressMessageId
-			? messages.find((m) => m.id === progressMessageId)
-			: null;
-
+	async function loadMessages(sessionId: string) {
 		const res = await fetch(`/api/ai/chat?sessionId=${sessionId}`);
 		if (res.ok) {
 			const data = await res.json();
 			messages = data.messages || [];
 			currentSessionId = sessionId;
-
-			// Restore progress message if we're preserving it
-			if (preserveProgressMessages && progressMsgToPreserve) {
-				messages = [...messages, progressMsgToPreserve];
-			}
 			await scrollToBottom();
 		}
 	}
@@ -98,8 +87,7 @@
 		}
 		// Reset progress state
 		currentProgress = { ...INITIAL_PROGRESS_STATE };
-		progressMessageId = null;
-		progressContent = [];
+		progressLog = [];
 	}
 
 	function startActionTimer() {
@@ -214,35 +202,9 @@
 		// Debug log to see what events are being received
 		console.log('[Progress Event]', eventType, eventData);
 
-		// Helper function to add a line to the progress message
+		// Helper function to add a line to the progress log
 		function addProgressLine(content: string) {
-			progressContent = [...progressContent, content];
-			updateProgressMessage();
-		}
-
-		// Helper function to update the single progress message
-		function updateProgressMessage() {
-			if (!progressMessageId) {
-				// Create the progress message on first event
-				progressMessageId = `progress-${uuid()}`;
-				const progressMsg: AiMessage = {
-					id: progressMessageId,
-					userId: '',
-					sessionId: currentSessionId || '',
-					role: 'assistant',
-					content: progressContent.join('\n\n'),
-					createdAt: new Date(),
-					metadata: { isTemporary: true, type: 'info' }
-				};
-				messages = [...messages, progressMsg];
-			} else {
-				// Update the existing progress message
-				messages = messages.map((msg) =>
-					msg.id === progressMessageId
-						? { ...msg, content: progressContent.join('\n\n') }
-						: msg
-				);
-			}
+			progressLog = [...progressLog, content];
 		}
 
 		switch (eventType) {
@@ -344,9 +306,8 @@
 		isCancelling = false;
 		// Reset progress state for new message
 		currentProgress = { ...INITIAL_PROGRESS_STATE, status: 'thinking' };
-		// Reset progress message tracking
-		progressMessageId = null;
-		progressContent = [];
+		// Reset progress log
+		progressLog = [];
 
 		// Create AbortController for this request
 		abortController = new AbortController();
@@ -402,8 +363,25 @@
 				isStreaming = true;
 				await handleStreamResponse(res, assistantMessageId);
 				if (currentSessionId) {
-					// Preserve progress messages when loading after execution completes
-					await loadMessages(currentSessionId, true);
+					await loadMessages(currentSessionId);
+					// Attach progress log to the last assistant message
+					if (progressLog.length > 0) {
+						const lastAssistantMsg = [...messages].reverse().find(m => m.role === 'assistant');
+						if (lastAssistantMsg) {
+							// Update the message with progress log in metadata
+							messages = messages.map(m =>
+								m.id === lastAssistantMsg.id
+									? {
+											...m,
+											metadata: {
+												...m.metadata,
+												progressLog: progressLog
+											}
+										}
+									: m
+							);
+						}
+					}
 				}
 				await loadSessions();
 			} else if (res.ok) {
@@ -437,15 +415,8 @@
 		if (abortController && !isCancelling) {
 			isCancelling = true;
 			abortController.abort();
-			// Add cancellation to the progress message
-			if (progressMessageId) {
-				progressContent = [...progressContent, '⚠️ Execution cancelled by user'];
-				messages = messages.map((msg) =>
-					msg.id === progressMessageId
-						? { ...msg, content: progressContent.join('\n\n') }
-						: msg
-				);
-			}
+			// Add cancellation to the progress log
+			progressLog = [...progressLog, '⚠️ Execution cancelled by user'];
 			// Update progress status
 			currentProgress.status = 'error';
 			currentProgress.currentAction = {
