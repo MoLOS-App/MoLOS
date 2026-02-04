@@ -65,7 +65,7 @@ export function validateToolScope(context: MCPContext, toolName: string): ScopeV
 		const moduleId = extractModuleIdFromToolName(toolName);
 		return {
 			allowed: false,
-			error: `Module '${moduleId}' is not allowed for this API key`
+			error: `Module '${moduleId}' is not allowed for this credential`
 		};
 	}
 
@@ -79,7 +79,7 @@ export function validateResourceScope(context: MCPContext, moduleId: string): Sc
 	if (!isResourceAllowed(moduleId, context.allowedModules)) {
 		return {
 			allowed: false,
-			error: `Module '${moduleId}' is not allowed for this API key`
+			error: `Module '${moduleId}' is not allowed for this credential`
 		};
 	}
 
@@ -96,7 +96,7 @@ export function validatePromptScope(
 	if (!isPromptAllowed(promptModuleId, context.allowedModules)) {
 		return {
 			allowed: false,
-			error: `Module '${promptModuleId}' is not allowed for this API key`
+			error: `Module '${promptModuleId}' is not allowed for this credential`
 		};
 	}
 
