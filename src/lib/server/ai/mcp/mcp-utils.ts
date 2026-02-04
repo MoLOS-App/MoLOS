@@ -26,13 +26,23 @@ export function toolDefinitionToMCPTool(tool: ToolDefinition): MCPTool {
 /**
  * Extract module ID from tool name
  * Tool names are prefixed with module ID (e.g., "MoLOS-Tasks_get_tasks")
+ * Core tools don't have a module prefix and return 'core'
  */
 export function extractModuleIdFromToolName(toolName: string): string {
-	const parts = toolName.split('_');
-	if (parts.length >= 2) {
-		return parts.slice(0, -1).join('_');
+	// Get all known module IDs for proper prefix detection
+	const modules = getAllModules();
+	const moduleIds = new Set(modules.map((m) => m.id));
+
+	// Check if tool name starts with a known module ID
+	for (const moduleId of moduleIds) {
+		const prefix = `${moduleId}_`;
+		if (toolName.startsWith(prefix)) {
+			return moduleId;
+		}
 	}
-	return toolName;
+
+	// Not a module tool, it's a core tool
+	return 'core';
 }
 
 /**

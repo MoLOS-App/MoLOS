@@ -13,7 +13,12 @@
 
 	const expandedThoughts = $state<Record<string, boolean>>({});
 	const expandedPlans = $state<Record<string, boolean>>({});
+	const expandedProgressLog = $state<Record<string, boolean>>({});
 	let copied = $state(false);
+
+	// Extract progress log from metadata if available
+	const progressLog = $derived((message.metadata?.progressLog || []) as string[]);
+	const hasProgressLog = $derived(progressLog.length > 0);
 
 	const processed = $derived(processMessage(message));
 	const isThinkingPlaceholder = $derived(
@@ -35,6 +40,21 @@
 
 		const planMatch = content.match(/<plan>([\s\S]*?)<\/plan>/);
 		let plan = planMatch ? planMatch[1].trim() : metadata.plan || null;
+
+		// If plan is an object, format it for display
+		if (plan && typeof plan === 'object') {
+			const steps = plan.steps || [];
+			const completedCount = steps.filter((s: any) => s.status === 'completed').length;
+			const failedCount = steps.filter((s: any) => s.status === 'failed').length;
+
+			plan = `Plan: ${plan.goal}
+Steps: ${completedCount}/${steps.length} completed${failedCount > 0 ? `, ${failedCount} failed` : ''}
+
+${steps.map((s: any, i: number) => {
+				const status = s.status === 'completed' ? '✓' : s.status === 'failed' ? '✗' : '○';
+				return `${i + 1}. ${status} ${s.description}`;
+			}).join('\n')}`;
+		}
 
 		let cleanContent = content
 			.replace(/<thought>[\s\S]*?<\/thought>/, '')
@@ -64,6 +84,10 @@
 
 	function togglePlan(msgId: string) {
 		expandedPlans[msgId] = !expandedPlans[msgId];
+	}
+
+	function toggleProgressLog(msgId: string) {
+		expandedProgressLog[msgId] = !expandedProgressLog[msgId];
 	}
 
 	function formatTime(value: Date | string) {
@@ -188,6 +212,33 @@
 										transition:slide
 									>
 										{processed.plan}
+									</div>
+								{/if}
+							</div>
+						{/if}
+
+						<!-- Progress Log Accordion (shown for messages with progress log) -->
+						{#if hasProgressLog}
+							<div class="mt-4 space-y-2">
+								<button
+									class="text-muted-foreground/70 flex items-center gap-2 text-[11px] font-medium transition-colors hover:text-foreground"
+									onclick={() => toggleProgressLog(message.id)}
+								>
+									<ListChecks class="h-3 w-3" />
+									{expandedProgressLog[message.id] ? 'Hide Execution Log' : 'Show Execution Log'}
+									<span class="ml-1 rounded-full bg-muted/50 px-1.5 py-0.5 text-[9px]">
+										{progressLog.length} {progressLog.length === 1 ? 'entry' : 'entries'}
+									</span>
+								</button>
+
+								{#if expandedProgressLog[message.id]}
+									<div
+										class="text-muted-foreground/90 max-h-64 overflow-y-auto rounded-xl border border-border/50 bg-muted/20 p-3 font-mono text-[11px]"
+										transition:slide
+									>
+										{#each progressLog as line, index (index)}
+											<div class="mb-1 last:mb-0">{line}</div>
+										{/each}
 									</div>
 								{/if}
 							</div>
