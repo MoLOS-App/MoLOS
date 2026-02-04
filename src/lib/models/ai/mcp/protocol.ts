@@ -261,12 +261,20 @@ export interface PromptsGetResult {
 // ============================================================================
 
 /**
+ * Authentication method used for the request
+ */
+export type MCPAuthMethod = 'api_key' | 'oauth_bearer';
+
+/**
  * MCP Request context (passed to handlers)
  */
 export interface MCPContext {
 	userId: string;
+	authMethod: MCPAuthMethod;
 	apiKeyId: string | null;
+	oauthClientId: string | null;
 	sessionId: string;
+	scopes: string[];
 	allowedModules: string[];
 }
 
