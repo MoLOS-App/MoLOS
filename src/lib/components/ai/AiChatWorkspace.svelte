@@ -206,14 +206,14 @@
 		// Debug log to see what events are being received
 		console.log('[Progress Event]', eventType, eventData);
 
-		// Helper function to add a line to the progress log and update the message
+		// Helper function to add a line to the progress log and update the message metadata
 		function addProgressLine(content: string) {
 			progressLog = [...progressLog, content];
-			// Update the assistant message content with the progress log
+			// Update the assistant message metadata with the progress log
 			if (currentAssistantMessageId) {
 				messages = messages.map(msg =>
 					msg.id === currentAssistantMessageId
-						? { ...msg, content: progressLog.join('\n\n') }
+						? { ...msg, metadata: { ...msg.metadata, progressLog } }
 						: msg
 				);
 			}
@@ -377,8 +377,19 @@
 			if (res.ok && streamEnabled && isEventStream && assistantMessageId) {
 				isStreaming = true;
 				await handleStreamResponse(res, assistantMessageId);
+				// Save the progress log before loading messages
+				const savedProgressLog = [...progressLog];
 				if (currentSessionId) {
 					await loadMessages(currentSessionId);
+					// Re-attach progress log to the last assistant message
+					const lastAssistantMsg = [...messages].reverse().find(m => m.role === 'assistant');
+					if (lastAssistantMsg && savedProgressLog.length > 0) {
+						messages = messages.map(m =>
+							m.id === lastAssistantMsg.id
+								? { ...m, metadata: { ...m.metadata, progressLog: savedProgressLog } }
+								: m
+						);
+					}
 				}
 				await loadSessions();
 			} else if (res.ok) {
