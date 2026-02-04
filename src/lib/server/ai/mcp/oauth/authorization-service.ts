@@ -68,20 +68,38 @@ export class OAuthAuthorizationService {
 		const expiresAt = new Date(Date.now() + AUTH_CODE_CONFIG.codeLifetimeMs);
 		const id = `code_${Date.now()}_${randomBytes(8).toString('hex')}`;
 
-		await db.insert(aiMcpOAuthCodes).values({
+		const scopes = params.scopes ?? [];
+		const insertData = {
 			id,
 			code,
 			clientId: client.client_id,
 			userId,
 			redirectUri: params.redirectUri,
-			scopes: params.scopes ?? [],
+			scopes,
 			codeChallenge: params.codeChallenge,
 			codeChallengeMethod: params.codeChallengeMethod ?? 'S256',
 			state: params.state,
 			resource: params.resource,
 			expiresAt,
 			createdAt: new Date()
+		};
+
+		console.log('[OAuth Authorization Service] Creating authorization code:', {
+			id,
+			clientId: client.client_id,
+			userId,
+			scopes,
+			scopesType: typeof scopes,
+			scopesLength: scopes.length
 		});
+
+		try {
+			await db.insert(aiMcpOAuthCodes).values(insertData);
+			console.log('[OAuth Authorization Service] Successfully inserted authorization code');
+		} catch (insertError) {
+			console.error('[OAuth Authorization Service] Failed to insert authorization code:', insertError);
+			throw insertError;
+		}
 
 		return {
 			id,
@@ -89,7 +107,7 @@ export class OAuthAuthorizationService {
 			clientId: client.client_id,
 			userId,
 			redirectUri: params.redirectUri,
-			scopes: params.scopes ?? [],
+			scopes,
 			codeChallenge: params.codeChallenge,
 			codeChallengeMethod: params.codeChallengeMethod ?? 'S256',
 			state: params.state,

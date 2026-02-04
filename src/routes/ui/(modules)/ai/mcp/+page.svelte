@@ -37,6 +37,7 @@
 		McpHelpDialog,
 		McpOAuthAppsTable,
 		McpCreateOAuthAppDialog,
+		McpEditOAuthAppDialog,
 		type HelpTabId
 	} from '$lib/components/ai/mcp';
 
@@ -200,6 +201,17 @@
 
 	// OAuth dialog states
 	let showCreateOAuthAppDialog = $state(false);
+	let showEditOAuthAppDialog = $state(false);
+	let editingOAuthApp = $state<{
+		client_id: string;
+		client_id_issued_at: number;
+		name: string;
+		redirect_uris: string[];
+		scopes: string[];
+		token_endpoint_auth_method: string;
+		client_secret?: string;
+		client_secret_expires_at?: number;
+	} | null>(null);
 
 	// Help dialog state
 	let showHelpDialog = $state(false);
@@ -527,6 +539,54 @@
 		}
 	}
 
+	async function updateOAuthApp(clientId: string, updates: {
+		name: string;
+		scopes: string[];
+	}) {
+		const response = await fetch(`/api/ai/mcp/oauth/apps/${clientId}`, {
+			method: 'PATCH',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				name: updates.name,
+				scopes: updates.scopes
+			})
+		});
+
+		if (response.ok) {
+			showEditOAuthAppDialog = false;
+			editingOAuthApp = null;
+			// Refresh the OAuth apps list
+			const appsResponse = await fetch('/api/ai/mcp/oauth/register');
+			if (appsResponse.ok) {
+				const appsData = await appsResponse.json();
+				localOAuthApps = appsData.items.map((app: any) => ({
+					client_id: app.client_id,
+					client_id_issued_at: app.client_id_issued_at,
+					name: app.client_name || app.name || 'Unnamed App',
+					redirect_uris: (app.redirect_uris || []).map((u: URL) => u.toString()),
+					scopes: app.scope ? app.scope.split(' ') : [],
+					token_endpoint_auth_method: app.token_endpoint_auth_method || 'none',
+					client_secret: app.client_secret,
+					client_secret_expires_at: app.client_secret_expires_at
+				}));
+			}
+		}
+	}
+
+	function openEditOAuthApp(app: {
+		client_id: string;
+		client_id_issued_at: number;
+		name: string;
+		redirect_uris: string[];
+		scopes: string[];
+		token_endpoint_auth_method: string;
+		client_secret?: string;
+		client_secret_expires_at?: number;
+	}) {
+		editingOAuthApp = app;
+		showEditOAuthAppDialog = true;
+	}
+
 	function confirmDeleteOAuthApp(clientId: string) {
 		const app = localOAuthApps.find((a) => a.client_id === clientId);
 		if (app) {
@@ -710,6 +770,7 @@
 			<McpOAuthAppsTable
 				apps={localOAuthApps}
 				onCreateApp={() => (showCreateOAuthAppDialog = true)}
+				onEditApp={openEditOAuthApp}
 				onDeleteApp={confirmDeleteOAuthApp}
 				onShowHelp={() => (showHelpDialog = true)}
 			/>
@@ -783,6 +844,15 @@
 	onOpenChange={(open) => (showCreateOAuthAppDialog = open)}
 	availableScopes={data.availableScopes}
 	onCreate={createOAuthApp}
+/>
+
+<!-- Edit OAuth App Dialog -->
+<McpEditOAuthAppDialog
+	open={showEditOAuthAppDialog}
+	onOpenChange={(open) => (showEditOAuthAppDialog = open)}
+	availableScopes={data.availableScopes}
+	app={editingOAuthApp}
+	onUpdate={updateOAuthApp}
 />
 
 <!-- Help Dialog -->
