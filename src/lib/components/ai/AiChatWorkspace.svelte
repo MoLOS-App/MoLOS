@@ -36,8 +36,9 @@
 	// Progress state for agent execution tracking
 	let currentProgress = $state<ProgressState>({ ...INITIAL_PROGRESS_STATE });
 
-	// Track temporary progress message IDs to clean them up after execution
-	let tempProgressMessageIds = $state<string[]>([]);
+	// Single combined progress message that gets updated
+	let progressMessageId = $state<string | null>(null);
+	let progressContent = $state<string[]>([]);
 
 	let activeModuleIds = $derived($page.data.activeExternalIds || []);
 
@@ -62,10 +63,10 @@
 	}
 
 	async function loadMessages(sessionId: string, preserveProgressMessages = false) {
-		// If preserving progress messages, save them before loading
-		const progressMessagesToPreserve = preserveProgressMessages
-			? messages.filter((m) => m.metadata?.isTemporary && tempProgressMessageIds.includes(m.id))
-			: [];
+		// If preserving progress messages, save the current progress message
+		const progressMsgToPreserve = preserveProgressMessages && progressMessageId
+			? messages.find((m) => m.id === progressMessageId)
+			: null;
 
 		const res = await fetch(`/api/ai/chat?sessionId=${sessionId}`);
 		if (res.ok) {
@@ -73,9 +74,9 @@
 			messages = data.messages || [];
 			currentSessionId = sessionId;
 
-			// Restore progress messages if we're preserving them
-			if (preserveProgressMessages && progressMessagesToPreserve.length > 0) {
-				messages = [...messages, ...progressMessagesToPreserve];
+			// Restore progress message if we're preserving it
+			if (preserveProgressMessages && progressMsgToPreserve) {
+				messages = [...messages, progressMsgToPreserve];
 			}
 			await scrollToBottom();
 		}
@@ -97,7 +98,8 @@
 		}
 		// Reset progress state
 		currentProgress = { ...INITIAL_PROGRESS_STATE };
-		tempProgressMessageIds = [];
+		progressMessageId = null;
+		progressContent = [];
 	}
 
 	function startActionTimer() {
@@ -212,21 +214,35 @@
 		// Debug log to see what events are being received
 		console.log('[Progress Event]', eventType, eventData);
 
-		// Helper function to add a temporary progress message
-		function addProgressMessage(content: string, type: 'info' | 'success' | 'error' = 'info') {
-			const msgId = `progress-${uuid()}`;
-			const progressMsg: AiMessage = {
-				id: msgId,
-				userId: '',
-				sessionId: currentSessionId || '',
-				role: 'assistant',
-				content,
-				createdAt: new Date(),
-				// Mark as temporary so we can clean it up later
-				metadata: { isTemporary: true, type }
-			};
-			messages = [...messages, progressMsg];
-			tempProgressMessageIds = [...tempProgressMessageIds, msgId];
+		// Helper function to add a line to the progress message
+		function addProgressLine(content: string) {
+			progressContent = [...progressContent, content];
+			updateProgressMessage();
+		}
+
+		// Helper function to update the single progress message
+		function updateProgressMessage() {
+			if (!progressMessageId) {
+				// Create the progress message on first event
+				progressMessageId = `progress-${uuid()}`;
+				const progressMsg: AiMessage = {
+					id: progressMessageId,
+					userId: '',
+					sessionId: currentSessionId || '',
+					role: 'assistant',
+					content: progressContent.join('\n\n'),
+					createdAt: new Date(),
+					metadata: { isTemporary: true, type: 'info' }
+				};
+				messages = [...messages, progressMsg];
+			} else {
+				// Update the existing progress message
+				messages = messages.map((msg) =>
+					msg.id === progressMessageId
+						? { ...msg, content: progressContent.join('\n\n') }
+						: msg
+				);
+			}
 		}
 
 		switch (eventType) {
@@ -241,7 +257,7 @@
 					total: eventData.totalSteps,
 					timestamp: now
 				};
-				addProgressMessage(`📋 Plan: ${eventData.goal}\n\nSteps: ${eventData.totalSteps || 'Unknown'}`, 'info');
+				addProgressLine(`📋 Plan: ${eventData.goal}\nSteps: ${eventData.totalSteps || 'Unknown'}`);
 				break;
 
 			case 'step_start':
@@ -253,9 +269,7 @@
 					total: eventData.totalSteps,
 					timestamp: now
 				};
-				// Add step start message
-				const stepMsg = `[${eventData.stepNumber}/${eventData.totalSteps}] ▸ ${eventData.description || 'Working...'}`;
-				addProgressMessage(stepMsg, 'info');
+				addProgressLine(`[${eventData.stepNumber}/${eventData.totalSteps}] ▸ ${eventData.description || 'Working...'}`);
 				break;
 
 			case 'step_complete':
@@ -269,9 +283,7 @@
 					total: eventData.totalSteps,
 					timestamp: now
 				};
-				// Add completion message
-				const completionText = `[${stepNumber}/${eventData.totalSteps}] ✓ ${eventData.description || 'Completed'}`;
-				addProgressMessage(completionText, 'success');
+				addProgressLine(`[${stepNumber}/${eventData.totalSteps}] ✓ ${eventData.description || 'Completed'}`);
 				break;
 
 			case 'step_failed':
@@ -285,9 +297,7 @@
 					total: eventData.totalSteps,
 					timestamp: now
 				};
-				// Add failure message
-				const failureText = `[${failedStep}/${eventData.totalSteps}] ✗ Failed: ${eventData.description || 'Step'}\n\nError: ${errorMsg}`;
-				addProgressMessage(failureText, 'error');
+				addProgressLine(`[${failedStep}/${eventData.totalSteps}] ✗ Failed: ${eventData.description || 'Step'}\nError: ${errorMsg}`);
 				break;
 
 			case 'thinking':
@@ -299,7 +309,7 @@
 				};
 				// Add thinking message (only if it's substantial)
 				if (eventData.thought && eventData.thought.length > 10) {
-					addProgressMessage(`💭 ${eventData.thought}`, 'info');
+					addProgressLine(`💭 ${eventData.thought}`);
 				}
 				break;
 
@@ -319,7 +329,7 @@
 					message: eventData.error || 'Something went wrong',
 					timestamp: now
 				};
-				addProgressMessage(`❌ Error: ${eventData.error || 'Something went wrong'}`, 'error');
+				addProgressLine(`❌ Error: ${eventData.error || 'Something went wrong'}`);
 				break;
 		}
 	}
@@ -334,6 +344,9 @@
 		isCancelling = false;
 		// Reset progress state for new message
 		currentProgress = { ...INITIAL_PROGRESS_STATE, status: 'thinking' };
+		// Reset progress message tracking
+		progressMessageId = null;
+		progressContent = [];
 
 		// Create AbortController for this request
 		abortController = new AbortController();
@@ -424,17 +437,15 @@
 		if (abortController && !isCancelling) {
 			isCancelling = true;
 			abortController.abort();
-			// Add cancellation message to chat
-			const cancelMsg: AiMessage = {
-				id: `progress-${uuid()}`,
-				userId: '',
-				sessionId: currentSessionId || '',
-				role: 'assistant',
-				content: '⚠️ Execution cancelled by user',
-				createdAt: new Date(),
-				metadata: { isTemporary: true, type: 'warning' }
-			};
-			messages = [...messages, cancelMsg];
+			// Add cancellation to the progress message
+			if (progressMessageId) {
+				progressContent = [...progressContent, '⚠️ Execution cancelled by user'];
+				messages = messages.map((msg) =>
+					msg.id === progressMessageId
+						? { ...msg, content: progressContent.join('\n\n') }
+						: msg
+				);
+			}
 			// Update progress status
 			currentProgress.status = 'error';
 			currentProgress.currentAction = {
