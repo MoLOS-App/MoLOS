@@ -23,6 +23,7 @@
 	let input = $state('');
 	let isLoading = $state(false);
 	let isStreaming = $state(false);
+	let isCancelling = $state(false);
 	let streamEnabled = $state(true);
 	let scrollViewport = $state<HTMLElement | null>(null);
 	let pendingAction = $state<AiAction | null>(null);
@@ -30,6 +31,9 @@
 	let timerInterval = $state<number | null>(null);
 	let isSidebarOpen = $state(false);
 	let showScrollButton = $state(false);
+
+	// AbortController for cancelling requests
+	let abortController: AbortController | null = null;
 
 	// Progress state for agent execution tracking
 	let currentProgress = $state<ProgressState>({ ...INITIAL_PROGRESS_STATE });
@@ -73,7 +77,13 @@
 		pendingAction = null;
 		isLoading = false;
 		isStreaming = false;
+		isCancelling = false;
 		isSidebarOpen = false;
+		// Cancel any ongoing request
+		if (abortController) {
+			abortController.abort();
+			abortController = null;
+		}
 		// Reset progress state
 		currentProgress = { ...INITIAL_PROGRESS_STATE };
 	}
@@ -337,8 +347,12 @@
 		input = '';
 		isLoading = true;
 		isStreaming = false;
+		isCancelling = false;
 		// Reset progress state for new message
 		currentProgress = { ...INITIAL_PROGRESS_STATE, status: 'thinking' };
+
+		// Create AbortController for this request
+		abortController = new AbortController();
 
 		const tempUserMsg: AiMessage = {
 			id: uuid(),
@@ -375,8 +389,14 @@
 					sessionId: currentSessionId,
 					activeModuleIds,
 					stream: streamEnabled
-				})
+				}),
+				signal: abortController.signal
 			});
+
+			// Check if request was aborted
+			if (abortController.signal.aborted) {
+				throw new Error('Request cancelled');
+			}
 
 			const isEventStream =
 				res.headers.get('content-type')?.includes('text/event-stream') ?? streamEnabled;
@@ -401,11 +421,37 @@
 				await loadSessions();
 			}
 		} catch (error) {
-			console.error(error);
+			// Only log error if it's not a cancellation
+			if ((error as Error).name !== 'AbortError' && (error as Error).message !== 'Request cancelled') {
+				console.error(error);
+			}
 		} finally {
 			isLoading = false;
 			isStreaming = false;
+			isCancelling = false;
+			abortController = null;
 			await scrollToBottom();
+		}
+	}
+
+	function cancelExecution() {
+		if (abortController && !isCancelling) {
+			isCancelling = true;
+			abortController.abort();
+			// Add cancellation entry to execution log
+			currentProgress.executionLog.push({
+				id: `cancel-${Date.now()}`,
+				type: 'warning',
+				message: 'Execution cancelled by user',
+				timestamp: Date.now()
+			});
+			// Update progress status
+			currentProgress.status = 'error';
+			currentProgress.currentAction = {
+				type: 'step_failed',
+				message: 'Cancelled',
+				timestamp: Date.now()
+			};
 		}
 	}
 
@@ -540,7 +586,13 @@
 								{/each}
 
 								<!-- Progress Display and Execution Log -->
-								<ProgressDisplay {isLoading} {isStreaming} progress={currentProgress} />
+								<ProgressDisplay
+									{isLoading}
+									{isStreaming}
+									{isCancelling}
+									progress={currentProgress}
+									onCancel={cancelExecution}
+								/>
 								<PlanVisualization
 									executionLog={currentProgress.executionLog}
 									goal={currentProgress.planGoal}
