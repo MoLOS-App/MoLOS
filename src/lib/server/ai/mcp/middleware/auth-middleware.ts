@@ -10,6 +10,7 @@ import { parseApiKeyFromHeader } from '../mcp-utils';
 import { mcpOAuthProvider } from '../oauth';
 import type { MCPContext, ApiKeyValidation, MCPAuthMethod } from '$lib/models/ai/mcp';
 import { scopesToModules } from '../oauth/scope-mapper';
+import { getAllModules } from '$lib/config';
 
 /**
  * Authentication result
@@ -85,6 +86,18 @@ async function authenticateWithApiKey(
 		};
 	}
 
+	// Determine allowed modules - if not set or empty, allow all external modules
+	let allowedModules = validation.apiKey.allowedModules ?? [];
+	console.log('[MCP Auth] Original allowedModules:', allowedModules);
+
+	if (allowedModules.length === 0) {
+		// No restriction = allow all external modules
+		allowedModules = getAllModules()
+			.filter((m) => m.isExternal)
+			.map((m) => m.id);
+		console.log('[MCP Auth] Expanded allowedModules to all external modules:', allowedModules);
+	}
+
 	// Create context
 	const context: MCPContext = {
 		userId: validation.apiKey.userId,
@@ -93,8 +106,10 @@ async function authenticateWithApiKey(
 		oauthClientId: null,
 		sessionId,
 		scopes: [], // API keys don't use OAuth scopes
-		allowedModules: validation.apiKey.allowedModules ?? []
+		allowedModules
 	};
+
+	console.log('[MCP Auth] Created context with allowedModules:', context.allowedModules);
 
 	// Record usage
 	await apiKeyRepo.recordUsage(validation.apiKey.id);
@@ -126,7 +141,14 @@ async function authenticateWithOAuth(authHeader: string | null, sessionId: strin
 		const authInfo = await mcpOAuthProvider.verifyAccessToken(token);
 
 		// Map OAuth scopes to allowed modules
-		const allowedModules = scopesToModules(authInfo.scopes ?? []);
+		let allowedModules = scopesToModules(authInfo.scopes ?? []);
+
+		// If no scopes specified, allow all external modules (full access)
+		if (allowedModules.length === 0) {
+			allowedModules = getAllModules()
+				.filter((m) => m.isExternal)
+				.map((m) => m.id);
+		}
 
 		// Get user ID from token - we need to look up the token to get the userId
 		const { oauthTokenService } = await import('../oauth');

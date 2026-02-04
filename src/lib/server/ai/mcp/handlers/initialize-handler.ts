@@ -48,11 +48,11 @@ export async function handleInitialize(
 
 	const { protocolVersion } = validation.data;
 
-	// Validate protocol version - accept 2025-* (latest spec)
-	// Note: Schema already validates format, but we check the year prefix
-	if (!protocolVersion.startsWith('2025-')) {
+	// Validate protocol version - accept 2024-* and 2025-* spec
+	// Note: Schema already validates format
+	if (!protocolVersion.startsWith('2024-') && !protocolVersion.startsWith('2025-')) {
 		return errors.invalidParams(requestId, {
-			reason: 'Unsupported protocol version. Supported: 2025-*'
+			reason: 'Unsupported protocol version. Supported: 2024-* or 2025-*'
 		});
 	}
 
@@ -61,8 +61,15 @@ export async function handleInitialize(
 	const resourceCounts = await getResourceCountByModule(context);
 	const promptCounts = await getPromptCountByModule(context);
 
+	// Return the highest protocol version we support that's compatible with client's request
+	// If client sends 2024-*, we respond with 2024-11-05
+	// If client sends 2025-*, we respond with 2025-06-18
+	const responseProtocolVersion = protocolVersion.startsWith('2025-')
+		? '2025-06-18'
+		: '2024-11-05';
+
 	const result: InitializeResult = {
-		protocolVersion: '2025-06-18',
+		protocolVersion: responseProtocolVersion,
 		capabilities: {
 			tools: {},
 			resources: {}

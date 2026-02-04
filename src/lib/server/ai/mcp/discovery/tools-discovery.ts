@@ -8,6 +8,7 @@ import { AiToolbox } from '../../toolbox';
 import { toolDefinitionToMCPTool, filterToolsByModules } from '../mcp-utils';
 import type { MCPTool, MCPContext } from '$lib/models/ai/mcp';
 import { mcpCache, CACHE_KEYS } from '../cache/mcp-cache';
+import { getAllModules } from '$lib/config';
 
 /**
  * Get available tools for MCP protocol (with caching)
@@ -15,16 +16,22 @@ import { mcpCache, CACHE_KEYS } from '../cache/mcp-cache';
  * Filters tools by the context's allowed modules.
  */
 export async function getMcpTools(context: MCPContext): Promise<MCPTool[]> {
+	console.log('[MCP Tools] Getting tools for userId:', context.userId, 'allowedModules:', context.allowedModules);
+
 	// Try cache first
 	const cached = mcpCache.get<MCPTool[]>(CACHE_KEYS.TOOLS_LIST, context);
 	if (cached) {
+		console.log('[MCP Tools] Returning cached tools, count:', cached.length);
 		return cached;
 	}
 
 	// Cache miss - fetch from toolbox
 	const toolbox = new AiToolbox();
 	const tools = await toolbox.getTools(context.userId, context.allowedModules);
+	console.log('[MCP Tools] Got tools from toolbox, count:', tools.length);
+
 	const mcpTools = tools.map(toolDefinitionToMCPTool);
+	console.log('[MCP Tools] Tool names:', mcpTools.map((t) => t.name));
 
 	// Store in cache with shorter TTL (1 minute) for faster updates
 	mcpCache.set(CACHE_KEYS.TOOLS_LIST, context, mcpTools, 60); // 1 minute
@@ -57,16 +64,23 @@ export async function listMcpTools(context: MCPContext): Promise<{ tools: MCPToo
 export async function getToolModules(context: MCPContext): Promise<string[]> {
 	const tools = await getMcpTools(context);
 
+	// Get all known module IDs for proper categorization
+	const allModules = getAllModules();
+	const moduleIds = new Set(allModules.map((m) => m.id));
+
 	// Extract unique module IDs from tool names
-	const moduleIds = new Set<string>();
+	const foundModuleIds = new Set<string>();
 	for (const tool of tools) {
-		const parts = tool.name.split('_');
-		if (parts.length >= 2) {
-			moduleIds.add(parts.slice(0, -1).join('_'));
+		// Check if tool starts with a known module ID
+		for (const moduleId of moduleIds) {
+			if (tool.name.startsWith(`${moduleId}_`)) {
+				foundModuleIds.add(moduleId);
+				break;
+			}
 		}
 	}
 
-	return Array.from(moduleIds).sort();
+	return Array.from(foundModuleIds).sort();
 }
 
 /**
@@ -81,11 +95,21 @@ export async function getToolCountByModule(context: MCPContext): Promise<Record<
 
 	const tools = await getMcpTools(context);
 
+	// Get all known module IDs for proper categorization
+	const allModules = getAllModules();
+	const moduleIds = new Set(allModules.map((m) => m.id));
+
 	const counts: Record<string, number> = {};
 
 	for (const tool of tools) {
-		const parts = tool.name.split('_');
-		const moduleId = parts.length >= 2 ? parts.slice(0, -1).join('_') : 'core';
+		// Check if tool starts with a known module ID
+		let moduleId = 'core';
+		for (const mid of moduleIds) {
+			if (tool.name.startsWith(`${mid}_`)) {
+				moduleId = mid;
+				break;
+			}
+		}
 		counts[moduleId] = (counts[moduleId] ?? 0) + 1;
 	}
 
