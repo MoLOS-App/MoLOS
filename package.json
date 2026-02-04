@@ -27,8 +27,7 @@
 		"db:migrate": "drizzle-kit migrate --config drizzle.config.ts",
 		"db:reset": "drizzle-kit reset",
 		"db:studio": "drizzle-kit studio",
-		"podman:build": "podman build -t ghcr.io/molos-app/molos:latest .",
-		"podman:push": "podman push ghcr.io/molos-app/molos:latest"
+		"podman:dev": "podman build -t ghcr.io/molos-app/molos:dev . && podman push ghcr.io/molos-app/molos:dev"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.4.0",
