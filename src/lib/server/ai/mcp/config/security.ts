@@ -18,13 +18,8 @@ function getApiKeySalt(): string {
 	const salt = process.env.MCP_API_KEY_SALT;
 	const isProduction = process.env.NODE_ENV === 'production';
 
-	// No salt set - use default in development, warn in production
+	// No salt set - use default with a warning
 	if (!salt) {
-		if (isProduction) {
-			throw new Error(
-				'MCP_API_KEY_SALT environment variable is required in production. Set it to a secure random string.'
-			);
-		}
 		console.warn(
 			'[MCP Security] MCP_API_KEY_SALT not set. Using development default. This is NOT safe for production!'
 		);
@@ -33,11 +28,6 @@ function getApiKeySalt(): string {
 
 	// Salt contains default placeholder - warn about it
 	if (salt.includes('default') || salt.includes('change-in-production') || salt.includes('dev-')) {
-		if (isProduction) {
-			throw new Error(
-				'MCP_API_KEY_SALT must be set to a secure random string in production. The default value is not safe.'
-			);
-		}
 		console.warn(
 			'[MCP Security] MCP_API_KEY_SALT appears to be a default value. This is NOT safe for production!'
 		);
