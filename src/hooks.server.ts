@@ -117,15 +117,12 @@ const authHandler: Handle = async ({ event, resolve }) => {
 		}
 	}
 
-	// Fetch current session from Better Auth
-	// Skip for OAuth discovery endpoints (must be publicly accessible)
-	const isOAuthDiscovery = pathname.startsWith('/.well-known/') || pathname.includes('/.well-known/');
-
+	// Skip authentication for OAuth discovery endpoints (must be publicly accessible)
 	if (isOAuthDiscovery) {
-		// Don't enforce auth for OAuth discovery endpoints
 		return resolve(event);
 	}
 
+	// Fetch current session from Better Auth
 	const session = await auth.api.getSession({
 		headers: event.request.headers
 	});
