@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { Server, Key, ScrollText, List, Activity } from 'lucide-svelte';
+	import { Server, Key, ScrollText, List, Activity, Shield } from 'lucide-svelte';
 
-	export type TabId = 'dashboard' | 'keys' | 'resources' | 'prompts' | 'logs';
+	export type TabId = 'dashboard' | 'keys' | 'resources' | 'prompts' | 'logs' | 'oauth';
 
 	interface Tab {
 		id: TabId;
@@ -15,6 +15,7 @@
 	const tabs: Tab[] = [
 		{ id: 'dashboard', label: 'Dashboard', icon: Server },
 		{ id: 'keys', label: 'API Keys', icon: Key },
+		{ id: 'oauth', label: 'OAuth Apps', icon: Shield },
 		{ id: 'resources', label: 'Resources', icon: ScrollText },
 		{ id: 'prompts', label: 'Prompts', icon: List },
 		{ id: 'logs', label: 'Activity Logs', icon: Activity }
