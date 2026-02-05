@@ -18,7 +18,10 @@ const TOKEN_CONFIG = {
 	// Access token lifetime (default: 1 hour)
 	accessTokenLifetimeMs: parseInt(process.env.MCP_OAUTH_ACCESS_TOKEN_LIFETIME || '3600000', 10),
 	// Refresh token lifetime (default: 30 days)
-	refreshTokenLifetimeMs: parseInt(process.env.MCP_OAUTH_REFRESH_TOKEN_LIFETIME || '2592000000', 10),
+	refreshTokenLifetimeMs: parseInt(
+		process.env.MCP_OAUTH_REFRESH_TOKEN_LIFETIME || '2592000000',
+		10
+	),
 	// Token entropy (bytes)
 	tokenEntropy: 32
 } as const;
@@ -158,7 +161,7 @@ export class OAuthTokenService {
 					// Not expired (or no expiration set)
 					or(
 						isNull(aiMcpOAuthTokens.expiresAt),
-						eq(aiMcpOAuthTokens.expiresAt, 0),
+						eq(aiMcpOAuthTokens.expiresAt, 0)
 						// Check if expiresAt is in the future
 						// Note: We'll handle the date comparison in the application layer
 					)
@@ -256,7 +259,10 @@ export class OAuthTokenService {
 		const now = new Date();
 
 		// Revoke the refresh token
-		await db.update(aiMcpOAuthTokens).set({ revokedAt: now }).where(eq(aiMcpOAuthTokens.id, refreshTokenId));
+		await db
+			.update(aiMcpOAuthTokens)
+			.set({ revokedAt: now })
+			.where(eq(aiMcpOAuthTokens.id, refreshTokenId));
 
 		// Revoke all access tokens linked to this refresh token
 		const result = await db

@@ -14,7 +14,11 @@
 		duration?: string;
 	}
 
-	let { executionLog, goal, totalSteps }: {
+	let {
+		executionLog,
+		goal,
+		totalSteps
+	}: {
 		executionLog: ExecutionLogEntry[];
 		goal?: string;
 		totalSteps?: number;
@@ -61,13 +65,9 @@
 		return Array.from(steps.values()).sort((a, b) => a.stepNumber - b.stepNumber);
 	});
 
-	const completedCount = $derived(
-		planSteps().filter((s) => s.status === 'completed').length
-	);
+	const completedCount = $derived(planSteps().filter((s) => s.status === 'completed').length);
 	const failedCount = $derived(planSteps().filter((s) => s.status === 'failed').length);
-	const inProgressCount = $derived(
-		planSteps().filter((s) => s.status === 'in_progress').length
-	);
+	const inProgressCount = $derived(planSteps().filter((s) => s.status === 'in_progress').length);
 
 	function getStepIcon(step: PlanStep) {
 		switch (step.status) {
@@ -100,10 +100,8 @@
 {#if planSteps().length > 0}
 	<div class="rounded-xl border border-border/50 bg-muted/20 p-3" in:fade>
 		<div class="mb-3 flex items-center gap-2">
-			<ListChecks class="h-4 w-4 text-muted-foreground" />
-			<span class="text-xs font-semibold uppercase text-muted-foreground">
-				Plan
-			</span>
+			<ListChecks class="text-muted-foreground h-4 w-4" />
+			<span class="text-muted-foreground text-xs font-semibold uppercase"> Plan </span>
 			{#if goal}
 				<span class="text-muted-foreground text-[10px]">· {goal}</span>
 			{/if}
@@ -144,7 +142,7 @@
 		</div>
 
 		<!-- Summary -->
-		<div class="mt-3 flex items-center justify-between text-[10px] text-muted-foreground">
+		<div class="text-muted-foreground mt-3 flex items-center justify-between text-[10px]">
 			<span>
 				{completedCount}/{planSteps().length} completed
 				{#if failedCount > 0}

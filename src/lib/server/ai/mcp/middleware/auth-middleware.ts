@@ -123,7 +123,10 @@ async function authenticateWithApiKey(
 /**
  * Authenticate using OAuth Bearer token
  */
-async function authenticateWithOAuth(authHeader: string | null, sessionId: string): Promise<AuthResult> {
+async function authenticateWithOAuth(
+	authHeader: string | null,
+	sessionId: string
+): Promise<AuthResult> {
 	if (!authHeader || !authHeader.startsWith('Bearer ')) {
 		return {
 			authenticated: false,

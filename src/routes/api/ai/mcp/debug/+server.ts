@@ -6,7 +6,10 @@
 
 import { json } from '@sveltejs/kit';
 import type { RequestEvent } from './$types';
-import { authenticateRequest, extractAuthHeader } from '$lib/server/ai/mcp/middleware/auth-middleware';
+import {
+	authenticateRequest,
+	extractAuthHeader
+} from '$lib/server/ai/mcp/middleware/auth-middleware';
 import { getMcpTools } from '$lib/server/ai/mcp/discovery/tools-discovery';
 import { mcpCache } from '$lib/server/ai/mcp/cache/mcp-cache';
 
@@ -19,10 +22,13 @@ export const GET = async ({ request }: RequestEvent) => {
 	const authHeader = extractAuthHeader(request);
 
 	if (!authHeader) {
-		return json({
-			error: 'No authentication provided',
-			hint: 'Use MOLOS_MCP_API_KEY header'
-		}, { status: 401 });
+		return json(
+			{
+				error: 'No authentication provided',
+				hint: 'Use MOLOS_MCP_API_KEY header'
+			},
+			{ status: 401 }
+		);
 	}
 
 	// Get session ID from URL
@@ -33,10 +39,13 @@ export const GET = async ({ request }: RequestEvent) => {
 	const authResult = await authenticateRequest(authHeader, sessionId);
 
 	if (!authResult.authenticated || !authResult.context) {
-		return json({
-			error: 'Authentication failed',
-			details: authResult.error
-		}, { status: 401 });
+		return json(
+			{
+				error: 'Authentication failed',
+				details: authResult.error
+			},
+			{ status: 401 }
+		);
 	}
 
 	const context = authResult.context;

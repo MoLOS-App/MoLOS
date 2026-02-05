@@ -46,7 +46,9 @@ function hashClientSecret(secret: string): string {
 /**
  * Convert database record to OAuthClientInformationFull
  */
-function dbToOAuthClient(dbClient: typeof aiMcpOAuthClients.$inferSelect): OAuthClientInformationFull {
+function dbToOAuthClient(
+	dbClient: typeof aiMcpOAuthClients.$inferSelect
+): OAuthClientInformationFull {
 	return {
 		client_id: dbClient.id,
 		client_secret: dbClient.clientSecret ?? undefined,
@@ -148,7 +150,10 @@ export class OAuthClientsStore {
 	 */
 	async registerClient(
 		userId: string,
-		metadata: Omit<OAuthClientInformationFull, 'client_id' | 'client_id_issued_at' | 'client_secret' | 'client_secret_expires_at'>
+		metadata: Omit<
+			OAuthClientInformationFull,
+			'client_id' | 'client_id_issued_at' | 'client_secret' | 'client_secret_expires_at'
+		>
 	): Promise<OAuthClientInformationFull> {
 		const clientId = generateClientId();
 		const now = new Date();

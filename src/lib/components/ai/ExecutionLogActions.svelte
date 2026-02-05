@@ -3,7 +3,10 @@
 	import { RotateCcw, Download } from 'lucide-svelte';
 	import type { ProgressState, ExecutionLogEntry } from './progress-types';
 
-	let { progress, onRetry }: {
+	let {
+		progress,
+		onRetry
+	}: {
 		progress: ProgressState;
 		onRetry?: (failedSteps: ExecutionLogEntry[]) => void;
 	} = $props();
@@ -41,7 +44,7 @@
 				timestamp: new Date(entry.timestamp).toISOString(),
 				startTime: entry.startTime ? new Date(entry.startTime).toISOString() : undefined,
 				endTime: entry.endTime ? new Date(entry.endTime).toISOString() : undefined,
-				duration: entry.startTime && entry.endTime ? (entry.endTime - entry.startTime) : undefined,
+				duration: entry.startTime && entry.endTime ? entry.endTime - entry.startTime : undefined,
 				toolName: entry.toolName,
 				parameters: entry.parameters,
 				result: entry.result,
@@ -65,7 +68,8 @@
 {#if showActions}
 	<div class="mt-3 flex items-center justify-between border-t border-border/40 pt-3" in:fade>
 		<div class="text-muted-foreground text-[10px]">
-			{failedSteps().length} {failedSteps().length === 1 ? 'step' : 'steps'} failed
+			{failedSteps().length}
+			{failedSteps().length === 1 ? 'step' : 'steps'} failed
 		</div>
 		<div class="flex items-center gap-2">
 			<!-- Export Button -->

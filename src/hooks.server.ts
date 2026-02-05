@@ -102,7 +102,8 @@ const authHandler: Handle = async ({ event, resolve }) => {
 	const isStaticAsset =
 		pathname.includes('.') || pathname.startsWith('/_app') || pathname.startsWith('/favicon');
 	const isAuthApi = pathname.startsWith('/api/auth');
-	const isOAuthDiscovery = pathname.startsWith('/.well-known/') || pathname.includes('/.well-known/');
+	const isOAuthDiscovery =
+		pathname.startsWith('/.well-known/') || pathname.includes('/.well-known/');
 
 	if (!isStaticAsset && !isAuthApi && !isOAuthDiscovery) {
 		// Check if any users exist in the database

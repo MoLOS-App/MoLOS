@@ -64,7 +64,8 @@ export function getLogEntryIcon(type: ExecutionLogEntry['type']): string {
  * Get CSS classes for log entry based on type
  */
 export function getLogEntryClasses(type: ExecutionLogEntry['type']): string {
-	const baseClasses = 'flex items-start gap-2 rounded-lg px-2 py-1.5 text-xs transition-colors hover:bg-muted/40';
+	const baseClasses =
+		'flex items-start gap-2 rounded-lg px-2 py-1.5 text-xs transition-colors hover:bg-muted/40';
 
 	switch (type) {
 		case 'error':
