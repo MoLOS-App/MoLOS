@@ -57,7 +57,9 @@ export class SelfReflector {
 		}
 
 		// Check if plan is complete
-		const remainingSteps = plan.steps.filter((s) => s.status === 'pending' || s.status === 'in_progress');
+		const remainingSteps = plan.steps.filter(
+			(s) => s.status === 'pending' || s.status === 'in_progress'
+		);
 		const isComplete = remainingSteps.length === 0;
 
 		return {
@@ -87,7 +89,11 @@ export class SelfReflector {
 	/**
 	 * Build reflection prompt
 	 */
-	private buildReflectionPrompt(step: PlanStep, result: ToolExecutionResult, plan: ExecutionPlan): string {
+	private buildReflectionPrompt(
+		step: PlanStep,
+		result: ToolExecutionResult,
+		plan: ExecutionPlan
+	): string {
 		return `You are The Architect, reflecting on your actions.
 
 Plan Goal: ${plan.goal}
@@ -98,10 +104,12 @@ Result: ${JSON.stringify(result.result)}
 ${result.error ? `Error: ${result.error}` : ''}
 
 Remaining Steps:
-${plan.steps
-	.filter((s) => s.status === 'pending')
-	.map((s) => `- ${s.description}`)
-	.join('\n') || '(none)'}
+${
+	plan.steps
+		.filter((s) => s.status === 'pending')
+		.map((s) => `- ${s.description}`)
+		.join('\n') || '(none)'
+}
 
 Analyze this situation and respond in JSON format:
 {

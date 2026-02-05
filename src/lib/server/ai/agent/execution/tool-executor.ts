@@ -3,10 +3,7 @@
  * Handles tool validation, caching, and execution
  */
 
-import type {
-	ToolCall,
-	ToolExecutionResult
-} from '../core/agent-types';
+import type { ToolCall, ToolExecutionResult } from '../core/agent-types';
 import type { ToolDefinition } from '$lib/models/ai';
 import {
 	validateToolParams,
@@ -42,7 +39,12 @@ export class ToolExecutor {
 		// Validate parameters
 		const validation = validateToolParams(tool, call.parameters);
 		if (!validation.ok) {
-			console.error('[ToolExecutor] Parameter validation failed for tool:', tool.name, 'missing:', validation.missing);
+			console.error(
+				'[ToolExecutor] Parameter validation failed for tool:',
+				tool.name,
+				'missing:',
+				validation.missing
+			);
 			return {
 				success: false,
 				result: { error: 'Missing required parameters', missing: validation.missing },
@@ -84,7 +86,14 @@ export class ToolExecutor {
 			};
 		} catch (error) {
 			const errorMsg = error instanceof Error ? error.message : String(error);
-			console.error('[ToolExecutor] Tool execution failed for:', tool.name, 'error:', errorMsg, 'full error:', error);
+			console.error(
+				'[ToolExecutor] Tool execution failed for:',
+				tool.name,
+				'error:',
+				errorMsg,
+				'full error:',
+				error
+			);
 			return {
 				success: false,
 				result: { error: 'Tool execution failed' },

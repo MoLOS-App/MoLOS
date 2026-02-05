@@ -46,10 +46,7 @@ export class LlmClient {
 	/**
 	 * Call the LLM with messages and tools
 	 */
-	async call(
-		messages: LlmMessage[],
-		tools?: ToolDefinition[]
-	): Promise<LlmResponse> {
+	async call(messages: LlmMessage[], tools?: ToolDefinition[]): Promise<LlmResponse> {
 		const { provider, apiKey, modelName, baseUrl } = this.settings;
 
 		switch (provider) {
@@ -79,7 +76,8 @@ export class LlmClient {
 		const body: Record<string, unknown> = {
 			model: this.settings.modelName,
 			max_tokens: this.settings.maxTokens || 4096,
-			temperature: this.settings.temperature !== undefined ? this.settings.temperature / 100 : undefined,
+			temperature:
+				this.settings.temperature !== undefined ? this.settings.temperature / 100 : undefined,
 			top_p: this.settings.topP !== undefined ? this.settings.topP / 100 : undefined,
 			system: systemMessage?.content as string | undefined,
 			messages: userMessages.map((m) => this.formatMessageForAnthropic(m))
@@ -94,10 +92,14 @@ export class LlmClient {
 			}));
 		}
 
-		const response = await this.fetchWithRetry(endpoint, {
-			'x-api-key': this.settings.apiKey!,
-			'anthropic-version': '2023-06-01'
-		}, body);
+		const response = await this.fetchWithRetry(
+			endpoint,
+			{
+				'x-api-key': this.settings.apiKey!,
+				'anthropic-version': '2023-06-01'
+			},
+			body
+		);
 
 		return this.parseAnthropicResponse(response);
 	}
@@ -122,7 +124,7 @@ export class LlmClient {
 		}
 
 		const headers: Record<string, string> = {
-			'Authorization': `Bearer ${this.settings.apiKey}`
+			Authorization: `Bearer ${this.settings.apiKey}`
 		};
 
 		if (provider === 'openrouter') {
@@ -132,7 +134,8 @@ export class LlmClient {
 
 		const body: Record<string, unknown> = {
 			model: this.settings.modelName,
-			temperature: this.settings.temperature !== undefined ? this.settings.temperature / 100 : undefined,
+			temperature:
+				this.settings.temperature !== undefined ? this.settings.temperature / 100 : undefined,
 			top_p: this.settings.topP !== undefined ? this.settings.topP / 100 : undefined,
 			max_tokens: this.settings.maxTokens || undefined,
 			messages: messages.map((m) => ({
@@ -255,7 +258,7 @@ export class LlmClient {
 
 		if (message.role === 'assistant' && message.toolCalls) {
 			msg.content = [
-				{ type: 'text', text: message.content as string || '' },
+				{ type: 'text', text: (message.content as string) || '' },
 				...(message.toolCalls as any[]).map((tc) => {
 					let input = tc.function.arguments;
 					if (typeof input === 'string') {
@@ -310,16 +313,17 @@ export class LlmClient {
 		return {
 			content: text,
 			toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
-			rawToolCalls: toolCalls.length > 0
-				? toolCalls.map((tc) => ({
-						id: tc.id,
-						type: 'function',
-						function: {
-							name: tc.name,
-							arguments: JSON.stringify(tc.parameters)
-						}
-					}))
-				: undefined
+			rawToolCalls:
+				toolCalls.length > 0
+					? toolCalls.map((tc) => ({
+							id: tc.id,
+							type: 'function',
+							function: {
+								name: tc.name,
+								arguments: JSON.stringify(tc.parameters)
+							}
+						}))
+					: undefined
 		};
 	}
 
@@ -340,7 +344,8 @@ export class LlmClient {
 				let parameters = {};
 
 				try {
-					parameters = typeof func.arguments === 'string' ? JSON.parse(func.arguments) : func.arguments;
+					parameters =
+						typeof func.arguments === 'string' ? JSON.parse(func.arguments) : func.arguments;
 				} catch {
 					// keep as is
 				}
@@ -386,10 +391,7 @@ export class LlmClient {
 	 * Get backoff delay
 	 */
 	private getBackoffDelay(attempt: number): number {
-		const delay = Math.min(
-			this.runtime.retryMaxDelayMs,
-			this.runtime.retryBaseMs * 2 ** attempt
-		);
+		const delay = Math.min(this.runtime.retryMaxDelayMs, this.runtime.retryBaseMs * 2 ** attempt);
 		const jitter = Math.floor(delay * 0.2 * Math.random());
 		return delay + jitter;
 	}

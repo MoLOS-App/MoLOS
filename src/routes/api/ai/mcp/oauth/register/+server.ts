@@ -65,7 +65,11 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 				return error(400, `Invalid redirect_uri protocol: ${url.protocol}`);
 			}
 			// For http, require localhost
-			if (url.protocol === 'http:' && url.hostname !== 'localhost' && url.hostname !== '127.0.0.1') {
+			if (
+				url.protocol === 'http:' &&
+				url.hostname !== 'localhost' &&
+				url.hostname !== '127.0.0.1'
+			) {
 				return error(400, 'HTTP redirect_uris only allowed for localhost');
 			}
 			validRedirectUris.push(url);
@@ -99,13 +103,15 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const clientMetadata = {
 		redirect_uris: validRedirectUris,
 		token_endpoint_auth_method: token_endpoint_auth_method as string,
-		grant_types: Array.isArray(grant_types) ? grant_types as string[] : ['authorization_code', 'refresh_token'],
-		response_types: Array.isArray(response_types) ? response_types as string[] : ['code'],
+		grant_types: Array.isArray(grant_types)
+			? (grant_types as string[])
+			: ['authorization_code', 'refresh_token'],
+		response_types: Array.isArray(response_types) ? (response_types as string[]) : ['code'],
 		client_name: client_name ? String(client_name) : 'Unnamed Client',
 		client_uri: client_uri ? new URL(client_uri as string) : undefined,
 		logo_uri: validLogoUri,
 		scope: scope ? String(scope) : undefined,
-		contacts: Array.isArray(contacts) ? contacts as string[] : undefined,
+		contacts: Array.isArray(contacts) ? (contacts as string[]) : undefined,
 		tos_uri: tos_uri ? String(tos_uri) : undefined,
 		policy_uri: policy_uri ? String(policy_uri) : undefined,
 		software_id: software_id ? String(software_id) : undefined,

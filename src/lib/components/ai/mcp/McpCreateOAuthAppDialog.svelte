@@ -128,7 +128,7 @@
 			<!-- Show Created App Credentials -->
 			<DialogHeader>
 				<DialogTitle class="flex items-center gap-2">
-					<Shield class="h-5 w-5 text-success" />
+					<Shield class="text-success h-5 w-5" />
 					App Registered Successfully
 				</DialogTitle>
 			</DialogHeader>
@@ -143,7 +143,7 @@
 						<div>
 							<Label class="text-xs">Client ID</Label>
 							<div class="mt-1 flex items-center gap-2">
-								<code class="bg-background flex-1 rounded border px-3 py-2 text-sm">
+								<code class="flex-1 rounded border bg-background px-3 py-2 text-sm">
 									{createdApp.client_id}
 								</code>
 								<Button
@@ -160,14 +160,10 @@
 							<div>
 								<Label class="text-xs">Client Secret</Label>
 								<div class="mt-1 flex items-center gap-2">
-									<code class="bg-background flex-1 rounded border px-3 py-2 text-sm">
+									<code class="flex-1 rounded border bg-background px-3 py-2 text-sm">
 										{showSecret ? createdApp.client_secret : '••••••••••••••••'}
 									</code>
-									<Button
-										variant="outline"
-										size="sm"
-										onclick={() => (showSecret = !showSecret)}
-									>
+									<Button variant="outline" size="sm" onclick={() => (showSecret = !showSecret)}>
 										{showSecret ? 'Hide' : 'Show'}
 									</Button>
 									<Button
@@ -184,17 +180,13 @@
 				</div>
 
 				<div class="rounded-lg bg-muted p-4">
-					<h4 class="mb-2 font-semibold text-sm">Authorization Endpoint</h4>
-					<code class="text-muted-foreground text-xs">
-						GET /api/ai/mcp/oauth/authorize
-					</code>
+					<h4 class="mb-2 text-sm font-semibold">Authorization Endpoint</h4>
+					<code class="text-muted-foreground text-xs"> GET /api/ai/mcp/oauth/authorize </code>
 				</div>
 
 				<div class="rounded-lg bg-muted p-4">
-					<h4 class="mb-2 font-semibold text-sm">Token Endpoint</h4>
-					<code class="text-muted-foreground text-xs">
-						POST /api/ai/mcp/oauth/token
-					</code>
+					<h4 class="mb-2 text-sm font-semibold">Token Endpoint</h4>
+					<code class="text-muted-foreground text-xs"> POST /api/ai/mcp/oauth/token </code>
 				</div>
 			</div>
 
@@ -220,12 +212,7 @@
 				<!-- Name -->
 				<div class="space-y-2">
 					<Label for="name">Application Name *</Label>
-					<Input
-						id="name"
-						bind:value={formData.name}
-						placeholder="My MCP Client"
-						maxlength="100"
-					/>
+					<Input id="name" bind:value={formData.name} placeholder="My MCP Client" maxlength="100" />
 				</div>
 
 				<!-- Redirect URIs -->
@@ -299,7 +286,7 @@
 					<select
 						id="authMethod"
 						bind:value={formData.tokenEndpointAuthMethod}
-						class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+						class="border-input focus-visible:ring-ring flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:ring-2 focus-visible:outline-none"
 					>
 						<option value="none">None (Public Client with PKCE)</option>
 						<option value="client_secret_basic">Client Secret (Confidential)</option>
@@ -308,7 +295,8 @@
 						{#if formData.tokenEndpointAuthMethod === 'none'}
 							Public clients use PKCE for secure token exchange. Recommended for mobile/spa apps.
 						{:else}
-							Confidential clients use a client secret for authentication. Recommended for server-side apps.
+							Confidential clients use a client secret for authentication. Recommended for
+							server-side apps.
 						{/if}
 					</p>
 				</div>

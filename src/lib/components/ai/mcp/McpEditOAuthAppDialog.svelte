@@ -23,10 +23,13 @@
 		onOpenChange: (open: boolean) => void;
 		availableScopes: string[];
 		app: OAuthApp | null;
-		onUpdate: (clientId: string, updates: {
-			name: string;
-			scopes: string[];
-		}) => void | Promise<void>;
+		onUpdate: (
+			clientId: string,
+			updates: {
+				name: string;
+				scopes: string[];
+			}
+		) => void | Promise<void>;
 	} = $props();
 
 	let formData = $state({
@@ -110,23 +113,16 @@
 				<!-- Client ID (read-only) -->
 				<div class="space-y-2">
 					<Label>Client ID</Label>
-					<code class="text-muted-foreground block break-all rounded bg-muted px-3 py-2 text-sm">
+					<code class="text-muted-foreground block rounded bg-muted px-3 py-2 text-sm break-all">
 						{app.client_id}
 					</code>
-					<p class="text-muted-foreground text-sm">
-						Client ID cannot be changed
-					</p>
+					<p class="text-muted-foreground text-sm">Client ID cannot be changed</p>
 				</div>
 
 				<!-- Name -->
 				<div class="space-y-2">
 					<Label for="name">Application Name *</Label>
-					<Input
-						id="name"
-						bind:value={formData.name}
-						placeholder="My MCP Client"
-						maxlength="100"
-					/>
+					<Input id="name" bind:value={formData.name} placeholder="My MCP Client" maxlength="100" />
 				</div>
 
 				<!-- Scopes -->
@@ -156,8 +152,8 @@
 				<div class="space-y-2">
 					<Label>Redirect URIs</Label>
 					<p class="text-muted-foreground text-sm">
-						{#each (app.redirect_uris || []) as uri}
-							<code class="block break-all rounded bg-muted px-3 py-2 text-xs">
+						{#each app.redirect_uris || [] as uri}
+							<code class="block rounded bg-muted px-3 py-2 text-xs break-all">
 								{uri}
 							</code>
 						{/each}

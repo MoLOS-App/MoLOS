@@ -38,7 +38,11 @@ export class ResponseBuilder {
 				type: a.type as 'read' | 'write',
 				entity: a.entity,
 				description: a.description,
-				status: (a.status === 'executed' ? 'executed' : a.status === 'pending' ? 'pending' : 'failed') as 'pending' | 'confirmed' | 'executed' | 'failed',
+				status: (a.status === 'executed'
+					? 'executed'
+					: a.status === 'pending'
+						? 'pending'
+						: 'failed') as 'pending' | 'confirmed' | 'executed' | 'failed',
 				data: a.data
 			}));
 
@@ -106,7 +110,10 @@ export class ResponseBuilder {
 	/**
 	 * Summarize completed actions
 	 */
-	private summarizeActions(completedActions: InternalAgentAction[], pendingActions: InternalAgentAction[]): string {
+	private summarizeActions(
+		completedActions: InternalAgentAction[],
+		pendingActions: InternalAgentAction[]
+	): string {
 		if (pendingActions.length === 0) {
 			// All actions completed
 			if (completedActions.length === 1) {
@@ -136,7 +143,11 @@ export class ResponseBuilder {
 		const lower = description.toLowerCase();
 
 		// Already past tense
-		if (lower.startsWith('completed ') || lower.startsWith('finished ') || lower.startsWith('done ')) {
+		if (
+			lower.startsWith('completed ') ||
+			lower.startsWith('finished ') ||
+			lower.startsWith('done ')
+		) {
 			return description;
 		}
 

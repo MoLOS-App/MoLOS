@@ -16,7 +16,12 @@ import { getAllModules } from '$lib/config';
  * Filters tools by the context's allowed modules.
  */
 export async function getMcpTools(context: MCPContext): Promise<MCPTool[]> {
-	console.log('[MCP Tools] Getting tools for userId:', context.userId, 'allowedModules:', context.allowedModules);
+	console.log(
+		'[MCP Tools] Getting tools for userId:',
+		context.userId,
+		'allowedModules:',
+		context.allowedModules
+	);
 
 	// Try cache first
 	const cached = mcpCache.get<MCPTool[]>(CACHE_KEYS.TOOLS_LIST, context);
@@ -31,7 +36,10 @@ export async function getMcpTools(context: MCPContext): Promise<MCPTool[]> {
 	console.log('[MCP Tools] Got tools from toolbox, count:', tools.length);
 
 	const mcpTools = tools.map(toolDefinitionToMCPTool);
-	console.log('[MCP Tools] Tool names:', mcpTools.map((t) => t.name));
+	console.log(
+		'[MCP Tools] Tool names:',
+		mcpTools.map((t) => t.name)
+	);
 
 	// Store in cache with shorter TTL (1 minute) for faster updates
 	mcpCache.set(CACHE_KEYS.TOOLS_LIST, context, mcpTools, 60); // 1 minute
