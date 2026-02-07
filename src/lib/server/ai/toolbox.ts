@@ -22,7 +22,12 @@ export class AiToolbox {
 	 * This includes core tools and tools from active external modules.
 	 */
 	async getTools(userId: string, activeModuleIds: string[] = []): Promise<ToolDefinition[]> {
-		console.log('[AiToolbox] getTools called with userId:', userId, 'activeModuleIds:', activeModuleIds);
+		console.log(
+			'[AiToolbox] getTools called with userId:',
+			userId,
+			'activeModuleIds:',
+			activeModuleIds
+		);
 		const cacheKey = `${userId}:${[...activeModuleIds].sort().join(',') || 'core'}`;
 		const cached = toolCache.get(cacheKey);
 		if (cached) {

@@ -32,18 +32,25 @@ export class PlanGenerator {
 	 */
 	private buildPlanningPrompt(userRequest: string, availableTools: ToolDefinition[]): string {
 		// Format tools with their parameter schemas
-		const toolsInfo = availableTools.map((tool) => {
-			const params = tool.parameters?.properties
-				? Object.entries(tool.parameters.properties)
-						.map(([name, schema]: [string, any]) => {
-							const required = (tool.parameters?.required || []).includes(name) ? ' (required)' : ' (optional)';
-							const typeInfo = schema.type === 'array' ? `array of ${schema.items?.type || 'objects'}` : schema.type || 'any';
-							return `  - ${name}${required}: ${typeInfo}${schema.description ? ` - ${schema.description}` : ''}`;
-						})
-						.join('\n')
-				: '  (no parameters)';
-			return `${tool.name}:\n${params}`;
-		}).join('\n\n');
+		const toolsInfo = availableTools
+			.map((tool) => {
+				const params = tool.parameters?.properties
+					? Object.entries(tool.parameters.properties)
+							.map(([name, schema]: [string, any]) => {
+								const required = (tool.parameters?.required || []).includes(name)
+									? ' (required)'
+									: ' (optional)';
+								const typeInfo =
+									schema.type === 'array'
+										? `array of ${schema.items?.type || 'objects'}`
+										: schema.type || 'any';
+								return `  - ${name}${required}: ${typeInfo}${schema.description ? ` - ${schema.description}` : ''}`;
+							})
+							.join('\n')
+					: '  (no parameters)';
+				return `${tool.name}:\n${params}`;
+			})
+			.join('\n\n');
 
 		return `You are The Architect, an autonomous AI assistant. Your job is to break down the user's request into a clear, step-by-step execution plan.
 
@@ -156,7 +163,13 @@ Keep plans focused and actionable. 1-3 steps is ideal for most requests. Only us
 	private createFallbackPlan(userRequest: string): ExecutionPlan {
 		// Simple heuristic: if short and doesn't look like a task, skip steps
 		const trimmed = userRequest.toLowerCase().trim();
-		const isSimple = trimmed.length < 50 && !trimmed.includes('create') && !trimmed.includes('help') && !trimmed.includes('need') && !trimmed.includes('list') && !trimmed.includes('show');
+		const isSimple =
+			trimmed.length < 50 &&
+			!trimmed.includes('create') &&
+			!trimmed.includes('help') &&
+			!trimmed.includes('need') &&
+			!trimmed.includes('list') &&
+			!trimmed.includes('show');
 
 		if (isSimple) {
 			return {
@@ -187,7 +200,10 @@ Keep plans focused and actionable. 1-3 steps is ideal for most requests. Only us
 	/**
 	 * Create a simple plan for quick tasks
 	 */
-	createQuickPlan(description: string, steps: Array<{ description: string; toolName?: string }>): ExecutionPlan {
+	createQuickPlan(
+		description: string,
+		steps: Array<{ description: string; toolName?: string }>
+	): ExecutionPlan {
 		return {
 			id: uuid(),
 			goal: description,

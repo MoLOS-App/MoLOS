@@ -17,7 +17,7 @@ export const MCP_OAUTH_SCOPES = {
 	ALL: 'mcp:all',
 	ANALYTICS: 'mcp:analytics',
 	TASKS: 'mcp:tasks',
-	NOTES: 'mcp:notes',
+	NOTES: 'mcp:notes'
 	// Add more module-specific scopes as needed
 } as const;
 

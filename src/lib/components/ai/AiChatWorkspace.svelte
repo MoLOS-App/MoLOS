@@ -173,7 +173,14 @@
 				if (payload === '[DONE]') {
 					return;
 				}
-				let data: { type?: string; content?: string; message?: string; eventType?: string; timestamp?: number; data?: any } & {
+				let data: {
+					type?: string;
+					content?: string;
+					message?: string;
+					eventType?: string;
+					timestamp?: number;
+					data?: any;
+				} & {
 					sessionId?: string;
 					actions?: AiAction[];
 					progressEvents?: any[];
@@ -211,7 +218,7 @@
 			progressLog = [...progressLog, content];
 			// Update the assistant message metadata with the progress log
 			if (currentAssistantMessageId) {
-				messages = messages.map(msg =>
+				messages = messages.map((msg) =>
 					msg.id === currentAssistantMessageId
 						? { ...msg, metadata: { ...msg.metadata, progressLog } }
 						: msg
@@ -243,7 +250,9 @@
 					total: eventData.totalSteps,
 					timestamp: now
 				};
-				addProgressLine(`[${eventData.stepNumber}/${eventData.totalSteps}] ▸ ${eventData.description || 'Working...'}`);
+				addProgressLine(
+					`[${eventData.stepNumber}/${eventData.totalSteps}] ▸ ${eventData.description || 'Working...'}`
+				);
 				break;
 
 			case 'step_complete':
@@ -257,7 +266,9 @@
 					total: eventData.totalSteps,
 					timestamp: now
 				};
-				addProgressLine(`[${stepNumber}/${eventData.totalSteps}] ✓ ${eventData.description || 'Completed'}`);
+				addProgressLine(
+					`[${stepNumber}/${eventData.totalSteps}] ✓ ${eventData.description || 'Completed'}`
+				);
 				break;
 
 			case 'step_failed':
@@ -271,7 +282,9 @@
 					total: eventData.totalSteps,
 					timestamp: now
 				};
-				addProgressLine(`[${failedStep}/${eventData.totalSteps}] ✗ Failed: ${eventData.description || 'Step'}\nError: ${errorMsg}`);
+				addProgressLine(
+					`[${failedStep}/${eventData.totalSteps}] ✗ Failed: ${eventData.description || 'Step'}\nError: ${errorMsg}`
+				);
 				break;
 
 			case 'thinking':
@@ -382,9 +395,9 @@
 				if (currentSessionId) {
 					await loadMessages(currentSessionId);
 					// Re-attach progress log to the last assistant message
-					const lastAssistantMsg = [...messages].reverse().find(m => m.role === 'assistant');
+					const lastAssistantMsg = [...messages].reverse().find((m) => m.role === 'assistant');
 					if (lastAssistantMsg && savedProgressLog.length > 0) {
-						messages = messages.map(m =>
+						messages = messages.map((m) =>
 							m.id === lastAssistantMsg.id
 								? { ...m, metadata: { ...m.metadata, progressLog: savedProgressLog } }
 								: m
@@ -406,7 +419,10 @@
 			}
 		} catch (error) {
 			// Only log error if it's not a cancellation
-			if ((error as Error).name !== 'AbortError' && (error as Error).message !== 'Request cancelled') {
+			if (
+				(error as Error).name !== 'AbortError' &&
+				(error as Error).message !== 'Request cancelled'
+			) {
 				console.error(error);
 			}
 		} finally {

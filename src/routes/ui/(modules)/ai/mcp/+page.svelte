@@ -539,10 +539,13 @@
 		}
 	}
 
-	async function updateOAuthApp(clientId: string, updates: {
-		name: string;
-		scopes: string[];
-	}) {
+	async function updateOAuthApp(
+		clientId: string,
+		updates: {
+			name: string;
+			scopes: string[];
+		}
+	) {
 		const response = await fetch(`/api/ai/mcp/oauth/apps/${clientId}`, {
 			method: 'PATCH',
 			headers: { 'Content-Type': 'application/json' },

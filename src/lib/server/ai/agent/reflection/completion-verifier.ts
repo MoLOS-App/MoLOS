@@ -25,7 +25,9 @@ export class CompletionVerifier {
 		const completedSteps = plan.steps.filter((s) => s.status === 'completed').length;
 		const failedSteps = plan.steps.filter((s) => s.status === 'failed').length;
 		const skippedSteps = plan.steps.filter((s) => s.status === 'skipped').length;
-		const pendingSteps = plan.steps.filter((s) => s.status === 'pending' || s.status === 'in_progress').length;
+		const pendingSteps = plan.steps.filter(
+			(s) => s.status === 'pending' || s.status === 'in_progress'
+		).length;
 
 		// Plan is complete if no pending steps
 		const isComplete = pendingSteps === 0;
@@ -69,7 +71,10 @@ export class CompletionVerifier {
 		return {
 			isComplete: false,
 			reason: 'No message or actions to return - should generate summary',
-			suggestions: ['Generate a summary of what was accomplished', 'Report on the status of the plan']
+			suggestions: [
+				'Generate a summary of what was accomplished',
+				'Report on the status of the plan'
+			]
 		};
 	}
 
@@ -95,11 +100,18 @@ export class CompletionVerifier {
 			return {
 				isComplete: false,
 				reason: 'No progress made after multiple iterations',
-				suggestions: ['Check if tools are working', 'Try a different approach', 'Ask user for clarification']
+				suggestions: [
+					'Check if tools are working',
+					'Try a different approach',
+					'Ask user for clarification'
+				]
 			};
 		}
 
-		return { isComplete: true, reason: `Progress: ${completedSteps} steps, ${actionsTaken} actions` };
+		return {
+			isComplete: true,
+			reason: `Progress: ${completedSteps} steps, ${actionsTaken} actions`
+		};
 	}
 
 	/**
@@ -134,7 +146,9 @@ export class CompletionVerifier {
 	private generateSuggestions(plan: ExecutionPlan): string[] {
 		const suggestions: string[] = [];
 
-		const pendingSteps = plan.steps.filter((s) => s.status === 'pending' || s.status === 'in_progress');
+		const pendingSteps = plan.steps.filter(
+			(s) => s.status === 'pending' || s.status === 'in_progress'
+		);
 		const failedSteps = plan.steps.filter((s) => s.status === 'failed');
 
 		if (failedSteps.length > 0) {
@@ -142,7 +156,9 @@ export class CompletionVerifier {
 		}
 
 		if (pendingSteps.length > 0) {
-			suggestions.push(`Continue with pending steps: ${pendingSteps.map((s) => s.description).join(', ')}`);
+			suggestions.push(
+				`Continue with pending steps: ${pendingSteps.map((s) => s.description).join(', ')}`
+			);
 		}
 
 		// Check for stuck patterns

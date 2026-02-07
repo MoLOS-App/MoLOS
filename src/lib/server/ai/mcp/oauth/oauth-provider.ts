@@ -5,8 +5,15 @@
  * This provider handles authorization, token exchange, and token verification.
  */
 
-import type { OAuthServerProvider, AuthorizationParams } from '@modelcontextprotocol/sdk/server/auth/provider';
-import type { OAuthClientInformationFull, OAuthTokens, OAuthTokenRevocationRequest } from '@modelcontextprotocol/sdk/shared/auth';
+import type {
+	OAuthServerProvider,
+	AuthorizationParams
+} from '@modelcontextprotocol/sdk/server/auth/provider';
+import type {
+	OAuthClientInformationFull,
+	OAuthTokens,
+	OAuthTokenRevocationRequest
+} from '@modelcontextprotocol/sdk/shared/auth';
 import type { AuthInfo } from '@modelcontextprotocol/sdk/server/auth/types';
 import type { Response } from 'express';
 import { oauthTokenService } from './token-service';
@@ -31,7 +38,11 @@ export class McpOAuthProvider implements OAuthServerProvider {
 	 * and handle the user's approval. For this implementation, we'll redirect
 	 * to a consent page in the MoLOS UI.
 	 */
-	async authorize(client: OAuthClientInformationFull, params: AuthorizationParams, res: Response): Promise<void> {
+	async authorize(
+		client: OAuthClientInformationFull,
+		params: AuthorizationParams,
+		res: Response
+	): Promise<void> {
 		// This is typically called from the MCP SDK's authorization handler
 		// For a web-based flow, we would:
 		// 1. Store the authorization request in session/cache
@@ -43,7 +54,9 @@ export class McpOAuthProvider implements OAuthServerProvider {
 
 		// The actual implementation will be in the API route handler
 		// This method is here for SDK compatibility
-		throw new Error('Authorization should be handled via API route. See /api/ai/mcp/oauth/authorize');
+		throw new Error(
+			'Authorization should be handled via API route. See /api/ai/mcp/oauth/authorize'
+		);
 	}
 
 	/**
@@ -195,7 +208,10 @@ export class McpOAuthProvider implements OAuthServerProvider {
 	/**
 	 * Revoke an access or refresh token
 	 */
-	async revokeToken(client: OAuthClientInformationFull, request: OAuthTokenRevocationRequest): Promise<void> {
+	async revokeToken(
+		client: OAuthClientInformationFull,
+		request: OAuthTokenRevocationRequest
+	): Promise<void> {
 		// Verify the token belongs to this client before revoking
 		const tokenInfo = await oauthTokenService.verifyToken(request.token);
 

@@ -3,7 +3,16 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Badge } from '$lib/components/ui/badge';
-	import { Shield, Search, Plus, Trash2, HelpCircle, Copy, ExternalLink, Pencil } from 'lucide-svelte';
+	import {
+		Shield,
+		Search,
+		Plus,
+		Trash2,
+		HelpCircle,
+		Copy,
+		ExternalLink,
+		Pencil
+	} from 'lucide-svelte';
 	import { Empty, EmptyMedia, EmptyTitle, EmptyContent } from '$lib/components/ui/empty';
 
 	export interface OAuthApp {
@@ -66,7 +75,10 @@
 		if (hasAll) {
 			return { class: 'bg-warning/10 text-warning', label: 'Full Access' };
 		}
-		return { class: 'bg-info/10 text-info', label: `${scopes.length} scope${scopes.length > 1 ? 's' : ''}` };
+		return {
+			class: 'bg-info/10 text-info',
+			label: `${scopes.length} scope${scopes.length > 1 ? 's' : ''}`
+		};
 	}
 </script>
 
@@ -161,12 +173,12 @@
 						</thead>
 						<tbody class="divide-y divide-border">
 							{#each filteredApps as app}
-								<tr class="hover:bg-muted/50 transition-colors">
+								<tr class="transition-colors hover:bg-muted/50">
 									<!-- Name -->
 									<td class="px-6 py-4">
 										<div class="flex items-center gap-3">
 											<div
-												class="bg-primary/10 text-primary flex h-10 w-10 items-center justify-center rounded-lg font-semibold"
+												class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 font-semibold text-primary"
 											>
 												{(app.name || 'App').slice(0, 2).toUpperCase()}
 											</div>
@@ -179,7 +191,7 @@
 									<!-- Client ID -->
 									<td class="px-6 py-4">
 										<code
-											class="text-muted-foreground break-all rounded bg-muted px-2 py-1 text-xs"
+											class="text-muted-foreground rounded bg-muted px-2 py-1 text-xs break-all"
 										>
 											{app.client_id}
 										</code>
@@ -260,7 +272,7 @@
 													variant="ghost"
 													size="icon"
 													onclick={() => onDeleteApp(app.client_id)}
-													class="text-destructive hover:text-destructive h-8 w-8"
+													class="h-8 w-8 text-destructive hover:text-destructive"
 													title="Delete app"
 												>
 													<Trash2 class="h-4 w-4" />
