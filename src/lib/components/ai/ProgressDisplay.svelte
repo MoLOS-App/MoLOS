@@ -4,7 +4,13 @@
 	import type { ProgressState } from './progress-types';
 	import { getStatusText } from './progress-types';
 
-	let { isLoading = false, isStreaming = false, isCancelling = false, progress, onCancel }: {
+	let {
+		isLoading = false,
+		isStreaming = false,
+		isCancelling = false,
+		progress,
+		onCancel
+	}: {
 		isLoading?: boolean;
 		isStreaming?: boolean;
 		isCancelling?: boolean;
@@ -14,11 +20,10 @@
 
 	// Show cancel button only during active execution
 	const canCancel = $derived(
-		!isCancelling && (
-			progress.status === 'thinking' ||
-			progress.status === 'planning' ||
-			progress.status === 'executing'
-		)
+		!isCancelling &&
+			(progress.status === 'thinking' ||
+				progress.status === 'planning' ||
+				progress.status === 'executing')
 	);
 
 	const showCancelButton = $derived(isLoading && canCancel);
@@ -64,13 +69,17 @@
 
 		<!-- Current Action (prominently displayed) -->
 		{#if progress.currentAction && progress.currentAction.type !== 'thinking'}
-			<div class="flex items-center gap-3 text-sm text-muted-foreground" in:fade>
-				<div class="h-2 w-2 animate-pulse rounded-full bg-primary" class:bg-destructive={isCancelling}></div>
+			<div class="text-muted-foreground flex items-center gap-3 text-sm" in:fade>
+				<div
+					class="h-2 w-2 animate-pulse rounded-full bg-primary"
+					class:bg-destructive={isCancelling}
+				></div>
 				<span>
 					{#if isCancelling}
 						Cancelling...
 					{:else if progress.currentAction.step && progress.currentAction.total}
-						[{progress.currentAction.step}/{progress.currentAction.total}] {progress.currentAction.message}
+						[{progress.currentAction.step}/{progress.currentAction.total}] {progress.currentAction
+							.message}
 					{:else}
 						{progress.currentAction.message}
 					{/if}

@@ -11,11 +11,7 @@ import { uuid } from '$lib/utils/uuid';
 export class AgentStateManager {
 	private state: AgentState;
 
-	constructor(
-		userId: string,
-		sessionId: string,
-		initialMessages: AgentMessage[] = []
-	) {
+	constructor(userId: string, sessionId: string, initialMessages: AgentMessage[] = []) {
 		this.state = {
 			runId: uuid(),
 			sessionId,

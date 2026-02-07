@@ -79,11 +79,7 @@ export const PATCH: RequestHandler = async ({ request, locals, params }) => {
 
 	try {
 		// Update the client
-		const updated = await oauthClientsStore.updateClient(
-			clientId,
-			locals.user.id,
-			updates
-		);
+		const updated = await oauthClientsStore.updateClient(clientId, locals.user.id, updates);
 
 		if (!updated) {
 			return error(404, 'Failed to update OAuth app');

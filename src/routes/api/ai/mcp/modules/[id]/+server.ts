@@ -24,7 +24,10 @@ export const GET = async ({ params, locals }: RequestEvent) => {
 	// Handle special case for 'core'
 	if (moduleId === 'core') {
 		const toolbox = new AiToolbox();
-		const tools = await toolbox.getTools(userId, allModules.map((m) => m.id));
+		const tools = await toolbox.getTools(
+			userId,
+			allModules.map((m) => m.id)
+		);
 
 		// Get all module IDs for proper filtering
 		const moduleIds = new Set(allModules.map((m) => m.id));

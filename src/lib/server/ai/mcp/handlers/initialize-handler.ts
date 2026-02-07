@@ -64,9 +64,7 @@ export async function handleInitialize(
 	// Return the highest protocol version we support that's compatible with client's request
 	// If client sends 2024-*, we respond with 2024-11-05
 	// If client sends 2025-*, we respond with 2025-06-18
-	const responseProtocolVersion = protocolVersion.startsWith('2025-')
-		? '2025-06-18'
-		: '2024-11-05';
+	const responseProtocolVersion = protocolVersion.startsWith('2025-') ? '2025-06-18' : '2024-11-05';
 
 	const result: InitializeResult = {
 		protocolVersion: responseProtocolVersion,

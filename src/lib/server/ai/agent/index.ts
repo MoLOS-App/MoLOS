@@ -13,17 +13,8 @@
 
 import { AiRepository } from '$lib/repositories/ai/ai-repository';
 import { AiToolbox } from '../toolbox';
-import type {
-	AiSettings,
-	AiMessage,
-	AiAction,
-	AiChatResponse
-} from '$lib/models/ai';
-import type {
-	AgentOptions,
-	ExecutionResult,
-	ProgressEvent
-} from './core/agent-types';
+import type { AiSettings, AiMessage, AiAction, AiChatResponse } from '$lib/models/ai';
+import type { AgentOptions, ExecutionResult, ProgressEvent } from './core/agent-types';
 import type { AgentSnapshot } from './core/agent-state';
 
 // Core modules
@@ -162,7 +153,14 @@ export class AiAgent {
 		}));
 
 		// Run the agent
-		return await this.runAgent(content, sessionId, settings, initialMessages, activeModuleIds, options);
+		return await this.runAgent(
+			content,
+			sessionId,
+			settings,
+			initialMessages,
+			activeModuleIds,
+			options
+		);
 	}
 
 	/**
@@ -201,20 +199,15 @@ export class AiAgent {
 			// Phase 1: Planning (ReAct - Thought)
 			let plan: any = null;
 			try {
-				plan = await this.generatePlan(
-					userContent,
-					tools,
-					llmClient,
-					planGenerator,
-					streamer
-				);
+				plan = await this.generatePlan(userContent, tools, llmClient, planGenerator, streamer);
 			} catch (planError) {
 				// If plan generation fails due to LLM error, check if we should continue
 				console.warn('[Agent] Plan generation error:', planError);
 				if ((planError as any).code === 'llm_request_failed') {
 					// LLM is not available - return helpful error immediately
 					return {
-						message: 'I\'m having trouble connecting to the AI service. Please check your API key in AI settings and try again.',
+						message:
+							"I'm having trouble connecting to the AI service. Please check your API key in AI settings and try again.",
 						actions: [],
 						events: runtime.telemetryEnabled ? events : undefined,
 						telemetry: runtime.telemetryEnabled ? telemetry : undefined
@@ -253,7 +246,9 @@ export class AiAgent {
 			await streamer.streamComplete({
 				success: result.success,
 				message: result.message,
-				stepsCompleted: result.plan ? result.plan.steps.filter((s) => s.status === 'completed').length : 0,
+				stepsCompleted: result.plan
+					? result.plan.steps.filter((s) => s.status === 'completed').length
+					: 0,
 				stepsTotal: result.plan?.steps.length || 0,
 				durationMs: telemetry.durationMs
 			});
@@ -278,7 +273,6 @@ export class AiAgent {
 				events: runtime.telemetryEnabled ? events : undefined,
 				telemetry: runtime.telemetryEnabled ? telemetry : undefined
 			};
-
 		} catch (error) {
 			console.error('Agent error:', error);
 			telemetry.durationMs = Date.now() - telemetry.startMs;
@@ -345,7 +339,9 @@ export class AiAgent {
 			// Check if it's an API configuration error - return null to skip planning
 			const err = error as any;
 			if (err.code === 'llm_request_failed' || err.message?.includes('Provider returned error')) {
-				console.log('[Agent] LLM API error detected - will skip plan generation and use direct execution');
+				console.log(
+					'[Agent] LLM API error detected - will skip plan generation and use direct execution'
+				);
 			}
 			return null;
 		}
@@ -453,10 +449,11 @@ export class AiAgent {
 		// 2. All actions failed, OR
 		// 3. No plan was created (direct mode)
 		// 4. Most actions failed (more than 50% failed) - use simple fallback instead
-		const hasSuccessfulActions = actions.some(a => a.status === 'executed');
-		const failedActionsCount = actions.filter(a => a.status === 'failed').length;
-		const mostActionsFailed = actions.length > 0 && (failedActionsCount / actions.length) > 0.5;
-		const shouldGenerateLLMSummary = actions.length > 0 && hasSuccessfulActions && !mostActionsFailed && planTracker?.getPlan();
+		const hasSuccessfulActions = actions.some((a) => a.status === 'executed');
+		const failedActionsCount = actions.filter((a) => a.status === 'failed').length;
+		const mostActionsFailed = actions.length > 0 && failedActionsCount / actions.length > 0.5;
+		const shouldGenerateLLMSummary =
+			actions.length > 0 && hasSuccessfulActions && !mostActionsFailed && planTracker?.getPlan();
 
 		if (shouldGenerateLLMSummary) {
 			try {
@@ -513,8 +510,13 @@ export class AiAgent {
 			const toolParams = tool.parameters?.properties
 				? Object.entries(tool.parameters.properties)
 						.map(([name, schema]: [string, any]) => {
-							const required = (tool.parameters?.required || []).includes(name) ? ' (required)' : ' (optional)';
-							const typeInfo = schema.type === 'array' ? `array of ${schema.items?.type || 'objects'}` : schema.type || 'any';
+							const required = (tool.parameters?.required || []).includes(name)
+								? ' (required)'
+								: ' (optional)';
+							const typeInfo =
+								schema.type === 'array'
+									? `array of ${schema.items?.type || 'objects'}`
+									: schema.type || 'any';
 							return `  - ${name}${required}: ${typeInfo}`;
 						})
 						.join('\n')
@@ -554,12 +556,16 @@ Respond with ONLY the corrected parameters as a JSON object:
 			}
 
 			// Extract JSON from response (may be wrapped in markdown)
-			const jsonMatch = response.content.match(/```json\n([\s\S]*?)\n```/) ||
+			const jsonMatch =
+				response.content.match(/```json\n([\s\S]*?)\n```/) ||
 				response.content.match(/```\n([\s\S]*?)\n```/) ||
 				response.content.match(/\{[\s\S]*\}/);
 
 			if (!jsonMatch) {
-				console.warn('[Agent] LLM response did not contain valid JSON:', response.content.substring(0, 200));
+				console.warn(
+					'[Agent] LLM response did not contain valid JSON:',
+					response.content.substring(0, 200)
+				);
 				return null;
 			}
 
@@ -645,11 +651,21 @@ Respond with ONLY the corrected parameters as a JSON object:
 					return { result, actions };
 				} else {
 					// Auto-retry with corrected parameters
-					await streamer.streamStepFailed(step, stepNumber, totalSteps, result.error || 'Unknown error');
+					await streamer.streamStepFailed(
+						step,
+						stepNumber,
+						totalSteps,
+						result.error || 'Unknown error'
+					);
 
 					// Try to fix the parameters using LLM
 					console.log('[Agent] Step failed, attempting auto-retry with corrected parameters...');
-					const correctedStep = await this.correctStepParameters(step, tool, result.error || 'Unknown error', llmClient);
+					const correctedStep = await this.correctStepParameters(
+						step,
+						tool,
+						result.error || 'Unknown error',
+						llmClient
+					);
 
 					if (correctedStep && correctedStep.parameters) {
 						console.log('[Agent] LLM provided corrected parameters, retrying...');
@@ -728,7 +744,8 @@ Respond with ONLY the corrected parameters as a JSON object:
 			console.warn('[Agent] Max ReAct iterations reached, returning current results');
 			return responseBuilder.buildExecutionResult({
 				success: false,
-				baseMessage: 'I\'ve processed your request through multiple steps. Let me provide an update on what I\'ve accomplished so far.',
+				baseMessage:
+					"I've processed your request through multiple steps. Let me provide an update on what I've accomplished so far.",
 				actions,
 				plan: null,
 				telemetry,
@@ -765,7 +782,9 @@ Respond with ONLY the corrected parameters as a JSON object:
 			if (err.code === 'llm_request_failed' || err.message?.includes('Invalid API key')) {
 				return responseBuilder.buildExecutionResult({
 					success: false,
-					baseMessage: err.message || 'I\'m having trouble connecting to the AI service. Please check your API key in AI settings.',
+					baseMessage:
+						err.message ||
+						"I'm having trouble connecting to the AI service. Please check your API key in AI settings.",
 					actions,
 					plan: null,
 					telemetry,
@@ -855,7 +874,7 @@ Respond with ONLY the corrected parameters as a JSON object:
 			if (readCalls.length > 0) {
 				// Add tool results to state and continue
 				for (const call of readCalls) {
-					const action = actions.find(a => a.data?.toolName === call.name);
+					const action = actions.find((a) => a.data?.toolName === call.name);
 					if (action) {
 						stateManager.addMessage({
 							role: 'tool',
@@ -918,9 +937,14 @@ If you complete the user's request, provide a clear summary of what you did.`;
 	 * Build prompt for generating execution summary
 	 * Made more concise to avoid truncation issues
 	 */
-	private buildSummaryPrompt(userRequest: string, actions: any[], plan: any, completionMessages: string[] = []): string {
-		const successfulActions = actions.filter(a => a.status === 'executed');
-		const failedActions = actions.filter(a => a.status === 'failed');
+	private buildSummaryPrompt(
+		userRequest: string,
+		actions: any[],
+		plan: any,
+		completionMessages: string[] = []
+	): string {
+		const successfulActions = actions.filter((a) => a.status === 'executed');
+		const failedActions = actions.filter((a) => a.status === 'failed');
 
 		const planInfo = plan
 			? `Plan: ${plan.goal} (${plan.steps.filter((s: any) => s.status === 'completed').length}/${plan.steps.length} steps completed)`

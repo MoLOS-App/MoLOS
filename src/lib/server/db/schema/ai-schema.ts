@@ -343,18 +343,11 @@ export const aiMcpOAuthClients = sqliteTable('ai_mcp_oauth_clients', {
 		.references(() => user.id, { onDelete: 'cascade' }),
 	name: text('name').notNull(),
 	clientSecret: text('client_secret'), // hashed, null for public/PKCE clients
-	redirectUris: text('redirect_uris', { mode: 'json' })
-		.notNull()
-		.$type<string[]>(),
-	scopes: text('scopes', { mode: 'json' })
-		.$type<string[]>(),
-	grantTypes: text('grant_types', { mode: 'json' })
-		.notNull()
-		.$type<string[]>(),
+	redirectUris: text('redirect_uris', { mode: 'json' }).notNull().$type<string[]>(),
+	scopes: text('scopes', { mode: 'json' }).$type<string[]>(),
+	grantTypes: text('grant_types', { mode: 'json' }).notNull().$type<string[]>(),
 	tokenEndpointAuthMethod: text('token_endpoint_auth_method').notNull().default('none'),
-	status: textEnum('status', MCPOAuthClientStatus)
-		.notNull()
-		.default(MCPOAuthClientStatus.ACTIVE),
+	status: textEnum('status', MCPOAuthClientStatus).notNull().default(MCPOAuthClientStatus.ACTIVE),
 	// Client secret expiration (0 = no expiration, per RFC 7591)
 	clientSecretExpiresAt: integer('client_secret_expires_at', { mode: 'timestamp_ms' }),
 	// Metadata
@@ -391,9 +384,7 @@ export const aiMcpOAuthCodes = sqliteTable('ai_mcp_oauth_codes', {
 		.notNull()
 		.references(() => user.id),
 	redirectUri: text('redirect_uri').notNull(),
-	scopes: text('scopes', { mode: 'json' })
-		.notNull()
-		.$type<string[]>(),
+	scopes: text('scopes', { mode: 'json' }).notNull().$type<string[]>(),
 	// PKCE support
 	codeChallenge: text('code_challenge').notNull(),
 	codeChallengeMethod: text('code_challenge_method').notNull().default('S256'),
@@ -421,13 +412,9 @@ export const aiMcpOAuthTokens = sqliteTable('ai_mcp_oauth_tokens', {
 	userId: text('user_id')
 		.notNull()
 		.references(() => user.id),
-	tokenType: textEnum('token_type', MCPOAuthTokenType)
-		.notNull()
-		.default(MCPOAuthTokenType.ACCESS),
+	tokenType: textEnum('token_type', MCPOAuthTokenType).notNull().default(MCPOAuthTokenType.ACCESS),
 	token: text('token').notNull().unique(),
-	scopes: text('scopes', { mode: 'json' })
-		.notNull()
-		.$type<string[]>(),
+	scopes: text('scopes', { mode: 'json' }).notNull().$type<string[]>(),
 	// Token expiration
 	expiresAt: integer('expires_at', { mode: 'timestamp_ms' }),
 	// Refresh token linkage (for access tokens)

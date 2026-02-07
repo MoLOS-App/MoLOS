@@ -50,10 +50,12 @@
 			plan = `Plan: ${plan.goal}
 Steps: ${completedCount}/${steps.length} completed${failedCount > 0 ? `, ${failedCount} failed` : ''}
 
-${steps.map((s: any, i: number) => {
-				const status = s.status === 'completed' ? '✓' : s.status === 'failed' ? '✗' : '○';
-				return `${i + 1}. ${status} ${s.description}`;
-			}).join('\n')}`;
+${steps
+	.map((s: any, i: number) => {
+		const status = s.status === 'completed' ? '✓' : s.status === 'failed' ? '✗' : '○';
+		return `${i + 1}. ${status} ${s.description}`;
+	})
+	.join('\n')}`;
 		}
 
 		let cleanContent = content
@@ -227,7 +229,8 @@ ${steps.map((s: any, i: number) => {
 									<ListChecks class="h-3 w-3" />
 									{expandedProgressLog[message.id] ? 'Hide Execution Log' : 'Show Execution Log'}
 									<span class="ml-1 rounded-full bg-muted/50 px-1.5 py-0.5 text-[9px]">
-										{progressLog.length} {progressLog.length === 1 ? 'entry' : 'entries'}
+										{progressLog.length}
+										{progressLog.length === 1 ? 'entry' : 'entries'}
 									</span>
 								</button>
 

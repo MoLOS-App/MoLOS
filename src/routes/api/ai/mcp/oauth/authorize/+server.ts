@@ -58,11 +58,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 	});
 
 	// Check if this is a ChatGPT redirect (trusted)
-	const chatgptRedirectHosts = [
-		'chatgpt.com',
-		'chat.openai.com',
-		'auth0.openai.com'
-	];
+	const chatgptRedirectHosts = ['chatgpt.com', 'chat.openai.com', 'auth0.openai.com'];
 
 	// For ChatGPT, we allow any redirect to the registered hostname
 	// since ChatGPT adds dynamic query parameters (state, etc.)
@@ -82,7 +78,10 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 	console.log('[OAuth] Redirect URI validation result:', {
 		isChatgptRedirect,
 		isValidRedirect,
-		clientRedirectUris: client.redirect_uris.map((u) => ({ origin: u.origin, pathname: u.pathname }))
+		clientRedirectUris: client.redirect_uris.map((u) => ({
+			origin: u.origin,
+			pathname: u.pathname
+		}))
 	});
 
 	if (!isValidRedirect) {
@@ -143,7 +142,10 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 
 			const errorRedirectUrl = new URL(redirectUri);
 			errorRedirectUrl.searchParams.set('error', 'server_error');
-			errorRedirectUrl.searchParams.set('error_description', 'Failed to generate authorization code');
+			errorRedirectUrl.searchParams.set(
+				'error_description',
+				'Failed to generate authorization code'
+			);
 			if (state) {
 				errorRedirectUrl.searchParams.set('state', state);
 			}
@@ -183,9 +185,11 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 		</div>
 		<p>This application will be able to:</p>
 		<div class="scope-list">
-			${scopes.length > 0
-				? scopes.map((s) => `<div class="scope-item">• ${s}</div>`).join('')
-				: '<div class="scope-item">• Full access to your account</div>'}
+			${
+				scopes.length > 0
+					? scopes.map((s) => `<div class="scope-item">• ${s}</div>`).join('')
+					: '<div class="scope-item">• Full access to your account</div>'
+			}
 		</div>
 		<form method="POST" action="/api/ai/mcp/oauth/authorize">
 			<input type="hidden" name="client_id" value="${clientId}">

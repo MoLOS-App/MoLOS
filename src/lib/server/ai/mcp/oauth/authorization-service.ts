@@ -97,7 +97,10 @@ export class OAuthAuthorizationService {
 			await db.insert(aiMcpOAuthCodes).values(insertData);
 			console.log('[OAuth Authorization Service] Successfully inserted authorization code');
 		} catch (insertError) {
-			console.error('[OAuth Authorization Service] Failed to insert authorization code:', insertError);
+			console.error(
+				'[OAuth Authorization Service] Failed to insert authorization code:',
+				insertError
+			);
 			throw insertError;
 		}
 
@@ -193,18 +196,13 @@ export class OAuthAuthorizationService {
 		const now = new Date();
 		const cutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 24 hours ago
 
-		const result = await db
-			.delete(aiMcpOAuthCodes)
-			.where(
-				or(
-					lt(aiMcpOAuthCodes.expiresAt, cutoff),
-					// Also delete consumed codes older than cutoff
-					and(
-						isNotNull(aiMcpOAuthCodes.consumedAt),
-						lt(aiMcpOAuthCodes.consumedAt, cutoff)
-					)
-				)
-			);
+		const result = await db.delete(aiMcpOAuthCodes).where(
+			or(
+				lt(aiMcpOAuthCodes.expiresAt, cutoff),
+				// Also delete consumed codes older than cutoff
+				and(isNotNull(aiMcpOAuthCodes.consumedAt), lt(aiMcpOAuthCodes.consumedAt, cutoff))
+			)
+		);
 
 		return result.rowCount;
 	}
