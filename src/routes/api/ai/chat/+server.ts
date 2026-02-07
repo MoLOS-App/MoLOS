@@ -79,25 +79,51 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			const stream = new ReadableStream({
 				start: async (controller) => {
 					try {
+						// Send session ID first
 						controller.enqueue(
 							encoder.encode(
 								`data: ${JSON.stringify({ type: 'meta', sessionId: activeSessionId })}\n\n`
 							)
 						);
+
+						// Track progress events
+						const progressEvents: any[] = [];
+
+						// Call agent with progress streaming enabled
 						const response = await agent.processMessage(
 							content,
 							activeSessionId,
 							activeModuleIds,
 							messageAttachments,
-							messageParts
+							messageParts,
+							{
+								onProgress: async (event: any) => {
+									// Send progress event to UI
+									controller.enqueue(
+										encoder.encode(
+											`data: ${JSON.stringify({
+												type: 'progress',
+												eventType: event.type,
+												timestamp: event.timestamp,
+												data: event.data
+											})}\n\n`
+										)
+									);
+									progressEvents.push(event);
+								}
+							}
 						);
+
+						// Stream the final message in chunks
 						const chunks = chunkText(response.message || '');
 						for (const chunk of chunks) {
 							controller.enqueue(
 								encoder.encode(`data: ${JSON.stringify({ type: 'chunk', content: chunk })}\n\n`)
 							);
-							await sleep(40);
+							await sleep(30); // Slightly faster for better UX
 						}
+
+						// Send final metadata
 						controller.enqueue(
 							encoder.encode(
 								`data: ${JSON.stringify({
@@ -105,7 +131,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 									sessionId: activeSessionId,
 									actions: response.actions || [],
 									events: response.events,
-									telemetry: response.telemetry
+									telemetry: response.telemetry,
+									progressEvents: progressEvents.length > 0 ? progressEvents : undefined
 								})}\n\n`
 							)
 						);
@@ -113,6 +140,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 						controller.close();
 					} catch (error) {
 						const errorMessage = (error as any)?.message || 'Internal Server Error';
+						console.error('Streaming error:', error);
 						controller.enqueue(
 							encoder.encode(
 								`data: ${JSON.stringify({ type: 'error', message: errorMessage })}\n\n`
@@ -128,11 +156,13 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 				headers: {
 					'Content-Type': 'text/event-stream',
 					'Cache-Control': 'no-cache',
-					Connection: 'keep-alive'
+					Connection: 'keep-alive',
+					'X-Accel-Buffering': 'no' // Prevent nginx from buffering
 				}
 			});
 		}
 
+		// Non-streaming response
 		const response = await agent.processMessage(
 			content,
 			activeSessionId,
@@ -143,7 +173,6 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		return json({ ...response, sessionId: activeSessionId });
 	} catch (error) {
 		console.error('Error in AI Chat POST:', error);
-		// If it's an AI SDK error, it might have more details
 		const errorMessage = (error as any).message || 'Internal Server Error';
 		return json({ error: errorMessage }, { status: 500 });
 	}

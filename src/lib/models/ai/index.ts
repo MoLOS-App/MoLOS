@@ -60,6 +60,7 @@ export interface AiMessage {
 	attachments?: { name: string }[];
 	parts?: unknown[];
 	createdAt: Date;
+	metadata?: Record<string, unknown>; // For UI-only metadata like temporary progress messages
 }
 
 export interface AiChatResponse {
@@ -184,3 +185,6 @@ export interface TelegramMessage {
 	toolCalls?: Record<string, unknown>[];
 	createdAt: Date;
 }
+
+// Export MCP (Model Context Protocol) types
+export * from './mcp';

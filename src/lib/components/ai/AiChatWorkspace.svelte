@@ -3,12 +3,15 @@
 	import { fade } from 'svelte/transition';
 	import { page } from '$app/stores';
 	import type { AiAction, AiMessage, AiSession } from '$lib/models/ai';
-	import { Bot, LoaderCircle, Menu, ArrowDown } from 'lucide-svelte';
+	import { Bot, Menu, ArrowDown } from 'lucide-svelte';
 	import ChatMessage from '$lib/components/ai/ChatMessage.svelte';
 	import ChatInput from '$lib/components/ai/ChatInput.svelte';
 	import ReviewChangesOverlay from '$lib/components/ai/ReviewChangesOverlay.svelte';
 	import ChatSidebar from '$lib/components/ai/ChatSidebar.svelte';
+	import ProgressDisplay from '$lib/components/ai/ProgressDisplay.svelte';
 	import { uuid } from '$lib/utils/uuid';
+	import type { ProgressState } from './progress-types';
+	import { INITIAL_PROGRESS_STATE } from './progress-types';
 
 	let { userName } = $props<{ userName?: string }>();
 
@@ -18,6 +21,7 @@
 	let input = $state('');
 	let isLoading = $state(false);
 	let isStreaming = $state(false);
+	let isCancelling = $state(false);
 	let streamEnabled = $state(true);
 	let scrollViewport = $state<HTMLElement | null>(null);
 	let pendingAction = $state<AiAction | null>(null);
@@ -25,6 +29,18 @@
 	let timerInterval = $state<number | null>(null);
 	let isSidebarOpen = $state(false);
 	let showScrollButton = $state(false);
+
+	// AbortController for cancelling requests
+	let abortController: AbortController | null = null;
+
+	// Progress state for agent execution tracking
+	let currentProgress = $state<ProgressState>({ ...INITIAL_PROGRESS_STATE });
+
+	// Progress log to be shown in accordion
+	let progressLog = $state<string[]>([]);
+
+	// Track the current assistant message ID for real-time updates
+	let currentAssistantMessageId = $state<string | null>(null);
 
 	let activeModuleIds = $derived($page.data.activeExternalIds || []);
 
@@ -65,7 +81,17 @@
 		pendingAction = null;
 		isLoading = false;
 		isStreaming = false;
+		isCancelling = false;
 		isSidebarOpen = false;
+		// Cancel any ongoing request
+		if (abortController) {
+			abortController.abort();
+			abortController = null;
+		}
+		// Reset progress state
+		currentProgress = { ...INITIAL_PROGRESS_STATE };
+		progressLog = [];
+		currentAssistantMessageId = null;
 	}
 
 	function startActionTimer() {
@@ -147,9 +173,17 @@
 				if (payload === '[DONE]') {
 					return;
 				}
-				let data: { type?: string; content?: string; message?: string } & {
+				let data: {
+					type?: string;
+					content?: string;
+					message?: string;
+					eventType?: string;
+					timestamp?: number;
+					data?: any;
+				} & {
 					sessionId?: string;
 					actions?: AiAction[];
+					progressEvents?: any[];
 				};
 				try {
 					data = JSON.parse(payload);
@@ -160,12 +194,130 @@
 					content += data.content || '';
 					updateAssistantMessage(assistantMessageId, content);
 					await scrollToBottom();
+				} else if (data.type === 'progress') {
+					// Handle progress events from the new agent
+					handleProgressEvent(data);
 				} else if (data.type === 'meta') {
 					applyStreamMeta(data);
 				} else if (data.type === 'error') {
 					throw new Error(data.message || 'Streaming failed');
 				}
 			}
+		}
+	}
+
+	function handleProgressEvent(event: any) {
+		const { eventType, data: eventData } = event;
+		const now = Date.now();
+
+		// Debug log to see what events are being received
+		console.log('[Progress Event]', eventType, eventData);
+
+		// Helper function to add a line to the progress log and update the message metadata
+		function addProgressLine(content: string) {
+			progressLog = [...progressLog, content];
+			// Update the assistant message metadata with the progress log
+			if (currentAssistantMessageId) {
+				messages = messages.map((msg) =>
+					msg.id === currentAssistantMessageId
+						? { ...msg, metadata: { ...msg.metadata, progressLog } }
+						: msg
+				);
+			}
+		}
+
+		switch (eventType) {
+			case 'plan':
+				currentProgress.status = 'planning';
+				currentProgress.planGoal = eventData.goal;
+				currentProgress.totalSteps = eventData.totalSteps;
+				currentProgress.currentAction = {
+					type: 'plan',
+					message: `Creating plan: ${eventData.goal}`,
+					step: 0,
+					total: eventData.totalSteps,
+					timestamp: now
+				};
+				addProgressLine(`📋 Plan: ${eventData.goal}\nSteps: ${eventData.totalSteps || 'Unknown'}`);
+				break;
+
+			case 'step_start':
+				currentProgress.status = 'executing';
+				currentProgress.currentAction = {
+					type: 'step_start',
+					message: eventData.description || 'Working...',
+					step: eventData.stepNumber,
+					total: eventData.totalSteps,
+					timestamp: now
+				};
+				addProgressLine(
+					`[${eventData.stepNumber}/${eventData.totalSteps}] ▸ ${eventData.description || 'Working...'}`
+				);
+				break;
+
+			case 'step_complete':
+				currentProgress.status = 'executing';
+				const stepNumber = eventData.stepNumber;
+				const completeMsg = `✓ Completed: ${eventData.description || 'Step'}`;
+				currentProgress.currentAction = {
+					type: 'step_complete',
+					message: completeMsg,
+					step: stepNumber,
+					total: eventData.totalSteps,
+					timestamp: now
+				};
+				addProgressLine(
+					`[${stepNumber}/${eventData.totalSteps}] ✓ ${eventData.description || 'Completed'}`
+				);
+				break;
+
+			case 'step_failed':
+				currentProgress.status = 'error';
+				const failedStep = eventData.stepNumber;
+				const errorMsg = eventData.error || 'Unknown error';
+				currentProgress.currentAction = {
+					type: 'step_failed',
+					message: `Failed: ${errorMsg}`,
+					step: failedStep,
+					total: eventData.totalSteps,
+					timestamp: now
+				};
+				addProgressLine(
+					`[${failedStep}/${eventData.totalSteps}] ✗ Failed: ${eventData.description || 'Step'}\nError: ${errorMsg}`
+				);
+				break;
+
+			case 'thinking':
+				currentProgress.status = 'thinking';
+				currentProgress.currentAction = {
+					type: 'thinking',
+					message: eventData.thought || 'Thinking...',
+					timestamp: now
+				};
+				// Add thinking message (only if it's substantial)
+				if (eventData.thought && eventData.thought.length > 10) {
+					addProgressLine(`💭 ${eventData.thought}`);
+				}
+				break;
+
+			case 'complete':
+				currentProgress.status = 'complete';
+				currentProgress.currentAction = {
+					type: 'step_complete',
+					message: 'All done!',
+					timestamp: now
+				};
+				break;
+
+			case 'error':
+				currentProgress.status = 'error';
+				currentProgress.currentAction = {
+					type: 'step_failed',
+					message: eventData.error || 'Something went wrong',
+					timestamp: now
+				};
+				addProgressLine(`❌ Error: ${eventData.error || 'Something went wrong'}`);
+				break;
 		}
 	}
 
@@ -176,6 +328,16 @@
 		input = '';
 		isLoading = true;
 		isStreaming = false;
+		isCancelling = false;
+		// Reset progress state for new message
+		currentProgress = { ...INITIAL_PROGRESS_STATE, status: 'thinking' };
+		// Reset progress log
+		progressLog = [];
+		// Reset current assistant message ID
+		currentAssistantMessageId = null;
+
+		// Create AbortController for this request
+		abortController = new AbortController();
 
 		const tempUserMsg: AiMessage = {
 			id: uuid(),
@@ -189,6 +351,7 @@
 		let assistantMessageId: string | null = null;
 		if (streamEnabled) {
 			assistantMessageId = uuid();
+			currentAssistantMessageId = assistantMessageId;
 			const tempAssistantMsg: AiMessage = {
 				id: assistantMessageId,
 				userId: '',
@@ -212,8 +375,14 @@
 					sessionId: currentSessionId,
 					activeModuleIds,
 					stream: streamEnabled
-				})
+				}),
+				signal: abortController.signal
 			});
+
+			// Check if request was aborted
+			if (abortController.signal.aborted) {
+				throw new Error('Request cancelled');
+			}
 
 			const isEventStream =
 				res.headers.get('content-type')?.includes('text/event-stream') ?? streamEnabled;
@@ -221,8 +390,19 @@
 			if (res.ok && streamEnabled && isEventStream && assistantMessageId) {
 				isStreaming = true;
 				await handleStreamResponse(res, assistantMessageId);
+				// Save the progress log before loading messages
+				const savedProgressLog = [...progressLog];
 				if (currentSessionId) {
 					await loadMessages(currentSessionId);
+					// Re-attach progress log to the last assistant message
+					const lastAssistantMsg = [...messages].reverse().find((m) => m.role === 'assistant');
+					if (lastAssistantMsg && savedProgressLog.length > 0) {
+						messages = messages.map((m) =>
+							m.id === lastAssistantMsg.id
+								? { ...m, metadata: { ...m.metadata, progressLog: savedProgressLog } }
+								: m
+						);
+					}
 				}
 				await loadSessions();
 			} else if (res.ok) {
@@ -238,11 +418,36 @@
 				await loadSessions();
 			}
 		} catch (error) {
-			console.error(error);
+			// Only log error if it's not a cancellation
+			if (
+				(error as Error).name !== 'AbortError' &&
+				(error as Error).message !== 'Request cancelled'
+			) {
+				console.error(error);
+			}
 		} finally {
 			isLoading = false;
 			isStreaming = false;
+			isCancelling = false;
+			abortController = null;
+			// Keep progress messages in chat - don't clear them
 			await scrollToBottom();
+		}
+	}
+
+	function cancelExecution() {
+		if (abortController && !isCancelling) {
+			isCancelling = true;
+			abortController.abort();
+			// Add cancellation to the progress log
+			progressLog = [...progressLog, '⚠️ Execution cancelled by user'];
+			// Update progress status
+			currentProgress.status = 'error';
+			currentProgress.currentAction = {
+				type: 'step_failed',
+				message: 'Cancelled',
+				timestamp: Date.now()
+			};
 		}
 	}
 
@@ -375,27 +580,15 @@
 								{#each messages.filter((m) => m.role === 'user' || (m.role === 'assistant' && (m.content?.trim() !== '' || m.contextMetadata || m.parts || m.attachments))) as msg (msg.id)}
 									<ChatMessage message={msg} />
 								{/each}
-								{#if isLoading && !isStreaming}
-									<div class="flex items-start" in:fade>
-										<div
-											class="text-muted-foreground flex animate-pulse items-center gap-3 rounded-2xl border border-border/60 bg-muted/35 px-4 py-3 text-sm font-bold tracking-wide uppercase shadow-sm"
-										>
-											<LoaderCircle class="h-4 w-4 animate-spin" />
-											Thinking
-											<span class="inline-flex gap-1">
-												<span
-													class="h-1 w-1 animate-[pulse_1.2s_ease-in-out_infinite] rounded-full bg-current opacity-40"
-												></span>
-												<span
-													class="h-1 w-1 animate-[pulse_1.2s_ease-in-out_infinite] rounded-full bg-current opacity-40 [animation-delay:0.2s]"
-												></span>
-												<span
-													class="h-1 w-1 animate-[pulse_1.2s_ease-in-out_infinite] rounded-full bg-current opacity-40 [animation-delay:0.4s]"
-												></span>
-											</span>
-										</div>
-									</div>
-								{/if}
+
+								<!-- Progress Display -->
+								<ProgressDisplay
+									{isLoading}
+									{isStreaming}
+									{isCancelling}
+									progress={currentProgress}
+									onCancel={cancelExecution}
+								/>
 							</div>
 						{/if}
 					</div>
