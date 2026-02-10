@@ -6,12 +6,18 @@
 
 import { AiToolbox } from '../../toolbox';
 import { formatToolResult } from '../mcp-utils';
-import { createSuccessResponse, errors } from '../json-rpc';
+import { createSuccessResponse, createErrorResponse, errors } from '../json-rpc';
 import { listMcpTools } from '../discovery/tools-discovery';
 import type { MCPContext, ToolsCallRequest, JSONRPCResponse } from '$lib/models/ai/mcp';
 import { ToolsCallRequestParamsSchema, validateRequest } from '../validation/schemas';
-import { withErrorHandling, createToolExecutionError, MCP_ERROR_CODES } from './error-handler';
+import {
+	withErrorHandling,
+	createToolExecutionError,
+	createToolParameterValidationError,
+	MCP_ERROR_CODES
+} from './error-handler';
 import { withToolTimeout, TimeoutError } from '../timeout/timeout-handler';
+import { normalizeToolParams, validateToolParams } from '../../agent-utils';
 
 /**
  * Handle tools/list request
@@ -43,31 +49,48 @@ export async function handleToolsCall(
 
 	const { name, arguments: args } = validation.data;
 
-	// Use error handling wrapper for the actual execution
+	// Get the toolbox
+	const toolbox = new AiToolbox();
+
+	// Get all available tools for this user
+	const tools = await toolbox.getTools(context.userId, context.allowedModules);
+
+	// Find the tool
+	const tool = tools.find((t) => t.name === name);
+
+	if (!tool) {
+		// Return error immediately
+		return createErrorResponse(
+			requestId,
+			MCP_ERROR_CODES.TOOL_NOT_FOUND,
+			`Tool not found: ${name}`
+		);
+	}
+
+	// Validate tool parameters BEFORE execution
+	const normalizedParams = normalizeToolParams(args);
+	const paramValidation = validateToolParams(tool, normalizedParams);
+
+	if (!paramValidation.ok) {
+		// Return validation error immediately
+		return createToolParameterValidationError(requestId, name, {
+			missing: paramValidation.missing,
+			toolSchema: {
+				name: tool.name,
+				parameters: tool.parameters
+			}
+		});
+	}
+
+	// Use error handling wrapper for the actual execution only
 	return withErrorHandling(
 		context,
 		requestId,
 		'tools/call',
 		async () => {
-			// Get the toolbox
-			const toolbox = new AiToolbox();
-
-			// Get all available tools for this user
-			const tools = await toolbox.getTools(context.userId, context.allowedModules);
-
-			// Find the tool
-			const tool = tools.find((t) => t.name === name);
-
-			if (!tool) {
-				// Throw to be caught by error handler
-				const error = new Error(`Tool not found: ${name}`);
-				(error as any).code = MCP_ERROR_CODES.TOOL_NOT_FOUND;
-				throw error;
-			}
-
 			// Execute the tool with timeout
 			try {
-				const result = await withToolTimeout(tool.execute(args), name);
+				const result = await withToolTimeout(tool.execute(normalizedParams), name);
 
 				// Format for MCP response
 				return formatToolResult(result);
@@ -85,7 +108,7 @@ export async function handleToolsCall(
 		{
 			method: 'tools/call',
 			toolName: name,
-			params: args
+			params: normalizedParams
 		}
 	);
 }
