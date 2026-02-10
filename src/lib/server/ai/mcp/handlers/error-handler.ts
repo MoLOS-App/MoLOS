@@ -39,7 +39,8 @@ export const MCP_ERROR_CODES = {
 
 	// Request validation
 	REQUEST_TOO_LARGE: -32013,
-	INVALID_CONTENT_TYPE: -32014
+	INVALID_CONTENT_TYPE: -32014,
+	INVALID_TOOL_PARAMETERS: -32015
 } as const;
 
 /**
@@ -232,4 +233,49 @@ export function createToolExecutionError(
 		],
 		isError: true
 	});
+}
+
+/**
+ * Create a tool parameter validation error response
+ * Returns a structured error that helps the AI understand what's missing
+ */
+export function createToolParameterValidationError(
+	requestId: number | string,
+	toolName: string,
+	validation: {
+		missing: string[];
+		toolSchema: {
+			name: string;
+			parameters: {
+				type: 'object';
+				properties: Record<string, unknown>;
+				required?: string[];
+			};
+		};
+	}
+): JSONRPCResponse {
+	const { missing, toolSchema } = validation;
+
+	// Build a clear error message
+	let message = `Tool "${toolName}" is missing required parameters`;
+	if (missing.length > 0) {
+		message += `: ${missing.join(', ')}`;
+	}
+
+	// Include schema hints in the error data
+	const errorData = {
+		toolName,
+		missingParameters: missing,
+		expectedSchema: {
+			required: toolSchema.parameters.required || [],
+			properties: Object.keys(toolSchema.parameters.properties)
+		}
+	};
+
+	return createErrorResponse(
+		requestId,
+		MCP_ERROR_CODES.INVALID_TOOL_PARAMETERS,
+		message,
+		errorData
+	);
 }
