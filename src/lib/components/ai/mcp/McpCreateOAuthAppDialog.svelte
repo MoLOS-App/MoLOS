@@ -149,7 +149,7 @@
 								<Button
 									variant="outline"
 									size="sm"
-									onclick={() => navigator.clipboard.writeText(createdApp.client_id)}
+									onclick={() => createdApp && navigator.clipboard.writeText(createdApp.client_id)}
 								>
 									Copy
 								</Button>
@@ -169,7 +169,7 @@
 									<Button
 										variant="outline"
 										size="sm"
-										onclick={() => navigator.clipboard.writeText(createdApp.client_secret!)}
+										onclick={() => createdApp && navigator.clipboard.writeText(createdApp.client_secret!)}
 									>
 										Copy
 									</Button>
