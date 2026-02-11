@@ -9,8 +9,30 @@ import { randomBytes, createHash } from 'crypto';
 import { db } from '$lib/server/db';
 import { aiMcpOAuthClients } from '$lib/server/db/schema';
 import { eq, and, isNull } from 'drizzle-orm';
-import type { OAuthClientInformationFull } from '@modelcontextprotocol/sdk/shared/auth';
 import { MCPOAuthClientStatus } from '$lib/server/db/schema';
+
+// OAuth types from MCP SDK - define locally to avoid import issues
+export interface OAuthClientInformationFull {
+	client_id: string;
+	client_secret?: string;
+	client_id_issued_at: number;
+	client_secret_expires_at: number;
+	redirect_uris: string[];
+	token_endpoint_auth_method: string;
+	grant_types: string[];
+	response_types: string[];
+	client_name: string;
+	client_uri?: string | null;
+	logo_uri?: string | null;
+	scope?: string;
+	contacts?: string[] | null;
+	tos_uri?: string | null;
+	policy_uri?: string | null;
+	jwks_uri?: undefined;
+	jwks?: undefined;
+	software_id?: string | null;
+	software_version?: string | null;
+}
 
 /**
  * Configuration for client secrets
@@ -56,17 +78,17 @@ function dbToOAuthClient(
 		client_secret_expires_at: dbClient.clientSecretExpiresAt
 			? Math.floor(dbClient.clientSecretExpiresAt.getTime() / 1000)
 			: 0,
-		redirect_uris: dbClient.redirectUris.map((uri) => new URL(uri)),
+		redirect_uris: dbClient.redirectUris,
 		token_endpoint_auth_method: dbClient.tokenEndpointAuthMethod,
 		grant_types: dbClient.grantTypes,
 		response_types: ['code'],
 		client_name: dbClient.name,
-		client_uri: dbClient.clientUri ? new URL(dbClient.clientUri) : undefined,
-		logo_uri: dbClient.logoUri ? new URL(dbClient.logoUri) : undefined,
+		client_uri: dbClient.clientUri ?? undefined,
+		logo_uri: dbClient.logoUri ?? undefined,
 		scope: dbClient.scopes?.join(' ') ?? undefined,
 		contacts: dbClient.contacts ?? undefined,
-		tos_uri: dbClient.tosUri,
-		policy_uri: dbClient.policyUri,
+		tos_uri: dbClient.tosUri ?? undefined,
+		policy_uri: dbClient.policyUri ?? undefined,
 		jwks_uri: undefined,
 		jwks: undefined,
 		software_id: dbClient.softwareId,
@@ -81,7 +103,7 @@ export class OAuthClientsStore {
 	/**
 	 * Get a client by ID
 	 */
-	async getClient(clientId: string): Promise<OAuthClientInformationFull | undefined> {
+	async getClient(clientId: string): Promise<OAuthClientInformationFull | null> {
 		const result = await db
 			.select()
 			.from(aiMcpOAuthClients)
@@ -94,7 +116,7 @@ export class OAuthClientsStore {
 			.limit(1);
 
 		if (result.length === 0) {
-			return undefined;
+			return null;
 		}
 
 		return dbToOAuthClient(result[0]);
@@ -179,7 +201,7 @@ export class OAuthClientsStore {
 			userId,
 			name: metadata.client_name ?? 'Unnamed Client',
 			clientSecret: clientSecretHash,
-			redirectUris: metadata.redirect_uris.map((uri) => uri.toString()),
+			redirectUris: metadata.redirect_uris.map((uri: string) => uri),
 			scopes: metadata.scope?.split(' ') ?? [],
 			grantTypes: metadata.grant_types ?? ['authorization_code', 'refresh_token'],
 			tokenEndpointAuthMethod: metadata.token_endpoint_auth_method ?? 'none',
@@ -228,9 +250,10 @@ export class OAuthClientsStore {
 		const result = await db
 			.update(aiMcpOAuthClients)
 			.set({ status: MCPOAuthClientStatus.REVOKED, updatedAt: new Date() })
-			.where(and(eq(aiMcpOAuthClients.id, clientId), eq(aiMcpOAuthClients.userId, userId)));
+			.where(and(eq(aiMcpOAuthClients.id, clientId), eq(aiMcpOAuthClients.userId, userId)))
+			.returning();
 
-		return result.rowCount > 0;
+		return result.length > 0;
 	}
 
 	/**
@@ -239,9 +262,10 @@ export class OAuthClientsStore {
 	async deleteClient(clientId: string, userId: string): Promise<boolean> {
 		const result = await db
 			.delete(aiMcpOAuthClients)
-			.where(and(eq(aiMcpOAuthClients.id, clientId), eq(aiMcpOAuthClients.userId, userId)));
+			.where(and(eq(aiMcpOAuthClients.id, clientId), eq(aiMcpOAuthClients.userId, userId)))
+			.returning();
 
-		return result.rowCount > 0;
+		return result.length > 0;
 	}
 
 	/**
@@ -254,7 +278,7 @@ export class OAuthClientsStore {
 			name: string;
 			redirectUris: string[];
 			scopes: string[];
-			status: MCPOAuthClientStatus;
+			status: (typeof MCPOAuthClientStatus)[keyof typeof MCPOAuthClientStatus];
 		}>
 	): Promise<OAuthClientInformationFull | null> {
 		const updateData: Record<string, unknown> = { updatedAt: new Date() };
@@ -275,9 +299,10 @@ export class OAuthClientsStore {
 		const result = await db
 			.update(aiMcpOAuthClients)
 			.set(updateData)
-			.where(and(eq(aiMcpOAuthClients.id, clientId), eq(aiMcpOAuthClients.userId, userId)));
+			.where(and(eq(aiMcpOAuthClients.id, clientId), eq(aiMcpOAuthClients.userId, userId)))
+			.returning();
 
-		if (result.rowCount === 0) {
+		if (result.length === 0) {
 			return null;
 		}
 

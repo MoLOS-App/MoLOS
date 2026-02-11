@@ -14,7 +14,7 @@
 		onRetry?: (failedSteps: typeof progress.executionLog) => void;
 	} = $props();
 
-	let logContainer: HTMLElement;
+	let logContainer = $state<HTMLElement | undefined>(undefined);
 	let lastLogLength = $state(0);
 
 	// Track expanded entries
@@ -82,7 +82,6 @@
 						class:cursor-pointer={hasDetails(entry)}
 						onclick={() => hasDetails(entry) && toggleExpand(entry.id)}
 						role={hasDetails(entry) ? 'button' : undefined}
-						tabindex={hasDetails(entry) ? 0 : undefined}
 					>
 						<span class="flex-shrink-0">
 							{#if hasDetails(entry)}

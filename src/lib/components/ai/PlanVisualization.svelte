@@ -120,6 +120,7 @@
 		<!-- Step list -->
 		<div class="space-y-1.5">
 			{#each planSteps() as step (step.id)}
+				{@const StepIcon = getStepIcon(step)}
 				<div
 					class="flex items-start gap-2 rounded-lg px-2 py-1.5 text-xs transition-colors hover:bg-muted/40 {step.status ===
 					'failed'
@@ -130,7 +131,7 @@
 								? 'text-foreground'
 								: 'text-muted-foreground'}"
 				>
-					<svelte:component this={getStepIcon(step)} class={getStepIconClasses(step)} />
+					<StepIcon class={getStepIconClasses(step)} />
 					<span class="flex-1">
 						[{step.stepNumber}/{step.totalSteps}] {step.description}
 					</span>
