@@ -89,7 +89,7 @@ export const PATCH: RequestHandler = async ({ request, locals, params }) => {
 			client_id: updated.client_id,
 			client_id_issued_at: updated.client_id_issued_at,
 			name: updated.client_name,
-			redirect_uris: updated.redirect_uris.map((u: URL) => u.toString()),
+			redirect_uris: updated.redirect_uris,
 			scopes: updated.scope ? updated.scope.split(' ') : [],
 			token_endpoint_auth_method: updated.token_endpoint_auth_method
 		});

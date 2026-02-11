@@ -54,7 +54,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 		requestedOrigin: redirectUrl.origin,
 		requestedHostname: redirectUrl.hostname,
 		requestedPathname: redirectUrl.pathname,
-		registeredRedirectUris: client.redirect_uris.map((u: URL) => u.toString())
+		registeredRedirectUris: client.redirect_uris
 	});
 
 	// Check if this is a ChatGPT redirect (trusted)
@@ -67,21 +67,28 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 	let isValidRedirect: boolean;
 	if (isChatgptRedirect) {
 		// For ChatGPT, only check origin (protocol + hostname + port)
-		isValidRedirect = client.redirect_uris.some((uri: URL) => uri.origin === redirectUrl.origin);
+		isValidRedirect = client.redirect_uris.some((uri: string) => {
+			const registeredUrl = new URL(uri);
+			return registeredUrl.origin === redirectUrl.origin;
+		});
 	} else {
 		// For other clients, check both origin and pathname
-		isValidRedirect = client.redirect_uris.some(
-			(uri: URL) => uri.origin === redirectUrl.origin && uri.pathname === redirectUrl.pathname
-		);
+		isValidRedirect = client.redirect_uris.some((uri: string) => {
+			const registeredUrl = new URL(uri);
+			return (
+				registeredUrl.origin === redirectUrl.origin &&
+				registeredUrl.pathname === redirectUrl.pathname
+			);
+		});
 	}
 
 	console.log('[OAuth] Redirect URI validation result:', {
 		isChatgptRedirect,
 		isValidRedirect,
-		clientRedirectUris: client.redirect_uris.map((u: URL) => ({
-			origin: u.origin,
-			pathname: u.pathname
-		}))
+		clientRedirectUris: client.redirect_uris.map((u: string) => {
+			const url = new URL(u);
+			return { origin: url.origin, pathname: url.pathname };
+		})
 	});
 
 	if (!isValidRedirect) {
@@ -119,7 +126,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 				redirectUrl: finalRedirectUrl.toString(),
 				code: authCode.code,
 				state,
-				registeredRedirectUris: client.redirect_uris.map((u: URL) => u.toString())
+				registeredRedirectUris: client.redirect_uris
 			});
 
 			return redirect(302, finalRedirectUrl.toString());
