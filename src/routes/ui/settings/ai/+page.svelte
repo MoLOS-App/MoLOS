@@ -46,7 +46,8 @@
 
 	// Initialize state
 	$effect(() => {
-		const isPredefined = availableModels.some((m) => m.id === modelName);
+		const models = availableModels;
+		const isPredefined = models.some((m) => m.id === modelName);
 		if (isPredefined) {
 			selectedModelId = modelName;
 		} else if (modelName) {
@@ -95,7 +96,8 @@
 		{ value: 'openai', label: 'OpenAI' },
 		{ value: 'anthropic', label: 'Anthropic' },
 		{ value: 'openrouter', label: 'OpenRouter' },
-		{ value: 'ollama', label: 'Ollama (Local)' }
+		{ value: 'ollama', label: 'Ollama (Local)' },
+		{ value: 'zai', label: 'Z.AI' }
 	];
 
 	function handleProviderChange() {
@@ -112,22 +114,22 @@
 	<meta name="description" content="Configure your AI assistant settings and providers." />
 </svelte:head>
 
-<div class="min-h-screen bg-background pb-20">
-	<div class="mx-auto max-w-4xl space-y-8 p-6">
+<div class="min-h-screen pb-20 bg-background">
+	<div class="max-w-4xl p-6 mx-auto space-y-8">
 		<!-- Header -->
-		<div class="space-y-4 pt-4">
+		<div class="pt-4 space-y-4">
 			<Button
 				variant="ghost"
 				size="sm"
 				onclick={() => goto('/ui/settings')}
 				class="text-muted-foreground -ml-2 h-8 rounded-full px-3 text-[10px] font-bold tracking-widest uppercase hover:text-foreground"
 			>
-				<ArrowLeft class="mr-2 h-3 w-3" />
+				<ArrowLeft class="w-3 h-3 mr-2" />
 				Back to Settings
 			</Button>
 			<div class="space-y-1">
 				<h1 class="text-3xl font-black tracking-tighter">AI Assistant Settings</h1>
-				<p class="text-muted-foreground text-xs font-bold tracking-widest uppercase">
+				<p class="text-xs font-bold tracking-widest uppercase text-muted-foreground">
 					Configure your in-app developer assistant
 				</p>
 			</div>
@@ -137,8 +139,8 @@
 			<Card class="border-none shadow-sm">
 				<CardHeader>
 					<div class="flex items-center gap-3">
-						<div class="rounded-xl bg-primary/10 p-2 text-primary shadow-xs">
-							<Bot class="h-5 w-5" />
+						<div class="p-2 shadow-xs rounded-xl bg-primary/10 text-primary">
+							<Bot class="w-5 h-5" />
 						</div>
 						<div>
 							<CardTitle>Provider Configuration</CardTitle>
@@ -154,7 +156,7 @@
 								id="provider"
 								bind:value={provider}
 								onchange={handleProviderChange}
-								class="border-input placeholder:text-muted-foreground focus-visible:ring-ring flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+								class="flex w-full h-10 px-3 py-2 text-sm border rounded-md border-input placeholder:text-muted-foreground focus-visible:ring-ring bg-background ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
 							>
 								{#each providers as p (p.value)}
 									<option value={p.value}>{p.label}</option>
@@ -166,7 +168,7 @@
 							<select
 								id="model"
 								bind:value={selectedModelId}
-								class="border-input placeholder:text-muted-foreground focus-visible:ring-ring flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+								class="flex w-full h-10 px-3 py-2 text-sm border rounded-md border-input placeholder:text-muted-foreground focus-visible:ring-ring bg-background ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
 							>
 								{#each availableModels as m (m.id)}
 									<option value={m.id}>{m.name}</option>
@@ -198,7 +200,7 @@
 								class="pr-10"
 							/>
 							<Shield
-								class="text-muted-foreground absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2"
+								class="absolute w-4 h-4 -translate-y-1/2 text-muted-foreground top-1/2 right-3"
 							/>
 						</div>
 						<p class="text-muted-foreground text-[10px]">
@@ -206,7 +208,7 @@
 						</p>
 					</div>
 
-					{#if provider === 'ollama' || provider === 'openrouter'}
+					{#if provider === 'ollama' || provider === 'openrouter' || provider === 'zai'}
 						<div class="space-y-2">
 							<Label for="baseUrl">Base URL (Optional)</Label>
 							<div class="relative">
@@ -215,10 +217,12 @@
 									bind:value={baseUrl}
 									placeholder={provider === 'ollama'
 										? 'http://localhost:11434'
-										: 'https://openrouter.ai/api/v1'}
+										: provider === 'zai'
+											? 'https://api.z.ai/api/coding/paas/v4/chat/completions'
+											: 'https://openrouter.ai/api/v1'}
 								/>
 								<Globe
-									class="text-muted-foreground absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2"
+									class="absolute w-4 h-4 -translate-y-1/2 text-muted-foreground top-1/2 right-3"
 								/>
 							</div>
 						</div>
@@ -229,8 +233,8 @@
 			<Card class="border-none shadow-sm">
 				<CardHeader>
 					<div class="flex items-center gap-3">
-						<div class="rounded-xl bg-primary/10 p-2 text-primary shadow-xs">
-							<Cpu class="h-5 w-5" />
+						<div class="p-2 shadow-xs rounded-xl bg-primary/10 text-primary">
+							<Cpu class="w-5 h-5" />
 						</div>
 						<div>
 							<CardTitle>Agent Personality</CardTitle>
@@ -254,8 +258,8 @@
 			<Card class="border-none shadow-sm">
 				<CardHeader>
 					<div class="flex items-center gap-3">
-						<div class="rounded-xl bg-primary/10 p-2 text-primary shadow-xs">
-							<Zap class="h-5 w-5" />
+						<div class="p-2 shadow-xs rounded-xl bg-primary/10 text-primary">
+							<Zap class="w-5 h-5" />
 						</div>
 						<div>
 							<CardTitle>Response Streaming</CardTitle>
@@ -265,11 +269,11 @@
 				</CardHeader>
 				<CardContent>
 					<div
-						class="flex items-center justify-between gap-4 rounded-xl border border-border/50 bg-muted/20 px-4 py-3"
+						class="flex items-center justify-between gap-4 px-4 py-3 border rounded-xl border-border/50 bg-muted/20"
 					>
 						<div class="space-y-1">
 							<Label class="text-sm">Stream assistant responses</Label>
-							<p class="text-muted-foreground text-xs">
+							<p class="text-xs text-muted-foreground">
 								Show tokens as they arrive instead of waiting for a full response.
 							</p>
 						</div>
@@ -279,11 +283,11 @@
 			</Card>
 
 			<div class="flex justify-end">
-				<Button onclick={handleSave} disabled={isSaving} class="rounded-xl px-8 font-bold">
+				<Button onclick={handleSave} disabled={isSaving} class="px-8 font-bold rounded-xl">
 					{#if isSaving}
 						Saving...
 					{:else}
-						<Save class="mr-2 h-4 w-4" />
+						<Save class="w-4 h-4 mr-2" />
 						Save Configuration
 					{/if}
 				</Button>
