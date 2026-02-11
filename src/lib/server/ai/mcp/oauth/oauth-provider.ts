@@ -232,6 +232,7 @@ export class McpOAuthProvider implements OAuthServerProvider {
 		// Build OAuth tokens response
 		const tokens: OAuthTokens = {
 			access_token: accessToken.token,
+			expires_at: Math.floor(accessToken.expiresAt.getTime() / 1000),
 			token_type: 'Bearer',
 			expires_in: Math.floor((accessToken.expiresAt.getTime() - Date.now()) / 1000),
 			scope: effectiveScopes.join(' '),
