@@ -54,7 +54,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 		requestedOrigin: redirectUrl.origin,
 		requestedHostname: redirectUrl.hostname,
 		requestedPathname: redirectUrl.pathname,
-		registeredRedirectUris: client.redirect_uris.map((u) => u.toString())
+		registeredRedirectUris: client.redirect_uris.map((u: URL) => u.toString())
 	});
 
 	// Check if this is a ChatGPT redirect (trusted)
@@ -67,18 +67,18 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 	let isValidRedirect: boolean;
 	if (isChatgptRedirect) {
 		// For ChatGPT, only check origin (protocol + hostname + port)
-		isValidRedirect = client.redirect_uris.some((uri) => uri.origin === redirectUrl.origin);
+		isValidRedirect = client.redirect_uris.some((uri: URL) => uri.origin === redirectUrl.origin);
 	} else {
 		// For other clients, check both origin and pathname
 		isValidRedirect = client.redirect_uris.some(
-			(uri) => uri.origin === redirectUrl.origin && uri.pathname === redirectUrl.pathname
+			(uri: URL) => uri.origin === redirectUrl.origin && uri.pathname === redirectUrl.pathname
 		);
 	}
 
 	console.log('[OAuth] Redirect URI validation result:', {
 		isChatgptRedirect,
 		isValidRedirect,
-		clientRedirectUris: client.redirect_uris.map((u) => ({
+		clientRedirectUris: client.redirect_uris.map((u: URL) => ({
 			origin: u.origin,
 			pathname: u.pathname
 		}))
@@ -119,7 +119,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 				redirectUrl: finalRedirectUrl.toString(),
 				code: authCode.code,
 				state,
-				registeredRedirectUris: client.redirect_uris.map((u) => u.toString())
+				registeredRedirectUris: client.redirect_uris.map((u: URL) => u.toString())
 			});
 
 			return redirect(302, finalRedirectUrl.toString());

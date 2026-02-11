@@ -110,7 +110,7 @@
 			client_id: app.client_id,
 			client_id_issued_at: app.client_id_issued_at,
 			name: app.client_name || app.name || 'Unnamed App',
-			redirect_uris: (app.redirect_uris || []).map((u) => u.toString()),
+			redirect_uris: (app.redirect_uris || []).map((u: URL) => u.toString()),
 			scopes: app.scope ? app.scope.split(' ') : [],
 			token_endpoint_auth_method: app.token_endpoint_auth_method || 'none',
 			client_secret: app.client_secret,

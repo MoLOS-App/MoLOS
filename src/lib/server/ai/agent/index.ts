@@ -801,7 +801,7 @@ Respond with ONLY the corrected parameters as a JSON object:
 		// Check for tool calls
 		if (response.toolCalls && response.toolCalls.length > 0) {
 			const toolCalls = dedupeToolCalls(
-				response.toolCalls.map((call) => ({
+				response.toolCalls.map((call: { id: string; name: string; parameters: Record<string, unknown> }) => ({
 					...call,
 					parameters: normalizeToolParams(call.parameters)
 				}))

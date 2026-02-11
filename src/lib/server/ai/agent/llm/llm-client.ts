@@ -8,6 +8,15 @@ import type { ToolDefinition } from '$lib/models/ai';
 import type { AgentRuntimeConfig } from '../../runtime-config';
 
 /**
+ * Extended error interface for LLM errors
+ */
+interface LlmError extends Error {
+	code?: string;
+	status?: number;
+	details?: unknown;
+}
+
+/**
  * Response from LLM
  */
 export interface LlmResponse {
@@ -222,10 +231,9 @@ export class LlmClient {
 					}
 
 					// Throw error with code for agent to catch
-					const error = new Error(errorMessage) as any;
+					const error = new Error(errorMessage) as LlmError;
 					error.code = 'llm_request_failed';
 					error.status = status;
-					error.details = errorBody.details;
 					throw error;
 				}
 

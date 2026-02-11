@@ -122,7 +122,7 @@
 				<!-- Name -->
 				<div class="space-y-2">
 					<Label for="name">Application Name *</Label>
-					<Input id="name" bind:value={formData.name} placeholder="My MCP Client" maxlength="100" />
+					<Input id="name" bind:value={formData.name} placeholder="My MCP Client" maxlength={100} />
 				</div>
 
 				<!-- Scopes -->

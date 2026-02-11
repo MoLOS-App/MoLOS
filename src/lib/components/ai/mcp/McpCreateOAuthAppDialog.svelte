@@ -10,7 +10,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Shield, Plus, X } from 'lucide-svelte';
-	import type { OAuthClientInformationFull } from '@modelcontextprotocol/sdk/shared/auth';
+	import type { OAuthClientInformationFull } from '$lib/server/ai/mcp/oauth/clients-store.js';
 
 	let {
 		open,
@@ -144,7 +144,7 @@
 							<Label class="text-xs">Client ID</Label>
 							<div class="mt-1 flex items-center gap-2">
 								<code class="flex-1 rounded border bg-background px-3 py-2 text-sm">
-									{createdApp.client_id}
+									{createdApp?.client_id}
 								</code>
 								<Button
 									variant="outline"
@@ -212,7 +212,7 @@
 				<!-- Name -->
 				<div class="space-y-2">
 					<Label for="name">Application Name *</Label>
-					<Input id="name" bind:value={formData.name} placeholder="My MCP Client" maxlength="100" />
+					<Input id="name" bind:value={formData.name} placeholder="My MCP Client" maxlength={100} />
 				</div>
 
 				<!-- Redirect URIs -->
