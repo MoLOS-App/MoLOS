@@ -7,7 +7,8 @@ export const AIProvider = {
 	OPENAI: 'openai',
 	ANTHROPIC: 'anthropic',
 	OLLAMA: 'ollama',
-	OPENROUTER: 'openrouter'
+	OPENROUTER: 'openrouter',
+	ZAI: 'zai'
 } as const;
 
 export const AIRole = {

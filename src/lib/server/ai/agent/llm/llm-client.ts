@@ -55,6 +55,7 @@ export class LlmClient {
 			case 'openai':
 			case 'openrouter':
 			case 'ollama':
+			case 'zai':
 				return this.callOpenAICompatible(messages, tools, provider, baseUrl);
 			default:
 				throw new Error(`Unsupported provider: ${provider}`);
@@ -121,6 +122,8 @@ export class LlmClient {
 			endpoint = baseUrl || 'https://openrouter.ai/api/v1/chat/completions';
 		} else if (provider === 'ollama') {
 			endpoint = `${baseUrl || 'http://localhost:11434'}/v1/chat/completions`;
+		} else if (provider === 'zai') {
+			endpoint = baseUrl || 'https://api.z.ai/api/coding/paas/v4/chat/completions';
 		}
 
 		const headers: Record<string, string> = {
