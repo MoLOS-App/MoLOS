@@ -185,7 +185,7 @@ export class OAuthTokenService {
 			userId: tokenRecord.userId,
 			tokenType: tokenRecord.tokenType,
 			scopes: tokenRecord.scopes as unknown as string[],
-			expiresAt: tokenRecord.expiresAt,
+			expiresAt: tokenRecord.expiresAt as number | null,
 			revokedAt: tokenRecord.revokedAt
 		};
 	}
@@ -201,7 +201,10 @@ export class OAuthTokenService {
 		if (tokenInfo.tokenType !== 'access') {
 			return null;
 		}
-		return tokenInfo;
+		return {
+			...tokenInfo,
+			expiresAt: tokenInfo.expiresAt as number | null
+		};
 	}
 
 	/**
@@ -215,7 +218,10 @@ export class OAuthTokenService {
 		if (tokenInfo.tokenType !== 'refresh') {
 			return null;
 		}
-		return tokenInfo;
+		return {
+			...tokenInfo,
+			expiresAt: tokenInfo.expiresAt as number | null
+		};
 	}
 
 	/**
