@@ -1,19 +1,23 @@
 <script lang="ts">
-	import { Select as SelectPrimitive } from 'bits-ui';
 	import { cn } from '$lib/utils.js';
 
 	let {
-		ref = $bindable(null),
+		ref = $bindable(undefined),
 		class: className,
 		placeholder,
 		...restProps
-	}: SelectPrimitive.ValueProps = $props();
+	}: {
+		ref?: HTMLDivElement;
+		class?: string;
+		placeholder?: string;
+		[attr: string]: any;
+	} = $props();
 </script>
 
-<SelectPrimitive.Value
-	bind:ref
+<div
+	bind:this={ref}
 	data-slot="select-value"
 	class={cn('flex-1', className)}
 	{placeholder}
 	{...restProps}
-/>
+></div>

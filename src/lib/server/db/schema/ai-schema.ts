@@ -405,6 +405,7 @@ export const aiMcpOAuthCodes = sqliteTable('ai_mcp_oauth_codes', {
  * MCP OAuth Tokens - Access and refresh tokens
  * Stores OAuth tokens issued to clients
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const aiMcpOAuthTokens = sqliteTable('ai_mcp_oauth_tokens', {
 	id: text('id').primaryKey(),
 	clientId: text('client_id')
@@ -419,7 +420,7 @@ export const aiMcpOAuthTokens = sqliteTable('ai_mcp_oauth_tokens', {
 	// Token expiration
 	expiresAt: integer('expires_at', { mode: 'timestamp_ms' }),
 	// Refresh token linkage (for access tokens)
-	refreshTokenId: text('refresh_token_id').references(() => aiMcpOAuthTokens.id),
+	refreshTokenId: text('refresh_token_id').references((): any => aiMcpOAuthTokens.id),
 	// Revocation
 	revokedAt: integer('revoked_at', { mode: 'timestamp_ms' }),
 	// Audit

@@ -7,9 +7,8 @@
 
 import { randomBytes, createHash, timingSafeEqual } from 'crypto';
 import { db } from '$lib/server/db';
-import { aiMcpOAuthTokens } from '$lib/server/db/schema';
-import { eq, and, lt, or, isNull } from 'drizzle-orm';
-import type { MCPOAuthTokenType } from '$lib/server/db/schema';
+import { aiMcpOAuthTokens, MCPOAuthTokenType } from '$lib/server/db/schema';
+import { eq, and, lt, or, isNull, sql } from 'drizzle-orm';
 
 /**
  * Token configuration
@@ -33,7 +32,7 @@ export interface OAuthTokenInfo {
 	id: string;
 	clientId: string;
 	userId: string;
-	tokenType: MCPOAuthTokenType;
+	tokenType: (typeof MCPOAuthTokenType)[keyof typeof MCPOAuthTokenType];
 	scopes: string[];
 	expiresAt: Date | null;
 	revokedAt: Date | null;
@@ -87,7 +86,7 @@ export class OAuthTokenService {
 			userId,
 			tokenType: 'access',
 			token: tokenHash,
-			scopes: JSON.stringify(scopes),
+			scopes,
 			expiresAt,
 			refreshTokenId,
 			createdAt: new Date()
@@ -116,7 +115,7 @@ export class OAuthTokenService {
 			userId,
 			tokenType: 'refresh',
 			token: tokenHash,
-			scopes: JSON.stringify(scopes),
+			scopes,
 			expiresAt,
 			createdAt: new Date()
 		});
@@ -157,13 +156,13 @@ export class OAuthTokenService {
 				and(
 					eq(aiMcpOAuthTokens.token, tokenHash),
 					// Not revoked
-					or(isNull(aiMcpOAuthTokens.revokedAt), eq(aiMcpOAuthTokens.revokedAt, 0)),
+					isNull(aiMcpOAuthTokens.revokedAt),
 					// Not expired (or no expiration set)
 					or(
 						isNull(aiMcpOAuthTokens.expiresAt),
-						eq(aiMcpOAuthTokens.expiresAt, 0)
 						// Check if expiresAt is in the future
 						// Note: We'll handle the date comparison in the application layer
+						sql`${aiMcpOAuthTokens.expiresAt} > ${new Date()}`
 					)
 				)
 			)
@@ -228,9 +227,10 @@ export class OAuthTokenService {
 		const result = await db
 			.update(aiMcpOAuthTokens)
 			.set({ revokedAt: new Date() })
-			.where(and(eq(aiMcpOAuthTokens.token, tokenHash), isNull(aiMcpOAuthTokens.revokedAt)));
+			.where(and(eq(aiMcpOAuthTokens.token, tokenHash), isNull(aiMcpOAuthTokens.revokedAt)))
+			.returning();
 
-		return result.rowCount > 0;
+		return result.length > 0;
 	}
 
 	/**
@@ -246,9 +246,10 @@ export class OAuthTokenService {
 					eq(aiMcpOAuthTokens.userId, userId),
 					isNull(aiMcpOAuthTokens.revokedAt)
 				)
-			);
+			)
+			.returning();
 
-		return result.rowCount;
+		return result.length;
 	}
 
 	/**
@@ -268,9 +269,10 @@ export class OAuthTokenService {
 		const result = await db
 			.update(aiMcpOAuthTokens)
 			.set({ revokedAt: now })
-			.where(eq(aiMcpOAuthTokens.refreshTokenId, refreshTokenId));
+			.where(eq(aiMcpOAuthTokens.refreshTokenId, refreshTokenId))
+			.returning();
 
-		return result.rowCount + 1; // +1 for the refresh token itself
+		return result.length + 1; // +1 for the refresh token itself
 	}
 
 	/**
@@ -284,9 +286,10 @@ export class OAuthTokenService {
 
 		const result = await db
 			.delete(aiMcpOAuthTokens)
-			.where(and(lt(aiMcpOAuthTokens.expiresAt, cutoff)));
+			.where(and(lt(aiMcpOAuthTokens.expiresAt, cutoff)))
+			.returning();
 
-		return result.rowCount;
+		return result.length;
 	}
 }
 

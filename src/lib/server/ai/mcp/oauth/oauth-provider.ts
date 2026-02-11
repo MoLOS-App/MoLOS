@@ -5,17 +5,57 @@
  * This provider handles authorization, token exchange, and token verification.
  */
 
-import type {
-	OAuthServerProvider,
-	AuthorizationParams
-} from '@modelcontextprotocol/sdk/server/auth/provider';
-import type {
-	OAuthClientInformationFull,
-	OAuthTokens,
-	OAuthTokenRevocationRequest
-} from '@modelcontextprotocol/sdk/shared/auth';
-import type { AuthInfo } from '@modelcontextprotocol/sdk/server/auth/types';
-import type { Response } from 'express';
+// Local type definitions to avoid SDK import issues
+interface OAuthServerProvider {
+	clientsStore: unknown;
+	challengeForAuthorizationCode(client: unknown, authorizationCode: string): Promise<string>;
+	exchangeAuthorizationCode(
+		client: unknown,
+		authorizationCode: string,
+		codeVerifier?: string,
+		redirectUri?: string,
+		resource?: URL
+	): Promise<OAuthTokens>;
+	verifyAccessToken(token: string): Promise<AuthInfo | null>;
+	verifyRefreshToken(token: string): Promise<AuthInfo | null>;
+	revokeToken(
+		client: OAuthClientInformationFull,
+		request: OAuthTokenRevocationRequest
+	): Promise<void>;
+}
+interface AuthorizationParams {
+	client_id: string;
+	redirect_uri: string;
+	response_type?: string;
+	scope?: string;
+	state?: string;
+	code_challenge?: string;
+	code_challenge_method?: string;
+	resource?: URL;
+}
+interface OAuthTokens {
+	access_token: string;
+	refresh_token?: string;
+	expires_at: number;
+	expires_in: number;
+	token_type: string;
+	scope?: string;
+}
+interface OAuthTokenRevocationRequest {
+	token: string;
+	token_type_hint?: string;
+}
+interface AuthInfo {
+	id?: string;
+	token: string;
+	clientId: string;
+	scopes: string[];
+	expiresAt?: number;
+	resource?: URL;
+	tokenType?: string;
+	extra?: Record<string, unknown>;
+}
+import type { OAuthClientInformationFull } from './clients-store.js';
 import { oauthTokenService } from './token-service';
 import { oauthClientsStore } from './clients-store';
 import { oauthAuthorizationService } from './authorization-service';
@@ -41,7 +81,8 @@ export class McpOAuthProvider implements OAuthServerProvider {
 	async authorize(
 		client: OAuthClientInformationFull,
 		params: AuthorizationParams,
-		res: Response
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		_res: unknown
 	): Promise<void> {
 		// This is typically called from the MCP SDK's authorization handler
 		// For a web-based flow, we would:
@@ -130,6 +171,7 @@ export class McpOAuthProvider implements OAuthServerProvider {
 		// Build OAuth tokens response
 		const tokens: OAuthTokens = {
 			access_token: accessToken.token,
+			expires_at: Math.floor(accessToken.expiresAt.getTime() / 1000),
 			token_type: 'Bearer',
 			expires_in: Math.floor((accessToken.expiresAt.getTime() - Date.now()) / 1000),
 			scope: scopes.join(' '),
@@ -137,6 +179,20 @@ export class McpOAuthProvider implements OAuthServerProvider {
 		};
 
 		return tokens;
+	}
+
+	/**
+	 * Verify a refresh token specifically
+	 */
+	async verifyRefreshToken(token: string): Promise<AuthInfo | null> {
+		const tokenInfo = await this.verifyAccessToken(token);
+		if (!tokenInfo) {
+			return null;
+		}
+		if (tokenInfo.tokenType !== 'refresh') {
+			return null;
+		}
+		return tokenInfo;
 	}
 
 	/**

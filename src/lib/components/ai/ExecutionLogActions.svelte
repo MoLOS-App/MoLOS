@@ -16,7 +16,7 @@
 		progress.executionLog.filter((e) => e.type === 'error' || e.type === 'warning')
 	);
 
-	const hasFailures = $derived(failedSteps().length > 0);
+	const hasFailures = $derived(failedSteps.length > 0);
 	const isComplete = $derived(progress.status === 'complete' || progress.status === 'error');
 
 	// Only show actions when execution is complete and has failures
@@ -24,7 +24,7 @@
 
 	async function retryFailedSteps() {
 		if (onRetry) {
-			await onRetry(failedSteps());
+			await onRetry(failedSteps);
 		}
 	}
 
@@ -68,8 +68,8 @@
 {#if showActions}
 	<div class="mt-3 flex items-center justify-between border-t border-border/40 pt-3" in:fade>
 		<div class="text-muted-foreground text-[10px]">
-			{failedSteps().length}
-			{failedSteps().length === 1 ? 'step' : 'steps'} failed
+			{failedSteps.length}
+			{failedSteps.length === 1 ? 'step' : 'steps'} failed
 		</div>
 		<div class="flex items-center gap-2">
 			<!-- Export Button -->

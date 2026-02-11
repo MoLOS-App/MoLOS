@@ -8,8 +8,8 @@
 import { randomBytes } from 'crypto';
 import { db } from '$lib/server/db';
 import { aiMcpOAuthCodes } from '$lib/server/db/schema';
-import { eq } from 'drizzle-orm';
-import type { OAuthClientInformationFull } from '@modelcontextprotocol/sdk/shared/auth';
+import { eq, or, and, isNotNull, lt } from 'drizzle-orm';
+import type { OAuthClientInformationFull } from '$lib/server/ai/mcp/oauth/clients-store.js';
 
 /**
  * Authorization code configuration
@@ -196,20 +196,20 @@ export class OAuthAuthorizationService {
 		const now = new Date();
 		const cutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 24 hours ago
 
-		const result = await db.delete(aiMcpOAuthCodes).where(
-			or(
-				lt(aiMcpOAuthCodes.expiresAt, cutoff),
-				// Also delete consumed codes older than cutoff
-				and(isNotNull(aiMcpOAuthCodes.consumedAt), lt(aiMcpOAuthCodes.consumedAt, cutoff))
+		const result = await db
+			.delete(aiMcpOAuthCodes)
+			.where(
+				or(
+					lt(aiMcpOAuthCodes.expiresAt, cutoff),
+					// Also delete consumed codes older than cutoff
+					and(isNotNull(aiMcpOAuthCodes.consumedAt), lt(aiMcpOAuthCodes.consumedAt, cutoff))
+				)
 			)
-		);
+			.returning();
 
-		return result.rowCount;
+		return result.length;
 	}
 }
-
-// Import the 'or' and 'and' operators from drizzle-orm
-import { or, and, isNotNull, lt } from 'drizzle-orm';
 
 // Singleton instance
 export const oauthAuthorizationService = new OAuthAuthorizationService();
