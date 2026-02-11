@@ -2,7 +2,8 @@ export const AIProvider = {
 	OPENAI: 'openai',
 	ANTHROPIC: 'anthropic',
 	OLLAMA: 'ollama',
-	OPENROUTER: 'openrouter'
+	OPENROUTER: 'openrouter',
+	ZAI: 'zai'
 } as const;
 
 export const AIRole = {
@@ -60,6 +61,7 @@ export interface AiMessage {
 	attachments?: { name: string }[];
 	parts?: unknown[];
 	createdAt: Date;
+	metadata?: Record<string, unknown>; // For UI-only metadata like temporary progress messages
 }
 
 export interface AiChatResponse {
@@ -141,6 +143,12 @@ export const PREDEFINED_MODELS = {
 		{ id: 'llama3', name: 'Llama 3' },
 		{ id: 'mistral', name: 'Mistral' },
 		{ id: 'phi3', name: 'Phi-3' }
+	],
+	zai: [
+		{ id: 'GLM-4.7', name: 'GLM-4.7' },
+		{ id: 'GLM-4.6', name: 'GLM-4.6' },
+		{ id: 'GLM-4.5', name: 'GLM-4.5' },
+		{ id: 'GLM-4-32B-0414-128K', name: 'GLM-4-32B-0414-128K' }
 	]
 };
 
@@ -184,3 +192,6 @@ export interface TelegramMessage {
 	toolCalls?: Record<string, unknown>[];
 	createdAt: Date;
 }
+
+// Export MCP (Model Context Protocol) types
+export * from './mcp';
