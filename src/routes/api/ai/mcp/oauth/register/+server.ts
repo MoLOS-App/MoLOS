@@ -101,15 +101,15 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
 	// Build client metadata
 	const clientMetadata = {
-		redirect_uris: validRedirectUris,
+		redirect_uris: validRedirectUris.map((u) => u.toString()),
 		token_endpoint_auth_method: token_endpoint_auth_method as string,
 		grant_types: Array.isArray(grant_types)
 			? (grant_types as string[])
 			: ['authorization_code', 'refresh_token'],
 		response_types: Array.isArray(response_types) ? (response_types as string[]) : ['code'],
 		client_name: client_name ? String(client_name) : 'Unnamed Client',
-		client_uri: client_uri ? new URL(client_uri as string) : undefined,
-		logo_uri: validLogoUri,
+		client_uri: client_uri ? new URL(client_uri as string).toString() : undefined,
+		logo_uri: validLogoUri?.toString(),
 		scope: scope ? String(scope) : undefined,
 		contacts: Array.isArray(contacts) ? (contacts as string[]) : undefined,
 		tos_uri: tos_uri ? String(tos_uri) : undefined,
