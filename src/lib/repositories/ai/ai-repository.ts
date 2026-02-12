@@ -135,6 +135,7 @@ export class AiRepository extends BaseRepository {
 	): Promise<AiMessage> {
 		const { toolCallId, toolCalls, attachments, parts, ...rest } = message;
 
+		// Insert message into database and return saved message
 		const result = await this.db
 			.insert(aiMessages)
 			.values({
@@ -155,7 +156,16 @@ export class AiRepository extends BaseRepository {
 			.set({ updatedAt: new Date() } as any)
 			.where(eq(aiSessions.id, message.sessionId));
 
-		return this.mapToMessage(result[0] as Record<string, unknown>);
+		// Fetch complete message from database (to get actual ID and full data)
+		const savedMessages = await this.db
+			.select()
+			.from(aiMessages)
+			.where(and(eq(aiMessages.sessionId, message.sessionId), eq(aiMessages.userId, userId)))
+			.orderBy(desc(aiMessages.createdAt))
+			.limit(1);
+
+		// Return complete saved message with all fields
+		return savedMessages[0] ? this.mapToMessage(savedMessages[0] as Record<string, unknown>) : null;
 	}
 
 	async clearHistory(userId: string): Promise<void> {
