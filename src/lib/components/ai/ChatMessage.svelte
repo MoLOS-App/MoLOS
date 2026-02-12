@@ -17,7 +17,10 @@
 	let copied = $state(false);
 
 	// Extract progress log from metadata if available
-	const progressLog = $derived((message.metadata?.progressLog || []) as string[]);
+	const metadata = $derived(
+		message.contextMetadata ? JSON.parse(message.contextMetadata) : {}
+	);
+	const progressLog = $derived((metadata?.progressLog || []) as string[]);
 	const hasProgressLog = $derived(progressLog.length > 0);
 
 	const processed = $derived(processMessage(message));
@@ -32,14 +35,14 @@
 
 	function processMessage(msg: AiMessage) {
 		const content = msg.content || '';
-		const metadata = msg.contextMetadata ? JSON.parse(msg.contextMetadata) : {};
+		const msgMetadata = msg.contextMetadata ? JSON.parse(msg.contextMetadata) : {};
 
 		// Extract thoughts and plans
 		const thoughtMatch = content.match(/<thought>([\s\S]*?)<\/thought>/);
-		let thought = thoughtMatch ? thoughtMatch[1].trim() : metadata.thought || null;
+		let thought = thoughtMatch ? thoughtMatch[1].trim() : msgMetadata.thought || null;
 
 		const planMatch = content.match(/<plan>([\s\S]*?)<\/plan>/);
-		let plan = planMatch ? planMatch[1].trim() : metadata.plan || null;
+		let plan = planMatch ? planMatch[1].trim() : msgMetadata.plan || null;
 
 		// If plan is an object, format it for display
 		if (plan && typeof plan === 'object') {
@@ -74,7 +77,7 @@ ${steps
 			thought,
 			plan,
 			content: cleanContent,
-			actions: metadata.actions || [],
+			actions: msgMetadata.actions || [],
 			attachments: msg.attachments || [],
 			parts: msg.parts || []
 		};

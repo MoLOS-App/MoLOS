@@ -94,6 +94,9 @@
 		}
 	}
 
+	// Track progress log for current assistant message
+	let progressLog = $state<string[]>([]);
+
 	async function handleStreamResponse(res: Response, assistantMessageId: string) {
 		const reader = res.body?.getReader();
 		if (!reader) throw new Error('Streaming response unavailable');
@@ -101,6 +104,7 @@
 		const decoder = new TextDecoder();
 		let buffer = '';
 		let content = '';
+		progressLog = []; // Reset progress log for new message
 
 		while (true) {
 			const { value, done } = await reader.read();
@@ -115,7 +119,13 @@
 				if (payload === '[DONE]') {
 					return;
 				}
-				let data: { type?: string; content?: string; message?: string } & {
+				let data: {
+					type?: string;
+					content?: string;
+					message?: string;
+					eventType?: string;
+					data?: any;
+				} & {
 					sessionId?: string;
 					actions?: AiAction[];
 				};
@@ -124,17 +134,67 @@
 				} catch {
 					continue;
 				}
-				if (data.type === 'chunk') {
+
+				// Handle progress events (intermediate updates)
+				if (data.type === 'progress') {
+					handleProgressEvent(data.eventType, data.data, assistantMessageId);
+					if (data.eventType === 'text' && data.data?.delta) {
+						content += data.data.delta;
+						updateAssistantMessage(assistantMessageId, content);
+						await scrollToBottom();
+					}
+				} else if (data.type === 'chunk') {
 					content += data.content || '';
 					updateAssistantMessage(assistantMessageId, content);
 					await scrollToBottom();
 				} else if (data.type === 'meta') {
 					applyStreamMeta(data);
+					// Store progress log in message metadata
+					if (progressLog.length > 0) {
+						updateMessageMetadata(assistantMessageId, { progressLog });
+					}
 				} else if (data.type === 'error') {
 					throw new Error(data.message || 'Streaming failed');
 				}
 			}
 		}
+	}
+
+	function handleProgressEvent(eventType: string | undefined, eventData: any, messageId: string) {
+		switch (eventType) {
+			case 'tool_start':
+				const toolName = eventData?.toolName || 'unknown';
+				progressLog.push(`🔧 Calling tool: ${toolName}`);
+				break;
+			case 'tool_complete':
+				const completedTool = eventData?.toolName || 'unknown';
+				progressLog.push(`✓ Tool completed: ${completedTool}`);
+				break;
+			case 'step_complete':
+				if (eventData?.toolCalls?.length) {
+					progressLog.push(`📝 Step completed with ${eventData.toolCalls.length} tool call(s)`);
+				}
+				break;
+			case 'error':
+				progressLog.push(`❌ Error: ${eventData?.error || 'Unknown error'}`);
+				break;
+			case 'complete':
+				progressLog.push(`✅ Response complete`);
+				break;
+		}
+	}
+
+	function updateMessageMetadata(messageId: string, metadata: Record<string, any>) {
+		messages = messages.map((msg) => {
+			if (msg.id === messageId) {
+				const existingMetadata = msg.contextMetadata ? JSON.parse(msg.contextMetadata) : {};
+				return {
+					...msg,
+					contextMetadata: JSON.stringify({ ...existingMetadata, ...metadata })
+				};
+			}
+			return msg;
+		});
 	}
 
 	async function sendMessage() {
