@@ -21,11 +21,16 @@ export interface ExecutionLogEntry {
 }
 
 export interface CurrentAction {
-	type: 'plan' | 'step_start' | 'step_complete' | 'step_failed' | 'thinking';
+	type: 'plan' | 'step_start' | 'step_complete' | 'step_failed' | 'thinking' | 'thought' | 'observation';
 	message: string;
 	step?: number;
 	total?: number;
 	timestamp: number;
+	// Additional fields for autonomous loop
+	toolName?: string;
+	reasoning?: string;
+	nextAction?: string;
+	confidence?: number;
 }
 
 export interface ProgressState {

@@ -241,6 +241,43 @@
 				addProgressLine(`📋 Plan: ${eventData.goal}\nSteps: ${eventData.totalSteps || 'Unknown'}`);
 				break;
 
+			case 'thought':
+				// New autonomous loop event - agent is thinking about what to do next
+				currentProgress.status = 'thinking';
+				currentProgress.currentAction = {
+					type: 'thought',
+					message: eventData.reasoning || `Iteration ${eventData.iteration}: ${eventData.nextAction}`,
+					step: eventData.iteration,
+					total: eventData.totalSteps,
+					timestamp: now,
+					reasoning: eventData.reasoning,
+					nextAction: eventData.nextAction,
+					confidence: eventData.confidence
+				};
+				// Add thought to progress log
+				if (eventData.reasoning && eventData.reasoning.length > 10) {
+					addProgressLine(`💭 [${eventData.iteration}] ${eventData.reasoning}`);
+				}
+				break;
+
+			case 'observation':
+				// New autonomous loop event - agent received a tool result
+				currentProgress.status = 'executing';
+				const obsMessage = eventData.isSuccess
+					? `✓ ${eventData.toolName}: Success`
+					: `✗ ${eventData.toolName}: Failed`;
+				currentProgress.currentAction = {
+					type: 'observation',
+					message: obsMessage,
+					step: eventData.iteration,
+					total: eventData.totalSteps,
+					timestamp: now,
+					toolName: eventData.toolName
+				};
+				// Add observation to progress log
+				addProgressLine(`👁 ${obsMessage}${eventData.durationMs ? ` (${eventData.durationMs}ms)` : ''}`);
+				break;
+
 			case 'step_start':
 				currentProgress.status = 'executing';
 				currentProgress.currentAction = {
