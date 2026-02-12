@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { AiRepository } from '$lib/repositories/ai/ai-repository';
-import { AiAgent } from '$lib/server/ai/agent';
+import { AiAgentV2Adapter } from '$lib/server/ai/agent-v2-adapter';
 import { SettingsRepository } from '$lib/repositories/settings/settings-repository';
 import { eq } from 'drizzle-orm';
 
@@ -172,7 +172,7 @@ export const POST: RequestHandler = async ({ request }) => {
 			content: messageText
 		});
 
-		// Use AiAgent to process the message
+		// Use AiAgentV2Adapter to process the message
 		if (!session.aiSessionId) {
 			await sendTelegramMessage(
 				settings.botToken,
@@ -182,7 +182,7 @@ export const POST: RequestHandler = async ({ request }) => {
 			return json({ ok: true });
 		}
 
-		console.log(`[Telegram Webhook] Processing with AiAgent...`);
+		console.log(`[Telegram Webhook] Processing with AiAgentV2Adapter...`);
 
 		// Get active external modules for tools
 		const settingsRepo = new SettingsRepository();
@@ -191,7 +191,7 @@ export const POST: RequestHandler = async ({ request }) => {
 
 		console.log(`[Telegram Webhook] Active modules: ${activeModuleIds.join(', ') || 'none'}`);
 
-		const agent = new AiAgent(userId);
+		const agent = new AiAgentV2Adapter(userId);
 		const response = await agent.processMessage(
 			messageText,
 			session.aiSessionId,
@@ -315,7 +315,7 @@ async function handleCallbackQuery(
 		const activeModuleIds = activeExternalModules.map((m) => m.id);
 
 		// Execute each action and get final response
-		const agent = new AiAgent(userId);
+		const agent = new AiAgentV2Adapter(userId);
 		let finalResponse = '';
 
 		for (const pendingAction of pendingActions) {
