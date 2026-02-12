@@ -156,7 +156,8 @@ export type ProgressEventType =
 	| 'error'
 	| 'text'
 	| 'tool_start'
-	| 'tool_complete';
+	| 'tool_complete'
+	| 'message_segment';
 
 /**
  * Progress event for streaming to UI

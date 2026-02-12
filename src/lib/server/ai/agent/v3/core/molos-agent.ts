@@ -3,6 +3,9 @@
  *
  * The main agent class that uses Vercel AI SDK for LLM interactions
  * while preserving MoLOS-specific features (hooks, events, telemetry).
+ *
+ * Supports multi-message streaming where the agent can send multiple
+ * sequential messages before/during/after tool calls.
  */
 
 import {
@@ -33,6 +36,16 @@ import {
 	getModuleRegistry,
 } from '../multi-agent';
 import type { ModuleAgentConfig } from '../types';
+
+/**
+ * Message segment - represents a partial message from the agent
+ */
+export interface MessageSegment {
+	id: string;
+	content: string;
+	isComplete: boolean;
+	timestamp: number;
+}
 
 /**
  * Generate a unique run ID
@@ -304,13 +317,55 @@ export class MoLOSAgent {
 	}
 
 	/**
-	 * Stream results to event bus
+	 * Stream results to event bus with message segment tracking
+	 *
+	 * This enables multi-message streaming where the agent can send
+	 * multiple sequential messages before/during/after tool calls.
 	 */
 	private async streamToEventBus(
 		result: StreamTextResult<any, any>,
 		runId: string,
 		onProgress?: (event: ProgressEvent) => void | Promise<void>
 	): Promise<void> {
+		// Track message segments
+		let currentSegmentId = `seg_${runId}_0`;
+		let currentSegmentContent = '';
+		let segmentIndex = 0;
+
+		const emitSegment = async (isComplete: boolean) => {
+			if (currentSegmentContent.trim()) {
+				const event: ProgressEvent = {
+					type: 'message_segment',
+					timestamp: Date.now(),
+					data: {
+						id: currentSegmentId,
+						content: currentSegmentContent,
+						isComplete,
+						segmentIndex,
+					},
+				};
+
+				// Emit to event bus
+				this.eventBus.emitSync({
+					type: event.type as any,
+					timestamp: event.timestamp,
+					data: event.data,
+				} as any);
+
+				// Call progress callback
+				if (onProgress) {
+					await onProgress(event);
+				}
+
+				// Start new segment if this one is complete
+				if (isComplete) {
+					segmentIndex++;
+					currentSegmentId = `seg_${runId}_${segmentIndex}`;
+					currentSegmentContent = '';
+				}
+			}
+		};
+
 		try {
 			for await (const chunk of result.fullStream) {
 				const event: ProgressEvent = {
@@ -321,16 +376,26 @@ export class MoLOSAgent {
 
 				switch (chunk.type) {
 					case 'text-delta':
+						// Accumulate text for current segment
+						currentSegmentContent += chunk.text;
 						event.type = 'text';
-						event.data = { delta: chunk.text };
+						event.data = {
+							delta: chunk.text,
+							segmentId: currentSegmentId,
+							segmentIndex,
+						};
 						break;
 
 					case 'tool-call':
+						// Before tool call, finalize current segment if has content
+						await emitSegment(true);
+
 						event.type = 'tool_start';
 						event.data = {
 							toolName: chunk.toolName,
 							toolCallId: chunk.toolCallId,
 							input: chunk.input,
+							segmentIndex,
 						};
 						break;
 
@@ -340,6 +405,7 @@ export class MoLOSAgent {
 							toolName: chunk.toolName,
 							toolCallId: chunk.toolCallId,
 							result: chunk.output,
+							segmentIndex,
 						};
 						break;
 
@@ -349,10 +415,14 @@ export class MoLOSAgent {
 						break;
 
 					case 'finish':
+						// Finalize any remaining content
+						await emitSegment(true);
+
 						event.type = 'complete';
 						event.data = {
 							finishReason: chunk.finishReason,
 							usage: chunk.totalUsage,
+							totalSegments: segmentIndex,
 						};
 						break;
 
@@ -361,7 +431,7 @@ export class MoLOSAgent {
 						continue;
 				}
 
-				// Emit to event bus
+				// Emit to event bus and call progress callback
 				this.eventBus.emitSync({
 					type: event.type as any,
 					timestamp: event.timestamp,

@@ -96,6 +96,8 @@
 
 	// Track progress log for current assistant message
 	let progressLog = $state<string[]>([]);
+	// Track message segments for multi-message streaming
+	let segmentMessages = $state<Map<string, { id: string; content: string; isComplete: boolean }>>(new Map());
 
 	async function handleStreamResponse(res: Response, assistantMessageId: string) {
 		const reader = res.body?.getReader();
@@ -105,6 +107,7 @@
 		let buffer = '';
 		let content = '';
 		progressLog = []; // Reset progress log for new message
+		segmentMessages = new Map(); // Reset segments
 
 		while (true) {
 			const { value, done } = await reader.read();
@@ -137,11 +140,21 @@
 
 				// Handle progress events (intermediate updates)
 				if (data.type === 'progress') {
-					handleProgressEvent(data.eventType, data.data, assistantMessageId);
-					if (data.eventType === 'text' && data.data?.delta) {
-						content += data.data.delta;
-						updateAssistantMessage(assistantMessageId, content);
-						await scrollToBottom();
+					const eventData = data.data;
+					const eventType = data.eventType;
+
+					// Handle message_segment events for multi-message streaming
+					if (eventType === 'message_segment') {
+						handleMessageSegment(eventData, assistantMessageId);
+					} else {
+						handleProgressEvent(eventType, eventData, assistantMessageId);
+
+						// Also update content for text deltas (backward compatibility)
+						if (eventType === 'text' && eventData?.delta) {
+							content += eventData.delta;
+							updateAssistantMessage(assistantMessageId, content);
+							await scrollToBottom();
+						}
 					}
 				} else if (data.type === 'chunk') {
 					content += data.content || '';
@@ -157,6 +170,73 @@
 					throw new Error(data.message || 'Streaming failed');
 				}
 			}
+		}
+	}
+
+	/**
+	 * Handle message_segment events for multi-message streaming
+	 * Creates separate message bubbles for each segment
+	 */
+	function handleMessageSegment(eventData: any, baseMessageId: string) {
+		if (!eventData?.id) return;
+
+		const segmentId = eventData.id;
+		const content = eventData.content || '';
+		const isComplete = eventData.isComplete ?? false;
+		const segmentIndex = eventData.segmentIndex ?? 0;
+
+		// Update or create the segment
+		segmentMessages.set(segmentId, {
+			id: segmentId,
+			content,
+			isComplete
+		});
+
+		// Convert segments to message format
+		const segmentMsgs = Array.from(segmentMessages.values())
+			.filter(s => s.content.trim())
+			.sort((a, b) => {
+				// Sort by segment ID which contains index
+				const aIdx = parseInt(a.id.split('_').pop() || '0');
+				const bIdx = parseInt(b.id.split('_').pop() || '0');
+				return aIdx - bIdx;
+			});
+
+		// If we have multiple segments, render them as separate messages
+		if (segmentMsgs.length > 1 || (segmentMsgs.length === 1 && segmentMsgs[0].isComplete)) {
+			// Remove old segment messages and add new ones
+			messages = messages.filter(m => !m.id.startsWith(`seg_${baseMessageId}`));
+
+			// Add segment messages
+			for (let i = 0; i < segmentMsgs.length; i++) {
+				const seg = segmentMsgs[i];
+				const msgId = seg.id;
+
+				// Only add if content exists
+				if (seg.content.trim()) {
+					const newMsg: AiMessage = {
+						id: msgId,
+						userId: '',
+						sessionId: currentSessionId || '',
+						role: 'assistant',
+						content: seg.content,
+						createdAt: new Date(),
+						contextMetadata: JSON.stringify({
+							isSegment: true,
+							segmentIndex: i,
+							progressLog: i === segmentMsgs.length - 1 ? progressLog : []
+						})
+					};
+
+					messages = [...messages, newMsg];
+				}
+			}
+
+			scrollToBottom();
+		} else if (segmentMsgs.length === 1 && !segmentMsgs[0].isComplete) {
+			// Single incomplete segment - update in place
+			updateAssistantMessage(baseMessageId, segmentMsgs[0].content);
+			scrollToBottom();
 		}
 	}
 
