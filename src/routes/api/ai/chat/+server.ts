@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { AiAgentV2Adapter } from '$lib/server/ai/agent-v2-adapter';
+import { AiAgentV3Adapter } from '$lib/server/ai/agent-v3-adapter';
 import { AiRepository } from '$lib/repositories/ai/ai-repository';
 
 const chunkText = (text: string, size: number = 32): string[] => {
@@ -31,7 +31,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		parts,
 		stream: streamRequested
 	} = body;
-	const agent = new AiAgentV2Adapter(locals.user.id);
+	const agent = new AiAgentV3Adapter(locals.user.id);
 	const aiRepo = new AiRepository();
 	const settings = await aiRepo.getSettings(locals.user.id);
 	const shouldStream = Boolean(streamRequested && (settings?.streamEnabled ?? true));
