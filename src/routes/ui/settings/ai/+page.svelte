@@ -216,9 +216,9 @@
 									id="baseUrl"
 									bind:value={baseUrl}
 									placeholder={provider === 'ollama'
-										? 'http://localhost:11434'
+										? 'http://localhost:11434/v1'
 										: provider === 'zai'
-											? 'https://api.z.ai/api/coding/paas/v4/chat/completions'
+											? 'https://api.z.ai/api/coding/paas/v4'
 											: 'https://openrouter.ai/api/v1'}
 								/>
 								<Globe
