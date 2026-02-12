@@ -218,32 +218,32 @@ ${steps
 								{/if}
 							</div>
 						{/if}
+					</div>
+				{/if}
 
-						<!-- Progress Log Accordion (shown for messages with progress log) -->
-						{#if hasProgressLog}
-							<div class="mt-4 space-y-2">
-								<button
-									class="text-muted-foreground/70 flex items-center gap-2 text-[11px] font-medium transition-colors hover:text-foreground"
-									onclick={() => toggleProgressLog(message.id)}
-								>
-									<ListChecks class="h-3 w-3" />
-									{expandedProgressLog[message.id] ? 'Hide Execution Log' : 'Show Execution Log'}
-									<span class="ml-1 rounded-full bg-muted/50 px-1.5 py-0.5 text-[9px]">
-										{progressLog.length}
-										{progressLog.length === 1 ? 'entry' : 'entries'}
-									</span>
-								</button>
+				<!-- Progress Log Accordion (shown independently for messages with progress log) -->
+				{#if hasProgressLog}
+					<div class="space-y-2 {processed.content.trim() !== '' || processed.thought || processed.plan ? 'mt-4 border-t border-border/40 pt-3' : ''}">
+						<button
+							class="text-muted-foreground/70 flex items-center gap-2 text-[11px] font-medium transition-colors hover:text-foreground"
+							onclick={() => toggleProgressLog(message.id)}
+						>
+							<ListChecks class="h-3 w-3" />
+							{expandedProgressLog[message.id] ? 'Hide Execution Log' : 'Show Execution Log'}
+							<span class="ml-1 rounded-full bg-muted/50 px-1.5 py-0.5 text-[9px]">
+								{progressLog.length}
+								{progressLog.length === 1 ? 'entry' : 'entries'}
+							</span>
+						</button>
 
-								{#if expandedProgressLog[message.id]}
-									<div
-										class="text-muted-foreground/90 max-h-64 overflow-y-auto rounded-xl border border-border/50 bg-muted/20 p-3 font-mono text-[11px]"
-										transition:slide
-									>
-										{#each progressLog as line, index (index)}
-											<div class="mb-1 last:mb-0">{line}</div>
-										{/each}
-									</div>
-								{/if}
+						{#if expandedProgressLog[message.id]}
+							<div
+								class="text-muted-foreground/90 max-h-64 overflow-y-auto rounded-xl border border-border/50 bg-muted/20 p-3 font-mono text-[11px]"
+								transition:slide
+							>
+								{#each progressLog as line, index (index)}
+									<div class="mb-1 last:mb-0">{line}</div>
+								{/each}
 							</div>
 						{/if}
 					</div>

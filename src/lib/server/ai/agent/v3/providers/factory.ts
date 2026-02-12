@@ -25,7 +25,6 @@ export function createProvider(config: ProviderConfig) {
 				name: 'openrouter',
 				baseURL: 'https://openrouter.ai/api/v1',
 				apiKey: config.apiKey,
-				compatibility: 'compatible',
 			}).chat(config.modelName);
 
 		case 'ollama':
@@ -33,7 +32,6 @@ export function createProvider(config: ProviderConfig) {
 				name: 'ollama',
 				baseURL: config.baseUrl || 'http://localhost:11434/v1',
 				apiKey: 'ollama', // Ollama doesn't need a real API key
-				compatibility: 'compatible',
 			}).chat(config.modelName);
 
 		case 'zai':
@@ -41,7 +39,6 @@ export function createProvider(config: ProviderConfig) {
 				name: 'zai',
 				baseURL: config.baseUrl || 'https://api.z.ai/api/coding/paas/v4',
 				apiKey: config.apiKey,
-				compatibility: 'compatible',
 			}).chat(config.modelName);
 
 		default:

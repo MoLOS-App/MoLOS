@@ -5,7 +5,7 @@ import {
 	clearToolCache
 } from './tool-wrapper';
 import type { ToolDefinition } from '../types';
-import type { EventBus } from '../../v2/events/event-bus';
+import type { EventBus } from '../events/event-bus';
 
 // Mock EventBus
 const createMockEventBus = () => ({

@@ -9,8 +9,8 @@ import { tool, type ToolSet } from 'ai';
 import { z } from 'zod';
 import type { ToolDefinition, ToolExecutionResult } from '../types';
 import { convertTypeBoxToZod } from './schema-converter';
-import type { HookManager } from '../../v2/hooks/hook-manager';
-import type { EventBus } from '../../v2/events/event-bus';
+import type { HookManager } from '../hooks/hook-manager';
+import type { EventBus } from '../events/event-bus';
 
 /**
  * Options for wrapping tools

@@ -26,8 +26,8 @@ import type {
 import { toModelMessages } from '../types';
 import { convertToolsToAiSdk, type ToolWrapperOptions } from '../tools';
 import { getProviderOptions } from '../providers';
-import { EventBus, getGlobalEventBus } from '../../v2/events/event-bus';
-import { createHookManager, type HookManager } from '../../v2/hooks/hook-manager';
+import { EventBus, getGlobalEventBus } from '../events/event-bus';
+import { createHookManager, type HookManager } from '../hooks/hook-manager';
 import {
 	ModuleRegistry,
 	getModuleRegistry,
