@@ -26,7 +26,7 @@ export function createProvider(config: ProviderConfig) {
 				baseURL: 'https://openrouter.ai/api/v1',
 				apiKey: config.apiKey,
 				compatibility: 'compatible',
-			})(config.modelName);
+			}).chat(config.modelName);
 
 		case 'ollama':
 			return createOpenAI({
@@ -34,7 +34,7 @@ export function createProvider(config: ProviderConfig) {
 				baseURL: config.baseUrl || 'http://localhost:11434/v1',
 				apiKey: 'ollama', // Ollama doesn't need a real API key
 				compatibility: 'compatible',
-			})(config.modelName);
+			}).chat(config.modelName);
 
 		case 'zai':
 			return createOpenAI({
@@ -42,7 +42,7 @@ export function createProvider(config: ProviderConfig) {
 				baseURL: config.baseUrl || 'https://api.z.ai/api/coding/paas/v4',
 				apiKey: config.apiKey,
 				compatibility: 'compatible',
-			})(config.modelName);
+			}).chat(config.modelName);
 
 		default:
 			throw new Error(`Unsupported provider: ${config.provider}`);
