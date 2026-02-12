@@ -91,7 +91,39 @@ function normalizeDbPath(raw: string): string {
 }
 
 /**
- * Get active modules from database
+ * Quick validation for modules during linking
+ */
+function quickValidateModule(moduleId: string, modulePath: string): {
+	valid: boolean;
+	error?: string
+} {
+	// 1. Check manifest exists
+	const manifestPath = path.join(modulePath, 'manifest.yaml');
+	if (!existsSync(manifestPath)) {
+		return { valid: false, error: 'Missing manifest.yaml' };
+	}
+
+	// 2. Check config exists
+	const configPath = path.join(modulePath, 'config.ts');
+	if (!existsSync(configPath)) {
+		return { valid: false, error: 'Missing config.ts' };
+	}
+
+	// 3. Check for broken symlinks
+	try {
+		const stats = lstatSync(modulePath);
+		if (stats.isSymbolicLink() && !existsSync(modulePath)) {
+			return { valid: false, error: 'Broken symlink' };
+		}
+	} catch {
+		return { valid: false, error: 'Cannot access module directory' };
+	}
+
+	return { valid: true };
+}
+
+/**
+ * Get active modules from database (excluding disabled)
  */
 function getActiveModulesFromDb(): Set<string> | null {
 	const dbUrl = process.env.DATABASE_URL;
@@ -114,14 +146,57 @@ function getActiveModulesFromDb(): Set<string> | null {
 		const db = new Database(dbPath, { readonly: true, fileMustExist: true });
 		const rows = db.prepare('select id, status from settings_external_modules').all();
 		db.close();
-		return new Set(
-			rows
-				.filter((row: { status: string }) => row.status === 'active')
-				.map((row: { id: string }) => row.id)
-		);
+
+		// Filter out disabled modules
+		const activeModules = rows
+			.filter((row: { status: string }) => row.status === 'active')
+			.map((row: { id: string }) => row.id);
+
+		// Log disabled modules being skipped
+		const disabledModules = rows
+			.filter((row: { status: string }) => row.status === 'disabled')
+			.map((row: { id: string }) => row.id);
+
+		if (disabledModules.length > 0) {
+			console.log(`[ModuleLinker] Skipping ${disabledModules.length} disabled modules: ${disabledModules.join(', ')}`);
+		}
+
+		return new Set(activeModules);
 	} catch (e) {
 		console.warn('[ModuleLinker] Unable to read external module status from DB:', e);
 		return null;
+	}
+}
+
+/**
+ * Mark a module as disabled in the database
+ */
+function markModuleDisabled(moduleId: string, error: string): void {
+	const dbUrl = process.env.DATABASE_URL;
+	if (!dbUrl) return;
+
+	const dbPath = normalizeDbPath(dbUrl);
+
+	if (!existsSync(dbPath)) {
+		return;
+	}
+
+	try {
+		const require = createRequire(import.meta.url);
+		const Database = require('better-sqlite3');
+		const db = new Database(dbPath);
+
+		db.prepare(`
+			UPDATE settings_external_modules
+			SET status = 'disabled',
+			    last_error = ?
+			WHERE id = ?
+		`).run(error, moduleId);
+
+		db.close();
+		console.warn(`[ModuleLinker] Module ${moduleId} marked as disabled: ${error}`);
+	} catch (e) {
+		console.warn(`[ModuleLinker] Could not mark module ${moduleId} as disabled:`, e);
 	}
 }
 
@@ -275,8 +350,13 @@ export async function linkExternalModules(
 			continue;
 		}
 
-		// We only link if a manifest exists (basic validation)
-		if (!existsSync(path.join(modulePath, 'manifest.yaml'))) continue;
+		// Quick validation before linking
+		const validation = quickValidateModule(moduleId, modulePath);
+		if (!validation.valid) {
+			console.warn(`[ModuleLinker] Skipping invalid module ${moduleId}: ${validation.error}`);
+			markModuleDisabled(moduleId, validation.error || 'Validation failed');
+			continue;
+		}
 
 		try {
 			// 1. Link to config registry

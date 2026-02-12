@@ -58,6 +58,28 @@ export class ModuleInitialization {
 	}
 
 	/**
+	 * Mark a module as disabled in the database
+	 * Used when module validation or standardization fails
+	 */
+	private static async markModuleAsDisabled(
+		moduleId: string,
+		error: Error,
+		settingsRepo: any
+	): Promise<void> {
+		try {
+			await settingsRepo.updateExternalModuleStatus(moduleId, 'disabled', {
+				status: 'disabled',
+				errorType: 'config_export',
+				message: error.message,
+				timestamp: new Date()
+			});
+			console.warn(`[ModuleManager] Module ${moduleId} marked as disabled: ${error.message}`);
+		} catch (dbError) {
+			console.error(`[ModuleManager] Failed to mark module ${moduleId} as disabled:`, dbError);
+		}
+	}
+
+	/**
 	 * Determine if an error is transient (retriable) or permanent
 	 */
 	private static isTransientError(error: unknown): boolean {
@@ -384,7 +406,17 @@ export class ModuleInitialization {
 			await migrationRunner.runMigrations(moduleId, migrationsDir);
 
 			// 4. Standardize Exports
-			this.standardizeModuleExports(moduleId, stagingPath);
+			try {
+				this.standardizeModuleExports(moduleId, stagingPath, settingsRepo);
+			} catch (standardizationError) {
+				// If standardization fails, mark module as disabled and abort
+				const error =
+					standardizationError instanceof Error
+						? standardizationError
+						: new Error(String(standardizationError));
+				await this.markModuleAsDisabled(moduleId, error, settingsRepo);
+				throw new Error(`Module ${moduleId} standardization failed: ${error.message}`);
+			}
 
 			// 5. Swap staged module into place (rollback-capable)
 			if (backupPath && existsSync(modulePath)) {
@@ -545,11 +577,21 @@ export class ModuleInitialization {
 	/**
 	 * Standardize module configuration and exports
 	 */
-	private static standardizeModuleExports(moduleId: string, modulePath: string): void {
+	private static standardizeModuleExports(
+		moduleId: string,
+		modulePath: string,
+		settingsRepo?: any
+	): void {
 		const configPath = path.join(modulePath, 'config.ts');
 		if (!existsSync(configPath)) return;
 		if (lstatSync(configPath).isSymbolicLink()) {
-			throw new Error(`Refusing to modify symlinked config: ${configPath}`);
+			// Don't throw - just log and mark for disable
+			const error = new Error(`Refusing to modify symlinked config: ${configPath}`);
+			console.error(`[ModuleManager] ${error.message}`);
+			if (settingsRepo) {
+				this.markModuleAsDisabled(moduleId, error, settingsRepo);
+			}
+			return;
 		}
 
 		let content = readFileSync(configPath, 'utf-8');

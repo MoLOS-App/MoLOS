@@ -28,6 +28,50 @@ interface ModuleLinkState {
 }
 
 /**
+ * Quick validation for modules during Vite linking
+ * Similar to module-validator but optimized for build-time performance
+ */
+function quickValidateModule(moduleId: string, modulePath: string): {
+	valid: boolean;
+	error?: string
+} {
+	// 1. Check manifest exists
+	const manifestPath = path.join(modulePath, 'manifest.yaml');
+	if (!existsSync(manifestPath)) {
+		return { valid: false, error: 'Missing manifest.yaml' };
+	}
+
+	// 2. Check config exists
+	const configPath = path.join(modulePath, 'config.ts');
+	if (!existsSync(configPath)) {
+		return { valid: false, error: 'Missing config.ts' };
+	}
+
+	// 3. Check for broken symlinks
+	try {
+		const stats = lstatSync(modulePath);
+		if (stats.isSymbolicLink() && !existsSync(modulePath)) {
+			return { valid: false, error: 'Broken symlink' };
+		}
+	} catch {
+		return { valid: false, error: 'Cannot access module directory' };
+	}
+
+	// 4. Basic YAML syntax check (quick)
+	try {
+		const yamlContent = readFileSync(manifestPath, 'utf-8');
+		// Check for basic YAML structure issues
+		if (!yamlContent.includes('id:') || !yamlContent.includes('name:')) {
+			return { valid: false, error: 'Invalid manifest (missing required fields)' };
+		}
+	} catch {
+		return { valid: false, error: 'Cannot read manifest' };
+	}
+
+	return { valid: true };
+}
+
+/**
  * MoLOS Module Linker
  * This runs during Vite config load to ensure external modules are symlinked
  * before SvelteKit starts its route discovery.
@@ -112,6 +156,15 @@ function linkExternalModules() {
 	const linkState = getLinkState();
 	const activeModuleIds = linkState ? new Set(linkState.linkedModules) : getActiveModulesFromDb();
 
+	// Filter out disabled modules from database
+	if (activeModuleIds) {
+		const disabledModuleIds = getDisabledModulesFromDb();
+		for (const disabledId of disabledModuleIds) {
+			activeModuleIds.delete(disabledId);
+			console.log(`[Vite] Skipping disabled module: ${disabledId}`);
+		}
+	}
+
 	if (activeModuleIds) {
 		const pruneSymlinks = (dir: string, toModuleId: (name: string) => string) => {
 			if (!existsSync(dir)) return;
@@ -148,8 +201,14 @@ function linkExternalModules() {
 			continue;
 		}
 
-		// We only link if a manifest exists (basic validation)
-		if (!existsSync(path.join(modulePath, 'manifest.yaml'))) continue;
+		// Quick validation before linking
+		const validation = quickValidateModule(moduleId, modulePath);
+		if (!validation.valid) {
+			console.warn(`[Vite] Skipping invalid module ${moduleId}: ${validation.error}`);
+			// Mark for disable (async, non-blocking)
+			markModuleInvalidInDb(moduleId, validation.error).catch(() => {});
+			continue;
+		}
 
 		try {
 			// 1. Link to config registry
@@ -284,6 +343,56 @@ function getActiveModulesFromDb(): Set<string> | null {
 	} catch (e) {
 		console.warn('[Vite] Unable to read external module status from DB:', e);
 		return new Set();
+	}
+}
+
+/**
+ * Get disabled modules from database
+ * Returns array of disabled module IDs
+ */
+function getDisabledModulesFromDb(): string[] {
+	const dbUrl = process.env.DATABASE_URL;
+	if (!dbUrl) return [];
+
+	const dbPath = normalizeDbPath(dbUrl);
+	try {
+		const require = createRequire(import.meta.url);
+		const Database = require('better-sqlite3');
+		const db = new Database(dbPath, { readonly: true, fileMustExist: true });
+		const rows = db.prepare('select id from settings_external_modules where status = ?').all('disabled');
+		db.close();
+		return rows.map((row: { id: string }) => row.id);
+	} catch (e) {
+		console.warn('[Vite] Unable to read disabled modules from DB:', e);
+		return [];
+	}
+}
+
+/**
+ * Mark a module as disabled in the database due to validation failure
+ * This is async and non-blocking to avoid slowing down the build
+ */
+async function markModuleInvalidInDb(moduleId: string, error: string | undefined): Promise<void> {
+	const dbUrl = process.env.DATABASE_URL;
+	if (!dbUrl) return;
+
+	const dbPath = normalizeDbPath(dbUrl);
+	try {
+		const require = createRequire(import.meta.url);
+		const Database = require('better-sqlite3');
+		const db = new Database(dbPath);
+
+		db.prepare(`
+			UPDATE settings_external_modules
+			SET status = 'disabled',
+			    last_error = ?
+			WHERE id = ?
+		`).run(error || 'Validation failed', moduleId);
+
+		db.close();
+		console.warn(`[Vite] Module ${moduleId} marked as disabled in database`);
+	} catch (e) {
+		console.warn(`[Vite] Could not mark module ${moduleId} as disabled:`, e);
 	}
 }
 
