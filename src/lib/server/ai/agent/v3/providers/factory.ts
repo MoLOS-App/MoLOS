@@ -37,7 +37,7 @@ export function createProvider(config: ProviderConfig) {
 		case 'zai':
 			return createOpenAI({
 				name: 'zai',
-				baseURL: config.baseUrl || 'https://api.zai.com/v1',
+				baseURL: config.baseUrl || 'https://api.z.ai/v1',
 				apiKey: config.apiKey,
 			})(config.modelName);
 
