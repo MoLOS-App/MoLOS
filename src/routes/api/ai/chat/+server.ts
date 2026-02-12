@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { AiAgent } from '$lib/server/ai/agent';
+import { AiAgentV2Adapter } from '$lib/server/ai/agent-v2-adapter';
 import { AiRepository } from '$lib/repositories/ai/ai-repository';
 
 const chunkText = (text: string, size: number = 32): string[] => {
@@ -31,7 +31,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		parts,
 		stream: streamRequested
 	} = body;
-	const agent = new AiAgent(locals.user.id);
+	const agent = new AiAgentV2Adapter(locals.user.id);
 	const aiRepo = new AiRepository();
 	const settings = await aiRepo.getSettings(locals.user.id);
 	const shouldStream = Boolean(streamRequested && (settings?.streamEnabled ?? true));
@@ -76,8 +76,23 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	try {
 		if (shouldStream) {
 			const encoder = new TextEncoder();
+			let streamClosed = false;
+
 			const stream = new ReadableStream({
 				start: async (controller) => {
+					// Safe enqueue wrapper that handles closed stream
+					const safeEnqueue = (data: Uint8Array) => {
+						if (!streamClosed) {
+							try {
+								controller.enqueue(data);
+							} catch (e) {
+								// Stream closed, mark it and stop trying
+								streamClosed = true;
+								console.warn('Stream enqueue failed (already closed):', e);
+							}
+						}
+					};
+
 					try {
 						// Send session ID first
 						controller.enqueue(
@@ -98,8 +113,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 							messageParts,
 							{
 								onProgress: async (event: any) => {
-									// Send progress event to UI
-									controller.enqueue(
+									// Send progress event to UI (with safe enqueue)
+									safeEnqueue(
 										encoder.encode(
 											`data: ${JSON.stringify({
 												type: 'progress',
@@ -117,14 +132,17 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 						// Stream the final message in chunks
 						const chunks = chunkText(response.message || '');
 						for (const chunk of chunks) {
-							controller.enqueue(
+							safeEnqueue(
 								encoder.encode(`data: ${JSON.stringify({ type: 'chunk', content: chunk })}\n\n`)
 							);
 							await sleep(30); // Slightly faster for better UX
 						}
 
-						// Send final metadata
-						controller.enqueue(
+						// Send final metadata AFTER all progress events are sent
+						// Small delay to ensure progress events are flushed
+						await sleep(50);
+
+						safeEnqueue(
 							encoder.encode(
 								`data: ${JSON.stringify({
 									type: 'meta',
@@ -136,17 +154,26 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 								})}\n\n`
 							)
 						);
-						controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-						controller.close();
+
+						// Send DONE and close with error handling
+						try {
+							safeEnqueue(encoder.encode('data: [DONE]\n\n'));
+							// Small delay before closing to ensure DONE is sent
+							await sleep(20);
+							controller.close();
+						} catch (closeError) {
+							// Stream might already be closed, that's okay
+							console.warn('Stream close warning (non-fatal):', closeError);
+						}
 					} catch (error) {
 						const errorMessage = (error as any)?.message || 'Internal Server Error';
 						console.error('Streaming error:', error);
-						controller.enqueue(
+						safeEnqueue(
 							encoder.encode(
 								`data: ${JSON.stringify({ type: 'error', message: errorMessage })}\n\n`
 							)
 						);
-						controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+						safeEnqueue(encoder.encode('data: [DONE]\n\n'));
 						controller.close();
 					}
 				}
