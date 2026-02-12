@@ -82,6 +82,7 @@
 	"dependencies": {
 		"@modelcontextprotocol/sdk": "^1.25.3",
 		"@radix-ui/react-select": "^2.2.6",
+		"@sinclair/typebox": "^0.34.48",
 		"animejs": "^4.2.2",
 		"better-auth": "^1.4.7",
 		"better-sqlite3": "^12.5.0",
