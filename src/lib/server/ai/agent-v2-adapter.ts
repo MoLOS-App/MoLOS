@@ -199,8 +199,9 @@ export class AiAgentV2Adapter {
 		await agent.initialize();
 
 		// Process message with v2 Agent
+		// Note: Don't pass sessionId - v2 Agent has its own internal session manager.
+		// We use AiRepository for database persistence separately.
 		const result = await agent.processMessage(content, {
-			sessionId,
 			history: agentHistory,
 			maxSteps: options.maxSteps ?? config.maxSteps,
 			maxDurationMs: options.maxDurationMs ?? config.maxDurationMs,
