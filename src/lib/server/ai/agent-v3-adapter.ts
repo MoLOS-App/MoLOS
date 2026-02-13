@@ -229,18 +229,8 @@ Remember: When a task requires using tools, CALL THE TOOL IMMEDIATELY. Do not ju
 			systemPrompt: systemPromptWithTools,
 		});
 
-		// Save assistant message
-		if (result.message && sessionId) {
-			await this.aiRepo.addMessage(this.userId, {
-				role: 'assistant',
-				content: result.message,
-				sessionId,
-				contextMetadata: JSON.stringify({
-					telemetry: result.telemetry,
-					events: result.events,
-				}),
-			});
-		}
+		// NOTE: Message saving moved to API endpoint (+server.ts)
+		// Segments are now saved individually for multi-message persistence
 
 		// Map result to AiChatResponse
 		return {

@@ -23,6 +23,28 @@ const chunkText = (text: string, size: number = 32): string[] => {
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
+ * Extract thought and plan tags from content
+ */
+function extractThoughtAndPlan(content: string): {
+	thought: string | null;
+	plan: string | null;
+	cleanContent: string;
+} {
+	const thoughtMatch = content.match(/<thought>([\s\S]*?)<\/thought>/);
+	const planMatch = content.match(/<plan>([\s\S]*?)<\/plan>/);
+
+	const thought = thoughtMatch ? thoughtMatch[1].trim() : null;
+	const plan = planMatch ? planMatch[1].trim() : null;
+
+	const cleanContent = content
+		.replace(/<thought>[\s\S]*?<\/thought>/, '')
+		.replace(/<plan>[\s\S]*?<\/plan>/, '')
+		.trim();
+
+	return { thought, plan, cleanContent };
+}
+
+/**
  * Log server events for debugging
  */
 function serverLog(type: string, data: Record<string, unknown>) {
@@ -106,9 +128,13 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			const encoder = new TextEncoder();
 			let streamClosed = false;
 
-			// Track message segments for multi-message support
-			const messageSegments: Map<string, string> = new Map();
-			let currentSegmentId: string | null = null;
+			// Track message segments for multi-message persistence
+			const completedSegments: Array<{
+				id: string;
+				content: string;
+				segmentIndex: number;
+			}> = [];
+			const progressLog: string[] = [];
 
 			const stream = new ReadableStream({
 				start: async (controller) => {
@@ -154,8 +180,14 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 											const segmentData = event.data;
 											const segId = segmentData.id;
 
-											if (segmentData.isComplete) {
-												// Segment is complete, send it as a full message
+											if (segmentData.isComplete && segmentData.content) {
+												// Track completed segment for persistence
+												completedSegments.push({
+													id: segId,
+													content: segmentData.content,
+													segmentIndex: segmentData.segmentIndex
+												});
+												// Send it as a full message
 												sendEvent('message_segment', {
 													id: segId,
 													content: segmentData.content,
@@ -201,17 +233,33 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 											break;
 
 										case 'step_complete':
-											// Step completed
-											progressEvents.push(event);
-											sendEvent('progress', {
-												eventType: 'step_complete',
-												timestamp: event.timestamp,
-												data: event.data
-											});
+											// Step completed - add to progress log
+											{
+												const stepData = event.data;
+												let progressLine = '';
+												if (stepData.stepNumber && stepData.totalSteps) {
+													progressLine = `[${stepData.stepNumber}/${stepData.totalSteps}] ✓ ${stepData.description || 'Completed'}`;
+												} else if (stepData.description) {
+													progressLine = `✓ ${stepData.description}`;
+												} else if (stepData.toolCalls?.length > 0) {
+													const toolNames = stepData.toolCalls.map((tc: any) => tc.toolName).join(', ');
+													progressLine = `✓ Tools: ${toolNames}`;
+												} else {
+													progressLine = '✓ Step completed';
+												}
+												progressLog.push(progressLine);
+												progressEvents.push(event);
+												sendEvent('progress', {
+													eventType: 'step_complete',
+													timestamp: event.timestamp,
+													data: event.data
+												});
+											}
 											break;
 
 										case 'complete':
 											// Execution complete
+											progressLog.push('✓ Complete');
 											sendEvent('progress', {
 												eventType: 'complete',
 												timestamp: event.timestamp,
@@ -221,11 +269,15 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
 										case 'error':
 											// Error occurred
-											sendEvent('progress', {
-												eventType: 'error',
-												timestamp: event.timestamp,
-												data: event.data
-											});
+											{
+												const errorData = event.data;
+												progressLog.push(`✗ Error: ${errorData.error || 'Unknown error'}`);
+												sendEvent('progress', {
+													eventType: 'error',
+													timestamp: event.timestamp,
+													data: event.data
+												});
+											}
 											break;
 
 										default:
@@ -244,7 +296,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 						serverLog('RESPONSE', {
 							messageLength: response.message?.length,
 							actionsCount: response.actions?.length,
-							eventsCount: response.events?.length
+							eventsCount: response.events?.length,
+							segmentsCount: completedSegments.length
 						});
 
 						// Stream the final message in chunks (for compatibility)
@@ -263,6 +316,47 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 							telemetry: response.telemetry,
 							progressEvents: progressEvents.length > 0 ? progressEvents : undefined
 						});
+
+						// Save completed segments to database for persistence
+						// Sort segments by index to ensure correct order
+						completedSegments.sort((a, b) => a.segmentIndex - b.segmentIndex);
+
+						for (const segment of completedSegments) {
+							if (!segment.content.trim()) continue; // Skip empty segments
+
+							// Extract thought/plan from first segment only
+							const isFirst = segment.segmentIndex === 0;
+							const isLast = segment.segmentIndex === completedSegments.length - 1;
+
+							const { thought, plan, cleanContent } = isFirst
+								? extractThoughtAndPlan(segment.content)
+								: { thought: null, plan: null, cleanContent: segment.content };
+
+							// Build metadata for this segment
+							const metadata: Record<string, unknown> = {
+								segmentId: segment.id,
+								segmentIndex: segment.segmentIndex,
+								isMultiMessageSegment: true
+							};
+
+							// Attach progress log only to last segment
+							if (isLast && progressLog.length > 0) {
+								metadata.progressLog = progressLog;
+							}
+
+							// Attach thought/plan only to first segment
+							if (isFirst) {
+								if (thought) metadata.thought = thought;
+								if (plan) metadata.plan = plan;
+							}
+
+							await aiRepo.addMessage(locals.user.id, {
+								role: 'assistant',
+								content: cleanContent,
+								sessionId: activeSessionId,
+								contextMetadata: JSON.stringify(metadata)
+							});
+						}
 
 						// Send DONE and close
 						try {
@@ -321,11 +415,13 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 	if (sessionId) {
 		const messages = await aiRepo.getMessages(sessionId, locals.user.id);
 		// Convert to UIMessage format for AI SDK compatibility
-		const uiMessages: UIMessage[] = messages.map((m) => ({
+		// Include contextMetadata for multi-message segment persistence
+		const uiMessages: (UIMessage & { contextMetadata?: string })[] = messages.map((m) => ({
 			id: m.id,
 			role: m.role as 'user' | 'assistant' | 'system',
 			parts: (m.parts as UIMessage['parts']) || [{ type: 'text' as const, text: m.content }],
-			createdAt: m.createdAt
+			createdAt: m.createdAt,
+			contextMetadata: m.contextMetadata
 		}));
 		return json({ messages: uiMessages, sessionId });
 	} else {

@@ -755,7 +755,8 @@
 												content: textContent,
 												createdAt: (msg as any).createdAt || new Date(),
 												parts: msg.parts,
-												metadata: (msg as any).metadata
+												metadata: (msg as any).metadata,
+												contextMetadata: (msg as any).contextMetadata
 											}}
 										/>
 									{/if}
