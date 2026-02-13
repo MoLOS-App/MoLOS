@@ -183,9 +183,8 @@
 		const decoder = new TextDecoder();
 		let buffer = '';
 		let content = '';
-		// Track message segments for multi-message support
-		const segments: Map<string, string> = new Map();
 		let currentSegmentId = assistantMessageId;
+		let segmentIndex = 0;
 
 		while (true) {
 			const { value, done } = await reader.read();
@@ -208,7 +207,6 @@
 					eventType?: string;
 					timestamp?: number;
 					data?: any;
-					// New event types
 					delta?: string;
 					segmentId?: string;
 					segmentIndex?: number;
@@ -233,14 +231,14 @@
 
 				switch (data.type) {
 					case 'chunk':
-						// Legacy chunk event
+						// Legacy chunk event - accumulate and update
 						content += data.content || '';
 						updateAssistantMessage(currentSegmentId, content);
 						await scrollToBottom();
 						break;
 
 					case 'text_delta':
-						// Real-time text streaming
+						// Real-time text streaming - accumulate and update
 						if (data.delta) {
 							content += data.delta;
 							updateAssistantMessage(currentSegmentId, content);
@@ -248,43 +246,43 @@
 						}
 						break;
 
-					case 'message_segment':
-						// Complete message segment (multi-message support)
-						if (data.isComplete && data.content && data.id) {
-							// Store the segment
-							segments.set(data.id, data.content);
+					case 'tool_start':
+						// Tool call started - finalize current message and start a new one
+						console.log('[Tool Start]', data.toolName);
 
-							// If this is a new segment, create a new message for it
-							if (data.id !== currentSegmentId) {
-								// Create a new assistant message for this segment
-								const newMsgId = data.id;
-								messages = [
-									...messages,
-									{
-										id: newMsgId,
-										role: 'assistant' as const,
-										parts: [{ type: 'text' as const, text: data.content }]
-									}
-								];
-								currentSegmentId = newMsgId;
-								content = '';
-							} else {
-								// Update current segment
-								updateAssistantMessage(currentSegmentId, data.content);
-							}
+						// If we have accumulated content, keep it in the current message
+						// Then create a new empty message for post-tool content
+						if (content.trim()) {
+							// Create a new message for content after this tool call
+							segmentIndex++;
+							const newSegmentId = `seg_${Date.now()}_${segmentIndex}`;
+
+							// Add new empty message for post-tool content
+							messages = [
+								...messages,
+								{
+									id: newSegmentId,
+									role: 'assistant' as const,
+									parts: [{ type: 'text' as const, text: '' }]
+								}
+							];
+
+							currentSegmentId = newSegmentId;
+							content = ''; // Reset content for new segment
 							await scrollToBottom();
 						}
 						break;
 
-					case 'tool_start':
-						// Tool call started
-						console.log('[Tool Start]', data.toolName, data.toolCallId);
-						// Could show a loading indicator for the tool
+					case 'tool_complete':
+						// Tool call completed - continue with current segment
+						console.log('[Tool Complete]', data.toolName);
 						break;
 
-					case 'tool_complete':
-						// Tool call completed
-						console.log('[Tool Complete]', data.toolName, data.toolCallId);
+					case 'message_segment':
+						// Log segment completion
+						if (data.isComplete && data.content) {
+							console.log('[Segment Complete]', data.segmentIndex, data.content.length, 'chars');
+						}
 						break;
 
 					case 'progress':
@@ -523,20 +521,22 @@
 			if (res.ok && streamEnabled && isEventStream && assistantMessageId) {
 				isStreaming = true;
 				await handleStreamResponse(res, assistantMessageId);
-				// Save the progress log before loading messages
+
+				// DON'T reload messages from DB - they're already in the UI from streaming
+				// The database only stores one final message, but we want to keep all streaming segments
+
+				// Save the progress log to the last assistant message
 				const savedProgressLog = [...progressLog];
-				if (currentSessionId) {
-					await loadMessages(currentSessionId);
-					// Re-attach progress log to the last assistant message
-					const lastAssistantMsg = [...messages].reverse().find((m) => m.role === 'assistant');
-					if (lastAssistantMsg && savedProgressLog.length > 0) {
-						messages = messages.map((m) =>
-							m.id === lastAssistantMsg.id
-								? { ...m, metadata: { ...(m as any).metadata, progressLog: savedProgressLog } }
-								: m
-						);
-					}
+				const lastAssistantMsg = [...messages].reverse().find((m) => m.role === 'assistant');
+				if (lastAssistantMsg && savedProgressLog.length > 0) {
+					messages = messages.map((m) =>
+						m.id === lastAssistantMsg.id
+							? { ...m, metadata: { ...(m as any).metadata, progressLog: savedProgressLog } }
+							: m
+					);
 				}
+
+				// Only refresh the sessions list (sidebar)
 				await loadSessions();
 			} else if (res.ok) {
 				const data = await res.json();
