@@ -2,6 +2,14 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { AiAgentV3Adapter } from '$lib/server/ai/agent-v3-adapter';
 import { AiRepository } from '$lib/repositories/ai/ai-repository';
+import type { UIMessage } from 'ai';
+
+/**
+ * AI Chat API Endpoint
+ *
+ * Supports both legacy SSE format and AI SDK v5+ UIMessage format.
+ * The endpoint auto-detects the format based on request structure.
+ */
 
 const chunkText = (text: string, size: number = 32): string[] => {
 	if (!text) return [''];
@@ -20,7 +28,6 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	}
 
 	const body = await request.json();
-	console.log('AI Chat Request Body:', JSON.stringify(body, null, 2));
 	const {
 		messages,
 		content: directContent,
@@ -29,8 +36,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		activeModuleIds,
 		attachments,
 		parts,
-		stream: streamRequested
+		stream: streamRequested = true
 	} = body;
+
 	const agent = new AiAgentV3Adapter(locals.user.id);
 	const aiRepo = new AiRepository();
 	const settings = await aiRepo.getSettings(locals.user.id);
@@ -46,19 +54,25 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		return json({ ...response, sessionId });
 	}
 
-	// useChat sends 'messages' array. We extract the last user message content.
+	// Extract content from messages (AI SDK sends 'messages' array)
 	const lastMessage = messages?.[messages.length - 1];
-	let content = directContent || lastMessage?.content;
-	const messageParts = parts || lastMessage?.parts;
-	const messageAttachments = attachments || lastMessage?.attachments;
+	let content = directContent;
 
-	// In AI SDK v6, content might be in parts
-	if (!content && messageParts) {
-		content = messageParts
+	// Handle AI SDK v5+ UIMessage format with parts
+	if (!content && lastMessage?.parts) {
+		content = lastMessage.parts
 			.filter((p: any) => p.type === 'text')
 			.map((p: any) => p.text)
 			.join('');
 	}
+
+	// Fallback to direct content property (legacy format)
+	if (!content) {
+		content = lastMessage?.content;
+	}
+
+	const messageParts = parts || lastMessage?.parts;
+	const messageAttachments = attachments || lastMessage?.attachments;
 
 	if (!content && !messageAttachments) {
 		return json({ error: 'Content is required' }, { status: 400 });
@@ -71,8 +85,6 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		activeSessionId = session.id;
 	}
 
-	// Return response
-	console.log('Processing AI message for content:', content);
 	try {
 		if (shouldStream) {
 			const encoder = new TextEncoder();
@@ -80,13 +92,11 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
 			const stream = new ReadableStream({
 				start: async (controller) => {
-					// Safe enqueue wrapper that handles closed stream
 					const safeEnqueue = (data: Uint8Array) => {
 						if (!streamClosed) {
 							try {
 								controller.enqueue(data);
 							} catch (e) {
-								// Stream closed, mark it and stop trying
 								streamClosed = true;
 								console.warn('Stream enqueue failed (already closed):', e);
 							}
@@ -108,12 +118,11 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 						const response = await agent.processMessage(
 							content,
 							activeSessionId,
-							activeModuleIds,
+							activeModuleIds || [],
 							messageAttachments,
 							messageParts,
 							{
 								onProgress: async (event: any) => {
-									// Send progress event to UI (with safe enqueue)
 									safeEnqueue(
 										encoder.encode(
 											`data: ${JSON.stringify({
@@ -135,13 +144,11 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 							safeEnqueue(
 								encoder.encode(`data: ${JSON.stringify({ type: 'chunk', content: chunk })}\n\n`)
 							);
-							await sleep(30); // Slightly faster for better UX
+							await sleep(30);
 						}
 
-						// Send final metadata AFTER all progress events are sent
-						// Small delay to ensure progress events are flushed
+						// Send final metadata
 						await sleep(50);
-
 						safeEnqueue(
 							encoder.encode(
 								`data: ${JSON.stringify({
@@ -155,14 +162,12 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 							)
 						);
 
-						// Send DONE and close with error handling
+						// Send DONE and close
 						try {
 							safeEnqueue(encoder.encode('data: [DONE]\n\n'));
-							// Small delay before closing to ensure DONE is sent
 							await sleep(20);
 							controller.close();
 						} catch (closeError) {
-							// Stream might already be closed, that's okay
 							console.warn('Stream close warning (non-fatal):', closeError);
 						}
 					} catch (error) {
@@ -184,7 +189,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 					'Content-Type': 'text/event-stream',
 					'Cache-Control': 'no-cache',
 					Connection: 'keep-alive',
-					'X-Accel-Buffering': 'no' // Prevent nginx from buffering
+					'X-Accel-Buffering': 'no'
 				}
 			});
 		}
@@ -193,7 +198,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		const response = await agent.processMessage(
 			content,
 			activeSessionId,
-			activeModuleIds,
+			activeModuleIds || [],
 			messageAttachments,
 			messageParts
 		);
@@ -215,7 +220,14 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 
 	if (sessionId) {
 		const messages = await aiRepo.getMessages(sessionId, locals.user.id);
-		return json({ messages });
+		// Convert to UIMessage format for AI SDK compatibility
+		const uiMessages: UIMessage[] = messages.map((m) => ({
+			id: m.id,
+			role: m.role as 'user' | 'assistant' | 'system',
+			parts: (m.parts as UIMessage['parts']) || [{ type: 'text' as const, text: m.content }],
+			createdAt: m.createdAt
+		}));
+		return json({ messages: uiMessages, sessionId });
 	} else {
 		const sessions = await aiRepo.getSessions(locals.user.id);
 		return json({ sessions });

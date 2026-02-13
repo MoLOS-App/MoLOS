@@ -5,7 +5,9 @@
 	import SvelteMarkdown from 'svelte-marked';
 	import CodeBlock from './CodeBlock.svelte';
 
-	const { message } = $props();
+	const { message } = $props<{
+		message: AiMessage & { metadata?: Record<string, unknown> };
+	}>();
 
 	const renderers = {
 		code: CodeBlock as any
@@ -18,7 +20,7 @@
 
 	// Extract progress log from metadata if available
 	const metadata = $derived(
-		message.contextMetadata ? JSON.parse(message.contextMetadata) : {}
+		message.contextMetadata ? JSON.parse(message.contextMetadata) : message.metadata || {}
 	);
 	const progressLog = $derived((metadata?.progressLog || []) as string[]);
 	const hasProgressLog = $derived(progressLog.length > 0);
@@ -35,7 +37,7 @@
 
 	function processMessage(msg: AiMessage) {
 		const content = msg.content || '';
-		const msgMetadata = msg.contextMetadata ? JSON.parse(msg.contextMetadata) : {};
+		const msgMetadata = msg.contextMetadata ? JSON.parse(msg.contextMetadata) : msg.metadata || {};
 
 		// Extract thoughts and plans
 		const thoughtMatch = content.match(/<thought>([\s\S]*?)<\/thought>/);
@@ -73,13 +75,24 @@ ${steps
 			cleanContent = cleanContent.replace(/\[THOUGHT\]: .*?(?:\n|$)/, '').trim();
 		}
 
+		// Handle parts from UIMessage format
+		const parts = (msg.parts || []) as Array<{ type: string; text?: string; toolName?: string; state?: string }>;
+		const textParts = parts.filter((p) => p.type === 'text');
+		const toolParts = parts.filter((p) => p.type?.startsWith('tool-') || p.type === 'dynamic-tool');
+
+		// If we have text parts but no content, extract from parts
+		if (!cleanContent && textParts.length > 0) {
+			cleanContent = textParts.map((p: any) => p.text).join('');
+		}
+
 		return {
 			thought,
 			plan,
 			content: cleanContent,
 			actions: msgMetadata.actions || [],
 			attachments: msg.attachments || [],
-			parts: msg.parts || []
+			parts,
+			toolParts
 		};
 	}
 
@@ -126,7 +139,7 @@ ${steps
 				>
 					<Bot class="h-3.5 w-3.5" />
 				</div>
-				<span class="text-muted-foreground/80 text-[11px] font-medium">Architects</span>
+				<span class="text-muted-foreground/80 text-[11px] font-medium">Architect</span>
 			{:else}
 				<span class="text-muted-foreground/80 text-[11px] font-medium">You</span>
 				<div
@@ -171,6 +184,25 @@ ${steps
 				{:else if processed.content.trim() !== ''}
 					<div class="prose-sm prose prose-custom dark:prose-invert max-w-none">
 						<SvelteMarkdown source={processed.content} {renderers} />
+					</div>
+				{/if}
+
+				<!-- Tool Parts (from UIMessage format) -->
+				{#if processed.toolParts.length > 0}
+					<div class="mt-3 space-y-2 border-t border-border/40 pt-3">
+						{#each processed.toolParts as toolPart, i (i)}
+							<div class="flex items-center gap-2 text-xs text-muted-foreground">
+								<span class="h-1.5 w-1.5 rounded-full bg-blue-500"></span>
+								<span>Tool: {(toolPart as any).toolName || toolPart.type}</span>
+								{#if (toolPart as any).state === 'calling' || (toolPart as any).state === 'input-available'}
+									<span class="animate-pulse">Running...</span>
+								{:else if (toolPart as any).state === 'output-available' || (toolPart as any).state === 'result'}
+									<span class="text-green-500">✓</span>
+								{:else if (toolPart as any).state === 'output-error'}
+									<span class="text-red-500">✗</span>
+								{/if}
+							</div>
+						{/each}
 					</div>
 				{/if}
 

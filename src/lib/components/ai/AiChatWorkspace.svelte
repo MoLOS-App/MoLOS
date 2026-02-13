@@ -12,17 +12,25 @@
 	import { uuid } from '$lib/utils/uuid';
 	import type { ProgressState } from './progress-types';
 	import { INITIAL_PROGRESS_STATE } from './progress-types';
+	import type { UIMessage } from 'ai';
 
 	let { userName } = $props<{ userName?: string }>();
 
+	// Session state
 	let sessions = $state<AiSession[]>([]);
 	let currentSessionId = $state<string | null>(null);
-	let messages = $state<AiMessage[]>([]);
+
+	// Messages in UIMessage format (AI SDK compatible)
+	let messages = $state<UIMessage[]>([]);
+
+	// Input state
 	let input = $state('');
 	let isLoading = $state(false);
 	let isStreaming = $state(false);
 	let isCancelling = $state(false);
 	let streamEnabled = $state(true);
+
+	// UI state
 	let scrollViewport = $state<HTMLElement | null>(null);
 	let pendingAction = $state<AiAction | null>(null);
 	let actionTimer = $state(5);
@@ -42,12 +50,18 @@
 	// Track the current assistant message ID for real-time updates
 	let currentAssistantMessageId = $state<string | null>(null);
 
+	// Active modules from page data
 	let activeModuleIds = $derived($page.data.activeExternalIds || []);
 
+	// Greeting based on time
 	const now = new Date();
 	const greeting =
 		now.getHours() < 12 ? 'Good morning' : now.getHours() < 18 ? 'Good afternoon' : 'Good evening';
 
+	// Computed loading state
+	let isProcessing = $derived(isLoading || isStreaming);
+
+	// Load sessions from API
 	async function loadSessions() {
 		const res = await fetch('/api/ai/chat');
 		if (res.ok) {
@@ -56,6 +70,7 @@
 		}
 	}
 
+	// Load settings
 	async function loadSettings() {
 		const res = await fetch('/api/ai/settings');
 		if (res.ok) {
@@ -64,6 +79,7 @@
 		}
 	}
 
+	// Load messages for a session
 	async function loadMessages(sessionId: string) {
 		const res = await fetch(`/api/ai/chat?sessionId=${sessionId}`);
 		if (res.ok) {
@@ -74,6 +90,7 @@
 		}
 	}
 
+	// Start a new chat
 	function startNewChat() {
 		currentSessionId = null;
 		messages = [];
@@ -94,6 +111,7 @@
 		currentAssistantMessageId = null;
 	}
 
+	// Timer for action confirmation
 	function startActionTimer() {
 		actionTimer = 5;
 		if (timerInterval) clearInterval(timerInterval);
@@ -136,10 +154,16 @@
 		}
 	}
 
+	// Update assistant message content (for streaming)
 	function updateAssistantMessage(messageId: string, content: string) {
-		messages = messages.map((msg) => (msg.id === messageId ? { ...msg, content } : msg));
+		messages = messages.map((msg) =>
+			msg.id === messageId
+				? { ...msg, parts: [{ type: 'text' as const, text: content }] }
+				: msg
+		);
 	}
 
+	// Apply stream metadata
 	function applyStreamMeta(meta: { sessionId?: string; actions?: AiAction[] }) {
 		if (meta.sessionId) {
 			currentSessionId = meta.sessionId;
@@ -151,6 +175,7 @@
 		}
 	}
 
+	// Handle streaming response
 	async function handleStreamResponse(res: Response, assistantMessageId: string) {
 		const reader = res.body?.getReader();
 		if (!reader) throw new Error('Streaming response unavailable');
@@ -195,7 +220,6 @@
 					updateAssistantMessage(assistantMessageId, content);
 					await scrollToBottom();
 				} else if (data.type === 'progress') {
-					// Handle progress events from the new agent
 					handleProgressEvent(data);
 				} else if (data.type === 'meta') {
 					applyStreamMeta(data);
@@ -206,21 +230,23 @@
 		}
 	}
 
+	// Handle progress events
 	function handleProgressEvent(event: any) {
 		const { eventType, data: eventData } = event;
 		const now = Date.now();
 
-		// Debug log to see what events are being received
-		console.log('[Progress Event]', eventType, eventData);
-
-		// Helper function to add a line to the progress log and update the message metadata
 		function addProgressLine(content: string) {
 			progressLog = [...progressLog, content];
-			// Update the assistant message metadata with the progress log
 			if (currentAssistantMessageId) {
 				messages = messages.map((msg) =>
 					msg.id === currentAssistantMessageId
-						? { ...msg, metadata: { ...msg.metadata, progressLog } }
+						? {
+								...msg,
+								// Store progress log in a custom property for display
+								...(msg as any).metadata?.progressLog !== undefined
+									? { metadata: { ...(msg as any).metadata, progressLog } }
+									: {}
+							}
 						: msg
 				);
 			}
@@ -242,7 +268,6 @@
 				break;
 
 			case 'thought':
-				// New autonomous loop event - agent is thinking about what to do next
 				currentProgress.status = 'thinking';
 				currentProgress.currentAction = {
 					type: 'thought',
@@ -254,14 +279,12 @@
 					nextAction: eventData.nextAction,
 					confidence: eventData.confidence
 				};
-				// Add thought to progress log
 				if (eventData.reasoning && eventData.reasoning.length > 10) {
 					addProgressLine(`💭 [${eventData.iteration}] ${eventData.reasoning}`);
 				}
 				break;
 
 			case 'observation':
-				// New autonomous loop event - agent received a tool result
 				currentProgress.status = 'executing';
 				const obsMessage = eventData.isSuccess
 					? `✓ ${eventData.toolName}: Success`
@@ -274,7 +297,6 @@
 					timestamp: now,
 					toolName: eventData.toolName
 				};
-				// Add observation to progress log
 				addProgressLine(`👁 ${obsMessage}${eventData.durationMs ? ` (${eventData.durationMs}ms)` : ''}`);
 				break;
 
@@ -331,7 +353,6 @@
 					message: eventData.thought || 'Thinking...',
 					timestamp: now
 				};
-				// Add thinking message (only if it's substantial)
 				if (eventData.thought && eventData.thought.length > 10) {
 					addProgressLine(`💭 ${eventData.thought}`);
 				}
@@ -358,6 +379,7 @@
 		}
 	}
 
+	// Send message
 	async function sendMessage() {
 		if (!input.trim() || isLoading) return;
 
@@ -376,26 +398,21 @@
 		// Create AbortController for this request
 		abortController = new AbortController();
 
-		const tempUserMsg: AiMessage = {
+		// Create user message in UIMessage format
+		const tempUserMsg: UIMessage = {
 			id: uuid(),
-			userId: '',
-			sessionId: currentSessionId || '',
 			role: 'user',
-			content: userContent,
-			createdAt: new Date()
+			parts: [{ type: 'text', text: userContent }]
 		};
 
 		let assistantMessageId: string | null = null;
 		if (streamEnabled) {
 			assistantMessageId = uuid();
 			currentAssistantMessageId = assistantMessageId;
-			const tempAssistantMsg: AiMessage = {
+			const tempAssistantMsg: UIMessage = {
 				id: assistantMessageId,
-				userId: '',
-				sessionId: currentSessionId || '',
 				role: 'assistant',
-				content: '...',
-				createdAt: new Date()
+				parts: [{ type: 'text', text: '...' }]
 			};
 			messages = [...messages, tempUserMsg, tempAssistantMsg];
 		} else {
@@ -404,15 +421,22 @@
 		await scrollToBottom();
 
 		try {
+			// Build request body in AI SDK format (messages array with parts)
+			const requestBody = {
+				messages: messages.slice(0, -1).map(m => ({
+					id: m.id,
+					role: m.role,
+					parts: m.parts
+				})),
+				sessionId: currentSessionId,
+				activeModuleIds,
+				stream: streamEnabled
+			};
+
 			const res = await fetch('/api/ai/chat', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					content: userContent,
-					sessionId: currentSessionId,
-					activeModuleIds,
-					stream: streamEnabled
-				}),
+				body: JSON.stringify(requestBody),
 				signal: abortController.signal
 			});
 
@@ -436,7 +460,7 @@
 					if (lastAssistantMsg && savedProgressLog.length > 0) {
 						messages = messages.map((m) =>
 							m.id === lastAssistantMsg.id
-								? { ...m, metadata: { ...m.metadata, progressLog: savedProgressLog } }
+								? { ...m, metadata: { ...(m as any).metadata, progressLog: savedProgressLog } }
 								: m
 						);
 					}
@@ -451,7 +475,9 @@
 					);
 					startActionTimer();
 				}
-				await loadMessages(currentSessionId!);
+				if (currentSessionId) {
+					await loadMessages(currentSessionId);
+				}
 				await loadSessions();
 			}
 		} catch (error) {
@@ -467,11 +493,11 @@
 			isStreaming = false;
 			isCancelling = false;
 			abortController = null;
-			// Keep progress messages in chat - don't clear them
 			await scrollToBottom();
 		}
 	}
 
+	// Cancel execution
 	function cancelExecution() {
 		if (abortController && !isCancelling) {
 			isCancelling = true;
@@ -488,6 +514,7 @@
 		}
 	}
 
+	// Scroll to bottom
 	async function scrollToBottom() {
 		await tick();
 		if (scrollViewport) {
@@ -498,12 +525,14 @@
 		}
 	}
 
+	// Handle scroll
 	function handleScroll() {
 		if (!scrollViewport) return;
 		const { scrollTop, scrollHeight, clientHeight } = scrollViewport;
 		showScrollButton = scrollHeight - scrollTop - clientHeight > 200;
 	}
 
+	// Handle keydown
 	function handleKeydown(e: KeyboardEvent) {
 		if (e.key === 'Enter' && !e.shiftKey) {
 			e.preventDefault();
@@ -582,6 +611,7 @@
 				>
 					<div class="mx-auto w-full max-w-4xl min-w-0 space-y-6 md:space-y-8">
 						{#if messages.length === 0}
+							<!-- Empty State -->
 							<div class="flex min-h-[50vh] flex-col items-center justify-center gap-6 text-center">
 								<div class="rounded-full border border-border/60 bg-muted/30 p-4">
 									<Bot class="text-muted-foreground h-8 w-8" />
@@ -613,16 +643,33 @@
 								</div>
 							</div>
 						{:else}
+							<!-- Message List -->
 							<div class="flex flex-col gap-6">
-								{#each messages.filter((m) => m.role === 'user' || (m.role === 'assistant' && (m.content?.trim() !== '' || m.contextMetadata || m.parts || m.attachments))) as msg (msg.id)}
-									<ChatMessage message={msg} />
+								{#each messages as msg (msg.id)}
+									{@const textPart = msg.parts?.find((p: any) => p.type === 'text') as { type: 'text'; text: string } | undefined}
+									{@const textContent = textPart?.text || ''}
+									{@const hasContent = textContent.trim() !== '' || (msg as any).metadata?.progressLog}
+									{#if msg.role === 'user' || hasContent}
+										<ChatMessage
+											message={{
+												id: msg.id,
+												userId: '',
+												sessionId: currentSessionId || '',
+												role: msg.role as 'user' | 'assistant',
+												content: textContent,
+												createdAt: (msg as any).createdAt || new Date(),
+												parts: msg.parts,
+												metadata: (msg as any).metadata
+											}}
+										/>
+									{/if}
 								{/each}
 
 								<!-- Progress Display -->
 								<ProgressDisplay
-									{isLoading}
-									{isStreaming}
-									{isCancelling}
+									isLoading={isLoading}
+									isStreaming={isStreaming}
+									isCancelling={isCancelling}
 									progress={currentProgress}
 									onCancel={cancelExecution}
 								/>
@@ -647,7 +694,7 @@
 					<div class="px-4 pt-4 pb-5 md:px-6">
 						<ChatInput
 							bind:input
-							{isLoading}
+							isLoading={isProcessing}
 							{pendingAction}
 							onSendMessage={sendMessage}
 							onInput={(value: string) => (input = value)}
