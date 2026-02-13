@@ -379,41 +379,65 @@
 					total: eventData.totalSteps,
 					timestamp: now
 				};
-				addProgressLine(
-					`[${eventData.stepNumber}/${eventData.totalSteps}] ▸ ${eventData.description || 'Working...'}`
-				);
+				// Build progress line with step info if available
+				if (eventData.stepNumber && eventData.totalSteps) {
+					addProgressLine(
+						`[${eventData.stepNumber}/${eventData.totalSteps}] ▸ ${eventData.description || 'Working...'}`
+					);
+				} else {
+					addProgressLine(`▸ ${eventData.description || 'Working...'}`);
+				}
 				break;
 
 			case 'step_complete':
 				currentProgress.status = 'executing';
 				const stepNumber = eventData.stepNumber;
+				const totalSteps = eventData.totalSteps;
 				const completeMsg = `✓ Completed: ${eventData.description || 'Step'}`;
+
+				// Build progress line with step info if available
+				let progressLine = '';
+				if (stepNumber && totalSteps) {
+					progressLine = `[${stepNumber}/${totalSteps}] ✓ ${eventData.description || 'Completed'}`;
+				} else if (eventData.description) {
+					progressLine = `✓ ${eventData.description}`;
+				} else if (eventData.toolCalls?.length > 0) {
+					const toolNames = eventData.toolCalls.map((tc: any) => tc.toolName).join(', ');
+					progressLine = `✓ Tools: ${toolNames}`;
+				} else {
+					progressLine = '✓ Step completed';
+				}
+
 				currentProgress.currentAction = {
 					type: 'step_complete',
 					message: completeMsg,
 					step: stepNumber,
-					total: eventData.totalSteps,
+					total: totalSteps,
 					timestamp: now
 				};
-				addProgressLine(
-					`[${stepNumber}/${eventData.totalSteps}] ✓ ${eventData.description || 'Completed'}`
-				);
+				addProgressLine(progressLine);
 				break;
 
 			case 'step_failed':
 				currentProgress.status = 'error';
 				const failedStep = eventData.stepNumber;
+				const failedTotal = eventData.totalSteps;
 				const errorMsg = eventData.error || 'Unknown error';
 				currentProgress.currentAction = {
 					type: 'step_failed',
 					message: `Failed: ${errorMsg}`,
 					step: failedStep,
-					total: eventData.totalSteps,
+					total: failedTotal,
 					timestamp: now
 				};
-				addProgressLine(
-					`[${failedStep}/${eventData.totalSteps}] ✗ Failed: ${eventData.description || 'Step'}\nError: ${errorMsg}`
-				);
+				// Build progress line with step info if available
+				if (failedStep && failedTotal) {
+					addProgressLine(
+						`[${failedStep}/${failedTotal}] ✗ Failed: ${eventData.description || 'Step'}\nError: ${errorMsg}`
+					);
+				} else {
+					addProgressLine(`✗ Failed: ${eventData.description || 'Step'}\nError: ${errorMsg}`);
+				}
 				break;
 
 			case 'thinking':

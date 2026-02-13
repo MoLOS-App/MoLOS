@@ -212,6 +212,8 @@ export class MoLOSAgent {
 
 		// Track progress events
 		const events: Array<{ type: string; timestamp: number; data: Record<string, unknown> }> = [];
+		let stepCounter = 0;
+		const maxSteps = options.maxSteps ?? this.config.maxSteps ?? 20;
 
 		console.log(`[MoLOSAgent ${runId}] Starting processMessage with streaming: ${options.streamEnabled ?? this.config.streamEnabled}`);
 
@@ -222,19 +224,33 @@ export class MoLOSAgent {
 				system: systemPrompt,
 				messages: modelMessages,
 				tools: this.tools,
-				stopWhen: stepCountIs(options.maxSteps ?? this.config.maxSteps ?? 20),
+				stopWhen: stepCountIs(maxSteps),
 				...providerOptions,
 				onStepFinish: async (step) => {
-					console.log(`[MoLOSAgent ${runId}] Step finished:`, {
-						toolCalls: step.toolCalls?.map((tc: any) => tc.toolName),
+					stepCounter++;
+					const toolNames = step.toolCalls?.map((tc: any) => tc.toolName) || [];
+
+					console.log(`[MoLOSAgent ${runId}] Step ${stepCounter} finished:`, {
+						toolCalls: toolNames,
 						textLength: step.text?.length
 					});
 
-					// Emit step event to event bus
+					// Determine step description based on what happened
+					let description = 'Processing';
+					if (toolNames.length > 0) {
+						description = `Calling ${toolNames.join(', ')}`;
+					} else if (step.text) {
+						description = 'Generating response';
+					}
+
+					// Emit step event to event bus with proper structure
 					const eventData = {
 						toolCalls: step.toolCalls,
 						usage: step.usage,
 						text: step.text,
+						stepNumber: stepCounter,
+						totalSteps: maxSteps,
+						description,
 					};
 
 					// Track for telemetry
