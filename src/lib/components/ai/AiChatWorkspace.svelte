@@ -183,6 +183,9 @@
 		const decoder = new TextDecoder();
 		let buffer = '';
 		let content = '';
+		// Track message segments for multi-message support
+		const segments: Map<string, string> = new Map();
+		let currentSegmentId = assistantMessageId;
 
 		while (true) {
 			const { value, done } = await reader.read();
@@ -205,6 +208,16 @@
 					eventType?: string;
 					timestamp?: number;
 					data?: any;
+					// New event types
+					delta?: string;
+					segmentId?: string;
+					segmentIndex?: number;
+					isComplete?: boolean;
+					id?: string;
+					toolName?: string;
+					toolCallId?: string;
+					input?: any;
+					result?: any;
 				} & {
 					sessionId?: string;
 					actions?: AiAction[];
@@ -215,16 +228,75 @@
 				} catch {
 					continue;
 				}
-				if (data.type === 'chunk') {
-					content += data.content || '';
-					updateAssistantMessage(assistantMessageId, content);
-					await scrollToBottom();
-				} else if (data.type === 'progress') {
-					handleProgressEvent(data);
-				} else if (data.type === 'meta') {
-					applyStreamMeta(data);
-				} else if (data.type === 'error') {
-					throw new Error(data.message || 'Streaming failed');
+
+				console.log('[Stream Event]', data.type, data);
+
+				switch (data.type) {
+					case 'chunk':
+						// Legacy chunk event
+						content += data.content || '';
+						updateAssistantMessage(currentSegmentId, content);
+						await scrollToBottom();
+						break;
+
+					case 'text_delta':
+						// Real-time text streaming
+						if (data.delta) {
+							content += data.delta;
+							updateAssistantMessage(currentSegmentId, content);
+							await scrollToBottom();
+						}
+						break;
+
+					case 'message_segment':
+						// Complete message segment (multi-message support)
+						if (data.isComplete && data.content && data.id) {
+							// Store the segment
+							segments.set(data.id, data.content);
+
+							// If this is a new segment, create a new message for it
+							if (data.id !== currentSegmentId) {
+								// Create a new assistant message for this segment
+								const newMsgId = data.id;
+								messages = [
+									...messages,
+									{
+										id: newMsgId,
+										role: 'assistant' as const,
+										parts: [{ type: 'text' as const, text: data.content }]
+									}
+								];
+								currentSegmentId = newMsgId;
+								content = '';
+							} else {
+								// Update current segment
+								updateAssistantMessage(currentSegmentId, data.content);
+							}
+							await scrollToBottom();
+						}
+						break;
+
+					case 'tool_start':
+						// Tool call started
+						console.log('[Tool Start]', data.toolName, data.toolCallId);
+						// Could show a loading indicator for the tool
+						break;
+
+					case 'tool_complete':
+						// Tool call completed
+						console.log('[Tool Complete]', data.toolName, data.toolCallId);
+						break;
+
+					case 'progress':
+						handleProgressEvent(data);
+						break;
+
+					case 'meta':
+						applyStreamMeta(data);
+						break;
+
+					case 'error':
+						throw new Error(data.message || 'Streaming failed');
 				}
 			}
 		}

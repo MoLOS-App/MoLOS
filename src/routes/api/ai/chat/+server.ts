@@ -8,7 +8,7 @@ import type { UIMessage } from 'ai';
  * AI Chat API Endpoint
  *
  * Supports both legacy SSE format and AI SDK v5+ UIMessage format.
- * The endpoint auto-detects the format based on request structure.
+ * Supports multi-message streaming via message_segment events.
  */
 
 const chunkText = (text: string, size: number = 32): string[] => {
@@ -21,6 +21,13 @@ const chunkText = (text: string, size: number = 32): string[] => {
 };
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Log server events for debugging
+ */
+function serverLog(type: string, data: Record<string, unknown>) {
+	console.log(`[AI Chat ${new Date().toISOString()}] ${type}:`, JSON.stringify(data, null, 2));
+}
 
 export const POST: RequestHandler = async ({ request, locals }) => {
 	if (!locals.user) {
@@ -38,6 +45,14 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		parts,
 		stream: streamRequested = true
 	} = body;
+
+	serverLog('REQUEST', {
+		sessionId,
+		hasMessages: !!messages,
+		messageCount: messages?.length,
+		content: directContent?.substring(0, 50),
+		activeModuleIds
+	});
 
 	const agent = new AiAgentV3Adapter(locals.user.id);
 	const aiRepo = new AiRepository();
@@ -83,12 +98,17 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	if (!activeSessionId) {
 		const session = await aiRepo.createSession(locals.user.id, content?.substring(0, 30) + '...');
 		activeSessionId = session.id;
+		serverLog('SESSION_CREATED', { sessionId: activeSessionId });
 	}
 
 	try {
 		if (shouldStream) {
 			const encoder = new TextEncoder();
 			let streamClosed = false;
+
+			// Track message segments for multi-message support
+			const messageSegments: Map<string, string> = new Map();
+			let currentSegmentId: string | null = null;
 
 			const stream = new ReadableStream({
 				start: async (controller) => {
@@ -103,13 +123,15 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 						}
 					};
 
+					// Helper to send SSE event
+					const sendEvent = (type: string, data: Record<string, unknown>) => {
+						serverLog(`EVENT:${type}`, data);
+						safeEnqueue(encoder.encode(`data: ${JSON.stringify({ type, ...data })}\n\n`));
+					};
+
 					try {
 						// Send session ID first
-						controller.enqueue(
-							encoder.encode(
-								`data: ${JSON.stringify({ type: 'meta', sessionId: activeSessionId })}\n\n`
-							)
-						);
+						sendEvent('meta', { sessionId: activeSessionId });
 
 						// Track progress events
 						const progressEvents: any[] = [];
@@ -123,61 +145,139 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 							messageParts,
 							{
 								onProgress: async (event: any) => {
-									safeEnqueue(
-										encoder.encode(
-											`data: ${JSON.stringify({
-												type: 'progress',
+									serverLog('PROGRESS', { type: event.type, data: event.data });
+
+									// Handle different event types
+									switch (event.type) {
+										case 'message_segment':
+											// Multi-message support: stream segment content
+											const segmentData = event.data;
+											const segId = segmentData.id;
+
+											if (segmentData.isComplete) {
+												// Segment is complete, send it as a full message
+												sendEvent('message_segment', {
+													id: segId,
+													content: segmentData.content,
+													isComplete: true,
+													segmentIndex: segmentData.segmentIndex
+												});
+											} else {
+												// Stream partial content
+												sendEvent('text_delta', {
+													segmentId: segId,
+													delta: segmentData.content,
+													segmentIndex: segmentData.segmentIndex
+												});
+											}
+											break;
+
+										case 'text':
+											// Text delta from streaming
+											if (event.data?.delta) {
+												sendEvent('text_delta', {
+													delta: event.data.delta,
+													segmentId: event.data.segmentId
+												});
+											}
+											break;
+
+										case 'tool_start':
+											// Tool call started
+											sendEvent('tool_start', {
+												toolName: event.data.toolName,
+												toolCallId: event.data.toolCallId,
+												input: event.data.input
+											});
+											break;
+
+										case 'tool_complete':
+											// Tool call completed
+											sendEvent('tool_complete', {
+												toolName: event.data.toolName,
+												toolCallId: event.data.toolCallId,
+												result: event.data.result
+											});
+											break;
+
+										case 'step_complete':
+											// Step completed
+											progressEvents.push(event);
+											sendEvent('progress', {
+												eventType: 'step_complete',
+												timestamp: event.timestamp,
+												data: event.data
+											});
+											break;
+
+										case 'complete':
+											// Execution complete
+											sendEvent('progress', {
+												eventType: 'complete',
+												timestamp: event.timestamp,
+												data: event.data
+											});
+											break;
+
+										case 'error':
+											// Error occurred
+											sendEvent('progress', {
+												eventType: 'error',
+												timestamp: event.timestamp,
+												data: event.data
+											});
+											break;
+
+										default:
+											// Pass through other progress events
+											progressEvents.push(event);
+											sendEvent('progress', {
 												eventType: event.type,
 												timestamp: event.timestamp,
 												data: event.data
-											})}\n\n`
-										)
-									);
-									progressEvents.push(event);
+											});
+									}
 								}
 							}
 						);
 
-						// Stream the final message in chunks
+						serverLog('RESPONSE', {
+							messageLength: response.message?.length,
+							actionsCount: response.actions?.length,
+							eventsCount: response.events?.length
+						});
+
+						// Stream the final message in chunks (for compatibility)
 						const chunks = chunkText(response.message || '');
 						for (const chunk of chunks) {
-							safeEnqueue(
-								encoder.encode(`data: ${JSON.stringify({ type: 'chunk', content: chunk })}\n\n`)
-							);
+							sendEvent('chunk', { content: chunk });
 							await sleep(30);
 						}
 
 						// Send final metadata
 						await sleep(50);
-						safeEnqueue(
-							encoder.encode(
-								`data: ${JSON.stringify({
-									type: 'meta',
-									sessionId: activeSessionId,
-									actions: response.actions || [],
-									events: response.events,
-									telemetry: response.telemetry,
-									progressEvents: progressEvents.length > 0 ? progressEvents : undefined
-								})}\n\n`
-							)
-						);
+						sendEvent('meta', {
+							sessionId: activeSessionId,
+							actions: response.actions || [],
+							events: response.events,
+							telemetry: response.telemetry,
+							progressEvents: progressEvents.length > 0 ? progressEvents : undefined
+						});
 
 						// Send DONE and close
 						try {
 							safeEnqueue(encoder.encode('data: [DONE]\n\n'));
 							await sleep(20);
 							controller.close();
+							serverLog('STREAM_CLOSED', { reason: 'completed' });
 						} catch (closeError) {
 							console.warn('Stream close warning (non-fatal):', closeError);
 						}
 					} catch (error) {
 						const errorMessage = (error as any)?.message || 'Internal Server Error';
 						console.error('Streaming error:', error);
-						safeEnqueue(
-							encoder.encode(
-								`data: ${JSON.stringify({ type: 'error', message: errorMessage })}\n\n`
-							)
-						);
+						serverLog('ERROR', { message: errorMessage });
+						sendEvent('error', { message: errorMessage });
 						safeEnqueue(encoder.encode('data: [DONE]\n\n'));
 						controller.close();
 					}

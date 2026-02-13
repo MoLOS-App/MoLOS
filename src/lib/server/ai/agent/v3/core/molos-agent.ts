@@ -213,6 +213,8 @@ export class MoLOSAgent {
 		// Track progress events
 		const events: Array<{ type: string; timestamp: number; data: Record<string, unknown> }> = [];
 
+		console.log(`[MoLOSAgent ${runId}] Starting processMessage with streaming: ${options.streamEnabled ?? this.config.streamEnabled}`);
+
 		try {
 			// Create the stream
 			const result = streamText({
@@ -223,6 +225,11 @@ export class MoLOSAgent {
 				stopWhen: stepCountIs(options.maxSteps ?? this.config.maxSteps ?? 20),
 				...providerOptions,
 				onStepFinish: async (step) => {
+					console.log(`[MoLOSAgent ${runId}] Step finished:`, {
+						toolCalls: step.toolCalls?.map((tc: any) => tc.toolName),
+						textLength: step.text?.length
+					});
+
 					// Emit step event to event bus
 					const eventData = {
 						toolCalls: step.toolCalls,
@@ -255,13 +262,43 @@ export class MoLOSAgent {
 				},
 			});
 
-			// Handle streaming if enabled
+			// Handle streaming if enabled - AWAIT the streaming to ensure events are sent
 			if (options.streamEnabled ?? this.config.streamEnabled) {
-				// Stream to event bus
-				this.streamToEventBus(result, runId, options.onProgress);
+				console.log(`[MoLOSAgent ${runId}] Starting streamToEventBus`);
+				// Stream to event bus - this iterates through the full stream
+				// We need to do this in parallel with getting the response
+				const streamingPromise = this.streamToEventBus(result, runId, options.onProgress);
+
+				// Get final response while streaming happens
+				const response = await result.response;
+				const text = await result.text;
+				const steps = await result.steps;
+
+				// Wait for streaming to complete
+				await streamingPromise;
+
+				console.log(`[MoLOSAgent ${runId}] Streaming complete, text length: ${text?.length}`);
+
+				// Build telemetry
+				const telemetry = buildTelemetry(runId, startTime, steps as any);
+
+				// Extract actions
+				const actions = extractActions(steps as any);
+
+				return {
+					success: true,
+					message: text,
+					actions,
+					telemetry,
+					events: events.map((e) => ({
+						type: e.type,
+						timestamp: e.timestamp,
+						data: e.data,
+					})),
+				};
 			}
 
-			// Get final response
+			// Non-streaming path
 			const response = await result.response;
 			const text = await result.text;
 			const steps = await result.steps;
@@ -331,9 +368,14 @@ export class MoLOSAgent {
 		let currentSegmentId = `seg_${runId}_0`;
 		let currentSegmentContent = '';
 		let segmentIndex = 0;
+		let chunkCount = 0;
+
+		console.log(`[MoLOSAgent ${runId}] streamToEventBus started`);
 
 		const emitSegment = async (isComplete: boolean) => {
 			if (currentSegmentContent.trim()) {
+				console.log(`[MoLOSAgent ${runId}] Emitting segment ${segmentIndex}: ${currentSegmentContent.length} chars`);
+
 				const event: ProgressEvent = {
 					type: 'message_segment',
 					timestamp: Date.now(),
@@ -368,6 +410,7 @@ export class MoLOSAgent {
 
 		try {
 			for await (const chunk of result.fullStream) {
+				chunkCount++;
 				const event: ProgressEvent = {
 					type: 'text',
 					timestamp: Date.now(),
@@ -384,9 +427,15 @@ export class MoLOSAgent {
 							segmentId: currentSegmentId,
 							segmentIndex,
 						};
+
+						// Emit text delta immediately for real-time streaming
+						if (onProgress) {
+							await onProgress(event);
+						}
 						break;
 
 					case 'tool-call':
+						console.log(`[MoLOSAgent ${runId}] Tool call: ${chunk.toolName}`);
 						// Before tool call, finalize current segment if has content
 						await emitSegment(true);
 
@@ -397,9 +446,15 @@ export class MoLOSAgent {
 							input: chunk.input,
 							segmentIndex,
 						};
+
+						// Call progress callback
+						if (onProgress) {
+							await onProgress(event);
+						}
 						break;
 
 					case 'tool-result':
+						console.log(`[MoLOSAgent ${runId}] Tool result: ${chunk.toolName}`);
 						event.type = 'tool_complete';
 						event.data = {
 							toolName: chunk.toolName,
@@ -407,14 +462,26 @@ export class MoLOSAgent {
 							result: chunk.output,
 							segmentIndex,
 						};
+
+						// Call progress callback
+						if (onProgress) {
+							await onProgress(event);
+						}
 						break;
 
 					case 'error':
+						console.error(`[MoLOSAgent ${runId}] Stream error:`, chunk.error);
 						event.type = 'error';
 						event.data = { error: chunk.error };
+
+						// Call progress callback
+						if (onProgress) {
+							await onProgress(event);
+						}
 						break;
 
 					case 'finish':
+						console.log(`[MoLOSAgent ${runId}] Stream finish, total chunks: ${chunkCount}`);
 						// Finalize any remaining content
 						await emitSegment(true);
 
@@ -424,27 +491,23 @@ export class MoLOSAgent {
 							usage: chunk.totalUsage,
 							totalSegments: segmentIndex,
 						};
+
+						// Call progress callback
+						if (onProgress) {
+							await onProgress(event);
+						}
 						break;
 
 					default:
-						// Skip unknown chunk types
+						// Log unknown chunk types for debugging
+						console.log(`[MoLOSAgent ${runId}] Unknown chunk type: ${chunk.type}`);
 						continue;
 				}
-
-				// Emit to event bus and call progress callback
-				this.eventBus.emitSync({
-					type: event.type as any,
-					timestamp: event.timestamp,
-					data: event.data,
-				} as any);
-
-				// Call progress callback
-				if (onProgress) {
-					await onProgress(event);
-				}
 			}
+
+			console.log(`[MoLOSAgent ${runId}] streamToEventBus complete, processed ${chunkCount} chunks`);
 		} catch (error) {
-			console.error('[MoLOSAgent] Stream error:', error);
+			console.error(`[MoLOSAgent ${runId}] Stream iteration error:`, error);
 		}
 	}
 

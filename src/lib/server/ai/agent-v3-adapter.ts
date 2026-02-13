@@ -189,6 +189,17 @@ export class AiAgentV3Adapter {
 You have access to the following tools. Use them to accomplish tasks:
 ${toolsList}
 
+# COMMUNICATION STYLE
+When working on multi-step tasks:
+1. First, briefly acknowledge the user's request and outline your plan
+2. As you execute each step, provide brief status updates
+3. After completing all tasks, provide a clear summary
+
+Example:
+- "I'll help you with that. Let me start by checking the available tools..."
+- "Now I'll search for relevant files..."
+- "Great! Here's what I found..."
+
 Remember: When a task requires using tools, CALL THE TOOL IMMEDIATELY. Do not just describe what you would do.`;
 
 		// Create agent config
