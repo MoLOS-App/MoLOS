@@ -17,12 +17,16 @@ const coreConfigs = import.meta.glob('./**/config.ts', {
 }) as Record<string, any>;
 
 /**
+ * Queue for modules that failed to load (processed by server hooks)
+ */
+export const failedModulesQueue: Array<{ moduleId: string; error: Error }> = [];
+
+/**
  * Safe external module loading with error handling
- * When a module fails to load, it's skipped and marked for auto-disable
+ * When a module fails to load, it's skipped and queued for auto-disable
  */
 async function loadExternalConfigs(): Promise<Record<string, any>> {
 	const results: Record<string, any> = {};
-	const modulesToDisable: Array<{ moduleId: string; error: Error }> = [];
 
 	// Get all external module config files
 	const externalModulePaths = import.meta.glob('./external_modules/*.ts', {
@@ -38,17 +42,10 @@ async function loadExternalConfigs(): Promise<Record<string, any>> {
 			const moduleId = extractModuleIdFromPath(path);
 			console.warn(`[ModuleRegistry] Failed to load module ${moduleId}:`, error);
 
-			// Queue for auto-disable (don't await to avoid blocking)
+			// Queue for auto-disable (will be processed by server hooks)
 			const errorObj = error instanceof Error ? error : new Error(String(error));
-			modulesToDisable.push({ moduleId, error: errorObj });
+			failedModulesQueue.push({ moduleId, error: errorObj });
 		}
-	}
-
-	// Auto-disable failed modules (async, non-blocking)
-	if (modulesToDisable.length > 0) {
-		markFailedModulesForDisable(modulesToDisable).catch((err) => {
-			console.warn('[ModuleRegistry] Failed to auto-disable modules:', err);
-		});
 	}
 
 	return results;
@@ -62,28 +59,6 @@ function extractModuleIdFromPath(importPath: string): string {
 	const parts = importPath.split('/');
 	const lastPart = parts[parts.length - 1];
 	return lastPart.replace(/\.ts$/, '');
-}
-
-/**
- * Mark failed modules as disabled in the database
- * This is done async to avoid blocking the module loading process
- */
-async function markFailedModulesForDisable(
-	modules: Array<{ moduleId: string; error: Error }>
-): Promise<void> {
-	try {
-		// Dynamic import to avoid issues at build time
-		const { markModuleForDisable } = await import(
-			'../../../module-management/server/module-auto-disable.js'
-		);
-
-		// Mark each failed module for disable
-		for (const { moduleId, error } of modules) {
-			await markModuleForDisable(moduleId, error);
-		}
-	} catch (err) {
-		console.warn('[ModuleRegistry] Could not import auto-disable utility:', err);
-	}
 }
 
 // Load external configs with error handling

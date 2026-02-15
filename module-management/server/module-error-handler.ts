@@ -12,6 +12,7 @@ export type ErrorCategory =
 	| 'migration_failed'
 	| 'config_export'
 	| 'symlink_failed'
+	| 'build_error'
 	| 'unknown';
 
 type ErrorRecoveryMap = {
@@ -47,6 +48,14 @@ const recoverySteps: ErrorRecoveryMap = {
 		'Check disk space availability',
 		'Review system symlink support'
 	],
+	build_error: [
+		'Check TypeScript/JavaScript files for syntax errors',
+		'Verify all imports exist and are correctly named',
+		'Check that exported functions/variables match imports',
+		'Ensure all dependencies are installed',
+		'Review build error message for specific file and line number',
+		'Fix the import error and reinstall the module'
+	],
 	unknown: [
 		'Contact module developer for support',
 		'Check module documentation',
@@ -62,15 +71,17 @@ export function createModuleError(
 	message: string,
 	details?: Record<string, unknown>
 ): ModuleError {
+	const statusMap: Record<ErrorCategory, ModuleError['status']> = {
+		manifest_validation: 'error_manifest',
+		migration_failed: 'error_migration',
+		config_export: 'error_config',
+		symlink_failed: 'error_migration',
+		build_error: 'error_build',
+		unknown: 'error_config'
+	};
+
 	return {
-		status:
-			category === 'manifest_validation'
-				? 'error_manifest'
-				: category === 'migration_failed'
-					? 'error_migration'
-					: category === 'config_export'
-						? 'error_config'
-						: 'error_migration',
+		status: statusMap[category],
 		errorType: category,
 		message,
 		timestamp: new Date(),
@@ -101,6 +112,17 @@ export function categorizeError(error: unknown): ErrorCategory {
 	}
 	if (message.includes('symlink') || message.includes('EACCES') || message.includes('EEXIST')) {
 		return 'symlink_failed';
+	}
+	// Detect build/import errors
+	if (
+		message.includes('is not exported') ||
+		message.includes('Cannot resolve') ||
+		message.includes('Import error') ||
+		message.includes('Build failed') ||
+		message.includes('Unexpected token') ||
+		message.includes('Rollup')
+	) {
+		return 'build_error';
 	}
 
 	return 'unknown';

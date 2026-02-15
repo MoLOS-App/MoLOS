@@ -26,6 +26,7 @@ export type ModuleStatus =
 	| 'error_manifest'
 	| 'error_migration'
 	| 'error_config'
+	| 'error_build'
 	| 'disabled';
 
 export interface ExternalModuleActionHandlers {

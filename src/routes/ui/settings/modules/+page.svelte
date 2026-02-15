@@ -21,6 +21,35 @@
 	// svelte-ignore state_referenced_locally
 	let localModules = $state([...data.modules]);
 
+	// Sync localModules with data.modules when data changes (e.g., after form actions)
+	$effect(() => {
+		// Update status and other server-managed fields for external modules
+		data.modules.forEach((serverMod) => {
+			const localMod = localModules.find((m) => m.id === serverMod.id);
+			if (localMod && localMod.isExternal) {
+				// Update status and other fields that might change after server actions
+				localMod.status = serverMod.status;
+				localMod.lastError = serverMod.lastError;
+				localMod.gitRef = serverMod.gitRef;
+				localMod.blockUpdates = serverMod.blockUpdates;
+			}
+		});
+
+		// Add newly installed modules that aren't in localModules yet
+		data.modules.forEach((serverMod) => {
+			if (!localModules.find((m) => m.id === serverMod.id)) {
+				localModules.push(serverMod);
+			}
+		});
+
+		// Remove modules that were deleted and are no longer in data.modules
+		for (let i = localModules.length - 1; i >= 0; i--) {
+			if (!data.modules.find((m) => m.id === localModules[i].id)) {
+				localModules.splice(i, 1);
+			}
+		}
+	});
+
 	// Initialize state from server data
 	// svelte-ignore state_referenced_locally
 	let moduleStates = $state<Record<string, ModuleState>>(

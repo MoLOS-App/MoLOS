@@ -13,6 +13,8 @@ import { SettingsRepository } from '$lib/repositories/settings/settings-reposito
 import { getThemeClasses, type Theme, type Font, FONTS } from '$lib/theme';
 
 import { ModuleManager } from '../module-management/server/module-manager';
+import { failedModulesQueue } from '$lib/config';
+import { markModuleForDisable } from '../module-management/server/module-auto-disable';
 
 // Load .env file manually to ensure environment variables are available
 function loadEnv() {
@@ -91,6 +93,20 @@ if (!building) {
 		await ModuleManager.init();
 	} catch (error) {
 		console.error('[Hooks] Failed to initialize ModuleManager:', error);
+	}
+
+	// Process any failed modules from config loading
+	if (failedModulesQueue.length > 0) {
+		console.log(`[Hooks] Processing ${failedModulesQueue.length} failed modules...`);
+		for (const { moduleId, error } of failedModulesQueue) {
+			try {
+				await markModuleForDisable(moduleId, error);
+			} catch (err) {
+				console.warn(`[Hooks] Failed to auto-disable module ${moduleId}:`, err);
+			}
+		}
+		// Clear the queue after processing
+		failedModulesQueue.length = 0;
 	}
 }
 

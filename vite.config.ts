@@ -1,5 +1,5 @@
 import tailwindcss from '@tailwindcss/vite';
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import { playwright } from '@vitest/browser-playwright';
 import { sveltekit } from '@sveltejs/kit/vite';
 import {
@@ -68,7 +68,209 @@ function quickValidateModule(moduleId: string, modulePath: string): {
 		return { valid: false, error: 'Cannot read manifest' };
 	}
 
+	// 5. Validate TypeScript imports in module files
+	const importError = validateModuleImports(moduleId, modulePath);
+	if (importError) {
+		return { valid: false, error: importError };
+	}
+
 	return { valid: true };
+}
+
+/**
+ * Get all TypeScript/JavaScript files in a directory recursively
+ */
+function getAllSourceFiles(dir: string, files: string[] = []): string[] {
+	if (!existsSync(dir)) return files;
+
+	const entries = readdirSync(dir, { withFileTypes: true });
+	for (const entry of entries) {
+		const fullPath = path.join(dir, entry.name);
+		if (entry.isDirectory()) {
+			// Skip node_modules and hidden directories
+			if (entry.name !== 'node_modules' && !entry.name.startsWith('.')) {
+				getAllSourceFiles(fullPath, files);
+			}
+		} else if (entry.isFile() && (entry.name.endsWith('.ts') || entry.name.endsWith('.svelte'))) {
+			files.push(fullPath);
+		}
+	}
+	return files;
+}
+
+/**
+ * Extract imports from TypeScript file content
+ * Returns array of { importPath, importedNames, lineNumber }
+ */
+function extractImports(content: string): Array<{ importPath: string; importedNames: string[]; lineNumber: number }> {
+	const imports: Array<{ importPath: string; importedNames: string[]; lineNumber: number }> = [];
+
+	// Match: import { X, Y } from 'path'
+	const namedImportRegex = /import\s*\{\s*([^}]+)\s*\}\s*from\s*['"]([^'"]+)['"]/g;
+	// Match: import X from 'path'
+	const defaultImportRegex = /import\s+(\w+)\s+from\s*['"]([^'"]+)['"]/g;
+	// Match: import * as X from 'path'
+	const namespaceImportRegex = /import\s*\*\s*as\s+(\w+)\s*from\s*['"]([^'"]+)['"]/g;
+
+	const lines = content.split('\n');
+
+	let match;
+	while ((match = namedImportRegex.exec(content)) !== null) {
+		const lineNumber = content.substring(0, match.index).split('\n').length;
+		const names = match[1].split(',').map(n => n.trim().split(' as ')[0].trim());
+		imports.push({ importPath: match[2], importedNames: names, lineNumber });
+	}
+
+	while ((match = defaultImportRegex.exec(content)) !== null) {
+		const lineNumber = content.substring(0, match.index).split('\n').length;
+		imports.push({ importPath: match[2], importedNames: [match[1]], lineNumber });
+	}
+
+	while ((match = namespaceImportRegex.exec(content)) !== null) {
+		const lineNumber = content.substring(0, match.index).split('\n').length;
+		imports.push({ importPath: match[2], importedNames: ['*'], lineNumber });
+	}
+
+	return imports;
+}
+
+/**
+ * Check if an import path refers to an external module file
+ */
+function isExternalModuleImport(importPath: string): boolean {
+	return importPath.includes('/external_modules/') || importPath.includes('\\external_modules\\');
+}
+
+/**
+ * Get the exports from a TypeScript file (simple extraction)
+ * This doesn't do full type checking but catches obvious mismatches
+ */
+function getFileExports(filePath: string): Set<string> {
+	const exports = new Set<string>();
+
+	if (!existsSync(filePath)) return exports;
+
+	try {
+		const content = readFileSync(filePath, 'utf-8');
+
+		// Match: export const/let/var/function/class X
+		const exportDeclRegex = /export\s+(?:const|let|var|function|class|async\s+function)\s+(\w+)/g;
+		let match;
+		while ((match = exportDeclRegex.exec(content)) !== null) {
+			exports.add(match[1]);
+		}
+
+		// Match: export { X, Y, Z }
+		const exportBlockRegex = /export\s*\{\s*([^}]+)\s*\}/g;
+		while ((match = exportBlockRegex.exec(content)) !== null) {
+			const names = match[1].split(',').map(n => n.trim().split(' as ')[0].trim());
+			names.forEach(n => exports.add(n));
+		}
+
+		// Match: export type/interface X
+		const exportTypeRegex = /export\s+(?:type|interface)\s+(\w+)/g;
+		while ((match = exportTypeRegex.exec(content)) !== null) {
+			exports.add(match[1]);
+		}
+	} catch {
+		// Ignore read errors
+	}
+
+	return exports;
+}
+
+/**
+ * Validate that imports in a module can be resolved
+ * Checks for common issues like importing non-existent exports
+ */
+function validateModuleImports(moduleId: string, modulePath: string): string | null {
+	const sourceFiles = getAllSourceFiles(modulePath);
+
+	for (const filePath of sourceFiles) {
+		try {
+			const content = readFileSync(filePath, 'utf-8');
+			const imports = extractImports(content);
+
+			for (const imp of imports) {
+				// Only check imports that reference external_modules (which includes our module symlinks)
+				if (!isExternalModuleImport(imp.importPath)) continue;
+
+				// Resolve the import path to an actual file
+				const resolvedPath = resolveImportPath(imp.importPath, filePath);
+				if (!resolvedPath || !existsSync(resolvedPath)) {
+					// File doesn't exist - this will fail at build time
+					const relativePath = path.relative(modulePath, filePath);
+					return `Import error in ${relativePath}:${imp.lineNumber}: Cannot resolve '${imp.importPath}'`;
+				}
+
+				// Check if the imported names exist in the target file
+				const availableExports = getFileExports(resolvedPath);
+				const missingExports = imp.importedNames.filter(name => {
+					if (name === '*') return false; // Namespace imports always work
+					return !availableExports.has(name);
+				});
+
+				if (missingExports.length > 0) {
+					const relativePath = path.relative(modulePath, filePath);
+					return `Import error in ${relativePath}:${imp.lineNumber}: '${missingExports.join(', ')}' is not exported by '${imp.importPath}'`;
+				}
+			}
+		} catch (e) {
+			// Skip files that can't be read
+			continue;
+		}
+	}
+
+	return null;
+}
+
+/**
+ * Resolve an import path to an actual file path
+ */
+function resolveImportPath(importPath: string, fromFile: string): string | null {
+	// Handle $lib alias
+	if (importPath.startsWith('$lib/')) {
+		const libPath = importPath.replace('$lib/', 'src/lib/');
+		return resolveFilePath(path.resolve(libPath));
+	}
+
+	// Handle relative imports
+	if (importPath.startsWith('.')) {
+		const dir = path.dirname(fromFile);
+		return resolveFilePath(path.resolve(dir, importPath));
+	}
+
+	return null;
+}
+
+/**
+ * Resolve a path to a TypeScript/JavaScript file
+ * Handles extensions and index files
+ */
+function resolveFilePath(basePath: string): string | null {
+	// Try exact path first
+	if (existsSync(basePath) && lstatSync(basePath).isFile()) {
+		return basePath;
+	}
+
+	// Try with extensions
+	const extensions = ['.ts', '.js', '.svelte', '.tsx', '.jsx'];
+	for (const ext of extensions) {
+		const withExt = basePath + ext;
+		if (existsSync(withExt) && lstatSync(withExt).isFile()) {
+			return withExt;
+		}
+	}
+
+	// Try index file
+	for (const ext of extensions) {
+		const indexPath = path.join(basePath, `index${ext}`);
+		if (existsSync(indexPath)) {
+			return indexPath;
+		}
+	}
+
+	return null;
 }
 
 /**
@@ -372,7 +574,7 @@ function getDisabledModulesFromDb(): string[] {
  * Mark a module as disabled in the database due to validation failure
  * This is async and non-blocking to avoid slowing down the build
  */
-async function markModuleInvalidInDb(moduleId: string, error: string | undefined): Promise<void> {
+async function markModuleInvalidInDb(moduleId: string, error: string | undefined, isBuildError: boolean = false): Promise<void> {
 	const dbUrl = process.env.DATABASE_URL;
 	if (!dbUrl) return;
 
@@ -382,25 +584,153 @@ async function markModuleInvalidInDb(moduleId: string, error: string | undefined
 		const Database = require('better-sqlite3');
 		const db = new Database(dbPath);
 
+		// Use error_build status for build errors, disabled for validation errors
+		const status = isBuildError ? 'error_build' : 'disabled';
+
 		db.prepare(`
 			UPDATE settings_external_modules
-			SET status = 'disabled',
+			SET status = ?,
 			    last_error = ?
 			WHERE id = ?
-		`).run(error || 'Validation failed', moduleId);
+		`).run(status, error || 'Validation failed', moduleId);
 
 		db.close();
-		console.warn(`[Vite] Module ${moduleId} marked as disabled in database`);
+		console.warn(`[Vite] Module ${moduleId} marked as ${status} in database`);
 	} catch (e) {
 		console.warn(`[Vite] Could not mark module ${moduleId} as disabled:`, e);
 	}
+}
+
+/**
+ * Extract module ID from an error file path
+ * Handles paths like:
+ * - src/lib/repositories/external_modules/MoLOS-Tasks/...
+ * - src/routes/ui/(modules)/(external_modules)/MoLOS-Tasks/...
+ */
+function extractModuleIdFromErrorPath(filePath: string): string | null {
+	// Match external_modules/ModuleName/ pattern
+	const externalMatch = filePath.match(/external_modules[\/\\]([a-zA-Z0-9_-]+)/);
+	if (externalMatch) {
+		return externalMatch[1];
+	}
+
+	// Match (external_modules)/ModuleName/ pattern (for routes)
+	const routesMatch = filePath.match(/\(external_modules\)[\/\\]([a-zA-Z0-9_-]+)/);
+	if (routesMatch) {
+		return routesMatch[1];
+	}
+
+	return null;
+}
+
+/**
+ * Remove symlinks for a failed module to allow build to continue
+ */
+function removeModuleSymlinks(moduleId: string): void {
+	const symlinkDirs = [
+		path.resolve('src/lib/config/external_modules'),
+		path.resolve('src/routes/ui/(modules)/(external_modules)'),
+		path.resolve('src/routes/api/(external_modules)'),
+		SYMLINK_CONFIG.componentsDir,
+		SYMLINK_CONFIG.modelsDir,
+		SYMLINK_CONFIG.repositoriesDir,
+		SYMLINK_CONFIG.storesDir,
+		SYMLINK_CONFIG.utilsDir,
+		SYMLINK_CONFIG.serverAiDir,
+		SYMLINK_CONFIG.dbSchemaDir
+	];
+
+	for (const dir of symlinkDirs) {
+		if (!existsSync(dir)) continue;
+
+		const entries = readdirSync(dir, { withFileTypes: true });
+		for (const entry of entries) {
+			const entryName = entry.name.replace(/\.ts$/, ''); // Remove .ts for config files
+			if (entryName === moduleId) {
+				const fullPath = path.join(dir, entry.name);
+				try {
+					rmSync(fullPath, { recursive: true, force: true });
+					console.log(`[Vite] Removed symlink for failed module: ${fullPath}`);
+				} catch (e) {
+					console.warn(`[Vite] Failed to remove symlink ${fullPath}:`, e);
+				}
+			}
+		}
+	}
+}
+
+/**
+ * Vite plugin to catch module build errors and gracefully handle them
+ * Instead of crashing, it marks the problematic module as disabled and retries the build
+ */
+function moduleBuildErrorHandler(): Plugin {
+	let hasRecovered = false;
+	const maxRecoverAttempts = 3;
+	let recoverAttempts = 0;
+
+	return {
+		name: 'module-build-error-handler',
+		enforce: 'pre',
+
+		configureServer(server) {
+			// Handle errors during dev server
+			server.middlewares.use((err, req, res, next) => {
+				if (err && err.message) {
+					const moduleId = extractModuleIdFromErrorPath(err.message);
+					if (moduleId) {
+						console.error(`[Vite] Build error in module ${moduleId}:`, err.message);
+						markModuleInvalidInDb(moduleId, err.message, true).catch(() => {});
+						removeModuleSymlinks(moduleId);
+					}
+				}
+				next(err);
+			});
+		},
+
+		buildEnd(error) {
+			if (!error) return;
+
+			const errorMessage = error.message || String(error);
+			const moduleId = extractModuleIdFromErrorPath(errorMessage);
+
+			if (moduleId && recoverAttempts < maxRecoverAttempts) {
+				console.error(`\n[Vite] Build error detected in module: ${moduleId}`);
+				console.error(`[Vite] Error: ${errorMessage}`);
+				console.log(`[Vite] Attempting to recover by disabling module and retrying...`);
+
+				// Mark module as failed in database (with error_build status)
+				markModuleInvalidInDb(moduleId, errorMessage, true).catch(() => {});
+
+				// Remove symlinks to prevent the error from recurring
+				removeModuleSymlinks(moduleId);
+
+				recoverAttempts++;
+				hasRecovered = true;
+
+				// Signal that we want to retry (by not throwing)
+				// Note: This only works in watch mode; for production builds,
+				// we need to exit and restart
+				if (process.env.NODE_ENV !== 'production') {
+					console.log(`[Vite] Module ${moduleId} disabled. Please restart the dev server.`);
+				}
+			}
+		},
+
+		generateBundle(options, bundle) {
+			// If we recovered from an error, log success
+			if (hasRecovered) {
+				console.log('[Vite] Build completed after recovering from module error.');
+				hasRecovered = false;
+			}
+		}
+	};
 }
 
 // Execute linking immediately
 linkExternalModules();
 
 export default defineConfig({
-	plugins: [tailwindcss(), sveltekit()],
+	plugins: [tailwindcss(), moduleBuildErrorHandler(), sveltekit()],
 
 	resolve: {
 		preserveSymlinks: true
