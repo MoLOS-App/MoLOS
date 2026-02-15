@@ -1,0 +1,1 @@
+ALTER TABLE `ai_settings` ADD `stream_enabled` integer DEFAULT true NOT NULL;

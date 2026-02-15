@@ -4,10 +4,8 @@
 	"version": "0.1.0",
 	"type": "module",
 	"workspaces": [
-		"packages/*",
-		"modules/*"
+		"packages/*"
 	],
-	"packageManager": "pnpm@10.25.0",
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
