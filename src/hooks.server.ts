@@ -13,6 +13,8 @@ import { SettingsRepository } from '$lib/repositories/settings/settings-reposito
 import { getThemeClasses, type Theme, type Font, FONTS } from '$lib/theme';
 
 import { ModuleManager } from '../module-management/server/module-manager';
+import { failedModulesQueue } from '$lib/config';
+import { markModuleForDisable } from '../module-management/server/module-auto-disable';
 
 // Load .env file manually to ensure environment variables are available
 function loadEnv() {
@@ -92,18 +94,34 @@ if (!building) {
 	} catch (error) {
 		console.error('[Hooks] Failed to initialize ModuleManager:', error);
 	}
+
+	// Process any failed modules from config loading
+	if (failedModulesQueue.length > 0) {
+		console.log(`[Hooks] Processing ${failedModulesQueue.length} failed modules...`);
+		for (const { moduleId, error } of failedModulesQueue) {
+			try {
+				await markModuleForDisable(moduleId, error);
+			} catch (err) {
+				console.warn(`[Hooks] Failed to auto-disable module ${moduleId}:`, err);
+			}
+		}
+		// Clear the queue after processing
+		failedModulesQueue.length = 0;
+	}
 }
 
 const authHandler: Handle = async ({ event, resolve }) => {
 	const { pathname } = event.url;
 
-	// Skip user count check for static assets, internal SvelteKit requests, and auth API
-	// Skip user count check for static assets, internal SvelteKit requests, and auth API
+	// Skip user count check for static assets, internal SvelteKit requests, auth API,
+	// and OAuth discovery endpoints (must be publicly accessible)
 	const isStaticAsset =
 		pathname.includes('.') || pathname.startsWith('/_app') || pathname.startsWith('/favicon');
 	const isAuthApi = pathname.startsWith('/api/auth');
+	const isOAuthDiscovery =
+		pathname.startsWith('/.well-known/') || pathname.includes('/.well-known/');
 
-	if (!isStaticAsset && !isAuthApi) {
+	if (!isStaticAsset && !isAuthApi && !isOAuthDiscovery) {
 		// Check if any users exist in the database
 		const userCountResult = await db.all(sql`SELECT count(*) as count FROM user`);
 		const userCount = (userCountResult[0] as unknown as { count: number }).count;
@@ -114,6 +132,11 @@ const authHandler: Handle = async ({ event, resolve }) => {
 				throw redirect(302, '/ui/welcome');
 			}
 		}
+	}
+
+	// Skip authentication for OAuth discovery endpoints (must be publicly accessible)
+	if (isOAuthDiscovery) {
+		return resolve(event);
 	}
 
 	// Fetch current session from Better Auth

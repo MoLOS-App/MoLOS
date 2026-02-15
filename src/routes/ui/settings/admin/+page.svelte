@@ -325,6 +325,11 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Admin Console - MoLOS</title>
+	<meta name="description" content="System management and governance for MoLOS administrators." />
+</svelte:head>
+
 <div class="min-h-screen bg-background pb-20">
 	<div class="mx-auto max-w-4xl space-y-8 p-6">
 		<!-- Header -->

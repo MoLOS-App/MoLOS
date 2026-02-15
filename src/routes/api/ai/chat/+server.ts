@@ -1,7 +1,15 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { AiAgent } from '$lib/server/ai/agent';
+import { AiAgentV3Adapter } from '$lib/server/ai/agent-v3-adapter';
 import { AiRepository } from '$lib/repositories/ai/ai-repository';
+import type { UIMessage } from 'ai';
+
+/**
+ * AI Chat API Endpoint
+ *
+ * Supports both legacy SSE format and AI SDK v5+ UIMessage format.
+ * Supports multi-message streaming via message_segment events.
+ */
 
 const chunkText = (text: string, size: number = 32): string[] => {
 	if (!text) return [''];
@@ -14,13 +22,41 @@ const chunkText = (text: string, size: number = 32): string[] => {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/**
+ * Extract thought and plan tags from content
+ */
+function extractThoughtAndPlan(content: string): {
+	thought: string | null;
+	plan: string | null;
+	cleanContent: string;
+} {
+	const thoughtMatch = content.match(/<thought>([\s\S]*?)<\/thought>/);
+	const planMatch = content.match(/<plan>([\s\S]*?)<\/plan>/);
+
+	const thought = thoughtMatch ? thoughtMatch[1].trim() : null;
+	const plan = planMatch ? planMatch[1].trim() : null;
+
+	const cleanContent = content
+		.replace(/<thought>[\s\S]*?<\/thought>/, '')
+		.replace(/<plan>[\s\S]*?<\/plan>/, '')
+		.trim();
+
+	return { thought, plan, cleanContent };
+}
+
+/**
+ * Log server events for debugging
+ */
+function serverLog(type: string, data: Record<string, unknown>) {
+	console.log(`[AI Chat ${new Date().toISOString()}] ${type}:`, JSON.stringify(data, null, 2));
+}
+
 export const POST: RequestHandler = async ({ request, locals }) => {
 	if (!locals.user) {
 		return json({ error: 'Unauthorized' }, { status: 401 });
 	}
 
 	const body = await request.json();
-	console.log('AI Chat Request Body:', JSON.stringify(body, null, 2));
 	const {
 		messages,
 		content: directContent,
@@ -29,9 +65,18 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		activeModuleIds,
 		attachments,
 		parts,
-		stream: streamRequested
+		stream: streamRequested = true
 	} = body;
-	const agent = new AiAgent(locals.user.id);
+
+	serverLog('REQUEST', {
+		sessionId,
+		hasMessages: !!messages,
+		messageCount: messages?.length,
+		content: directContent?.substring(0, 50),
+		activeModuleIds
+	});
+
+	const agent = new AiAgentV3Adapter(locals.user.id);
 	const aiRepo = new AiRepository();
 	const settings = await aiRepo.getSettings(locals.user.id);
 	const shouldStream = Boolean(streamRequested && (settings?.streamEnabled ?? true));
@@ -46,19 +91,25 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		return json({ ...response, sessionId });
 	}
 
-	// useChat sends 'messages' array. We extract the last user message content.
+	// Extract content from messages (AI SDK sends 'messages' array)
 	const lastMessage = messages?.[messages.length - 1];
-	let content = directContent || lastMessage?.content;
-	const messageParts = parts || lastMessage?.parts;
-	const messageAttachments = attachments || lastMessage?.attachments;
+	let content = directContent;
 
-	// In AI SDK v6, content might be in parts
-	if (!content && messageParts) {
-		content = messageParts
+	// Handle AI SDK v5+ UIMessage format with parts
+	if (!content && lastMessage?.parts) {
+		content = lastMessage.parts
 			.filter((p: any) => p.type === 'text')
 			.map((p: any) => p.text)
 			.join('');
 	}
+
+	// Fallback to direct content property (legacy format)
+	if (!content) {
+		content = lastMessage?.content;
+	}
+
+	const messageParts = parts || lastMessage?.parts;
+	const messageAttachments = attachments || lastMessage?.attachments;
 
 	if (!content && !messageAttachments) {
 		return json({ error: 'Content is required' }, { status: 400 });
@@ -69,56 +120,259 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	if (!activeSessionId) {
 		const session = await aiRepo.createSession(locals.user.id, content?.substring(0, 30) + '...');
 		activeSessionId = session.id;
+		serverLog('SESSION_CREATED', { sessionId: activeSessionId });
 	}
 
-	// Return response
-	console.log('Processing AI message for content:', content);
 	try {
 		if (shouldStream) {
 			const encoder = new TextEncoder();
+			let streamClosed = false;
+
+			// Track message segments for multi-message persistence
+			const completedSegments: Array<{
+				id: string;
+				content: string;
+				segmentIndex: number;
+			}> = [];
+			const progressLog: string[] = [];
+
 			const stream = new ReadableStream({
 				start: async (controller) => {
+					const safeEnqueue = (data: Uint8Array) => {
+						if (!streamClosed) {
+							try {
+								controller.enqueue(data);
+							} catch (e) {
+								streamClosed = true;
+								console.warn('Stream enqueue failed (already closed):', e);
+							}
+						}
+					};
+
+					// Helper to send SSE event
+					const sendEvent = (type: string, data: Record<string, unknown>) => {
+						serverLog(`EVENT:${type}`, data);
+						safeEnqueue(encoder.encode(`data: ${JSON.stringify({ type, ...data })}\n\n`));
+					};
+
 					try {
-						controller.enqueue(
-							encoder.encode(
-								`data: ${JSON.stringify({ type: 'meta', sessionId: activeSessionId })}\n\n`
-							)
-						);
+						// Send session ID first
+						sendEvent('meta', { sessionId: activeSessionId });
+
+						// Track progress events
+						const progressEvents: any[] = [];
+
+						// Call agent with progress streaming enabled
 						const response = await agent.processMessage(
 							content,
 							activeSessionId,
-							activeModuleIds,
+							activeModuleIds || [],
 							messageAttachments,
-							messageParts
+							messageParts,
+							{
+								onProgress: async (event: any) => {
+									serverLog('PROGRESS', { type: event.type, data: event.data });
+
+									// Handle different event types
+									switch (event.type) {
+										case 'message_segment':
+											// Multi-message support: stream segment content
+											const segmentData = event.data;
+											const segId = segmentData.id;
+
+											if (segmentData.isComplete && segmentData.content) {
+												// Track completed segment for persistence
+												completedSegments.push({
+													id: segId,
+													content: segmentData.content,
+													segmentIndex: segmentData.segmentIndex
+												});
+												// Send it as a full message
+												sendEvent('message_segment', {
+													id: segId,
+													content: segmentData.content,
+													isComplete: true,
+													segmentIndex: segmentData.segmentIndex
+												});
+											} else {
+												// Stream partial content
+												sendEvent('text_delta', {
+													segmentId: segId,
+													delta: segmentData.content,
+													segmentIndex: segmentData.segmentIndex
+												});
+											}
+											break;
+
+										case 'text':
+											// Text delta from streaming
+											if (event.data?.delta) {
+												sendEvent('text_delta', {
+													delta: event.data.delta,
+													segmentId: event.data.segmentId
+												});
+											}
+											break;
+
+										case 'tool_start':
+											// Tool call started
+											sendEvent('tool_start', {
+												toolName: event.data.toolName,
+												toolCallId: event.data.toolCallId,
+												input: event.data.input
+											});
+											break;
+
+										case 'tool_complete':
+											// Tool call completed
+											sendEvent('tool_complete', {
+												toolName: event.data.toolName,
+												toolCallId: event.data.toolCallId,
+												result: event.data.result
+											});
+											break;
+
+										case 'step_complete':
+											// Step completed - add to progress log
+											{
+												const stepData = event.data;
+												let progressLine = '';
+												if (stepData.stepNumber && stepData.totalSteps) {
+													progressLine = `[${stepData.stepNumber}/${stepData.totalSteps}] ✓ ${stepData.description || 'Completed'}`;
+												} else if (stepData.description) {
+													progressLine = `✓ ${stepData.description}`;
+												} else if (stepData.toolCalls?.length > 0) {
+													const toolNames = stepData.toolCalls.map((tc: any) => tc.toolName).join(', ');
+													progressLine = `✓ Tools: ${toolNames}`;
+												} else {
+													progressLine = '✓ Step completed';
+												}
+												progressLog.push(progressLine);
+												progressEvents.push(event);
+												sendEvent('progress', {
+													eventType: 'step_complete',
+													timestamp: event.timestamp,
+													data: event.data
+												});
+											}
+											break;
+
+										case 'complete':
+											// Execution complete
+											progressLog.push('✓ Complete');
+											sendEvent('progress', {
+												eventType: 'complete',
+												timestamp: event.timestamp,
+												data: event.data
+											});
+											break;
+
+										case 'error':
+											// Error occurred
+											{
+												const errorData = event.data;
+												progressLog.push(`✗ Error: ${errorData.error || 'Unknown error'}`);
+												sendEvent('progress', {
+													eventType: 'error',
+													timestamp: event.timestamp,
+													data: event.data
+												});
+											}
+											break;
+
+										default:
+											// Pass through other progress events
+											progressEvents.push(event);
+											sendEvent('progress', {
+												eventType: event.type,
+												timestamp: event.timestamp,
+												data: event.data
+											});
+									}
+								}
+							}
 						);
+
+						serverLog('RESPONSE', {
+							messageLength: response.message?.length,
+							actionsCount: response.actions?.length,
+							eventsCount: response.events?.length,
+							segmentsCount: completedSegments.length
+						});
+
+						// Stream the final message in chunks (for compatibility)
 						const chunks = chunkText(response.message || '');
 						for (const chunk of chunks) {
-							controller.enqueue(
-								encoder.encode(`data: ${JSON.stringify({ type: 'chunk', content: chunk })}\n\n`)
-							);
-							await sleep(40);
+							sendEvent('chunk', { content: chunk });
+							await sleep(30);
 						}
-						controller.enqueue(
-							encoder.encode(
-								`data: ${JSON.stringify({
-									type: 'meta',
-									sessionId: activeSessionId,
-									actions: response.actions || [],
-									events: response.events,
-									telemetry: response.telemetry
-								})}\n\n`
-							)
-						);
-						controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-						controller.close();
+
+						// Send final metadata
+						await sleep(50);
+						sendEvent('meta', {
+							sessionId: activeSessionId,
+							actions: response.actions || [],
+							events: response.events,
+							telemetry: response.telemetry,
+							progressEvents: progressEvents.length > 0 ? progressEvents : undefined
+						});
+
+						// Save completed segments to database for persistence
+						// Sort segments by index to ensure correct order
+						completedSegments.sort((a, b) => a.segmentIndex - b.segmentIndex);
+
+						for (const segment of completedSegments) {
+							if (!segment.content.trim()) continue; // Skip empty segments
+
+							// Extract thought/plan from first segment only
+							const isFirst = segment.segmentIndex === 0;
+							const isLast = segment.segmentIndex === completedSegments.length - 1;
+
+							const { thought, plan, cleanContent } = isFirst
+								? extractThoughtAndPlan(segment.content)
+								: { thought: null, plan: null, cleanContent: segment.content };
+
+							// Build metadata for this segment
+							const metadata: Record<string, unknown> = {
+								segmentId: segment.id,
+								segmentIndex: segment.segmentIndex,
+								isMultiMessageSegment: true
+							};
+
+							// Attach progress log only to last segment
+							if (isLast && progressLog.length > 0) {
+								metadata.progressLog = progressLog;
+							}
+
+							// Attach thought/plan only to first segment
+							if (isFirst) {
+								if (thought) metadata.thought = thought;
+								if (plan) metadata.plan = plan;
+							}
+
+							await aiRepo.addMessage(locals.user.id, {
+								role: 'assistant',
+								content: cleanContent,
+								sessionId: activeSessionId,
+								contextMetadata: JSON.stringify(metadata)
+							});
+						}
+
+						// Send DONE and close
+						try {
+							safeEnqueue(encoder.encode('data: [DONE]\n\n'));
+							await sleep(20);
+							controller.close();
+							serverLog('STREAM_CLOSED', { reason: 'completed' });
+						} catch (closeError) {
+							console.warn('Stream close warning (non-fatal):', closeError);
+						}
 					} catch (error) {
 						const errorMessage = (error as any)?.message || 'Internal Server Error';
-						controller.enqueue(
-							encoder.encode(
-								`data: ${JSON.stringify({ type: 'error', message: errorMessage })}\n\n`
-							)
-						);
-						controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+						console.error('Streaming error:', error);
+						serverLog('ERROR', { message: errorMessage });
+						sendEvent('error', { message: errorMessage });
+						safeEnqueue(encoder.encode('data: [DONE]\n\n'));
 						controller.close();
 					}
 				}
@@ -128,22 +382,23 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 				headers: {
 					'Content-Type': 'text/event-stream',
 					'Cache-Control': 'no-cache',
-					Connection: 'keep-alive'
+					Connection: 'keep-alive',
+					'X-Accel-Buffering': 'no'
 				}
 			});
 		}
 
+		// Non-streaming response
 		const response = await agent.processMessage(
 			content,
 			activeSessionId,
-			activeModuleIds,
+			activeModuleIds || [],
 			messageAttachments,
 			messageParts
 		);
 		return json({ ...response, sessionId: activeSessionId });
 	} catch (error) {
 		console.error('Error in AI Chat POST:', error);
-		// If it's an AI SDK error, it might have more details
 		const errorMessage = (error as any).message || 'Internal Server Error';
 		return json({ error: errorMessage }, { status: 500 });
 	}
@@ -159,7 +414,16 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 
 	if (sessionId) {
 		const messages = await aiRepo.getMessages(sessionId, locals.user.id);
-		return json({ messages });
+		// Convert to UIMessage format for AI SDK compatibility
+		// Include contextMetadata for multi-message segment persistence
+		const uiMessages: (UIMessage & { contextMetadata?: string })[] = messages.map((m) => ({
+			id: m.id,
+			role: m.role as 'user' | 'assistant' | 'system',
+			parts: (m.parts as UIMessage['parts']) || [{ type: 'text' as const, text: m.content }],
+			createdAt: m.createdAt,
+			contextMetadata: m.contextMetadata
+		}));
+		return json({ messages: uiMessages, sessionId });
 	} else {
 		const sessions = await aiRepo.getSessions(locals.user.id);
 		return json({ sessions });

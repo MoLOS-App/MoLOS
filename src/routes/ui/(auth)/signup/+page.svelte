@@ -50,6 +50,11 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Create Account - MoLOS</title>
+	<meta name="description" content="Join MoLOS and create your account to start your journey." />
+</svelte:head>
+
 <div
 	class="flex min-h-screen flex-col items-center justify-center bg-background p-6 text-foreground"
 >

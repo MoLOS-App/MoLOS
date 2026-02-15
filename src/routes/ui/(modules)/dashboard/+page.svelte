@@ -22,11 +22,16 @@
 
 	function handleSearch(e: KeyboardEvent) {
 		if (e.key === 'Enter' && searchQuery.trim()) {
-			// In a real app, this would search across modules
-			console.log('Searching for:', searchQuery);
+			const query = searchQuery.trim();
+			goto(`/ui/search?q=${encodeURIComponent(query)}`);
 		}
 	}
 </script>
+
+<svelte:head>
+	<title>Dashboard - MoLOS</title>
+	<meta name="description" content="Your personal MoLOS dashboard." />
+</svelte:head>
 
 <div class="pt-0s flex min-h-screen flex-col items-center bg-background p-6 pb-24 md:p-8">
 	<!-- Main Content -->

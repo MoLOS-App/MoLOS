@@ -125,10 +125,12 @@ export interface IModule {
  */
 export type ModuleStatus =
 	| 'active'
+	| 'pending'
 	| 'disabled'
 	| 'error_manifest'
 	| 'error_migration'
 	| 'error_config'
+	| 'error_build'
 	| 'deleting';
 
 /**
@@ -136,12 +138,13 @@ export type ModuleStatus =
  * Provides context about why a module failed
  */
 export interface ModuleError {
-	status: Exclude<ModuleStatus, 'active' | 'disabled' | 'deleting'>;
+	status: Exclude<ModuleStatus, 'active' | 'pending' | 'disabled' | 'deleting'>;
 	errorType:
 		| 'manifest_validation'
 		| 'migration_failed'
 		| 'config_export'
 		| 'symlink_failed'
+		| 'build_error'
 		| 'unknown';
 	message: string;
 	timestamp: Date;

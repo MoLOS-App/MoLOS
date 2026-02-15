@@ -7,6 +7,7 @@ import {
 	realpathSync,
 	lstatSync,
 	copyFileSync,
+	cpSync,
 	mkdirSync,
 	renameSync
 } from 'fs';
@@ -24,6 +25,12 @@ import {
 import { getModuleSymlinks, getModuleSymlinkSources } from '../config/symlink-config';
 import { createModuleError, formatErrorForLogging } from './module-error-handler';
 import type { ModuleManifest } from '../config/module-types.ts';
+import {
+	loadRetryConfig,
+	calculateRetryDelay,
+	shouldRetryModule as checkShouldRetry,
+	type ModuleRetryConfig
+} from '../config/retry-config.js';
 
 /**
  * Module initialization operations
@@ -32,11 +39,101 @@ import type { ModuleManifest } from '../config/module-types.ts';
 
 export class ModuleInitialization {
 	private static failedModuleIds = new Set<string>();
+	private static retryConfig: ModuleRetryConfig = loadRetryConfig();
+
+	/** Configure retry behavior (overrides config file and env vars) */
+	static configureRetries(config: Partial<ModuleRetryConfig>) {
+		this.retryConfig = { ...this.retryConfig, ...config };
+	}
+
+	/** Reload retry configuration from file and env vars */
+	static reloadRetryConfig() {
+		this.retryConfig = loadRetryConfig();
+	}
 
 	static consumeFailedModules(): string[] {
 		const failed = Array.from(this.failedModuleIds);
 		this.failedModuleIds.clear();
 		return failed;
+	}
+
+	/**
+	 * Mark a module as disabled in the database
+	 * Used when module validation or standardization fails
+	 */
+	private static async markModuleAsDisabled(
+		moduleId: string,
+		error: Error,
+		settingsRepo: any
+	): Promise<void> {
+		try {
+			await settingsRepo.updateExternalModuleStatus(moduleId, 'disabled', {
+				status: 'disabled',
+				errorType: 'config_export',
+				message: error.message,
+				timestamp: new Date()
+			});
+			console.warn(`[ModuleManager] Module ${moduleId} marked as disabled: ${error.message}`);
+		} catch (dbError) {
+			console.error(`[ModuleManager] Failed to mark module ${moduleId} as disabled:`, dbError);
+		}
+	}
+
+	/**
+	 * Determine if an error is transient (retriable) or permanent
+	 */
+	private static isTransientError(error: unknown): boolean {
+		if (error instanceof Error) {
+			const errorMsg = error.message.toLowerCase();
+
+			// Network-related errors (transient)
+			if (
+				errorMsg.includes('network') ||
+				errorMsg.includes('timeout') ||
+				errorMsg.includes('econnrefused') ||
+				errorMsg.includes('etimedout') ||
+				errorMsg.includes('enotfound') ||
+				errorMsg.includes('fetch failed') ||
+				errorMsg.includes('clone failed')
+			) {
+				return true;
+			}
+
+			// File lock errors (transient)
+			if (
+				errorMsg.includes('ebusy') ||
+				errorMsg.includes('locked') ||
+				errorMsg.includes('ebusy') ||
+				errorMsg.includes('file in use')
+			) {
+				return true;
+			}
+
+			// Database connection issues (transient)
+			if (
+				errorMsg.includes('database is locked') ||
+				errorMsg.includes('sqlite_busy') ||
+				errorMsg.includes('connection')
+			) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Calculate delay for next retry with exponential backoff
+	 */
+	private static calculateRetryDelay(attemptNumber: number): number {
+		return calculateRetryDelay(attemptNumber, this.retryConfig);
+	}
+
+	/**
+	 * Wait for specified delay
+	 */
+	private static async delay(ms: number): Promise<void> {
+		return new Promise((resolve) => setTimeout(resolve, ms));
 	}
 
 	private static isValidModuleId(moduleId: string): boolean {
@@ -179,6 +276,49 @@ export class ModuleInitialization {
 		}
 
 		try {
+			// For git modules with blockUpdates that are already active, skip refresh entirely
+			// to preserve any local uncommitted changes
+			const existingGitPath = path.join(modulePath, '.git');
+
+			// NEW: For active modules with existing directory, skip full refresh to prevent boot loop
+			// This prevents the Vite SSR reload cycle when symlinks trigger file changes
+			const shouldSkipFullRefresh =
+				wasActive &&
+				hadExistingModule &&
+				existsSync(modulePath) &&
+				!isLocal;
+
+			if (shouldSkipFullRefresh) {
+				console.log(
+					`[ModuleManager] Module ${moduleId} is already active - skipping full refresh`
+				);
+				// Just verify/update symlinks (idempotent operation)
+				this.setupSymlinks(moduleId, modulePath);
+				// Ensure status is still active
+				await settingsRepo.updateExternalModuleStatus(moduleId, 'active');
+				console.log(`[ModuleManager] Module ${moduleId} verified.`);
+				return;
+			}
+
+			const shouldSkipRefresh =
+				wasActive &&
+				hadExistingModule &&
+				existsSync(existingGitPath) &&
+				mod.blockUpdates &&
+				!isLocal;
+
+			if (shouldSkipRefresh) {
+				console.log(
+					`[ModuleManager] blockUpdates enabled for ${moduleId} - skipping refresh to preserve local state`
+				);
+				// Just ensure symlinks are set up correctly
+				this.setupSymlinks(moduleId, modulePath);
+				// Update status to ensure it's marked as active
+				await settingsRepo.updateExternalModuleStatus(moduleId, 'active');
+				console.log(`[ModuleManager] Module ${moduleId} preserved with blockUpdates enabled.`);
+				return;
+			}
+
 			// 0. Stage refresh to avoid breaking a previously-active module
 			console.log(`[ModuleManager] Refreshing module ${moduleId} from ${mod.repoUrl}...`);
 			if (!wasActive || !hadExistingModule) {
@@ -202,9 +342,52 @@ export class ModuleInitialization {
 					throw new Error(`Invalid repository URL for ${moduleId}`);
 				}
 				try {
+					// For git modules with blockUpdates that are not yet active or don't have existing content,
+					// we need to handle specially to prevent pulling updates
+					if (mod.blockUpdates && existsSync(existingGitPath)) {
+						console.log(
+							`[ModuleManager] blockUpdates enabled for ${moduleId} - using existing .git folder without remote operations`
+						);
+						// Use the existing module directly, no staging needed
+						// Just verify symlinks and update status
+						this.setupSymlinks(moduleId, modulePath);
+						await settingsRepo.updateExternalModuleStatus(moduleId, 'active');
+						console.log(
+							`[ModuleManager] Module ${moduleId} initialized with existing local state.`
+						);
+						return;
+					}
+
+					// If blockUpdates is enabled but there's no existing git state, we cannot proceed
+					// (we can't clone because that would pull updates, and we have nothing to restore from)
+					if (mod.blockUpdates) {
+						console.log(
+							`[ModuleManager] blockUpdates enabled for ${moduleId} but no existing .git folder found - skipping initialization to prevent pulling updates.`
+						);
+						// Clean up any broken symlinks and return
+						cleanupModuleArtifacts(moduleId);
+						return;
+					}
+
+					// Standard clone operation
 					execFileSync('git', ['clone', '--depth', '1', mod.repoUrl, stagingPath], {
 						stdio: 'inherit'
 					});
+
+					// Checkout the specified git ref if it exists and is not 'main'
+					if (mod.gitRef && mod.gitRef !== 'main') {
+						console.log(`[ModuleManager] Checking out git ref: ${mod.gitRef}`);
+						try {
+							execFileSync('git', ['checkout', mod.gitRef], {
+								cwd: stagingPath,
+								stdio: 'inherit'
+							});
+						} catch (checkoutError) {
+							console.warn(
+								`[ModuleManager] Failed to checkout ${mod.gitRef}, using default branch: ${checkoutError}`
+							);
+						}
+					}
 				} catch (cloneError) {
 					throw new Error(`Failed to clone repository: ${cloneError}`);
 				}
@@ -244,7 +427,17 @@ export class ModuleInitialization {
 			await migrationRunner.runMigrations(moduleId, migrationsDir);
 
 			// 4. Standardize Exports
-			this.standardizeModuleExports(moduleId, stagingPath);
+			try {
+				this.standardizeModuleExports(moduleId, stagingPath, settingsRepo);
+			} catch (standardizationError) {
+				// If standardization fails, mark module as disabled and abort
+				const error =
+					standardizationError instanceof Error
+						? standardizationError
+						: new Error(String(standardizationError));
+				await this.markModuleAsDisabled(moduleId, error, settingsRepo);
+				throw new Error(`Module ${moduleId} standardization failed: ${error.message}`);
+			}
 
 			// 5. Swap staged module into place (rollback-capable)
 			if (backupPath && existsSync(modulePath)) {
@@ -252,11 +445,22 @@ export class ModuleInitialization {
 			}
 			renameSync(stagingPath, modulePath);
 
+			// Verify .git folder exists after swap (important for forcePull functionality)
+			const gitPath = path.join(modulePath, '.git');
+			if (!existsSync(gitPath)) {
+				console.warn(
+					`[ModuleManager] WARNING: .git folder not found after swap for ${moduleId}. This may affect forcePull functionality.`
+				);
+			} else {
+				console.log(`[ModuleManager] Verified .git folder exists for ${moduleId}`);
+			}
+
 			// 6. Setup Symlinks (Runtime check/refresh)
 			this.setupSymlinks(moduleId, modulePath);
 
-			// 7. Update Status in DB
+			// 7. Update Status in DB and reset retry count
 			await settingsRepo.updateExternalModuleStatus(moduleId, 'active');
+			await settingsRepo.resetRetryCount(moduleId);
 
 			// 8. Cleanup backup after successful swap
 			if (backupPath && existsSync(backupPath)) {
@@ -281,21 +485,51 @@ export class ModuleInitialization {
 			);
 			const moduleError = createModuleError(category, message, { stack: details });
 
+			const isTransient = this.isTransientError(error);
+			const currentRetryCount = mod.retryCount || 0;
+			const lastRetryAt = mod.lastRetryAt ? new Date(mod.lastRetryAt).getTime() : null;
+			const shouldRetry =
+				isTransient && checkShouldRetry(currentRetryCount, lastRetryAt, this.retryConfig);
+
 			console.error(`\n[ModuleManager] ⚠️ FAILED TO INITIALIZE MODULE: ${moduleId}`);
 			console.error(`[ModuleManager] Error Type: ${category}`);
 			console.error(`[ModuleManager] Error: ${message}`);
+			console.error(`[ModuleManager] Transient Error: ${isTransient}`);
+			console.error(`[ModuleManager] Should Retry: ${shouldRetry}`);
+
+			// Increment retry count
+			await settingsRepo.incrementRetryCount(moduleId);
+
+			await settingsRepo.log('error', 'ModuleManager', `Failed to initialize module ${moduleId}`, {
+				errorType: category,
+				message,
+				stack: details,
+				isTransient,
+				shouldRetry
+			});
+
+			// If error is transient and within retry limits, don't uninstall
+			if (isTransient && shouldRetry) {
+				console.log(
+					`[ModuleManager] Module ${moduleId} will be retried (transient error, retries remaining: ${this.retryConfig.maxRetries - (mod.retryCount || 0)})`
+				);
+				// Keep module in pending state for retry
+				await settingsRepo.updateExternalModuleStatus(moduleId, 'pending', moduleError);
+
+				// Clean up only staging artifacts, keep the module
+				cleanupModuleArtifacts(moduleId);
+
+				// Don't add to failed modules (will be retried on next sync)
+				return;
+			}
+
+			// For permanent errors or max retries exceeded, mark for deletion
 			console.error(
 				`[ModuleManager] Status: Module marked as "${moduleError.status}" for manual recovery`
 			);
 			console.error(`[ModuleManager] Recovery Steps:`);
 			moduleError.recoverySteps?.forEach((step: string) => console.error(`  - ${step}`));
 			console.error('');
-
-			await settingsRepo.log('error', 'ModuleManager', `Failed to initialize module ${moduleId}`, {
-				errorType: category,
-				message,
-				stack: details
-			});
 
 			// Mark the module as errored and uninstall to prevent broken startups
 			await settingsRepo.updateExternalModuleStatus(
@@ -308,7 +542,7 @@ export class ModuleInitialization {
 					'warn',
 					'ModuleManager',
 					`Uninstalling module ${moduleId} due to initialization failure.`,
-					{ errorType: category, message }
+					{ errorType: category, message, isTransient, shouldRetry }
 				);
 			} catch {
 				// non-fatal
@@ -364,11 +598,21 @@ export class ModuleInitialization {
 	/**
 	 * Standardize module configuration and exports
 	 */
-	private static standardizeModuleExports(moduleId: string, modulePath: string): void {
+	private static standardizeModuleExports(
+		moduleId: string,
+		modulePath: string,
+		settingsRepo?: any
+	): void {
 		const configPath = path.join(modulePath, 'config.ts');
 		if (!existsSync(configPath)) return;
 		if (lstatSync(configPath).isSymbolicLink()) {
-			throw new Error(`Refusing to modify symlinked config: ${configPath}`);
+			// Don't throw - just log and mark for disable
+			const error = new Error(`Refusing to modify symlinked config: ${configPath}`);
+			console.error(`[ModuleManager] ${error.message}`);
+			if (settingsRepo) {
+				this.markModuleAsDisabled(moduleId, error, settingsRepo);
+			}
+			return;
 		}
 
 		let content = readFileSync(configPath, 'utf-8');

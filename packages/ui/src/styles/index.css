@@ -1,0 +1,109 @@
+/* MoLOS UI - Main Stylesheet */
+
+/* Import Tailwind CSS base */
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+/* Import base theme CSS variables */
+@import "./themes/base.css";
+
+/* Additional component-specific styles */
+@layer components {
+	/* Apply base CSS variables to root */
+	@theme {
+		--color-border: var(--border);
+		--color-input: var(--input);
+		--color-ring: var(--ring);
+		--color-background: var(--background);
+		--color-foreground: var(--foreground);
+		--color-primary: var(--primary);
+		--color-primary-foreground: var(--primary-foreground);
+		--color-secondary: var(--secondary);
+		--color-secondary-foreground: var(--secondary-foreground);
+		--color-destructive: var(--destructive);
+		--color-destructive-foreground: var(--destructive-foreground);
+		--color-muted: var(--muted);
+		--color-muted-foreground: var(--muted-foreground);
+		--color-accent: var(--accent);
+		--color-accent-foreground: var(--accent-foreground);
+		--color-popover: var(--popover);
+		--color-popover-foreground: var(--popover-foreground);
+		--color-card: var(--card);
+		--color-card-foreground: var(--card-foreground);
+		--color-sidebar: var(--sidebar);
+		--color-sidebar-foreground: var(--sidebar-foreground);
+		--color-sidebar-primary: var(--sidebar-primary);
+		--color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+		--color-sidebar-accent: var(--sidebar-accent);
+		--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+		--color-sidebar-border: var(--sidebar-border);
+		--color-sidebar-ring: var(--sidebar-ring);
+		--radius: var(--radius);
+	}
+}
+
+/* Animation utilities */
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes slideIn {
+	from {
+		transform: translateY(10px);
+		opacity: 0;
+	}
+	to {
+		transform: translateY(0);
+		opacity: 1;
+	}
+}
+
+@keyframes slideOut {
+	from {
+		transform: translateY(0);
+		opacity: 1;
+	}
+	to {
+		transform: translateY(10px);
+		opacity: 0;
+	}
+}
+
+.animate-fadeIn {
+	animation: fadeIn 0.2s ease-in-out;
+}
+
+.animate-slideIn {
+	animation: slideIn 0.3s ease-out;
+}
+
+.animate-slideOut {
+	animation: slideOut 0.3s ease-in;
+}
+
+/* Utility class for hiding scrollbar but allowing scroll */
+.scrollbar-hide {
+	-ms-overflow-style: none;
+	scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+	display: none;
+}
+
+/* Focus-visible utilities */
+.focus-ring {
+	@apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+}
+
+/* Markdown content styles are included in base.css */
+.markdown-content {
+	line-height: 1.75;
+	word-wrap: break-word;
+}

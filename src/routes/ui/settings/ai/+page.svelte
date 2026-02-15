@@ -46,7 +46,8 @@
 
 	// Initialize state
 	$effect(() => {
-		const isPredefined = availableModels.some((m) => m.id === modelName);
+		const models = availableModels;
+		const isPredefined = models.some((m) => m.id === modelName);
 		if (isPredefined) {
 			selectedModelId = modelName;
 		} else if (modelName) {
@@ -95,7 +96,8 @@
 		{ value: 'openai', label: 'OpenAI' },
 		{ value: 'anthropic', label: 'Anthropic' },
 		{ value: 'openrouter', label: 'OpenRouter' },
-		{ value: 'ollama', label: 'Ollama (Local)' }
+		{ value: 'ollama', label: 'Ollama (Local)' },
+		{ value: 'zai', label: 'Z.AI' }
 	];
 
 	function handleProviderChange() {
@@ -106,6 +108,11 @@
 		}
 	}
 </script>
+
+<svelte:head>
+	<title>AI Configuration - MoLOS Settings</title>
+	<meta name="description" content="Configure your AI assistant settings and providers." />
+</svelte:head>
 
 <div class="min-h-screen bg-background pb-20">
 	<div class="mx-auto max-w-4xl space-y-8 p-6">
@@ -201,7 +208,7 @@
 						</p>
 					</div>
 
-					{#if provider === 'ollama' || provider === 'openrouter'}
+					{#if provider === 'ollama' || provider === 'openrouter' || provider === 'zai'}
 						<div class="space-y-2">
 							<Label for="baseUrl">Base URL (Optional)</Label>
 							<div class="relative">
@@ -209,8 +216,10 @@
 									id="baseUrl"
 									bind:value={baseUrl}
 									placeholder={provider === 'ollama'
-										? 'http://localhost:11434'
-										: 'https://openrouter.ai/api/v1'}
+										? 'http://localhost:11434/v1'
+										: provider === 'zai'
+											? 'https://api.z.ai/api/coding/paas/v4'
+											: 'https://openrouter.ai/api/v1'}
 								/>
 								<Globe
 									class="text-muted-foreground absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2"
