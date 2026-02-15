@@ -63,6 +63,11 @@ export interface ModuleSymlinks {
  * Calculate all symlink destinations for a module
  */
 export function getModuleSymlinks(moduleId: string): ModuleSymlinks {
+	// Don't create symlinks for package modules
+	if (isPackageModule(moduleId)) {
+		return {} as ModuleSymlinks;
+	}
+
 	return {
 		components: path.join(SYMLINK_CONFIG.componentsDir, moduleId),
 		config: path.join(SYMLINK_CONFIG.configDir, `${moduleId}.ts`),
@@ -75,6 +80,15 @@ export function getModuleSymlinks(moduleId: string): ModuleSymlinks {
 		uiRoutes: path.join(SYMLINK_CONFIG.uiRoutesDir, moduleId),
 		apiRoutes: path.join(SYMLINK_CONFIG.apiRoutesDir, moduleId)
 	};
+}
+
+/**
+ * Check if a module is a package module (installed via npm)
+ */
+function isPackageModule(moduleId: string): boolean {
+	const pkgJson = require('../../package.json');
+	const pkgName = `@molos/module-${moduleId.toLowerCase().replace(/_/g, '-')}`;
+	return Object.keys(pkgJson.dependencies || {}).includes(pkgName);
 }
 
 /**

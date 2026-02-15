@@ -309,6 +309,26 @@ function linkExternalModules() {
 		}
 	};
 
+	/**
+	 * Get package module IDs that are installed via npm workspaces
+	 * These modules don't need symlinks as they're proper packages
+	 */
+	function getPackageModuleIds(): Set<string> {
+		try {
+			const require = createRequire(import.meta.url);
+			const pkgJson = require('./package.json');
+			const deps = pkgJson.dependencies || {};
+			const packageModules = Object.keys(deps)
+				.filter(d => d.startsWith('@molos/module-'))
+				.map(d => d.replace('@molos/module-', ''));
+			console.log(`[Vite] Package modules (will skip symlinks):`, packageModules);
+			return new Set(packageModules);
+		} catch (e) {
+			console.warn('[Vite] Failed to read package modules:', e);
+			return new Set();
+		}
+	}
+
 	// 0. Cleanup broken or stale symlinks in the target directories first
 	// This prevents ENOENT errors when Vite tries to stat broken links
 	[
@@ -352,6 +372,14 @@ function linkExternalModules() {
 	} catch (e) {
 		console.error('[Vite] Failed to read external modules directory:', e);
 		return;
+	}
+
+	// Filter out package modules (they're installed via npm workspaces)
+	const packageModules = getPackageModuleIds();
+	if (packageModules.size > 0) {
+		const beforeCount = modules.length;
+		modules = modules.filter(m => !packageModules.has(m));
+		console.log(`[Vite] Filtered out ${beforeCount - modules.length} package module(s) from symlink creation`);
 	}
 
 	// Try to use pre-generated link state first (faster, no DB read)
