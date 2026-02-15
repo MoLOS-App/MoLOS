@@ -147,6 +147,17 @@ export function cleanupModuleArtifacts(moduleId: string): void {
 }
 
 /**
+ * Extract module ID from a symlink name
+ * Config files have .ts extension that needs to be stripped
+ */
+function extractModuleIdFromSymlinkName(itemName: string, isConfigDir: boolean): string {
+	if (isConfigDir && itemName.endsWith('.ts')) {
+		return itemName.slice(0, -3); // Remove .ts extension
+	}
+	return itemName;
+}
+
+/**
  * Clean up orphaned symlinks in the specified directories
  */
 export function cleanupOrphanedSymlinks(activeModuleIds: Set<string>): void {
@@ -165,8 +176,13 @@ export function cleanupOrphanedSymlinks(activeModuleIds: Set<string>): void {
 		LEGACY_MODULES_DIR
 	];
 
+	console.log(`[ModuleManager] cleanupOrphanedSymlinks: activeModuleIds = ${JSON.stringify(Array.from(activeModuleIds))}`);
+
 	for (const dir of symlinkDirs) {
 		if (!existsSync(dir)) continue;
+
+		// Check if this is a config directory (files have .ts extension)
+		const isConfigDir = dir === SYMLINK_CONFIG.configDir || dir === LEGACY_CONFIG_DIR;
 
 		try {
 			const items = readdirSync(dir, { withFileTypes: true });
@@ -174,7 +190,14 @@ export function cleanupOrphanedSymlinks(activeModuleIds: Set<string>): void {
 				const itemPath = path.join(dir, item.name);
 				const isSymlink = item.isSymbolicLink();
 				const isBroken = isBrokenSymlink(itemPath);
-				const isOrphaned = !activeModuleIds.has(item.name);
+
+				// Extract module ID from symlink name (strip .ts for config files)
+				const moduleId = extractModuleIdFromSymlinkName(item.name, isConfigDir);
+				const isOrphaned = !activeModuleIds.has(moduleId);
+
+				if (isSymlink) {
+					console.log(`[ModuleManager] Checking symlink: ${itemPath}, moduleId=${moduleId}, isBroken=${isBroken}, isOrphaned=${isOrphaned}, isConfigDir=${isConfigDir}`);
+				}
 
 				if (isSymlink && (isBroken || isOrphaned)) {
 					try {

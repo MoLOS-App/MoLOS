@@ -9,6 +9,7 @@ export const ExternalModuleStatus = {
 	ERROR_MANIFEST: 'error_manifest',
 	ERROR_MIGRATION: 'error_migration',
 	ERROR_CONFIG: 'error_config',
+	ERROR_BUILD: 'error_build',
 	DISABLED: 'disabled',
 	DELETING: 'deleting'
 } as const;

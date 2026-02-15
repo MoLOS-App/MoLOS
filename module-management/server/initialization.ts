@@ -279,6 +279,27 @@ export class ModuleInitialization {
 			// For git modules with blockUpdates that are already active, skip refresh entirely
 			// to preserve any local uncommitted changes
 			const existingGitPath = path.join(modulePath, '.git');
+
+			// NEW: For active modules with existing directory, skip full refresh to prevent boot loop
+			// This prevents the Vite SSR reload cycle when symlinks trigger file changes
+			const shouldSkipFullRefresh =
+				wasActive &&
+				hadExistingModule &&
+				existsSync(modulePath) &&
+				!isLocal;
+
+			if (shouldSkipFullRefresh) {
+				console.log(
+					`[ModuleManager] Module ${moduleId} is already active - skipping full refresh`
+				);
+				// Just verify/update symlinks (idempotent operation)
+				this.setupSymlinks(moduleId, modulePath);
+				// Ensure status is still active
+				await settingsRepo.updateExternalModuleStatus(moduleId, 'active');
+				console.log(`[ModuleManager] Module ${moduleId} verified.`);
+				return;
+			}
+
 			const shouldSkipRefresh =
 				wasActive &&
 				hadExistingModule &&
