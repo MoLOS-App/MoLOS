@@ -5,6 +5,11 @@
  * Types are organized by feature area (API keys, resources, prompts, etc.)
  */
 
+import type { PaginationParams, PaginatedResponse } from './common';
+
+// Re-export common types for convenience
+export type { PaginationParams, PaginatedResponse };
+
 // ============================================================================
 // Common MCP Types
 // ============================================================================
@@ -51,26 +56,6 @@ export interface MCPError {
 	code: MCPErrorCode;
 	message: string;
 	details?: Record<string, unknown>;
-}
-
-/**
- * Pagination parameters
- */
-export interface PaginationParams {
-	page?: number;
-	limit?: number;
-	offset?: number;
-}
-
-/**
- * Paginated response wrapper
- */
-export interface PaginatedResponse<T> {
-	items: T[];
-	total: number;
-	page: number;
-	limit: number;
-	hasMore: boolean;
 }
 
 /**

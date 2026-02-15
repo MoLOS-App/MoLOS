@@ -5,10 +5,20 @@
 	"type": "module",
 	"description": "Core utilities and types for MoLOS",
 	"exports": {
-		".": "./src/index.ts",
-		"./utils": "./src/utils/index.ts",
-		"./types": "./src/types/index.ts"
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		},
+		"./utils": {
+			"types": "./dist/utils/index.d.ts",
+			"import": "./dist/utils/index.js"
+		},
+		"./types": {
+			"types": "./dist/types/index.d.ts",
+			"import": "./dist/types/index.js"
+		}
 	},
+	"files": ["dist"],
 	"scripts": {
 		"build": "tsc",
 		"dev": "tsc --watch",

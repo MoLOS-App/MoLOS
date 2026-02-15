@@ -1,12 +1,23 @@
 {
+	"$schema": "https://json.schemastore.org/tsconfig",
+	"display": "MoLOS Monorepo Base",
 	"compilerOptions": {
+		"composite": false,
+		"declaration": true,
 		"declarationMap": true,
-		"moduleResolution": "bundler",
-		"strict": true,
 		"esModuleInterop": true,
-		"skipLibCheck": true,
 		"forceConsistentCasingInFileNames": true,
+		"inlineSources": false,
+		"isolatedModules": true,
+		"moduleResolution": "bundler",
+		"noUnusedLocals": false,
+		"noUnusedParameters": false,
+		"preserveWatchOutput": true,
+		"skipLibCheck": true,
+		"strict": true,
+		"strictNullChecks": true,
 		"resolveJsonModule": true,
 		"sourceMap": true
-	}
+	},
+	"exclude": ["node_modules"]
 }
