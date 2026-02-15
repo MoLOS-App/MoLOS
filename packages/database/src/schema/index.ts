@@ -4,4 +4,5 @@
 export * from './core/index.js';
 
 // External module tables (namespaced)
-export * from './external/index.js';
+// Note: These are imported dynamically to avoid build-time issues
+// export * from './external/index.js';

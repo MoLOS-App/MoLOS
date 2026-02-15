@@ -1,7 +1,9 @@
 // External module schema exports
-// This file will be populated as modules are converted to use the database package
-// Example structure for a module:
-// export * as productOwner from './product-owner.js';
-// export { projects, products } from './product-owner.js';
-// Placeholder export to make this a valid module
-export const externalSchemas = {};
+// Tasks module
+export * as tasks from './tasks.js';
+// Finance module
+export * as finance from './finance.js';
+// Goals module
+export * as goals from './goals.js';
+// Health module
+export * as health from './health.js';
