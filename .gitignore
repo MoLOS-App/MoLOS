@@ -34,7 +34,6 @@ vite.config.ts.timestamp-*
 *.db
 *.db-shm
 *.db-wal
-documentation/
 external_modules/
 src/routes/api/(external_modules)/
 src/routes/ui/(modules)/(external_modules)/
