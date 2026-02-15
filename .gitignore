@@ -42,4 +42,8 @@ src/routes/ui/(modules)/(external_modules)/
 .claude/
 .beads/
 .mcp.json
-.svelte-kit
+
+# Package dist directories
+dist/
+packages/*/dist/
+.svelte-kit/

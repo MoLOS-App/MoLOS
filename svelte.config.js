@@ -1,6 +1,7 @@
 import { mdsvex } from 'mdsvex';
 import adapter from '@sveltejs/adapter-node';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
+import path from 'path';
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -10,6 +11,9 @@ const config = {
 
 	kit: {
 		adapter: adapter(),
+		alias: {
+			'@molos/core': path.resolve('packages/core/src')
+		},
 		csrf: {
 			trustedOrigins: (() => {
 				const defaults = ['http://localhost:4173', 'http://127.0.0.1:4173'];
