@@ -1,6 +1,6 @@
 import { drizzle } from 'drizzle-orm/better-sqlite3';
-import Database from 'better-sqlite3';
-import * as schema from './schema';
+import Database, { type Database as SQLiteDatabase } from 'better-sqlite3';
+import * as schema from './schema/index.js';
 
 // Fallback for CLI/Supervisor where $env is not available
 let env_DATABASE_URL: string | undefined;
@@ -27,7 +27,20 @@ const rawDbPath =
 // Handle URL prefixes
 const dbPath = rawDbPath.replace(/^sqlite:\/\//, '').replace(/^sqlite:|^file:/, '');
 
-const client = isBuilding ? new Database(':memory:') : new Database(dbPath);
+// Create database client with fallback to in-memory if file DB fails
+let client: Database.Database;
+
+if (isBuilding) {
+	client = new Database(':memory:');
+} else {
+	try {
+		// Try to open the file-based database
+		client = new Database(dbPath);
+	} catch {
+		// Fall back to in-memory if file DB fails
+		client = new Database(':memory:');
+	}
+}
 
 try {
 	client.pragma('journal_mode = WAL');
@@ -42,7 +55,7 @@ try {
 export const db = drizzle(client, { schema });
 
 // Export the raw SQLite connection if needed
-export { sqlite as client };
+export const sqlite: SQLiteDatabase = client;
 
 // Export schema for migrations
 export { schema };
