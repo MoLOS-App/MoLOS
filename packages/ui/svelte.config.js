@@ -1,10 +1,10 @@
-import adapter from '@sveltejs/adapter-auto';
+// Svelte configuration for @molos/ui package
+// This package uses @sveltejs/package for building
 
-/** @type {import('@sveltejs/kit').Config} */
+/** @type {import('@sveltejs/package').Config} */
 const config = {
-	kit: {
-		adapter: adapter()
-	}
+	// No special configuration needed for basic package build
+	// @sveltejs/package will handle the build process
 };
 
 export default config;
