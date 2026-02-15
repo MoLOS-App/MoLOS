@@ -3,6 +3,8 @@
 	"private": true,
 	"version": "0.1.0",
 	"type": "module",
+	"workspaces": ["packages/*", "modules/*"],
+	"packageManager": "npm@10.9.2",
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
@@ -30,6 +32,7 @@
 		"podman:dev": "podman build -t ghcr.io/molos-app/molos:dev . && podman push ghcr.io/molos-app/molos:dev"
 	},
 	"devDependencies": {
+		"turbo": "^2.5.0",
 		"@eslint/compat": "^1.4.0",
 		"@eslint/js": "^9.39.1",
 		"@internationalized/date": "^3.10.0",

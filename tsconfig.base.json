@@ -1,0 +1,12 @@
+{
+	"compilerOptions": {
+		"declarationMap": true,
+		"moduleResolution": "bundler",
+		"strict": true,
+		"esModuleInterop": true,
+		"skipLibCheck": true,
+		"forceConsistentCasingInFileNames": true,
+		"resolveJsonModule": true,
+		"sourceMap": true
+	}
+}

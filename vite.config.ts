@@ -403,6 +403,9 @@ export default defineConfig({
 	plugins: [tailwindcss(), sveltekit()],
 
 	resolve: {
+		alias: {
+			'@molos/core': path.resolve(__dirname, 'packages/core/src')
+		},
 		preserveSymlinks: true
 	},
 
