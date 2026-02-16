@@ -5,7 +5,7 @@
  * validation, and management.
  */
 
-import { randomBytes, createHash, timingSafeEqual } from 'crypto';
+import { randomBytes, createHash } from 'crypto';
 import { db } from '$lib/server/db';
 import { aiMcpOAuthTokens, MCPOAuthTokenType } from '$lib/server/db/schema';
 import { eq, and, lt, or, isNull, sql } from 'drizzle-orm';

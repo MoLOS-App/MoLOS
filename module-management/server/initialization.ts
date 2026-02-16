@@ -7,7 +7,6 @@ import {
 	realpathSync,
 	lstatSync,
 	copyFileSync,
-	cpSync,
 	mkdirSync,
 	renameSync
 } from 'fs';
@@ -741,6 +740,7 @@ export class ModuleInitialization {
 			// Fix legacy module paths to match the external module layout
 			const replaceIfModuleMatch = (regex: RegExp, basePath: string) => {
 				if (!content.match(regex)) return;
+				const originalContent = content;
 				content = content.replace(regex, (match, p1) => {
 					const normalized = p1?.toLowerCase();
 					if (
@@ -752,7 +752,9 @@ export class ModuleInitialization {
 					}
 					return match;
 				});
-				changed = true;
+				if (content !== originalContent) {
+					changed = true;
+				}
 			};
 
 			replaceIfModuleMatch(/\$lib\/stores\/modules\/([\w-]+)/g, '$lib/stores');
@@ -786,19 +788,40 @@ export class ModuleInitialization {
 				[
 					new RegExp(`\\$lib/modules/${moduleId}/lib/server/ai`, 'g'),
 					`$lib/server/ai/external_modules/${moduleId}`
+				],
+				// Also handle patterns without /lib/ prefix (for routes)
+				[
+					new RegExp(`\\$lib/modules/${moduleId}/stores`, 'g'),
+					`$lib/stores/external_modules/${moduleId}`
+				],
+				[
+					new RegExp(`\\$lib/modules/${moduleId}/components`, 'g'),
+					`$lib/components/external_modules/${moduleId}`
+				],
+				[
+					new RegExp(`\\$lib/modules/${moduleId}/models`, 'g'),
+					`$lib/models/external_modules/${moduleId}`
+				],
+				[
+					new RegExp(`\\$lib/modules/${moduleId}/repositories`, 'g'),
+					`$lib/repositories/external_modules/${moduleId}`
 				]
 			];
 
 			for (const [regex, replacement] of legacyModulePatterns) {
 				if (content.match(regex)) {
+					const originalContent = content;
 					content = content.replace(regex, replacement);
-					changed = true;
+					if (content !== originalContent) {
+						changed = true;
+					}
 				}
 			}
 
 			// Convert relative imports from routes to absolute $lib aliases
 			const relativeLibRegex = /from\s+['"]\.\.\/\.\.\/lib\/([^'"]+)['"]/g;
 			if (content.match(relativeLibRegex)) {
+				const originalContent = content;
 				content = content.replace(relativeLibRegex, (match, p1) => {
 					if (p1.startsWith('repositories')) {
 						return `from '$lib/repositories/external_modules/${moduleId}${p1.substring(12)}'`;
@@ -820,17 +843,22 @@ export class ModuleInitialization {
 					}
 					return match;
 				});
-				changed = true;
+				if (content !== originalContent) {
+					changed = true;
+				}
 			}
 
 			// Fix relative imports that are missing the 'lib' part but are trying to reach it
 			// e.g. import { ... } from '../../../repositories/task-repository'
 			const relativeRepoRegex = /from ['"](\.\.\/)+(repositories|models|stores|components)/g;
 			if (content.match(relativeRepoRegex)) {
+				const originalContent = content;
 				content = content.replace(relativeRepoRegex, (match, dots, target) => {
 					return `from '$lib/${target}/external_modules/${moduleId}`;
 				});
-				changed = true;
+				if (content !== originalContent) {
+					changed = true;
+				}
 			}
 
 			// Redirect module-specific schema imports to module schema symlink

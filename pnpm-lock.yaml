@@ -20,6 +20,15 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: ^1.25.3
         version: 1.26.0(zod@4.3.6)
+      '@molos/database':
+        specifier: workspace:*
+        version: link:packages/database
+      '@molos/module-ai':
+        specifier: workspace:*
+        version: link:modules/ai
+      '@molos/module-tasks':
+        specifier: workspace:*
+        version: link:modules/tasks
       '@radix-ui/react-select':
         specifier: ^2.2.6
         version: 2.2.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -238,12 +247,49 @@ importers:
         specifier: ^2.0.1
         version: 2.0.2(svelte@5.50.2)(vitest@4.0.18)
 
+  modules/ai:
+    dependencies:
+      svelte:
+        specifier: ^5.45.0
+        version: 5.50.2
+
+  modules/tasks:
+    dependencies:
+      lucide-svelte:
+        specifier: ^0.561.0
+        version: 0.561.0(svelte@5.50.2)
+      svelte:
+        specifier: ^5.45.0
+        version: 5.50.2
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
+
   packages/core:
     dependencies:
       zod:
         specifier: ^4.3.6
         version: 4.3.6
     devDependencies:
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/database:
+    dependencies:
+      better-sqlite3:
+        specifier: ^12.5.0
+        version: 12.6.2
+      drizzle-orm:
+        specifier: ^0.41.0
+        version: 0.41.0(@opentelemetry/api@1.9.0)(@types/better-sqlite3@7.6.13)(better-sqlite3@12.6.2)(kysely@0.28.11)
+    devDependencies:
+      '@types/better-sqlite3':
+        specifier: ^7.6.13
+        version: 7.6.13
+      drizzle-kit:
+        specifier: ^0.31.8
+        version: 0.31.9
       typescript:
         specifier: ^5.9.3
         version: 5.9.3

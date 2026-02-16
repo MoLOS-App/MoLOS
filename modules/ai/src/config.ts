@@ -3,7 +3,7 @@
  * Defines routes, navigation items, and metadata for the AI module
  */
 
-import { Bot, Send, Server, Key, ScrollText, List, Activity } from 'lucide-svelte';
+import { Bot, Send, Server } from 'lucide-svelte';
 import type { ModuleConfig } from '$lib/config/types';
 
 export const aiConfig: ModuleConfig = {

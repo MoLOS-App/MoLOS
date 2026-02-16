@@ -4,7 +4,8 @@
 	"version": "0.1.0",
 	"type": "module",
 	"workspaces": [
-		"packages/*"
+		"packages/*",
+		"modules/*"
 	],
 	"scripts": {
 		"dev": "vite dev",
@@ -85,8 +86,9 @@
 		"vitest-browser-svelte": "^2.0.1"
 	},
 	"dependencies": {
-		"@molos/module-tasks": "*",
-		"@molos/module-ai": "*",
+		"@molos/module-tasks": "workspace:*",
+		"@molos/module-ai": "workspace:*",
+		"@molos/database": "workspace:*",
 		"@ai-sdk/anthropic": "^3.0.43",
 		"@ai-sdk/openai": "^3.0.28",
 		"@ai-sdk/svelte": "^4.0.85",
