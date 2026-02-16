@@ -8,6 +8,9 @@
     ".": "./src/index.ts",
     "./config": "./src/config.ts"
   },
+  "scripts": {
+    "lint": "prettier --check ."
+  },
   "peerDependencies": {
     "svelte": "^5.45.0"
   }

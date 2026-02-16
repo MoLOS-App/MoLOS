@@ -1,751 +1,270 @@
 # Module Development Guide
 
-This guide covers everything you need to know about developing modules for MoLOS in the monorepo architecture.
+Complete guide for developing MoLOS modules.
 
-## Overview
+## Module Types
 
-A MoLOS module is a self-contained workspace package that adds functionality to the core application. Modules live in `modules/<module-id>/` and are imported via `@molos/module-*` package names. Each module can provide:
+### Internal Modules
+- Always loaded, cannot be filtered
+- Examples: `dashboard`, `ai`
+- Location: `modules/ai/` or `src/lib/config/dashboard/`
 
-- **UI Routes** - Pages and layouts accessible via the web interface
-- **API Routes** - RESTful endpoints for data access
-- **AI Tools** - Tools that extend the AI assistant's capabilities
-- **Database Schema** - Tables and migrations for persistent storage
-- **Components** - Reusable UI components
-- **Event Handlers** - Respond to system-wide events
+### External Modules
+- Installable from GitHub/npm
+- Examples: `MoLOS-Tasks`, `MoLOS-Finance`
+- Developed in `modules/`, published to separate repos
 
 ## Creating a New Module
 
-### Using the CLI (Recommended)
+### Step 1: Create Directory Structure
 
 ```bash
-# Create a new module
-npm run module:create -- --name="my-module" --template=basic
+cd MoLOS/modules
+mkdir my-module
+cd my-module
 
-# This creates:
-modules/my-module/
-├── src/
-│   ├── index.ts           # Module entry point
-│   ├── config.ts          # Module configuration
-│   ├── routes/            # UI and API routes
-│   │   ├── ui/
-│   │   │   └── +page.svelte
-│   │   └── api/
-│   │       └── +server.ts
-│   └── lib/
-│       ├── components/
-│       ├── server/
-│       │   ├── ai/        # AI tools
-│       │   └── db/        # Database schema
-│       └── utils/
-├── manifest.yaml          # Module metadata
-├── package.json           # Package definition
-└── tsconfig.json          # TypeScript config
+mkdir -p src/{routes/{ui,api},server/database,models,components,stores}
+touch src/index.ts
+touch src/config.ts
+touch src/server/database/schema.ts
+touch src/models/index.ts
+touch package.json
+touch drizzle.config.ts
 ```
 
-### Manual Creation
+### Step 2: Create package.json
 
-```bash
-# Create module directory structure
-mkdir -p modules/my-module/src/{routes/{ui,api},lib/{components,server/{ai,db}}}
-
-# Copy template files
-cp modules/product-owner/package.json modules/my-module/
-cp modules/product-owner/tsconfig.json modules/my-module/
-cp modules/product-owner/manifest.yaml modules/my-module/
-
-# Edit the files for your module
+```json
+{
+  "name": "@molos/module-my-module",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "My Module Description",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./config": "./src/config.ts",
+    "./server/database/schema": "./src/server/database/schema.ts",
+    "./models": "./src/models/index.ts"
+  },
+  "peerDependencies": {
+    "svelte": "^5.45.0"
+  },
+  "dependencies": {
+    "lucide-svelte": "^0.561.0",
+    "zod": "^4.3.6"
+  }
+}
 ```
 
-## Module Structure and Conventions
-
-### Directory Layout
-
-```
-modules/my-module/
-├── manifest.yaml              # Required: Module metadata
-├── package.json               # Required: Package definition
-├── tsconfig.json              # Required: TypeScript configuration
-├── drizzle.config.ts          # Optional: Drizzle configuration
-│
-└── src/
-    ├── index.ts               # Required: Module exports
-    ├── config.ts              # Required: Module configuration
-    ├── module.ts              # Optional: Lifecycle hooks
-    │
-    ├── routes/
-    │   ├── ui/                # UI routes (SvelteKit pages)
-    │   │   ├── +page.svelte
-    │   │   ├── +page.server.ts
-    │   │   └── +layout.svelte
-    │   │
-    │   └── api/               # API routes
-    │       ├── +server.ts
-    │       └── [id]/+server.ts
-    │
-    └── lib/
-        ├── components/        # Svelte components
-        │   ├── index.ts
-        │   └── MyComponent.svelte
-        │
-        ├── models/            # Data models and types
-        │   └── index.ts
-        │
-        ├── repositories/      # Data access layer
-        │   └── my-repository.ts
-        │
-        ├── stores/            # Svelte stores
-        │   └── index.ts
-        │
-        ├── utils/             # Utility functions
-        │   └── helpers.ts
-        │
-        └── server/
-            ├── ai/            # AI tools
-            │   ├── index.ts
-            │   └── my-tools.ts
-            │
-            └── db/
-                └── schema/    # Database schema
-                    ├── index.ts
-                    └── tables.ts
-```
-
-### Naming Conventions
-
-| Type | Convention | Example |
-|------|------------|---------|
-| Module ID | kebab-case | `product-owner`, `task-manager` |
-| Package name | @molos/module-{id} | `@molos/module-product-owner` |
-| Components | PascalCase | `ProjectCard.svelte` |
-| Routes | lowercase | `/ui/product-owner/settings` |
-| Database tables | snake_case (auto-prefixed) | `mod_product_owner_projects` |
-| AI tools | snake_case | `project_create`, `task_list` |
-
-## manifest.yaml Specification
-
-The manifest file defines module metadata and capabilities:
-
-```yaml
-# Required fields
-id: "my-module"                           # Unique module identifier
-name: "My Module"                         # Human-readable name
-version: "1.0.0"                          # Semantic version
-description: "Module description"         # Brief description
-author: "MoLOS Team"                      # Author name
-
-# Optional: Icon from lucide-svelte
-icon: "Package"
-
-# Optional: Entry point for lifecycle hooks (v2.0)
-entryPoint: "./src/module.ts"
-
-# Optional: Dependencies on other modules
-dependencies:
-  - id: "core-utils"
-    version: ">=1.0.0"
-    optional: true
-
-# Optional: Capabilities declaration
-capabilities:
-  # Database tables this module creates
-  database:
-    tables:
-      - "projects"
-      - "tasks"
-
-  # API routes this module provides
-  api:
-    routes:
-      - "/api/my-module/*"
-
-  # AI tools this module provides
-  ai-tools:
-    tools:
-      - "project_create"
-      - "project_list"
-      - "task_create"
-
-  # UI routes this module provides
-  ui-routes:
-    routes:
-      - "/ui/my-module"
-      - "/ui/my-module/settings"
-
-  # Events this module publishes and subscribes to
-  events:
-    publishes:
-      - "project.created"
-      - "project.updated"
-      - "project.deleted"
-    subscribes:
-      - "user.logged_in"
-      - "settings.changed"
-
-# Optional: Permissions required
-permissions:
-  database:
-    create: true
-    read: true
-    update: true
-    delete: true
-  network:
-    allowedDomains:
-      - "api.github.com"
-    maxRequestsPerMinute: 100
-
-# Optional: Lifecycle hooks
-lifecycle:
-  onInstall: "./src/hooks/install.ts"
-  onEnable: "./src/hooks/enable.ts"
-  onDisable: "./src/hooks/disable.ts"
-  onUninstall: "./src/hooks/uninstall.ts"
-```
-
-## config.ts Patterns
-
-The config file exports module configuration for the navigation and routing system:
+### Step 3: Create Config (REQUIRED)
 
 ```typescript
 // src/config.ts
+import { MyIcon } from 'lucide-svelte';
+import type { ModuleConfig } from '$lib/config/types';
 
-import { Settings, ListTodo, BarChart3 } from 'lucide-svelte';
-import type { ModuleConfig } from '@molos/core/types';
+export const myModuleConfig: ModuleConfig = {
+  // External modules: MoLOS-{Name}
+  // Internal modules: lowercase
+  id: 'MoLOS-MyModule',
 
-export const moduleConfig: ModuleConfig = {
-  // Module identifier (must match manifest.yaml)
-  id: 'my-module',
-
-  // Display name
   name: 'My Module',
+  href: '/ui/MoLOS-MyModule',
+  icon: MyIcon,
+  description: 'Description of my module',
 
-  // Base URL path for the module
-  href: '/ui/my-module',
-
-  // Icon component (from lucide-svelte)
-  icon: Settings,
-
-  // Description shown in module list
-  description: 'A module for managing things',
-
-  // Navigation items shown in sidebar
   navigation: [
     {
       name: 'Dashboard',
-      icon: BarChart3,
-      href: '/ui/my-module/dashboard'
+      icon: MyIcon,
+      href: '/ui/MoLOS-MyModule/dashboard',
     },
-    {
-      name: 'Items',
-      icon: ListTodo,
-      href: '/ui/my-module/items'
-    },
-    {
-      name: 'Settings',
-      icon: Settings,
-      href: '/ui/my-module/settings'
-    }
-  ]
+  ],
 };
 
-export default moduleConfig;
+export default myModuleConfig;
 ```
 
-### Conditional Navigation
+### Step 4: Create Database Schema
 
 ```typescript
-// src/config.ts
+// src/server/database/schema.ts
+import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { sql } from 'drizzle-orm';
+import { textEnum } from '@molos/database/utils';
+import { MyStatus } from '../../models/index.js';
 
-export const moduleConfig: ModuleConfig = {
-  // ... basic config
-
-  // Navigation can be a function for conditional items
-  navigation: (user) => [
-    {
-      name: 'Dashboard',
-      icon: BarChart3,
-      href: '/ui/my-module/dashboard'
-    },
-    // Only show admin items to admins
-    ...(user.role === 'admin' ? [
-      {
-        name: 'Admin',
-        icon: Shield,
-        href: '/ui/my-module/admin'
-      }
-    ] : [])
-  ]
-};
+// Table names MUST be prefixed with module ID
+export const myModuleItems = sqliteTable('MoLOS-MyModule_items', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text('user_id'),
+  name: text('name').notNull(),
+  status: textEnum('status', MyStatus).default('active'),
+  createdAt: integer('created_at').default(sql`(strftime('%s','now'))`),
+  updatedAt: integer('updated_at').default(sql`(strftime('%s','now'))`),
+});
 ```
 
-## Routes, Components, and Lib Organization
+### Step 5: Create Models
 
-### UI Routes
+```typescript
+// src/models/index.ts
+export const MyStatus = {
+  ACTIVE: 'active',
+  INACTIVE: 'inactive',
+} as const;
+
+export type MyStatusType = typeof MyStatus[keyof typeof MyStatus];
+```
+
+### Step 6: Create Drizzle Config
+
+```typescript
+// drizzle.config.ts
+import { defineConfig } from 'drizzle-kit';
+
+export default defineConfig({
+  schema: './src/server/database/schema.ts',
+  out: './drizzle',
+  dialect: 'sqlite',
+  dbCredentials: { url: 'file:../../molos.db' },
+  verbose: true,
+  strict: true
+});
+```
+
+### Step 7: Create Routes
 
 ```svelte
-<!-- src/routes/ui/+page.svelte -->
-
+<!-- src/routes/ui/+layout.svelte -->
 <script lang="ts">
-  import { page } from '$app/stores';
-  import { ModuleLayout } from '@molos/ui/components';
-  import { Dashboard } from '$lib/components';
-
-  // Access module configuration
-  const moduleId = 'my-module';
+  let { children } = $props();
 </script>
 
-<ModuleLayout moduleId={moduleId}>
-  <Dashboard />
-</ModuleLayout>
+<div class="module-layout">
+  <nav>
+    <a href="/ui/MoLOS-MyModule/dashboard">Dashboard</a>
+  </nav>
+  <main>
+    {@render children()}
+  </main>
+</div>
 ```
 
-### API Routes
+```svelte
+<!-- src/routes/ui/dashboard/+page.svelte -->
+<script lang="ts">
+  let { data } = $props();
+</script>
+
+<h1>Dashboard</h1>
+```
 
 ```typescript
-// src/routes/api/items/+server.ts
+// src/routes/ui/dashboard/+page.server.ts
+import type { PageServerLoad } from './$types';
 
+export const load: PageServerLoad = async ({ fetch }) => {
+  const response = await fetch('/api/MoLOS-MyModule/items');
+  const items = await response.json();
+  return { items };
+};
+```
+
+### Step 8: Create API Routes
+
+```typescript
+// src/routes/api/+server.ts
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { itemRepository } from '$lib/repositories';
-import { getTableName } from '@molos/database';
+import { db } from '$lib/server/db';
+import { myModuleItems } from '../server/database/schema.js';
 
-export const GET: RequestHandler = async ({ url, locals }) => {
-  const items = await itemRepository.findAll(locals.db);
+export const GET: RequestHandler = async () => {
+  const items = await db.select().from(myModuleItems);
   return json(items);
 };
 
-export const POST: RequestHandler = async ({ request, locals }) => {
+export const POST: RequestHandler = async ({ request }) => {
   const data = await request.json();
-  const item = await itemRepository.create(locals.db, data);
-  return json(item, { status: 201 });
+  const result = await db.insert(myModuleItems).values(data).returning();
+  return json(result[0]);
 };
 ```
 
-### Components
+## Import Rules (CRITICAL)
 
-```svelte
-<!-- src/lib/components/ItemCard.svelte -->
-
-<script lang="ts">
-  import { Card, Button } from '@molos/ui';
-
-  interface Props {
-    item: {
-      id: string;
-      name: string;
-      description?: string;
-    };
-    onEdit?: () => void;
-    onDelete?: () => void;
-  }
-
-  let { item, onEdit, onDelete }: Props = $props();
-</script>
-
-<Card>
-  <h3>{item.name}</h3>
-  {#if item.description}
-    <p>{item.description}</p>
-  {/if}
-
-  <div class="actions">
-    {#if onEdit}
-      <Button variant="outline" onclick={onEdit}>Edit</Button>
-    {/if}
-    {#if onDelete}
-      <Button variant="destructive" onclick={onDelete}>Delete</Button>
-    {/if}
-  </div>
-</Card>
-```
-
-### Repositories
+### From Main App
 
 ```typescript
-// src/lib/repositories/item-repository.ts
+// ✅ ALWAYS use $lib alias
+import { db } from '$lib/server/db';
+import { Button } from '$lib/components/ui/button';
 
-import { eq } from 'drizzle-orm';
-import { getTableName } from '@molos/database';
-import { items } from '$lib/server/db/schema';
-import type { Database } from '@molos/database';
-
-export class ItemRepository {
-  private db: Database;
-  private table;
-
-  constructor(db: Database) {
-    this.db = db;
-    this.table = items;
-  }
-
-  async findAll() {
-    return this.db.select().from(this.table);
-  }
-
-  async findById(id: string) {
-    const results = await this.db
-      .select()
-      .from(this.table)
-      .where(eq(this.table.id, id))
-      .limit(1);
-    return results[0] ?? null;
-  }
-
-  async create(data: { name: string; description?: string }) {
-    const result = await this.db
-      .insert(this.table)
-      .values({
-        id: crypto.randomUUID(),
-        ...data,
-        createdAt: Date.now()
-      })
-      .returning();
-    return result[0];
-  }
-
-  async update(id: string, data: Partial<{ name: string; description: string }>) {
-    const result = await this.db
-      .update(this.table)
-      .set(data)
-      .where(eq(this.table.id, id))
-      .returning();
-    return result[0];
-  }
-
-  async delete(id: string) {
-    await this.db.delete(this.table).where(eq(this.table.id, id));
-  }
-}
-
-export const itemRepository = new ItemRepository();
+// ❌ NEVER use relative paths (breaks in node_modules)
+import { db } from '../../../../../src/lib/server/db';
 ```
 
-## Database Schema Integration
-
-### Schema Definition
+### Within Module
 
 ```typescript
-// src/lib/server/db/schema/tables.ts
-
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
-import { getTableName } from '@molos/database';
-
-const MODULE_ID = 'my-module';
-
-// Use the namespaced table name
-export const items = sqliteTable(
-  getTableName(MODULE_ID, 'items'),
-  {
-    id: text('id').primaryKey(),
-    name: text('name').notNull(),
-    description: text('description'),
-    status: text('status', { enum: ['active', 'inactive', 'archived'] })
-      .notNull()
-      .default('active'),
-    createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
-    updatedAt: integer('updated_at', { mode: 'timestamp' })
-  }
-);
-
-export const itemTags = sqliteTable(
-  getTableName(MODULE_ID, 'item_tags'),
-  {
-    id: text('id').primaryKey(),
-    itemId: text('item_id').notNull().references(() => items.id, { onDelete: 'cascade' }),
-    tag: text('tag').notNull(),
-    createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
-  }
-);
+// Use relative paths with .js extension
+import { MyRepository } from '../server/repositories/my-repository.js';
+import { MyStatus } from '../models/index.js';
 ```
 
-### Schema Index
-
-```typescript
-// src/lib/server/db/schema/index.ts
-
-export * from './tables';
-
-// Export a schema object for the module
-import { items, itemTags } from './tables';
-
-export const schema = {
-  items,
-  itemTags
-};
-```
-
-### Migrations
-
-```typescript
-// drizzle/0001_initial_schema.ts
-
-import { getTableName } from '@molos/database';
-
-const MODULE_ID = 'my-module';
-
-export async function up(db: Database) {
-  await db.execute(sql`
-    CREATE TABLE ${sql.identifier(getTableName(MODULE_ID, 'items'))} (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      description TEXT,
-      status TEXT NOT NULL DEFAULT 'active',
-      created_at INTEGER NOT NULL,
-      updated_at INTEGER
-    )
-  `);
-
-  await db.execute(sql`
-    CREATE INDEX idx_items_status ON ${sql.identifier(getTableName(MODULE_ID, 'items'))}(status)
-  `);
-}
-
-export async function down(db: Database) {
-  await db.execute(sql`
-    DROP TABLE IF EXISTS ${sql.identifier(getTableName(MODULE_ID, 'items'))}
-  `);
-}
-```
-
-## Testing Modules Locally
-
-### Unit Tests
-
-```typescript
-// src/lib/repositories/item-repository.test.ts
-
-import { describe, it, expect, beforeEach } from 'vitest';
-import { ItemRepository } from './item-repository';
-import { createTestDatabase } from '@molos/database/testing';
-
-describe('ItemRepository', () => {
-  let db: Database;
-  let repo: ItemRepository;
-
-  beforeEach(async () => {
-    db = await createTestDatabase();
-    repo = new ItemRepository(db);
-  });
-
-  it('should create an item', async () => {
-    const item = await repo.create({
-      name: 'Test Item',
-      description: 'A test item'
-    });
-
-    expect(item.id).toBeDefined();
-    expect(item.name).toBe('Test Item');
-  });
-
-  it('should find item by id', async () => {
-    const created = await repo.create({ name: 'Test' });
-    const found = await repo.findById(created.id);
-
-    expect(found).toEqual(created);
-  });
-});
-```
-
-### Integration Tests
-
-```typescript
-// src/routes/api/items/+server.test.ts
-
-import { describe, it, expect } from 'vitest';
-import { GET, POST } from './+server';
-import { setupTestApp } from '@molos/core/testing';
-
-describe('Items API', () => {
-  it('should list items', async () => {
-    const { request, locals } = await setupTestApp();
-
-    const response = await GET({ url: new URL('/api/items'), locals });
-    const data = await response.json();
-
-    expect(Array.isArray(data)).toBe(true);
-  });
-
-  it('should create an item', async () => {
-    const { request, locals } = await setupTestApp();
-
-    const response = await POST({
-      request: new Request('/api/items', {
-        method: 'POST',
-        body: JSON.stringify({ name: 'Test' })
-      }),
-      locals
-    });
-
-    expect(response.status).toBe(201);
-    const data = await response.json();
-    expect(data.name).toBe('Test');
-  });
-});
-```
-
-### Running Tests
+## Generate Migrations
 
 ```bash
-# Run tests for a specific module
-npm run test --filter=@molos/module-my-module
+# From module directory
+cd modules/my-module
 
-# Run tests with coverage
-npm run test --filter=@molos/module-my-module -- --coverage
+# Generate migration
+npx drizzle-kit generate
 
-# Run tests in watch mode
-npm run test --filter=@molos/module-my-module -- --watch
+# Apply migration
+npx drizzle-kit migrate
 ```
 
-### Manual Testing
+## Test in Main App
 
 ```bash
-# Start the development server
-npm run dev
+# Add as workspace dependency
+# In MoLOS/package.json:
+# "@molos/module-my-module": "workspace:*"
 
-# Navigate to your module
-open http://localhost:5173/ui/my-module
-
-# Test API endpoints
-curl http://localhost:5173/api/my-module/items
+bun install
+bun run module:sync
+bun run dev
 ```
 
-## Module Entry Point (Optional)
+## Publish to GitHub
 
-For modules that need lifecycle management:
+```bash
+# Create repo in MoLOS-org
+cd ../../..  # MoLOS-org root
+mkdir MoLOS-MyModule
+cd MoLOS-MyModule
+git init
 
-```typescript
-// src/module.ts
+# Copy files
+cp -r ../MoLOS/modules/my-module/* .
 
-import type { ModuleDefinition, ModuleContext } from '@molos/core/modules';
-
-export const module: ModuleDefinition = {
-  // Called when module is installed
-  async onInstall(context: ModuleContext) {
-    console.log(`Installing ${context.id}...`);
-    // Run database migrations
-    await context.migrations.run();
-  },
-
-  // Called when module is enabled
-  async onEnable(context: ModuleContext) {
-    console.log(`Enabling ${context.id}...`);
-    // Subscribe to events
-    context.events.subscribe('user.logged_in', async (event) => {
-      console.log('User logged in:', event.data);
-    });
-  },
-
-  // Called when module is disabled
-  async onDisable(context: ModuleContext) {
-    console.log(`Disabling ${context.id}...`);
-    // Cleanup subscriptions
-    context.events.unsubscribeAll();
-  },
-
-  // Called when module is uninstalled
-  async onUninstall(context: ModuleContext) {
-    console.log(`Uninstalling ${context.id}...`);
-    // Drop module tables
-    await context.data.dropAllTables();
-  },
-
-  // Define AI tools
-  async getAiTools(userId: string) {
-    return [
-      {
-        name: 'item_create',
-        description: 'Create a new item',
-        parameters: { /* ... */ },
-        execute: async (params) => { /* ... */ }
-      }
-    ];
-  }
-};
+# Push
+git add .
+git commit -m "Initial module"
+git remote add origin https://github.com/MoLOS-App/MoLOS-MyModule.git
+git push -u origin main
 ```
 
-## Best Practices
+## Development Checklist
 
-### 1. Keep Modules Isolated
-
-```typescript
-// ❌ Bad: Importing from another module
-import { something } from '@molos/module-product-owner';
-
-// ✅ Good: Use events for communication
-context.events.publish('item.created', { itemId });
-```
-
-### 2. Use Namespaced Tables
-
-```typescript
-// ❌ Bad: Direct table name
-export const items = sqliteTable('items', { /* ... */ });
-
-// ✅ Good: Namespaced table
-export const items = sqliteTable(
-  getTableName('my-module', 'items'),
-  { /* ... */ }
-);
-```
-
-### 3. Export Clean APIs
-
-```typescript
-// src/index.ts
-
-// Export public API
-export { moduleConfig } from './config';
-export { ItemCard, ItemList } from './lib/components';
-export { itemRepository } from './lib/repositories';
-
-// Don't export internal modules
-// export { internalHelper } from './lib/utils/internal'; // ❌
-```
-
-### 4. Handle Errors Gracefully
-
-```typescript
-// src/routes/api/items/[id]/+server.ts
-
-export const GET: RequestHandler = async ({ params, locals }) => {
-  try {
-    const item = await itemRepository.findById(params.id);
-
-    if (!item) {
-      return json({ error: 'Item not found' }, { status: 404 });
-    }
-
-    return json(item);
-  } catch (error) {
-    console.error('Error fetching item:', error);
-    return json({ error: 'Internal server error' }, { status: 500 });
-  }
-};
-```
-
-### 5. Write Documentation
-
-```typescript
-/**
- * Repository for managing items.
- *
- * @example
- * ```typescript
- * const items = await itemRepository.findAll();
- * const item = await itemRepository.create({ name: 'New Item' });
- * ```
- */
-export class ItemRepository {
-  // ...
-}
-```
-
-## Next Steps
-
-- Learn about [Module Activation](./04-module-activation.md)
-- Understand [Module Interaction](./05-module-interaction.md)
-- See [Deployment](./06-deployment.md) for production
-
----
-
-*Last Updated: 2025-02-15*
-*Version: 1.0*
+- [ ] `src/config.ts` with correct module ID (`MoLOS-{Name}` for external)
+- [ ] `package.json` with `@molos/module-{name}` and exports
+- [ ] `drizzle.config.ts` for migrations
+- [ ] Database tables prefixed with module ID
+- [ ] Routes under `/ui/{ModuleID}/`
+- [ ] API routes under `/api/{ModuleID}/`
+- [ ] All imports use `$lib` alias (not relative paths to main app)
+- [ ] TypeScript imports use `.js` extension

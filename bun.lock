@@ -96,20 +96,20 @@
         "vitest-browser-svelte": "^2.0.1",
       },
     },
-    "modules/ai": {
-      "name": "@molos/module-ai",
-      "version": "1.0.0",
-      "peerDependencies": {
-        "svelte": "^5.45.0",
-      },
-    },
-    "modules/tasks": {
+    "modules/MoLOS-Tasks": {
       "name": "@molos/module-tasks",
       "version": "1.0.0",
       "dependencies": {
         "lucide-svelte": "^0.561.0",
         "zod": "^4.3.6",
       },
+      "peerDependencies": {
+        "svelte": "^5.45.0",
+      },
+    },
+    "modules/ai": {
+      "name": "@molos/module-ai",
+      "version": "1.0.0",
       "peerDependencies": {
         "svelte": "^5.45.0",
       },
@@ -376,7 +376,7 @@
 
     "@molos/module-ai": ["@molos/module-ai@workspace:modules/ai"],
 
-    "@molos/module-tasks": ["@molos/module-tasks@workspace:modules/tasks"],
+    "@molos/module-tasks": ["@molos/module-tasks@workspace:modules/MoLOS-Tasks"],
 
     "@molos/module-types": ["@molos/module-types@workspace:packages/module-types"],
 

@@ -1,90 +1,133 @@
-# Changelog - Module Discovery Fix (2026-02-16)
+# Changelog - Module System Overhaul (2026-02-16)
 
-## Problem
-The sidebar menu was not showing modules because:
-1. `.env` had `VITE_MOLOS_AUTOLOAD_MODULES=finance` - filtering to only finance module
-2. Finance module doesn't exist in the registry
-3. No modules passed the filter, resulting in empty MODULE_REGISTRY
-4. The autoload filter logic didn't have "mandatory" modules that always load
-5. Module symlinks used folder names instead of module IDs from config
+## Summary
 
-## Solution
-1. Added mandatory module concept that bypasses the environment filter for essential modules
-2. Updated link script to read module ID from config file
-3. Fixed tasks module to use correct external module ID `MoLOS-Tasks`
+Complete overhaul of the module discovery and management system to support external modules from GitHub/npm.
+
+## Problems Solved
+
+1. **Empty sidebar** - Modules weren't showing because of wrong environment filter
+2. **No mandatory modules** - Essential modules could be filtered out
+3. **Incorrect module IDs** - Tasks module used `tasks` instead of `MoLOS-Tasks`
+4. **Missing database tables** - No migrations for external modules
+5. **Relative import issues** - Imports broke when modules installed in node_modules
 
 ## Changes Made
 
-### 1. Added Mandatory Modules Logic
+### 1. Mandatory Modules System
+
 **File:** `src/lib/config/index.ts`
 
 ```typescript
-// Modules that must always be loaded (cannot be filtered out by env variable)
 const MANDATORY_MODULES = ['dashboard', 'ai'] as const;
 
 // In buildModuleRegistry():
-// Skip filter for mandatory modules (always load regardless of env filter)
-const isMandatory = MANDATORY_MODULES.includes(config.id as (typeof MANDATORY_MODULES)[number]);
-
-// Apply autoload filter if set (but not for mandatory modules)
+const isMandatory = MANDATORY_MODULES.includes(config.id);
 if (!isMandatory && autoloadFilter && !autoloadFilter.includes(config.id)) {
-    return acc;
+    return acc;  // Skip non-mandatory modules not in filter
 }
 ```
 
 ### 2. Fixed Environment Variable
+
 **File:** `.env`
 
 ```bash
-# Before (broken - finance module doesn't exist)
-VITE_MOLOS_AUTOLOAD_MODULES=finance
+# Before (broken)
+VITE_MOLOS_AUTOLOAD_MODULES=finance  # Module doesn't exist
 
-# After (empty = load all modules)
-VITE_MOLOS_AUTOLOAD_MODULES=
+# After (correct)
+VITE_MOLOS_AUTOLOAD_MODULES=  # Empty = load all
 ```
 
-### 3. Updated Link Script to Use Module ID from Config
-**File:** `scripts/link-modules.ts`
+### 3. Module ID Convention
 
-Added `extractModuleIdFromConfig()` function to read the module ID from the config file instead of using the folder name. This ensures symlinks are named correctly (e.g., `MoLOS-Tasks` instead of `tasks`).
-
-### 4. Fixed Tasks Module Configuration
 **File:** `modules/tasks/src/config.ts`
 
 ```typescript
-// Module ID follows external module convention
-id: "MoLOS-Tasks",
-href: "/ui/MoLOS-Tasks",
-navigation: [
-  { href: "/ui/MoLOS-Tasks/dashboard" },
-  // ... other navigation items
-]
+// External modules use MoLOS-{Name} format
+export const tasksConfig: ModuleConfig = {
+  id: 'MoLOS-Tasks',
+  href: '/ui/MoLOS-Tasks',
+  navigation: [
+    { href: '/ui/MoLOS-Tasks/dashboard' },
+    // ...
+  ]
+};
 ```
 
-### 5. Updated Documentation
-**Files:**
-- `documentation/modules/README.md` - Added autoload filtering and mandatory modules section
-- `documentation/modules/quick-reference.md` - Updated environment variables section
+### 4. Link Script Enhancement
+
+**File:** `scripts/link-modules.ts`
+
+- Now reads module ID from `config.ts` instead of using folder name
+- Creates symlinks with correct module ID names
+
+### 5. Database Migrations
+
+**File:** `modules/tasks/drizzle.config.ts` (new)
+
+- Independent drizzle config for each module
+- Migrations stored in module's `drizzle/` directory
+- Tables prefixed with module ID: `MoLOS-Tasks_tasks`
+
+### 6. Package Database Utils Fix
+
+**File:** `packages/database/package.json`
+
+- Added `default` export condition for CJS compatibility with drizzle-kit
 
 ## Module Classification
 
-### Internal Modules (always in this repo)
-- `dashboard` - Core dashboard functionality
-- `ai` - AI assistant interface
+| Module | Type | ID | Package |
+|--------|------|----|----|
+| Dashboard | Internal | `dashboard` | Core |
+| AI | Internal | `ai` | `@molos/module-ai` (workspace) |
+| Tasks | External | `MoLOS-Tasks` | `@molos/module-tasks` |
 
-### External Modules (separate repositories)
-- `MoLOS-Tasks` - Task management (symlinked from modules/ for development)
+## Installation Method
 
-## Result
-- **Dashboard** and **AI** modules always load (mandatory, cannot be filtered)
-- **MoLOS-Tasks** loads by default (env variable now empty)
-- Symlinks correctly use module IDs from config
+```bash
+# External modules are installed from GitHub
+bun add @molos/module-tasks@github:MoLOS-App/MoLOS-Tasks
+
+# Sync routes
+bun run module:sync
+```
+
+## Documentation Created
+
+- `documentation/modules/standards.md` - Complete module standards
+- `documentation/modules/README.md` - Updated overview
+- `documentation/modules/quick-reference.md` - Quick command reference
+- `documentation/modules/turborepo-management.md` - Multi-repo workflow
 
 ## Known Issues
-- MoLOS-Tasks database tables don't exist yet - migrations need to be created and run
 
-## Verification
-1. Run `bun run module:link && bun run module:sync` to link and sync modules
-2. Start dev server: `bun run dev`
-3. Check sidebar shows: Dashboard, AI, Tasks
-4. Verify symlinks: `ls -la src/routes/ui/\(modules\)/\(external_modules\)/`
+### Import Paths in External Modules
+
+External modules must use `$lib` alias instead of relative paths:
+
+```typescript
+// ✅ Works in node_modules
+import { db } from '$lib/server/db';
+
+// ❌ Breaks in node_modules
+import { db } from '../../../../../src/lib/server/db';
+```
+
+**Fix required in MoLOS-Tasks repo:** Update `base-repository.ts` to use `$lib` alias.
+
+## Files Modified
+
+| File | Change |
+|------|--------|
+| `src/lib/config/index.ts` | Added MANDATORY_MODULES, updated filter logic |
+| `.env` | Cleared VITE_MOLOS_AUTOLOAD_MODULES |
+| `package.json` | Changed tasks to GitHub dependency |
+| `scripts/link-modules.ts` | Read module ID from config |
+| `modules/tasks/src/config.ts` | Updated to MoLOS-Tasks ID |
+| `modules/tasks/drizzle.config.ts` | Created |
+| `modules/tasks/drizzle/0000_*.sql` | Created migrations |
+| `packages/database/package.json` | Added default exports |
+| Documentation files | Created/updated |
