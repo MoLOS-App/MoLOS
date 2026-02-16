@@ -1,7 +1,5 @@
 import { spawn } from 'child_process';
 
-const REBUILD_EXIT_CODE = 10;
-
 async function runCommand(command: string, args: string[]): Promise<number | null> {
 	return new Promise((resolve) => {
 		console.log(`[Supervisor] Running: ${command} ${args.join(' ')}`);
@@ -14,57 +12,45 @@ async function runCommand(command: string, args: string[]): Promise<number | nul
 }
 
 async function start() {
-	console.log('[Supervisor] Starting MoLOS Automated Supervisor...');
+	console.log('[Supervisor] Starting MoLOS Supervisor...');
 
 	const nodeEnv = process.env.NODE_ENV || 'production';
 	if (!process.env.PORT) {
 		process.env.PORT = '4173';
 	}
 
-	let rebuildRequested = false;
+	console.log('\n[Supervisor] Phase 0: Synchronizing modules...');
+	const syncCode = await runCommand('bun', ['run', 'module:sync']);
 
-	while (true) {
-		console.log('\n[Supervisor] Phase 0: Synchronizing modules...');
-		const syncCode = await runCommand('npm', ['run', 'module:sync']);
+	if (syncCode !== 0) {
+		console.error(`[Supervisor] Module sync failed with code ${syncCode}. Exiting.`);
+		process.exit(syncCode || 1);
+	}
 
-		if (syncCode !== 0) {
-			console.error(`[Supervisor] Module sync failed with code ${syncCode}. Exiting.`);
-			process.exit(syncCode || 1);
-		}
+	const allowProdBuild = process.env.MOLOS_ENABLE_PROD_BUILD === 'true';
+	if (nodeEnv === 'production' && !allowProdBuild) {
+		console.log('\n[Supervisor] Phase 1: Skipping build in production environment.');
+	} else {
+		console.log('\n[Supervisor] Phase 1: Building project...');
+		const buildCode = await runCommand('bun', ['run', 'build']);
 
-		const allowProdBuild =
-			process.env.MOLOS_ENABLE_PROD_BUILD === 'true' || process.env.FORCE_REBUILD === 'true';
-		if (nodeEnv === 'production' && !allowProdBuild && !rebuildRequested) {
-			console.log('\n[Supervisor] Phase 1: Skipping build in production environment.');
-		} else {
-			console.log('\n[Supervisor] Phase 1: Building project...');
-			const buildCode = await runCommand('npm', ['run', 'build']);
-
-			if (buildCode !== 0) {
-				console.error(`[Supervisor] Build failed with code ${buildCode}. Exiting.`);
-				process.exit(buildCode || 1);
-			}
-			rebuildRequested = false;
-		}
-
-		let exitCode: number | null;
-		if (nodeEnv === 'production') {
-			console.log('\n[Supervisor] Phase 2: Starting production server...');
-			exitCode = await runCommand('node', ['build/index.js']);
-		} else {
-			console.log('\n[Supervisor] Phase 2: Starting preview server...');
-			exitCode = await runCommand('npm', ['run', 'preview']);
-		}
-
-		if (exitCode === REBUILD_EXIT_CODE) {
-			console.log('\n[Supervisor] 🔄 Rebuild requested (Exit Code 10). Restarting loop...');
-			rebuildRequested = true;
-			continue;
-		} else {
-			console.log(`\n[Supervisor] Server exited with code ${exitCode}. Stopping supervisor.`);
-			process.exit(exitCode || 0);
+		if (buildCode !== 0) {
+			console.error(`[Supervisor] Build failed with code ${buildCode}. Exiting.`);
+			process.exit(buildCode || 1);
 		}
 	}
+
+	let exitCode: number | null;
+	if (nodeEnv === 'production') {
+		console.log('\n[Supervisor] Phase 2: Starting production server...');
+		exitCode = await runCommand('node', ['build/index.js']);
+	} else {
+		console.log('\n[Supervisor] Phase 2: Starting preview server...');
+		exitCode = await runCommand('bun', ['run', 'preview']);
+	}
+
+	console.log(`\n[Supervisor] Server exited with code ${exitCode}.`);
+	process.exit(exitCode || 0);
 }
 
 start().catch((err) => {

@@ -1,9 +1,8 @@
 node_modules
 .kilocode/
 .vscode/
-internal_documentation/
 devtools/
-
+/modules/
 # Output
 .output
 .vercel
@@ -19,8 +18,6 @@ Thumbs.db
 # Env
 .env
 .env.*
-!.env.example
-!.env.test
 
 # Vite
 vite.config.js.timestamp-*
@@ -35,8 +32,7 @@ vite.config.ts.timestamp-*
 *.db-shm
 *.db-wal
 external_modules/
-src/routes/api/(external_modules)/
-src/routes/ui/(modules)/(external_modules)/
+/modules/
 .claude/
 .beads/
 .mcp.json

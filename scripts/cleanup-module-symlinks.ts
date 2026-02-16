@@ -1,17 +1,12 @@
 import { existsSync, lstatSync, readdirSync, rmSync } from 'fs';
 import path from 'path';
 
+/**
+ * Cleanup broken symlinks in module route directories
+ */
 const TARGET_DIRS = [
 	'src/routes/api/(external_modules)',
-	'src/routes/ui/(modules)/(external_modules)',
-	'src/lib/config/external_modules',
-	'src/lib/components/external_modules',
-	'src/lib/models/external_modules',
-	'src/lib/repositories/external_modules',
-	'src/lib/stores/external_modules',
-	'src/lib/utils/external_modules',
-	'src/lib/server/ai/external_modules',
-	'src/lib/server/db/schema/external_modules'
+	'src/routes/ui/(modules)/(external_modules)'
 ];
 
 function isBrokenSymlink(p: string): boolean {
@@ -41,3 +36,5 @@ function cleanupDir(relativeDir: string) {
 for (const dir of TARGET_DIRS) {
 	cleanupDir(dir);
 }
+
+console.log('[ModuleCleanup] Cleanup complete');

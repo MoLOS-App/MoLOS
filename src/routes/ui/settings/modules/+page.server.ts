@@ -1,7 +1,7 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import { dev } from '$app/environment';
 import type { PageServerLoad, Actions } from './$types';
-import { getAllModules } from '$lib/config/modules';
+import { getAllModules } from '$lib/config';
 import { SettingsRepository } from '$lib/repositories/settings/settings-repository';
 import { execFileSync } from 'child_process';
 import path from 'path';

@@ -1,49 +1,52 @@
 # Module System Quick Reference
 
-Quick guide for common module operations.
+Quick guide for common module operations with the package-based module system.
 
 ## Commands
 
 ```bash
+# Install dependencies (including workspace modules)
+bun install
+
 # Sync modules (with change detection - fast!)
-npm run module:sync
+bun run module:sync
 
 # Force sync (bypass change detection)
-npm run module:sync -- --force
+bun run module:sync -- --force
 
-# Link modules manually
-npm run module:link
+# Link module routes manually
+bun run module:link
 
 # Create a new module
-npm run module:create
+bun run module:create
 
 # Validate a module
-npm run module:validate
+bun run module:validate
 
 # Test a module
-npm run module:test
+bun run module:test
 
 # Clean up broken symlinks
-npm run module:cleanup
+bun run module:cleanup
 
 # Module TUI (interactive interface)
-npm run module:tui
+bun run module:tui
 ```
 
 ## Database Operations
 
 ```bash
 # Generate migration for schema changes
-npm run db:generate
+bun run db:generate
 
 # Apply database migrations
-npm run db:migrate
+bun run db:migrate
 
 # Reset database (WARNING: deletes all data)
-npm run db:reset
+bun run db:reset
 
 # Open Drizzle Studio (database GUI)
-npm run db:studio
+bun run db:studio
 ```
 
 ## Common Workflows
@@ -52,30 +55,36 @@ npm run db:studio
 
 ```bash
 # 1. Create the module
-npm run module:create
+bun run module:create
 
-# 2. Validate the module
-npm run module:validate -- --module=YourModule
+# 2. Add to root package.json dependencies
+# "@molos/module-your-module": "workspace:*"
 
-# 3. Test the module
-npm run module:test -- --module=YourModule
+# 3. Install dependencies
+bun install
 
-# 4. Sync to activate
-npm run module:sync
+# 4. Validate the module
+bun run module:validate -- --module=your-module
+
+# 5. Link routes
+bun run module:link
+
+# 6. Sync to activate
+bun run module:sync
 ```
 
 ### Updating a Module
 
 ```bash
 # 1. Make changes to module files
-cd external_modules/YourModule
+cd modules/your-module
 # ... edit files ...
 
 # 2. Force sync to apply changes
-npm run module:sync -- --force
+bun run module:sync -- --force
 
 # 3. Restart dev server
-# Ctrl+C, then npm run dev
+# Ctrl+C, then bun run dev
 ```
 
 ### Debugging Module Issues
@@ -85,7 +94,7 @@ npm run module:sync -- --force
 sqlite3 data/database.db "SELECT id, status, retry_count, last_error FROM settings_external_modules;"
 
 # 2. View detailed logs
-npm run module:sync -- --verbose
+bun run module:sync -- --verbose
 
 # 3. Check state files
 cat .molo-sync-state.json
@@ -93,7 +102,7 @@ cat .molo-module-links.json
 
 # 4. Clear cache and retry
 rm .molo-*.json
-npm run module:sync -- --force
+bun run module:sync -- --force
 ```
 
 ### Switching Branches
@@ -103,20 +112,23 @@ npm run module:sync -- --force
 rm .molo-*.json
 
 # 2. Run migrations if needed
-npm run db:migrate
+bun run db:migrate
 
 # 3. Sync modules
-npm run module:sync
+bun run module:sync
 
 # 4. Restart dev server
-npm run dev
+bun run dev
 ```
 
 ## Environment Variables
 
 ```bash
-# Module discovery
-MOLOS_AUTOLOAD_MODULES=true        # Auto-discover local modules (default: true)
+# Module autoload filtering (comma-separated module IDs, empty = load all)
+VITE_MOLOS_AUTOLOAD_MODULES=       # Client-exposed filter (e.g., "tasks,goals")
+MOLOS_AUTOLOAD_MODULES=            # Server-only filter
+
+# Note: "dashboard" and "ai" modules are mandatory and always load
 
 # Parent directory access (dev only)
 MOLOS_ALLOW_PARENT_MODULES=true    # Allow modules from parent dir (default: true in dev)
@@ -136,21 +148,56 @@ MOLOS_ENABLE_PROD_BUILD=true       # Allow builds in production
 ## File Locations
 
 ```
-external_modules/                  # External modules directory
-  ├── YourModule/
+modules/                           # Package modules directory
+  ├── your-module/
+  │   ├── package.json            # @molos/module-your-module
   │   ├── manifest.yaml           # Module metadata
-  │   ├── config.ts               # Module config
-  │   ├── drizzle/                # Database migrations
-  │   ├── lib/                    # Module code
-  │   └── routes/                 # SvelteKit routes
+  │   └── src/
+  │       ├── index.ts            # Module exports
+  │       ├── config.ts           # Module config
+  │       ├── lib/                # Module code
+  │       │   ├── components/
+  │       │   ├── models/
+  │       │   ├── repositories/
+  │       │   ├── stores/
+  │       │   └── server/
+  │       │       ├── ai/         # AI tools
+  │       │       └── db/         # Database schema
+  │       └── routes/             # SvelteKit routes
+  │           ├── ui/
+  │           └── api/
 
-src/lib/config/external_modules/   # Module config symlinks
 src/routes/ui/(modules)/(external_modules)/  # UI route symlinks
-src/routes/api/(external_modules)/ # API route symlinks
+src/routes/api/(external_modules)/           # API route symlinks
 
 .molo-sync-state.json              # Sync state cache
 .molo-module-links.json            # Link state cache
 module-retry.config.json           # Retry configuration (optional)
+```
+
+## Import Patterns
+
+### Within a Module
+
+```typescript
+// From routes to lib - use relative imports with .js extension
+import { MyModel } from '../../../lib/models/index.js';
+import { MyRepository } from '../../../lib/repositories/my-repository.js';
+import { MyComponent } from '../../../lib/components/my-component.svelte';
+
+// Import from core app via $lib
+import { db } from '$lib/server/db';
+import { Button } from '$lib/components/ui/button';
+```
+
+### From Core App to Module
+
+```typescript
+// Import module config
+import { moduleConfig } from '@molos/module-your-module/config';
+
+// Import module types
+import type { MyType } from '@molos/module-your-module';
 ```
 
 ## Troubleshooting
@@ -162,22 +209,25 @@ module-retry.config.json           # Retry configuration (optional)
 sqlite3 data/database.db "SELECT id, status, retry_count, last_error FROM settings_external_modules WHERE id='YourModule';"
 
 # If retry_count < 3, wait for grace period (5 min) and re-sync
-npm run module:sync
+bun run module:sync
 
 # If retry_count >= 3, fix the issue and force re-sync
 # Edit module files...
-npm run module:sync -- --force
+bun run module:sync -- --force
 ```
 
 ### Import errors for module files
 
 ```bash
-# Re-link modules
-npm run module:link -- --force
+# Check that .js extensions are used for TS imports
+# In routes: import { x } from '../../../lib/models/index.js';
+
+# Re-link routes
+bun run module:link -- --force
 
 # Or full reset
 rm .molo-*.json
-npm run module:sync -- --force
+bun run module:sync -- --force
 ```
 
 ### Changes not applying
@@ -185,15 +235,15 @@ npm run module:sync -- --force
 ```bash
 # Clear state and force sync
 rm .molo-sync-state.json
-npm run module:sync -- --force
+bun run module:sync -- --force
 ```
 
 ### Database errors
 
 ```bash
 # Check if migration is needed
-npm run db:generate
-npm run db:migrate
+bun run db:generate
+bun run db:migrate
 ```
 
 ## SQL Queries
@@ -266,6 +316,7 @@ WHERE id = 'YourModule';
 
 ## Getting Help
 
-- Full documentation: `documentation/module-improvements.md`
-- Module system docs: `documentation/context/module-system.md`
+- Full documentation: `documentation/modules/README.md`
+- Development guide: `documentation/modules/development.md`
+- Migration changelog: `documentation/CHANGELOG-2026-02-16-package-module-migration.md`
 - Repository issues: https://github.com/MoLOS-org/MoLOS/issues

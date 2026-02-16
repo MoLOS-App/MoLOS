@@ -4,7 +4,7 @@ This guide covers everything you need to know about developing modules for MoLOS
 
 ## Overview
 
-A MoLOS module is a self-contained package that adds functionality to the core application. Each module can provide:
+A MoLOS module is a self-contained workspace package that adds functionality to the core application. Modules live in `modules/<module-id>/` and are imported via `@molos/module-*` package names. Each module can provide:
 
 - **UI Routes** - Pages and layouts accessible via the web interface
 - **API Routes** - RESTful endpoints for data access
