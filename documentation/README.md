@@ -98,6 +98,11 @@ MoLOS/
 
 See the [Module Development Guide](./modules/development.md) for information on contributing modules and code.
 
+## Changelog
+
+- [2025-02-16](./CHANGELOG-2025-02-16.md) - Monorepo system adaptation and documentation consolidation
+- [Cleanup 2025-02-16](./cleanup-2025-02-16.md) - Codebase cleanup and AI context files
+
 ## Getting Help
 
 - **GitHub Issues**: [MoLOS Issues](https://github.com/MoLOS-org/MoLOS/issues)
@@ -105,4 +110,4 @@ See the [Module Development Guide](./modules/development.md) for information on 
 
 ---
 
-*Last Updated: 2025-02-15*
+*Last Updated: 2025-02-16*

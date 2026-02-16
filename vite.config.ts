@@ -412,7 +412,14 @@ export default defineConfig({
 
 	resolve: {
 		alias: {
-			'@molos/core': path.resolve(__dirname, 'packages/core/src')
+			'@molos/core': path.resolve(__dirname, 'packages/core/src'),
+			'@molos/database': path.resolve(__dirname, 'packages/database/src'),
+			'@molos/database/schema': path.resolve(__dirname, 'packages/database/src/schema'),
+			'@molos/ui': path.resolve(__dirname, 'packages/ui/src'),
+			'@molos/module-tasks': path.resolve(__dirname, 'modules/tasks/src'),
+			'@molos/module-tasks/config': path.resolve(__dirname, 'modules/tasks/src/config.ts'),
+			'@molos/module-ai': path.resolve(__dirname, 'modules/ai/src'),
+			'@molos/module-ai/config': path.resolve(__dirname, 'modules/ai/src/config.ts')
 		},
 		preserveSymlinks: true
 	},
@@ -422,6 +429,8 @@ export default defineConfig({
 			allow: [
 				process.cwd(),
 				path.resolve('external_modules'),
+				path.resolve('modules'),
+				path.resolve('packages'),
 				...(process.env.MOLOS_ALLOW_PARENT_MODULES === 'true' ||
 				process.env.NODE_ENV !== 'production'
 					? [path.resolve('..')]

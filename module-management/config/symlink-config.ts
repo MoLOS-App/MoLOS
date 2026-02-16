@@ -7,6 +7,7 @@
  */
 
 import path from 'path';
+import { existsSync, readFileSync } from 'fs';
 
 /**
  * Base directories
@@ -86,9 +87,15 @@ export function getModuleSymlinks(moduleId: string): ModuleSymlinks {
  * Check if a module is a package module (installed via npm)
  */
 function isPackageModule(moduleId: string): boolean {
-	const pkgJson = require('../../package.json');
-	const pkgName = `@molos/module-${moduleId.toLowerCase().replace(/_/g, '-')}`;
-	return Object.keys(pkgJson.dependencies || {}).includes(pkgName);
+	try {
+		const pkgPath = path.join(process.cwd(), 'package.json');
+		if (!existsSync(pkgPath)) return false;
+		const pkgJson = JSON.parse(readFileSync(pkgPath, 'utf-8'));
+		const pkgName = `@molos/module-${moduleId.toLowerCase().replace(/_/g, '-')}`;
+		return Object.keys(pkgJson.dependencies || {}).includes(pkgName);
+	} catch {
+		return false;
+	}
 }
 
 /**
@@ -166,8 +173,7 @@ export function validateSymlinkDirs(): { valid: boolean; errors: string[] } {
 	const errors: string[] = [];
 
 	// Check workspace
-	const fs = require('fs');
-	if (!fs.existsSync(SYMLINK_CONFIG.workspace)) {
+	if (!existsSync(SYMLINK_CONFIG.workspace)) {
 		errors.push(`Workspace directory does not exist: ${SYMLINK_CONFIG.workspace}`);
 	}
 
@@ -184,7 +190,7 @@ export function validateSymlinkDirs(): { valid: boolean; errors: string[] } {
 		SYMLINK_CONFIG.serverAiDir,
 		SYMLINK_CONFIG.dbSchemaDir
 	].forEach((dir) => {
-		if (!fs.existsSync(dir)) {
+		if (!existsSync(dir)) {
 			errors.push(`Required directory does not exist: ${dir}`);
 		}
 	});

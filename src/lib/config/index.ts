@@ -78,6 +78,7 @@ async function loadPackageConfigs(): Promise<Record<string, any>> {
 		// Load config from each package
 		for (const packageName of packageModules) {
 			try {
+				// @vite-ignore - Dynamic import needed for package module discovery
 				const config = await import(`${packageName}/config`);
 				const moduleId = packageName.replace('@molos/module-', '');
 				results[`package:${moduleId}`] = config;
