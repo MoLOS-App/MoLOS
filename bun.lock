@@ -21,6 +21,13 @@
         "@modelcontextprotocol/sdk": "^1.25.3",
         "@molos/database": "workspace:*",
         "@molos/module-ai": "workspace:*",
+        "@molos/module-ai-knowledge": "workspace:*",
+        "@molos/module-finance": "workspace:*",
+        "@molos/module-goals": "workspace:*",
+        "@molos/module-google": "workspace:*",
+        "@molos/module-health": "workspace:*",
+        "@molos/module-meals": "workspace:*",
+        "@molos/module-sample": "workspace:*",
         "@molos/module-tasks": "workspace:*",
         "@noble/hashes": "^2.0.1",
         "@sinclair/typebox": "^0.34.48",
@@ -96,12 +103,95 @@
         "vitest-browser-svelte": "^2.0.1",
       },
     },
+    "modules/MoLOS-AI-Knowledge": {
+      "name": "@molos/module-ai-knowledge",
+      "version": "1.0.0",
+      "devDependencies": {
+        "drizzle-kit": "^0.31.8",
+        "prettier": "^3.7.4",
+      },
+      "peerDependencies": {
+        "lucide-svelte": "^0.561.0",
+        "svelte": "^5.45.0",
+      },
+    },
+    "modules/MoLOS-Finance": {
+      "name": "@molos/module-finance",
+      "version": "1.0.0",
+      "dependencies": {
+        "lucide-svelte": "^0.561.0",
+        "zod": "^3.0.0",
+      },
+      "devDependencies": {
+        "@sveltejs/kit": "^2.49.2",
+        "drizzle-orm": "^0.41.0",
+        "svelte": "^5.46.1",
+        "typescript": "^5.0.0",
+        "vitest": "^4.0.16",
+      },
+      "peerDependencies": {
+        "@molos/database": "workspace:*",
+        "@molos/module-types": "workspace:*",
+        "@sveltejs/kit": "^2.0.0",
+        "drizzle-orm": "^0.41.0",
+        "svelte": "^5.45.0",
+      },
+    },
+    "modules/MoLOS-Goals": {
+      "name": "@molos/module-goals",
+      "version": "1.0.0",
+      "peerDependencies": {
+        "svelte": "^5.45.0",
+      },
+    },
+    "modules/MoLOS-Google": {
+      "name": "@molos/module-google",
+      "version": "1.0.0",
+      "devDependencies": {
+        "drizzle-kit": "^0.31.8",
+        "prettier": "^3.7.4",
+      },
+      "peerDependencies": {
+        "lucide-svelte": "^0.561.0",
+        "svelte": "^5.45.0",
+      },
+    },
+    "modules/MoLOS-Health": {
+      "name": "@molos/module-health",
+      "version": "1.0.0",
+      "peerDependencies": {
+        "svelte": "^5.45.0",
+      },
+    },
+    "modules/MoLOS-Meals": {
+      "name": "@molos/module-meals",
+      "version": "1.0.0",
+      "peerDependencies": {
+        "svelte": "^5.45.0",
+      },
+    },
+    "modules/MoLOS-Sample-Module": {
+      "name": "@molos/module-sample",
+      "version": "1.0.0",
+      "devDependencies": {
+        "drizzle-kit": "^0.31.8",
+        "prettier": "^3.7.4",
+      },
+      "peerDependencies": {
+        "lucide-svelte": "^0.561.0",
+        "svelte": "^5.45.0",
+      },
+    },
     "modules/MoLOS-Tasks": {
       "name": "@molos/module-tasks",
       "version": "1.0.0",
       "dependencies": {
         "lucide-svelte": "^0.561.0",
         "zod": "^4.3.6",
+      },
+      "devDependencies": {
+        "drizzle-kit": "^0.31.8",
+        "prettier": "^3.7.4",
       },
       "peerDependencies": {
         "svelte": "^5.45.0",
@@ -375,6 +465,20 @@
     "@molos/database": ["@molos/database@workspace:packages/database"],
 
     "@molos/module-ai": ["@molos/module-ai@workspace:modules/ai"],
+
+    "@molos/module-ai-knowledge": ["@molos/module-ai-knowledge@workspace:modules/MoLOS-AI-Knowledge"],
+
+    "@molos/module-finance": ["@molos/module-finance@workspace:modules/MoLOS-Finance"],
+
+    "@molos/module-goals": ["@molos/module-goals@workspace:modules/MoLOS-Goals"],
+
+    "@molos/module-google": ["@molos/module-google@workspace:modules/MoLOS-Google"],
+
+    "@molos/module-health": ["@molos/module-health@workspace:modules/MoLOS-Health"],
+
+    "@molos/module-meals": ["@molos/module-meals@workspace:modules/MoLOS-Meals"],
+
+    "@molos/module-sample": ["@molos/module-sample@workspace:modules/MoLOS-Sample-Module"],
 
     "@molos/module-tasks": ["@molos/module-tasks@workspace:modules/MoLOS-Tasks"],
 
@@ -1431,6 +1535,8 @@
     "@inquirer/external-editor/iconv-lite": ["iconv-lite@0.7.2", "", { "dependencies": { "safer-buffer": ">= 2.1.2 < 3.0.0" } }, "sha512-im9DjEDQ55s9fL4EYzOAv0yMqmMBSZp6G0VvFyTMPKWxiSBHUj9NW/qqLmXUwXrrM7AvqSlTCfvqRb0cM8yYqw=="],
 
     "@modelcontextprotocol/sdk/ajv": ["ajv@8.18.0", "", { "dependencies": { "fast-deep-equal": "^3.1.3", "fast-uri": "^3.0.1", "json-schema-traverse": "^1.0.0", "require-from-string": "^2.0.2" } }, "sha512-PlXPeEWMXMZ7sPYOHqmDyCJzcfNrUr3fGNKtezX14ykXOEIvyK81d+qydx89KY5O71FKMPaQ2vBfBFI5NHR63A=="],
+
+    "@molos/module-finance/zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
 
     "@rollup/plugin-commonjs/is-reference": ["is-reference@1.2.1", "", { "dependencies": { "@types/estree": "*" } }, "sha512-U82MsXXiFIrjCK4otLT+o2NA2Cd2g5MLoOVXUZjIOhLurrRxpEXzI8O0KZHr3IjLvlAH1kTPYSuqer5T9ZVBKQ=="],
 

@@ -1,4 +1,4 @@
-# Module System (Codex)
+# Module System
 
 MoLOS uses a package-based module system where modules can be installed from npm, GitHub, or developed locally.
 

@@ -1,14 +1,16 @@
-# MoLOS Quick Start (Codex)
+# MoLOS Quick Start
 
 - Repo root: /home/eduardez/Workspace/MoLOS-org/MoLOS
-- Dev server: npm run dev
-- Module sync: npm run modules:sync
-- Module create/validate/test:
-  - npm run module:create <name>
-  - npm run module:validate <path>
-  - npm run module:test <path>
+- Dev server: `bun run dev`
+- Module sync: `bun run module:sync`
+- Module commands:
+  - `bun run module:sync` - Sync and initialize modules
+  - `bun run module:link` - Create route symlinks
 - Database:
-  - npm run db:push | db:migrate | db:generate | db:reset | db:studio
+  - `bun run db:push` - Push schema changes (dev)
+  - `bun run db:migrate` - Run migrations
+  - `bun run db:generate` - Generate migrations
+  - `bun run db:studio` - Open Drizzle Studio
 
 Notes
 - Use tabs, single quotes, printWidth 100 (Prettier).

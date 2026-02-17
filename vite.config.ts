@@ -16,16 +16,16 @@ export default defineConfig({
 			'@molos/ui': path.resolve(__dirname, 'packages/ui/src'),
 			'@molos/module-types': path.resolve(__dirname, 'packages/module-types/src'),
 			// Module aliases - all modules now use package imports
-			'@molos/module-tasks': path.resolve(__dirname, 'modules/tasks/src'),
-			'@molos/module-tasks/config': path.resolve(__dirname, 'modules/tasks/src/config.ts'),
+			'@molos/module-tasks': path.resolve(__dirname, 'modules/MoLOS-Tasks/src'),
+			'@molos/module-tasks/config': path.resolve(__dirname, 'modules/MoLOS-Tasks/src/config.ts'),
 			'@molos/module-ai': path.resolve(__dirname, 'modules/ai/src'),
 			'@molos/module-ai/config': path.resolve(__dirname, 'modules/ai/src/config.ts'),
-			'@molos/module-ai-knowledge': path.resolve(__dirname, 'modules/ai-knowledge/src'),
-			'@molos/module-ai-knowledge/config': path.resolve(__dirname, 'modules/ai-knowledge/src/config.ts'),
-			'@molos/module-google': path.resolve(__dirname, 'modules/google/src'),
-			'@molos/module-google/config': path.resolve(__dirname, 'modules/google/src/config.ts'),
-			'@molos/module-sample': path.resolve(__dirname, 'modules/sample/src'),
-			'@molos/module-sample/config': path.resolve(__dirname, 'modules/sample/src/config.ts')
+			'@molos/module-ai-knowledge': path.resolve(__dirname, 'modules/MoLOS-AI-Knowledge/src'),
+			'@molos/module-ai-knowledge/config': path.resolve(__dirname, 'modules/MoLOS-AI-Knowledge/src/config.ts'),
+			'@molos/module-google': path.resolve(__dirname, 'modules/MoLOS-Google/src'),
+			'@molos/module-google/config': path.resolve(__dirname, 'modules/MoLOS-Google/src/config.ts'),
+			'@molos/module-sample': path.resolve(__dirname, 'modules/MoLOS-Sample-Module/src'),
+			'@molos/module-sample/config': path.resolve(__dirname, 'modules/MoLOS-Sample-Module/src/config.ts')
 		}
 	},
 

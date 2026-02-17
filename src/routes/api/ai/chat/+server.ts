@@ -45,10 +45,15 @@ function extractThoughtAndPlan(content: string): {
 }
 
 /**
- * Log server events for debugging
+ * Log server events for debugging (reduced verbosity)
  */
 function serverLog(type: string, data: Record<string, unknown>) {
-	console.log(`[AI Chat ${new Date().toISOString()}] ${type}:`, JSON.stringify(data, null, 2));
+	// Only log essential info, skip verbose data
+	if (type === 'EVENT:text_delta' || type === 'EVENT:chunk' || type === 'PROGRESS') {
+		return; // Skip very verbose events
+	}
+	const summary = Object.keys(data).slice(0, 3).join(', ');
+	console.log(`[AI Chat] ${type} ${summary}`);
 }
 
 export const POST: RequestHandler = async ({ request, locals }) => {

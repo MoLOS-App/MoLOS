@@ -5,8 +5,8 @@
  * Supports: Anthropic, OpenAI, OpenRouter, Ollama, Zai
  */
 
-import { anthropic } from '@ai-sdk/anthropic';
-import { openai, createOpenAI } from '@ai-sdk/openai';
+import { createAnthropic } from '@ai-sdk/anthropic';
+import { createOpenAI } from '@ai-sdk/openai';
 import type { LlmProvider, ProviderConfig } from '../types';
 
 /**
@@ -15,10 +15,20 @@ import type { LlmProvider, ProviderConfig } from '../types';
 export function createProvider(config: ProviderConfig) {
 	switch (config.provider) {
 		case 'anthropic':
-			return anthropic(config.modelName);
+			if (!config.apiKey) {
+				throw new Error('API key is required for Anthropic provider');
+			}
+			return createAnthropic({
+				apiKey: config.apiKey,
+			})(config.modelName);
 
 		case 'openai':
-			return openai(config.modelName);
+			if (!config.apiKey) {
+				throw new Error('API key is required for OpenAI provider');
+			}
+			return createOpenAI({
+				apiKey: config.apiKey,
+			}).chat(config.modelName);
 
 		case 'openrouter':
 			return createOpenAI({

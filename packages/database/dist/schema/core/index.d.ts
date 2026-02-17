@@ -1,4 +1,4 @@
-export * from './auth.js';
-export * from './ai.js';
-export * from './settings.js';
+export * from './auth';
+export * from './ai';
+export * from './settings';
 //# sourceMappingURL=index.d.ts.map

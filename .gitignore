@@ -2,7 +2,7 @@ node_modules
 .kilocode/
 .vscode/
 devtools/
-/modules/
+/modules
 # Output
 .output
 .vercel
@@ -41,3 +41,7 @@ external_modules/
 dist/
 packages/*/dist/
 .svelte-kit/
+.turbo/
+src/routes/api/(external_modules)/
+src/routes/ui/(modules)/(external_modules)/
+src/lib/modules/

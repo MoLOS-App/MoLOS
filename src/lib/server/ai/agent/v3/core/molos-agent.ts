@@ -11,6 +11,7 @@
 import {
 	streamText,
 	stepCountIs,
+	APICallError,
 	type ModelMessage,
 	type ToolSet,
 	type StreamTextResult,
@@ -215,7 +216,7 @@ export class MoLOSAgent {
 		let stepCounter = 0;
 		const maxSteps = options.maxSteps ?? this.config.maxSteps ?? 20;
 
-		console.log(`[MoLOSAgent ${runId}] Starting processMessage with streaming: ${options.streamEnabled ?? this.config.streamEnabled}`);
+		console.log(`[Agent ${runId.slice(-6)}] Starting (stream: ${options.streamEnabled ?? this.config.streamEnabled})`);
 
 		try {
 			// Create the stream
@@ -230,10 +231,7 @@ export class MoLOSAgent {
 					stepCounter++;
 					const toolNames = step.toolCalls?.map((tc: any) => tc.toolName) || [];
 
-					console.log(`[MoLOSAgent ${runId}] Step ${stepCounter} finished:`, {
-						toolCalls: toolNames,
-						textLength: step.text?.length
-					});
+					console.log(`[Agent ${runId.slice(-6)}] Step ${stepCounter}/${maxSteps}: ${toolNames.length ? toolNames.join('+') : 'text'}`);
 
 					// Determine step description based on what happened
 					let description = 'Processing';
@@ -280,7 +278,6 @@ export class MoLOSAgent {
 
 			// Handle streaming if enabled - AWAIT the streaming to ensure events are sent
 			if (options.streamEnabled ?? this.config.streamEnabled) {
-				console.log(`[MoLOSAgent ${runId}] Starting streamToEventBus`);
 				// Stream to event bus - this iterates through the full stream
 				// We need to do this in parallel with getting the response
 				const streamingPromise = this.streamToEventBus(result, runId, options.onProgress);
@@ -293,7 +290,7 @@ export class MoLOSAgent {
 				// Wait for streaming to complete
 				await streamingPromise;
 
-				console.log(`[MoLOSAgent ${runId}] Streaming complete, text length: ${text?.length}`);
+				console.log(`[Agent ${runId.slice(-6)}] Done (${text?.length} chars)`);
 
 				// Build telemetry
 				const telemetry = buildTelemetry(runId, startTime, steps as any);
@@ -337,7 +334,35 @@ export class MoLOSAgent {
 				})),
 			};
 		} catch (error) {
-			const errorMessage = error instanceof Error ? error.message : String(error);
+			// Check if it's an API call error with more details
+			let errorMessage: string;
+			let errorDetails: Record<string, unknown> = { error: String(error) };
+
+			if (error instanceof APICallError) {
+				const isAuthError = error.statusCode === 401;
+				const isRateLimit = error.statusCode === 429;
+				const isServerError = (error.statusCode || 0) >= 500;
+
+				if (isAuthError) {
+					errorMessage = 'Authentication failed. Please check your API key in settings.';
+				} else if (isRateLimit) {
+					errorMessage = 'Rate limit exceeded. Please try again later.';
+				} else if (isServerError) {
+					errorMessage = `Server error (${error.statusCode}): ${error.message}`;
+				} else {
+					errorMessage = `API Error (${error.statusCode}): ${error.message}`;
+				}
+
+				errorDetails = {
+					type: 'APICallError',
+					statusCode: error.statusCode,
+					message: error.message,
+					body: error.responseBody,
+					cause: error.cause,
+				};
+			} else {
+				errorMessage = error instanceof Error ? error.message : String(error);
+			}
 
 			return {
 				success: false,
@@ -362,7 +387,7 @@ export class MoLOSAgent {
 					{
 						type: 'error',
 						timestamp: Date.now(),
-						data: { error: errorMessage },
+						data: errorDetails,
 					},
 				],
 			};
@@ -386,11 +411,11 @@ export class MoLOSAgent {
 		let segmentIndex = 0;
 		let chunkCount = 0;
 
-		console.log(`[MoLOSAgent ${runId}] streamToEventBus started`);
+		const runIdShort = runId.slice(-6);
 
 		const emitSegment = async (isComplete: boolean) => {
 			if (currentSegmentContent.trim()) {
-				console.log(`[MoLOSAgent ${runId}] Emitting segment ${segmentIndex}: ${currentSegmentContent.length} chars`);
+				console.log(`[Agent ${runIdShort}] Segment ${segmentIndex}: ${currentSegmentContent.length} chars`);
 
 				const event: ProgressEvent = {
 					type: 'message_segment',
@@ -451,7 +476,7 @@ export class MoLOSAgent {
 						break;
 
 					case 'tool-call':
-						console.log(`[MoLOSAgent ${runId}] Tool call: ${chunk.toolName}`);
+						console.log(`[Agent ${runIdShort}] Tool: ${chunk.toolName}`);
 						// Before tool call, finalize current segment if has content
 						await emitSegment(true);
 
@@ -470,7 +495,6 @@ export class MoLOSAgent {
 						break;
 
 					case 'tool-result':
-						console.log(`[MoLOSAgent ${runId}] Tool result: ${chunk.toolName}`);
 						event.type = 'tool_complete';
 						event.data = {
 							toolName: chunk.toolName,
@@ -486,7 +510,7 @@ export class MoLOSAgent {
 						break;
 
 					case 'error':
-						console.error(`[MoLOSAgent ${runId}] Stream error:`, chunk.error);
+						console.error(`[Agent ${runIdShort}] Error:`, chunk.error);
 						event.type = 'error';
 						event.data = { error: chunk.error };
 
@@ -497,7 +521,6 @@ export class MoLOSAgent {
 						break;
 
 					case 'finish':
-						console.log(`[MoLOSAgent ${runId}] Stream finish, total chunks: ${chunkCount}`);
 						// Finalize any remaining content
 						await emitSegment(true);
 
@@ -516,14 +539,14 @@ export class MoLOSAgent {
 
 					default:
 						// Log unknown chunk types for debugging
-						console.log(`[MoLOSAgent ${runId}] Unknown chunk type: ${chunk.type}`);
+						console.log(`[Agent ${runIdShort}] Unknown chunk: ${chunk.type}`);
 						continue;
 				}
 			}
 
-			console.log(`[MoLOSAgent ${runId}] streamToEventBus complete, processed ${chunkCount} chunks`);
+			console.log(`[Agent ${runIdShort}] Streamed ${chunkCount} chunks`);
 		} catch (error) {
-			console.error(`[MoLOSAgent ${runId}] Stream iteration error:`, error);
+			console.error(`[Agent ${runIdShort}] Stream error:`, error);
 		}
 	}
 

@@ -7,27 +7,26 @@
 		".": {
 			"types": "./dist/index.d.ts",
 			"import": "./dist/index.js",
-			"default": "./dist/index.js"
+			"default": "./dist/index.js",
+			"source": "./src/index.ts"
 		},
 		"./schema": {
 			"types": "./dist/schema/index.d.ts",
 			"import": "./dist/schema/index.js",
-			"default": "./dist/schema/index.js"
+			"default": "./dist/schema/index.js",
+			"source": "./src/schema/index.ts"
 		},
 		"./schema/core": {
 			"types": "./dist/schema/core/index.d.ts",
 			"import": "./dist/schema/core/index.js",
-			"default": "./dist/schema/core/index.js"
-		},
-		"./schema/external": {
-			"types": "./dist/schema/external/index.d.ts",
-			"import": "./dist/schema/external/index.js",
-			"default": "./dist/schema/external/index.js"
+			"default": "./dist/schema/core/index.js",
+			"source": "./src/schema/core/index.ts"
 		},
 		"./utils": {
 			"types": "./dist/utils/index.d.ts",
 			"import": "./dist/utils/index.js",
-			"default": "./dist/utils/index.js"
+			"default": "./dist/utils/index.js",
+			"source": "./src/utils/index.ts"
 		}
 	},
 	"files": ["dist", "drizzle"],
@@ -35,7 +34,6 @@
 		"build": "tsc",
 		"dev": "tsc --watch",
 		"db:generate": "drizzle-kit generate",
-		"db:migrate": "drizzle-kit migrate",
 		"db:push": "drizzle-kit push",
 		"db:studio": "drizzle-kit studio",
 		"clean": "rm -rf dist"

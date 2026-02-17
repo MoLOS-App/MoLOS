@@ -19,11 +19,20 @@ export type LlmProvider = 'anthropic' | 'openai' | 'openrouter' | 'ollama' | 'za
 
 /**
  * Provider configuration
+ *
+ * API Key requirements:
+ * - anthropic: Required
+ * - openai: Required
+ * - openrouter: Required
+ * - ollama: Optional (uses placeholder value)
+ * - zai: Required
  */
 export interface ProviderConfig {
 	provider: LlmProvider;
 	modelName: string;
+	/** API key - required for most providers except ollama */
 	apiKey?: string;
+	/** Base URL - used for ollama and zai */
 	baseUrl?: string;
 }
 

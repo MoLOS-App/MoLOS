@@ -7,6 +7,8 @@ Welcome to the MoLOS (Modular Life Organization System) documentation. MoLOS is 
 | I want to... | Go to |
 |--------------|-------|
 | Get started quickly | [Quick Start](./getting-started/quick-start.md) |
+| See command reference | [Quick Reference](./QUICK-REFERENCE.md) |
+| AI context loading | [AI Context](./AI-CONTEXT.md) |
 | Understand the architecture | [Architecture Overview](./architecture/overview.md) |
 | Create a module | [Module Development](./modules/development.md) |
 | Deploy MoLOS | [Deployment Guide](./deployment/docker.md) |
@@ -17,7 +19,9 @@ Welcome to the MoLOS (Modular Life Organization System) documentation. MoLOS is 
 
 ### Getting Started
 
+- [Overview](./getting-started/README.md) - Getting started guide index
 - [Quick Start](./getting-started/quick-start.md) - Get up and running fast
+- [Development](./getting-started/development.md) - Development environment setup
 - [Testing](./getting-started/testing.md) - Testing guide for developers
 - [Troubleshooting](./getting-started/troubleshooting.md) - Common issues and solutions
 
@@ -31,6 +35,7 @@ Welcome to the MoLOS (Modular Life Organization System) documentation. MoLOS is 
 ### Modules
 
 - [README](./modules/README.md) - Module system overview
+- [Standards](./modules/standards.md) - Module structure, naming, and code standards
 - [Development](./modules/development.md) - Creating and developing modules
 - [Activation](./modules/activation.md) - Module lifecycle and activation
 - [Integration](./modules/integration.md) - Cross-module communication
@@ -51,11 +56,6 @@ Welcome to the MoLOS (Modular Life Organization System) documentation. MoLOS is 
 - [Integration PRD](./mcp/integration-prd.md) - MCP server integration requirements
 - [Server Development](./mcp/server-development.md) - Building the MCP server
 
-### Improvement Plan
-
-- [Overview](./improvement-plan/README.md) - Improvement task overview
-- Individual tasks: [001](./improvement-plan/001-extract-module-linker.md) through [012](./improvement-plan/012-module-dependencies.md)
-
 ### Plugins
 
 - [Overview](./plugins/README.md) - Plugin documentation
@@ -66,6 +66,7 @@ Welcome to the MoLOS (Modular Life Organization System) documentation. MoLOS is 
 ### Archive
 
 - [Monorepo Migration](./archive/monorepo-migration/README.md) - Completed migration tasks
+- [CHANGELOG](./CHANGELOG.md) - Consolidated changelog
 
 ## Project Structure
 
@@ -98,16 +99,12 @@ MoLOS/
 
 See the [Module Development Guide](./modules/development.md) for information on contributing modules and code.
 
-## Changelog
-
-- [2025-02-16](./CHANGELOG-2025-02-16.md) - Monorepo system adaptation and documentation consolidation
-- [Cleanup 2025-02-16](./cleanup-2025-02-16.md) - Codebase cleanup and AI context files
-
 ## Getting Help
 
 - **GitHub Issues**: [MoLOS Issues](https://github.com/MoLOS-org/MoLOS/issues)
 - **Documentation**: This folder
+- **AI Context**: [AI-CONTEXT.md](./AI-CONTEXT.md) for quick AI reference
 
 ---
 
-*Last Updated: 2025-02-16*
+*Last Updated: 2026-02-17*

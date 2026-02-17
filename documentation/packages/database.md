@@ -40,14 +40,16 @@ const users = await db.select().from(users);
 
 ### Table Namespacing
 
-All module tables use a namespaced naming convention to prevent collisions:
+All external module tables use a namespaced naming convention to prevent collisions:
+
+**Format:** `MoLOS-{ModuleName}_{table_name}`
 
 ```typescript
 import { getTableName } from '@molos/database';
 
-const MODULE_ID = 'my-module';
+const MODULE_ID = 'MoLOS-Tasks';
 
-// Creates table: mod_my_module_projects
+// Creates table: MoLOS-Tasks_projects
 export const projects = sqliteTable(
   getTableName(MODULE_ID, 'projects'),
   {
@@ -56,6 +58,11 @@ export const projects = sqliteTable(
   }
 );
 ```
+
+| Pattern | Example | Status |
+|---------|---------|--------|
+| `MoLOS-{Name}_{table}` | `MoLOS-Tasks_tasks` | Correct |
+| `mod_{module}_{table}` | `mod_tasks_tasks` | Deprecated |
 
 ### Helper Functions
 
@@ -76,12 +83,13 @@ export const projects = sqliteTable(
 
 ### Module Tables
 
-Module tables follow the `mod_{moduleId}_{tableName}` naming convention:
+External module tables follow the `MoLOS-{ModuleName}_{table_name}` naming convention:
 
 | Module | Tables |
 |--------|--------|
-| `@molos/module-tasks` | `mod_tasks_tasks`, `mod_tasks_categories` |
-| `@molos/module-ai` | AI-related tables |
+| `@molos/module-tasks` | `MoLOS-Tasks_tasks`, `MoLOS-Tasks_categories` |
+| `@molos/module-goals` | `MoLOS-Goals_goals`, `MoLOS-Goals_milestones` |
+| `@molos/module-health` | `MoLOS-Health_user_profile`, `MoLOS-Health_metrics` |
 
 ## Migrations
 

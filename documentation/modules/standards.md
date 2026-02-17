@@ -38,43 +38,46 @@ This distinction is important because:
 ```
 modules/{module-name}/
 ├── package.json              # @molos/module-{name}
-├── drizzle.config.ts         # Database migration config
-├── drizzle/                  # Migration files
+├── manifest.yaml             # Module manifest
+├── drizzle.config.ts         # Database migration config (if has DB)
+├── drizzle/                  # Migration files (if has DB)
 │   ├── 0000_initial.sql
 │   └── meta/
-├── src/
-│   ├── index.ts              # Main exports
-│   ├── config.ts             # Module configuration (REQUIRED)
-│   ├── models/               # TypeScript types and enums
-│   │   └── index.ts
-│   ├── server/
-│   │   ├── database/
-│   │   │   └── schema.ts     # Drizzle schema
-│   │   └── repositories/     # Data access layer
-│   │       ├── base-repository.ts
-│   │       └── *.ts
-│   ├── routes/
-│   │   ├── ui/               # SvelteKit UI routes
-│   │   │   ├── +layout.svelte
-│   │   │   ├── +page.svelte
-│   │   │   └── */            # Sub-routes
-│   │   └── api/              # API endpoints
-│   │       └── +server.ts
-│   ├── components/           # Svelte components
-│   └── stores/               # Svelte stores
-└── tsconfig.json
+└── src/
+    ├── index.ts              # Main exports
+    ├── config.ts             # Module configuration (REQUIRED)
+    ├── models/               # TypeScript types and enums
+    │   └── index.ts
+    ├── server/
+    │   ├── database/
+    │   │   └── schema.ts     # Drizzle schema
+    │   └── repositories/     # Data access layer
+    │       ├── base-repository.ts
+    │       └── *.ts
+    ├── routes/
+    │   ├── ui/               # SvelteKit UI routes
+    │   │   ├── +layout.svelte
+    │   │   ├── +page.svelte
+    │   │   └── */            # Sub-routes
+    │   └── api/              # API endpoints
+    │       └── +server.ts
+    ├── components/           # Svelte components
+    ├── stores/               # Svelte stores
+    └── repositories/         # Data repositories
 ```
+
+**Note**: Modules in the monorepo do NOT need their own `tsconfig.json`, `vite.config.ts`, or `svelte.config.js`. These are handled by the main SvelteKit app.
 
 ## Configuration Standards
 
 ### config.ts (REQUIRED)
 
-Every module MUST have a `config.ts` file with a default export:
+Every module MUST have a `config.ts` file in `src/config.ts` with a default export:
 
 ```typescript
 // modules/tasks/src/config.ts
 import { SquareCheck, ListTodo } from 'lucide-svelte';
-import type { ModuleConfig } from '$lib/config/types';
+import type { ModuleConfig } from '@molos/module-types';
 
 export const tasksConfig: ModuleConfig = {
   id: 'MoLOS-Tasks',              // REQUIRED: Must match module ID convention
@@ -115,16 +118,39 @@ export default tasksConfig;
 
 ## Database Standards
 
-### Table Naming
+### Table Naming Convention
 
-Tables are prefixed with the module ID:
+**CRITICAL**: All module database tables MUST follow the naming convention:
+
+```
+MoLOS-{ModuleName}_{table_name}
+```
+
+- **Module ID prefix**: Always use the full module ID (e.g., `MoLOS-Tasks`, `MoLOS-Health`)
+- **Underscore separator**: Use `_` between module ID and table name
+- **No duplication**: Don't repeat the module name in the table name
+
+| Pattern | Example | Status |
+|---------|---------|--------|
+| `MoLOS-{Name}_{table}` | `MoLOS-Tasks_tasks` | ✅ Correct |
+| `MoLOS-{Name}_{table}` | `MoLOS-Health_user_profile` | ✅ Correct |
+| `{module}_{table}` | `health_user_profile` | ❌ Wrong - missing MoLOS prefix |
+| `{module}_{module}_{table}` | `meals_meals_settings` | ❌ Wrong - duplicated prefix |
+| `{table}` | `tasks` | ❌ Wrong - no prefix at all |
 
 ```typescript
-// Correct: Module ID prefix
+// ✅ Correct: MoLOS-{Name}_{table}
 export const tasksTasks = sqliteTable("MoLOS-Tasks_tasks", { ... });
-export const tasksProjects = sqliteTable("MoLOS-Tasks_projects", { ... });
+export const healthUserProfile = sqliteTable("MoLOS-Health_user_profile", { ... });
+export const mealsSettings = sqliteTable("MoLOS-Meals_settings", { ... });
 
-// Wrong: No prefix
+// ❌ Wrong: Missing MoLOS prefix
+export const healthProfile = sqliteTable("health_user_profile", { ... });
+
+// ❌ Wrong: Duplicated module name
+export const mealsSettings = sqliteTable("meals_meals_settings", { ... });
+
+// ❌ Wrong: No prefix at all
 export const tasks = sqliteTable("tasks", { ... });
 ```
 
@@ -164,6 +190,25 @@ import { Button } from '$lib/components/ui/button';
 // ❌ Wrong: Relative paths don't work in node_modules
 import { db } from '../../../../../src/lib/server/db';
 ```
+
+### Cross-Module Imports
+
+Modules can import from other modules using two patterns:
+
+```typescript
+// Pattern 1: $lib/modules/{ModuleName} - imports from module's lib directory
+import { goalsStore } from '$lib/modules/MoLOS-Goals/stores';
+import { TaskRepository } from '$lib/modules/MoLOS-Tasks/repositories';
+
+// Pattern 2: $lib/{type}/external_modules/{ModuleName} - imports specific subdirectory
+import { Goal } from '$lib/models/external_modules/MoLOS-Goals';
+import { Task } from '$lib/models/external_modules/MoLOS-Tasks';
+import { GoalRepository } from '$lib/repositories/external_modules/MoLOS-Goals';
+```
+
+These paths are resolved via symlinks created by `bun run module:sync`:
+- `src/lib/modules/{ModuleName}` → `modules/{ModuleName}/src/lib`
+- `src/lib/{type}/external_modules/{ModuleName}` → `modules/{ModuleName}/src/lib/{type}`
 
 ### From Models
 
@@ -276,14 +321,14 @@ bun run module:link    # Link routes only
 
 ### Module not appearing in sidebar
 
-1. Check `config.ts` exists and has correct `id`, `name`, `href`
+1. Check `src/config.ts` exists and has correct `id`, `name`, `href`
 2. Run `bun run module:sync`
 3. Check `VITE_MOLOS_AUTOLOAD_MODULES` is empty or includes the module
 
 ### 404 errors on routes
 
 1. Check symlink exists: `ls -la src/routes/ui/(modules)/(external_modules)/`
-2. Run `bun run module:link`
+2. Run `bun run module:sync`
 3. Verify module ID matches route path
 
 ### Database table not found
@@ -292,8 +337,20 @@ bun run module:link    # Link routes only
 2. Apply migrations: `npx drizzle-kit migrate`
 3. Check table prefix matches module ID
 
+### Import errors (Cannot find module '$lib/modules/...')
+
+1. Run `bun run module:sync` to create symlinks
+2. Check symlink exists: `ls -la src/lib/modules/{ModuleName}`
+3. For `$lib/{type}/external_modules/...` imports, check: `ls -la src/lib/models/external_modules/{ModuleName}`
+
 ### Import errors in node_modules
 
 1. Replace relative imports with `$lib` alias
 2. Ensure `.js` extension on TypeScript imports
 3. Check package.json exports are correct
+
+### tsconfig.json/vite.config.ts errors
+
+If you see errors about `.svelte-kit/tsconfig.json` not found:
+1. Remove standalone `tsconfig.json`, `vite.config.ts`, `svelte.config.js` from module root
+2. Modules in the monorepo don't need these files
