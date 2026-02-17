@@ -3,10 +3,10 @@ import { getAllModules } from '$lib/config';
 import type { ToolDefinition } from '$lib/models/ai';
 import { TtlCache } from './agent-utils';
 
-// Lazy load module AI tools to handle broken modules gracefully
+// Lazy load module AI tools - this is the CORRECT path to the modules directory
 const moduleAiTools = import.meta.glob('../../../../modules/*/src/server/ai/ai-tools.ts', {
 	eager: false
-}) as Record<string, () => Promise<any>>;
+}) as Record<string, () => Promise<unknown>>;
 
 const TOOLBOX_CACHE_TTL_MS = Number(process.env.AI_AGENT_TOOLBOX_CACHE_TTL_MS || 10_000);
 const TOOLBOX_CACHE_SIZE = Number(process.env.AI_AGENT_TOOLBOX_CACHE_SIZE || 64);
@@ -21,39 +21,62 @@ function logDebug(message: string, ...args: unknown[]) {
 }
 
 /**
- * Extract module name from path like '../../modules/MoLOS-Tasks/src/server/ai/ai-tools.ts'
+ * Extract module name from path like '../../../../modules/MoLOS-Tasks/src/server/ai/ai-tools.ts'
  */
 function extractModuleNameFromPath(path: string): string | null {
 	const match = path.match(/modules\/([^/]+)\/src\/server\/ai\/ai-tools\.ts$/);
 	return match ? match[1] : null;
 }
 
+/**
+ * Extract category from module ID (e.g., "MoLOS-Tasks" -> "tasks")
+ */
+function extractCategoryFromModuleId(moduleId: string): string {
+	return moduleId.toLowerCase().replace(/^molos-/, '');
+}
+
 export class AiToolbox {
 	/**
 	 * Dynamically discover and return all available tools for the user.
-	 * This includes core tools and tools from active modules.
+	 * This includes core tools and tools from active external modules.
 	 */
 	async getTools(userId: string, activeModuleIds: string[] = []): Promise<ToolDefinition[]> {
+		console.log(
+			'[AiToolbox] getTools called with userId:',
+			userId,
+			'activeModuleIds:',
+			activeModuleIds
+		);
 		const cacheKey = `${userId}:${[...activeModuleIds].sort().join(',') || 'core'}`;
 		const cached = toolCache.get(cacheKey);
 		if (cached) {
-			logDebug('[AiToolbox] Cached tools:', cached.length);
+			console.log('[AiToolbox] Returning cached tools, count:', cached.length);
 			return cached;
 		}
 
 		// 1. Start with core tools (global/system level)
 		let tools = getCoreAiTools(userId);
-		logDebug('[AiToolbox] Core tools:', tools.length);
+		console.log('[AiToolbox] Core tools loaded:', tools.length);
 
-		// We include all core modules by default, and package modules only if active
-		const modulesToLoad = allModules.filter(
-			(m) => !m.isPackageModule || activeModuleIds.includes(m.id)
+		// 2. Discover tools from all registered modules (core and external)
+		const allModules = getAllModules();
+		console.log(
+			'[AiToolbox] All modules found:',
+			allModules.map((m) => ({ id: m.id, name: m.name, isExternal: m.isExternal }))
 		);
-		logDebug('[AiToolbox] Loading modules:', modulesToLoad.map((m) => m.id).join(','));
+
+		// We include all package modules by default (they have AI tools), and external modules only if active
+		const modulesToLoad = allModules.filter((m) => m.isPackageModule || activeModuleIds.includes(m.id));
+		console.log('[AiToolbox] activeModuleIds:', activeModuleIds);
+		console.log(
+			'[AiToolbox] Modules to load:',
+			modulesToLoad.map((m) => m.id)
+		);
 
 		for (const module of modulesToLoad) {
+			logDebug(`[AiToolbox] Processing module: ${module.id} (packageModule: ${module.isPackageModule}, external: ${module.isExternal})`);
 			try {
-				// Only load AI tools from package modules
+				// Skip non-package modules (they don't have AI tools in modules/*/src/server/ai/ai-tools.ts)
 				if (!module.isPackageModule) {
 					continue;
 				}
@@ -74,6 +97,8 @@ export class AiToolbox {
 					continue;
 				}
 
+				logDebug(`[AiToolbox] Found AI tools at path: ${modulePath}`);
+
 				// Lazy import with error handling for broken modules
 				const aiToolsModule = await moduleAiTools[modulePath]().catch((err) => {
 					console.warn(`[AiToolbox] Failed to import module ${module.id}:`, err.message);
@@ -81,6 +106,7 @@ export class AiToolbox {
 				});
 
 				if (!aiToolsModule || !aiToolsModule.getAiTools) {
+					logDebug(`[AiToolbox] Module ${module.id} has no getAiTools function`);
 					continue;
 				}
 
@@ -91,8 +117,21 @@ export class AiToolbox {
 
 				logDebug(`[AiToolbox] Loading AI tools for module: ${module.name}`);
 				const moduleTools = await aiToolsModule.getAiTools(userId);
+
+				// Add metadata to tools that don't have it (backward compatibility)
+				const category = extractCategoryFromModuleId(module.id);
+				const toolsWithMetadata = moduleTools.map((tool: ToolDefinition) => ({
+					...tool,
+					metadata: tool.metadata || {
+						category,
+						tags: [],
+						priority: 60,
+						essential: false
+					}
+				}));
+
 				// Prefix tool names with module ID to avoid duplicates
-				const prefixedTools = moduleTools.map((tool) => ({
+				const prefixedTools = toolsWithMetadata.map((tool: ToolDefinition) => ({
 					...tool,
 					name: `${module.id}_${tool.name}`
 				}));
@@ -117,9 +156,7 @@ export class AiToolbox {
 		if (cached) return cached;
 
 		const allModules = getAllModules();
-		const activeModules = allModules.filter(
-			(m) => activeModuleIds.includes(m.id) || !m.isPackageModule
-		);
+		const activeModules = allModules.filter((m) => activeModuleIds.includes(m.id) || m.isPackageModule);
 
 		const prompt = `You are the MoLOS Architect Agent, an advanced in-app developer assistant integrated into the Modular Life Organization System (MoLOS).
 Your mission is to provide proactive, intelligent, and context-aware management of the user's digital life.

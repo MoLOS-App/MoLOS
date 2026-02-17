@@ -19,20 +19,11 @@ export type LlmProvider = 'anthropic' | 'openai' | 'openrouter' | 'ollama' | 'za
 
 /**
  * Provider configuration
- *
- * API Key requirements:
- * - anthropic: Required
- * - openai: Required
- * - openrouter: Required
- * - ollama: Optional (uses placeholder value)
- * - zai: Required
  */
 export interface ProviderConfig {
 	provider: LlmProvider;
 	modelName: string;
-	/** API key - required for most providers except ollama */
 	apiKey?: string;
-	/** Base URL - used for ollama and zai */
 	baseUrl?: string;
 }
 
@@ -165,8 +156,7 @@ export type ProgressEventType =
 	| 'error'
 	| 'text'
 	| 'tool_start'
-	| 'tool_complete'
-	| 'message_segment';
+	| 'tool_complete';
 
 /**
  * Progress event for streaming to UI

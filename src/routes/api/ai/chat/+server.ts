@@ -185,6 +185,13 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 											const segmentData = event.data;
 											const segId = segmentData.id;
 
+											console.log('[AI Chat] message_segment received:', {
+												id: segId,
+												isComplete: segmentData.isComplete,
+												contentLength: segmentData.content?.length || 0,
+												segmentIndex: segmentData.segmentIndex
+											});
+
 											if (segmentData.isComplete && segmentData.content) {
 												// Track completed segment for persistence
 												completedSegments.push({
@@ -192,6 +199,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 													content: segmentData.content,
 													segmentIndex: segmentData.segmentIndex
 												});
+												console.log('[AI Chat] Segment added to completedSegments, total:', completedSegments.length);
 												// Send it as a full message
 												sendEvent('message_segment', {
 													id: segId,
@@ -326,6 +334,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 						// Sort segments by index to ensure correct order
 						completedSegments.sort((a, b) => a.segmentIndex - b.segmentIndex);
 
+						console.log('[AI Chat] Saving', completedSegments.length, 'segments to database');
 						for (const segment of completedSegments) {
 							if (!segment.content.trim()) continue; // Skip empty segments
 
@@ -355,6 +364,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 								if (plan) metadata.plan = plan;
 							}
 
+							console.log('[AI Chat] Saving segment', segment.segmentIndex, 'length:', cleanContent.length);
 							await aiRepo.addMessage(locals.user.id, {
 								role: 'assistant',
 								content: cleanContent,

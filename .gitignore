@@ -45,3 +45,6 @@ packages/*/dist/
 src/routes/api/(external_modules)/
 src/routes/ui/(modules)/(external_modules)/
 src/lib/modules/
+*.log
+.codex/
+db.sqlite

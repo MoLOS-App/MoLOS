@@ -81,6 +81,12 @@ export interface ToolDefinition {
 	};
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	execute: (params: any) => Promise<any>;
+	metadata?: {
+		category: string;
+		tags: string[];
+		priority: number;
+		essential: boolean;
+	};
 }
 
 export interface AiAction {

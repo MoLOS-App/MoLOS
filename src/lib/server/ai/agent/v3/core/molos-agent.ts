@@ -415,7 +415,7 @@ export class MoLOSAgent {
 
 		const emitSegment = async (isComplete: boolean) => {
 			if (currentSegmentContent.trim()) {
-				console.log(`[Agent ${runIdShort}] Segment ${segmentIndex}: ${currentSegmentContent.length} chars`);
+				console.log(`[Agent ${runIdShort}] Segment ${segmentIndex}: ${currentSegmentContent.length} chars, isComplete: ${isComplete}`);
 
 				const event: ProgressEvent = {
 					type: 'message_segment',
@@ -428,6 +428,8 @@ export class MoLOSAgent {
 					},
 				};
 
+				console.log(`[Agent ${runIdShort}] Emitting message_segment event, has onProgress: ${!!onProgress}`);
+
 				// Emit to event bus
 				this.eventBus.emitSync({
 					type: event.type as any,
@@ -438,6 +440,7 @@ export class MoLOSAgent {
 				// Call progress callback
 				if (onProgress) {
 					await onProgress(event);
+					console.log(`[Agent ${runIdShort}] Progress callback called for message_segment`);
 				}
 
 				// Start new segment if this one is complete
@@ -446,6 +449,8 @@ export class MoLOSAgent {
 					currentSegmentId = `seg_${runId}_${segmentIndex}`;
 					currentSegmentContent = '';
 				}
+			} else {
+				console.log(`[Agent ${runIdShort}] Skipping empty segment emission, isComplete: ${isComplete}`);
 			}
 		};
 
