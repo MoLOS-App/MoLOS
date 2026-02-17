@@ -6,6 +6,7 @@ MoLOS uses a package-based module system where modules can be installed from npm
 
 - **[Installation Guide](./installation.md)** - Installing modules from GitHub/npm
 - **[Development Guide](./development.md)** - Creating and developing modules
+- **[AI Tools Development](./ai-tools-development.md)** - AI tool development guide and error handling patterns
 - **[Standards & Conventions](./standards.md)** - Module structure, naming, and code standards
 - **[Quick Reference](./quick-reference.md)** - Common commands and workflows
 - **[Turborepo](./turborepo.md)** - Build system and task orchestration

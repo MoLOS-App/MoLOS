@@ -157,10 +157,30 @@ export function wrapToolWithHooks(
 					result.cached = false;
 				}
 			} catch (error) {
+				// Enhanced error handling with categorization
+				let errorMessage = error instanceof Error ? error.message : String(error);
+				let errorType = 'unknown';
+
+				// Categorize errors for better handling
+				if (errorMessage.includes('Invalid value') || errorMessage.includes('Expected:')) {
+					errorType = 'validation';
+				} else if (errorMessage.includes('database') || errorMessage.includes('SQL')) {
+					errorType = 'database';
+				} else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+					errorType = 'network';
+				} else if (errorMessage.includes('not found')) {
+					errorType = 'not_found';
+				} else if (errorMessage.includes('permission') || errorMessage.includes('denied')) {
+					errorType = 'permission';
+				}
+
+				console.error(`[ToolWrapper] Tool "${toolDef.name}" failed [${errorType}]:`, errorMessage);
+
 				result = {
 					success: false,
 					result: null,
-					error: error instanceof Error ? error.message : String(error),
+					error: errorMessage,
+					errorType,
 					durationMs: Date.now() - startTime,
 				};
 			}

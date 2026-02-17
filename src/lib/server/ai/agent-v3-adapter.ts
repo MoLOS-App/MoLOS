@@ -477,19 +477,29 @@ Remember: When a task requires using tools, CALL THE TOOL IMMEDIATELY. Do not ju
 	): Promise<unknown> {
 		if (action.status !== 'pending') return undefined;
 
-		const tools = await this.toolbox.getTools(this.userId, activeModuleIds);
-		const data = action.data as {
-			toolName: string;
-			parameters: Record<string, unknown>;
-			toolCallId?: string;
-		};
-		const tool = tools.find((t) => t.name === data.toolName);
+		try {
+			const tools = await this.toolbox.getTools(this.userId, activeModuleIds);
+			const data = action.data as {
+				toolName: string;
+				parameters: Record<string, unknown>;
+				toolCallId?: string;
+			};
+			const tool = tools.find((t) => t.name === data.toolName);
 
-		if (tool && tool.execute) {
-			return await tool.execute(data.parameters);
+			if (tool && tool.execute) {
+				return await tool.execute(data.parameters);
+			}
+
+			return undefined;
+		} catch (error) {
+			console.error('[AiAgentV3Adapter] Action execution failed:', error);
+			// Return error result instead of throwing to prevent app crashes
+			return {
+				error: error instanceof Error ? error.message : String(error),
+				success: false,
+				toolName: action.entity
+			};
 		}
-
-		return undefined;
 	}
 }
 

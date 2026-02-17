@@ -384,11 +384,29 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 						}
 					} catch (error) {
 						const errorMessage = (error as any)?.message || 'Internal Server Error';
-						console.error('Streaming error:', error);
-						serverLog('ERROR', { message: errorMessage });
-						sendEvent('error', { message: errorMessage });
-						safeEnqueue(encoder.encode('data: [DONE]\n\n'));
-						controller.close();
+						const errorType = (error as any)?.constructor?.name || 'Error';
+						console.error('[AI Chat] Streaming error:', error);
+						serverLog('ERROR', { 
+							message: errorMessage, 
+							type: errorType 
+						});
+						
+						// Send detailed error event to client
+						sendEvent('error', { 
+							message: errorMessage,
+							type: errorType,
+							timestamp: Date.now()
+						});
+						
+						// Close stream gracefully
+						try {
+							safeEnqueue(encoder.encode('data: [DONE]\n\n'));
+							await sleep(20);
+							controller.close();
+							serverLog('STREAM_CLOSED', { reason: 'error_handled' });
+						} catch (closeError) {
+							console.warn('[AI Chat] Stream close warning (non-fatal):', closeError);
+						}
 					}
 				}
 			});
@@ -413,9 +431,17 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		);
 		return json({ ...response, sessionId: activeSessionId });
 	} catch (error) {
-		console.error('Error in AI Chat POST:', error);
-		const errorMessage = (error as any).message || 'Internal Server Error';
-		return json({ error: errorMessage }, { status: 500 });
+		console.error('[AI Chat] Error in AI Chat POST:', error);
+		const errorMessage = (error as any)?.message || 'Internal Server Error';
+		const errorType = (error as any)?.constructor?.name || 'Error';
+		
+		// Return structured error response to client
+		return json({ 
+			error: errorMessage,
+			errorType,
+			success: false,
+			timestamp: Date.now()
+		}, { status: 500 });
 	}
 };
 
