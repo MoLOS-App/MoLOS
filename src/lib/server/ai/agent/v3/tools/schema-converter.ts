@@ -3,10 +3,59 @@
  *
  * Converts v2 TypeBox/JSON Schema definitions to Zod schemas
  * for use with AI SDK tools.
+ *
+ * Features:
+ * - Case-insensitive enum matching
+ * - Normalizes values to match expected case
  */
 
 import { z } from 'zod';
 import type { ToolParameterSchema } from '../types';
+
+/**
+ * Create a case-insensitive enum schema that normalizes input to match expected values
+ */
+function createCaseInsensitiveEnum(
+	enumValues: [string, ...string[]],
+	description?: string
+): z.ZodEffects<z.ZodString, string, string> {
+	// Create a map for case-insensitive lookup
+	const caseMap = new Map<string, string>();
+	for (const val of enumValues) {
+		caseMap.set(val.toLowerCase(), val);
+	}
+
+	let schema = z
+		.string()
+		.transform((val) => {
+			// Exact match first
+			if (enumValues.includes(val)) {
+				return val;
+			}
+			// Case-insensitive match
+			const normalized = caseMap.get(val.toLowerCase());
+			if (normalized) {
+				console.log(
+					`[SchemaConverter] Normalized enum value: "${val}" -> "${normalized}"`
+				);
+				return normalized;
+			}
+			// No match - let validation fail with helpful message
+			return val;
+		})
+		.refine(
+			(val) => enumValues.includes(val),
+			(val) => ({
+				message: `Invalid value "${val}". Must be one of: ${enumValues.join(', ')}`
+			})
+		);
+
+	if (description) {
+		schema = schema.describe(description) as typeof schema;
+	}
+
+	return schema;
+}
 
 /**
  * Convert a JSON Schema property to a Zod type
@@ -14,10 +63,18 @@ import type { ToolParameterSchema } from '../types';
 function convertPropertyToZod(prop: Record<string, unknown>): z.ZodTypeAny {
 	const type = prop.type as string | undefined;
 	const description = (prop.description as string) || '';
+	const enumCaseInsensitive = prop['x-enum-case-insensitive'] !== false; // Default true
 
-	// Handle enum
+	// Handle enum with case-insensitive support
 	if (prop.enum && Array.isArray(prop.enum)) {
 		const enumValues = prop.enum as [string, ...string[]];
+
+		// Use case-insensitive enum by default
+		if (enumCaseInsensitive) {
+			return createCaseInsensitiveEnum(enumValues, description);
+		}
+
+		// Fallback to strict enum
 		let schema = z.enum(enumValues);
 		if (description) {
 			schema = schema.describe(description) as typeof schema;

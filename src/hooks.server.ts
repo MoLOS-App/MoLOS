@@ -159,3 +159,78 @@ const themeHandler: Handle = async ({ event, resolve }) => {
 };
 
 export const handle = sequence(authHandler, moduleAccessHandler, themeHandler);
+
+/**
+ * Handle unexpected errors gracefully
+ * This prevents the dev server from crashing on unhandled exceptions
+ */
+export const handleError = async ({ error, event, status, message }: {
+	error: unknown;
+	event: {
+		url: URL;
+		request: Request;
+		locals: App.Locals;
+	};
+	status: number;
+	message: string;
+}) => {
+	// Log the error for debugging
+	console.error('[Server Error Handler]', {
+		status,
+		message,
+		url: event.url.pathname,
+		error: error instanceof Error ? {
+			name: error.name,
+			message: error.message,
+			stack: error.stack?.split('\n').slice(0, 3).join('\n')
+		} : error
+	});
+
+	// Check if this is an API request (MCP or other)
+	const isApiRequest = event.url.pathname.startsWith('/api/');
+	const isMcpRequest = event.url.pathname.startsWith('/api/ai/mcp/');
+
+	// For MCP requests, return a proper JSON-RPC error
+	if (isMcpRequest) {
+		return {
+			message: 'Internal server error',
+			code: -32603,
+			data: {
+				type: 'server_error',
+				recoverable: true,
+				hint: 'Please try again. If the error persists, check the server logs.'
+			}
+		};
+	}
+
+	// For other API requests, return JSON error
+	if (isApiRequest) {
+		return {
+			message: error instanceof Error ? error.message : 'Internal server error',
+			code: status
+		};
+	}
+
+	// For UI requests, return a generic error message
+	return {
+		message: 'An unexpected error occurred. Please try again.',
+		code: status
+	};
+};
+
+// Handle unhandled promise rejections to prevent server crashes
+process.on('unhandledRejection', (reason, promise) => {
+	console.error('[Unhandled Rejection] Reason:', reason);
+	// Don't exit the process, just log the error
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+	console.error('[Uncaught Exception]', error);
+	// Don't exit the process for recoverable errors
+	// Only exit for critical errors like memory issues
+	if (error.message?.includes('ENOMEM') || error.message?.includes('out of memory')) {
+		console.error('[Critical] Out of memory, exiting...');
+		process.exit(1);
+	}
+});

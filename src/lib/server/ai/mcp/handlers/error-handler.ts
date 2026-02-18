@@ -40,8 +40,66 @@ export const MCP_ERROR_CODES = {
 	// Request validation
 	REQUEST_TOO_LARGE: -32013,
 	INVALID_CONTENT_TYPE: -32014,
-	INVALID_TOOL_PARAMETERS: -32015
+	INVALID_TOOL_PARAMETERS: -32015,
+
+	// Database/Validation errors
+	DATABASE_VALIDATION_ERROR: -32016
 } as const;
+
+/**
+ * Categorize an error based on its message
+ */
+function categorizeError(errorMessage: string): { code: number; data?: Record<string, unknown> } {
+	const lowerMessage = errorMessage.toLowerCase();
+
+	// Database validation errors (enum, constraint violations)
+	if (
+		lowerMessage.includes('invalid value for column') ||
+		lowerMessage.includes('expected:') ||
+		lowerMessage.includes('constraint') ||
+		lowerMessage.includes('violates')
+	) {
+		// Extract helpful information from the error
+		const columnMatch = errorMessage.match(/column\s+(\w+)/i);
+		const expectedMatch = errorMessage.match(/expected:\s*([^|]+)/i);
+		const foundMatch = errorMessage.match(/found:\s*(\w+)/i);
+		const suggestionMatch = errorMessage.match(/did you mean:\s*([^?]+)/i);
+
+		return {
+			code: MCP_ERROR_CODES.DATABASE_VALIDATION_ERROR,
+			data: {
+				type: 'validation_error',
+				column: columnMatch?.[1],
+				expected: expectedMatch?.[1]?.trim().split(',').map((s) => s.trim()),
+				found: foundMatch?.[1],
+				suggestions: suggestionMatch?.[1]?.trim().split(',').map((s) => s.trim())
+			}
+		};
+	}
+
+	// Not found errors
+	if (lowerMessage.includes('not found')) {
+		return { code: MCP_ERROR_CODES.TOOL_NOT_FOUND };
+	}
+
+	// Access denied
+	if (lowerMessage.includes('access denied') || lowerMessage.includes('not allowed')) {
+		return { code: MCP_ERROR_CODES.RESOURCE_ACCESS_DENIED };
+	}
+
+	// Disabled resources
+	if (lowerMessage.includes('disabled')) {
+		return { code: MCP_ERROR_CODES.RESOURCE_DISABLED };
+	}
+
+	// Timeout
+	if (lowerMessage.includes('timeout') || lowerMessage.includes('timed out')) {
+		return { code: MCP_ERROR_CODES.TIMEOUT };
+	}
+
+	// Default to internal error
+	return { code: -32603 };
+}
 
 /**
  * MCP error details
@@ -123,31 +181,8 @@ export async function withErrorHandling<T>(
 			);
 		}
 
-		// Determine error code based on error message
-		let errorCode = -32603; // Internal error
-		let errorData: Record<string, unknown> | undefined;
-
-		if (errorMessage.includes('not found')) {
-			if (method.startsWith('tools/')) {
-				errorCode = MCP_ERROR_CODES.TOOL_NOT_FOUND;
-			} else if (method.startsWith('resources/')) {
-				errorCode = MCP_ERROR_CODES.RESOURCE_NOT_FOUND;
-			} else if (method.startsWith('prompts/')) {
-				errorCode = MCP_ERROR_CODES.PROMPT_NOT_FOUND;
-			}
-		} else if (errorMessage.includes('access denied') || errorMessage.includes('not allowed')) {
-			errorCode = MCP_ERROR_CODES.RESOURCE_ACCESS_DENIED;
-		} else if (errorMessage.includes('disabled')) {
-			if (method.startsWith('resources/')) {
-				errorCode = MCP_ERROR_CODES.RESOURCE_DISABLED;
-			} else if (method.startsWith('prompts/')) {
-				errorCode = MCP_ERROR_CODES.PROMPT_DISABLED;
-			}
-		} else if (errorMessage.includes('timeout') || errorMessage.includes('timed out')) {
-			errorCode = MCP_ERROR_CODES.TIMEOUT;
-			const timeoutError = error as { timeout?: number };
-			errorData = { timeout: timeoutError.timeout };
-		}
+		// Categorize the error for better error codes
+		const { code: errorCode, data: errorData } = categorizeError(errorMessage);
 
 		// Return error response
 		return createErrorResponse(requestId, errorCode, errorMessage, errorData);

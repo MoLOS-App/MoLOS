@@ -1,12 +1,73 @@
 # MoLOS Changelog
 
-> Consolidated changelog for the MoLOS project.
+> Consolidated changelog for MoLOS project.
+
+---
+
+## 2026-02-17 - AI Tool Error Handling Fix
+
+**Summary:** Implemented comprehensive error handling for AI tools to prevent app crashes from invalid enum values and other tool errors.
+
+### Changes
+
+- **Finance Module AI Tools** (`modules/MoLOS-Finance/src/server/ai/ai-tools.ts`)
+  - Added `validateCategory()` function to map invalid categories to "other"
+  - Updated `bulk_add_expenses` tool with enum validation and error handling
+  - Enhanced tool description with valid category values
+  - Returns structured result with `created`, `skipped`, and `skippedDetails`
+
+- **Tool Wrapper** (`src/lib/server/ai/agent/v3/tools/tool-wrapper.ts`)
+  - Enhanced error categorization (validation, database, network, not_found, permission)
+  - Improved error logging with error type information
+  - Returns structured error results instead of throwing
+
+- **Agent Adapter** (`src/lib/server/ai/agent-v3-adapter.ts`)
+  - Added try-catch in `executeAction()` method
+  - Returns error result instead of throwing to prevent agent crashes
+  - Logs errors for debugging
+
+- **API Endpoint** (`src/routes/api/ai/chat/+server.ts`)
+  - Enhanced streaming error handling with error type and timestamp
+  - Improved non-streaming error response structure
+  - Graceful stream closure on errors
+
+- **Documentation** (`documentation/modules/ai-tools-development.md`)
+  - Created comprehensive AI tools development guide
+  - Documented validation patterns and error handling layers
+  - Included module-specific examples and testing checklist
+
+### Results
+
+- ✅ App no longer crashes when AI calls tools with invalid enum values
+- ✅ Invalid values are automatically mapped to defaults with warnings
+- ✅ Four-layer error handling ensures robustness
+- ✅ AI receives detailed error feedback for recovery
+- ✅ Clear documentation for future AI tool development
+
+### Technical Details
+
+**Error Flow Before Fix:**
+```
+AI Agent → Tool Call → Tool Execute → Repository → textEnum Validation → THROW ERROR → Crash
+```
+
+**Error Flow After Fix:**
+```
+AI Agent → Tool Call → Tool Validation → Map to Default → Repository → Success
+     ↓ (if error)
+Tool Wrapper → Categorize Error → Return Error Result → Agent Handles → API Responds
+```
+
+### Related Files
+
+- `plans/mcp-error-handling-fix.md` - Detailed implementation plan
+- `documentation/modules/ai-tools-development.md` - AI tools development guide
 
 ---
 
 ## 2026-02-17 - Old Module System Fix
 
-**Summary:** Fixed the old module system to work with the monorepo setup. Standardized module structure across all external modules.
+**Summary:** Fixed old module system to work with monorepo setup. Standardized module structure across all external modules.
 
 ### Changes
 
@@ -27,7 +88,7 @@
 
 ## 2026-02-16 - Module System Overhaul
 
-**Summary:** Complete overhaul of the module discovery and management system to support external modules from GitHub/npm.
+**Summary:** Complete overhaul of module discovery and management system to support external modules from GitHub/npm.
 
 ### Changes
 
@@ -112,7 +173,7 @@ modules/my-module/
 
 ## 2025-02-16 - Monorepo System Adaptation
 
-**Summary:** Adapted codebase to work with the new monorepo package structure.
+**Summary:** Adapted codebase to work with a new monorepo package structure.
 
 ### Changes
 

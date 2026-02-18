@@ -40,77 +40,96 @@ export async function handleToolsCall(
 	requestId: number | string,
 	params: unknown
 ): Promise<JSONRPCResponse> {
-	// Validate params first (outside of error handling wrapper)
-	const validation = validateRequest(ToolsCallRequestParamsSchema, params, requestId);
+	// Wrap everything in a try-catch to prevent server crashes
+	try {
+		// Validate params first (outside of error handling wrapper)
+		const validation = validateRequest(ToolsCallRequestParamsSchema, params, requestId);
 
-	if (!validation.success) {
-		return validation.error;
-	}
+		if (!validation.success) {
+			return validation.error;
+		}
 
-	const { name, arguments: args } = validation.data;
+		const { name, arguments: args } = validation.data;
 
-	// Get the toolbox
-	const toolbox = new AiToolbox();
+		// Get the toolbox
+		const toolbox = new AiToolbox();
 
-	// Get all available tools for this user
-	const tools = await toolbox.getTools(context.userId, context.allowedModules);
+		// Get all available tools for this user
+		const tools = await toolbox.getTools(context.userId, context.allowedModules);
 
-	// Find the tool
-	const tool = tools.find((t) => t.name === name);
+		// Find the tool
+		const tool = tools.find((t) => t.name === name);
 
-	if (!tool) {
-		// Return error immediately
+		if (!tool) {
+			// Return error immediately
+			return createErrorResponse(
+				requestId,
+				MCP_ERROR_CODES.TOOL_NOT_FOUND,
+				`Tool not found: ${name}`
+			);
+		}
+
+		// Validate tool parameters BEFORE execution
+		const normalizedParams = normalizeToolParams(args);
+		const paramValidation = validateToolParams(tool, normalizedParams);
+
+		if (!paramValidation.ok) {
+			// Return validation error immediately
+			return createToolParameterValidationError(requestId, name, {
+				missing: paramValidation.missing,
+				toolSchema: {
+					name: tool.name,
+					parameters: tool.parameters
+				}
+			});
+		}
+
+		// Use error handling wrapper for the actual execution only
+		return await withErrorHandling(
+			context,
+			requestId,
+			'tools/call',
+			async () => {
+				// Execute the tool with timeout
+				try {
+					const result = await withToolTimeout(tool.execute(normalizedParams), name);
+
+					// Format for MCP response
+					return formatToolResult(result);
+				} catch (error) {
+					// Handle timeout errors specifically
+					if (error instanceof TimeoutError) {
+						const timeoutError = new Error(`Tool execution timed out: ${name}`);
+						(timeoutError as any).code = MCP_ERROR_CODES.TIMEOUT;
+						(timeoutError as any).timeout = error.timeout;
+						throw timeoutError;
+					}
+					throw error;
+				}
+			},
+			{
+				method: 'tools/call',
+				toolName: name,
+				params: normalizedParams
+			}
+		);
+	} catch (error) {
+		// Catch-all to prevent server crashes
+		console.error('[MCP Tools Handler] Unhandled error:', error);
+
+		const errorMessage = error instanceof Error ? error.message : String(error);
+
+		// Return a proper JSON-RPC error response instead of crashing
 		return createErrorResponse(
 			requestId,
-			MCP_ERROR_CODES.TOOL_NOT_FOUND,
-			`Tool not found: ${name}`
+			MCP_ERROR_CODES.TOOL_EXECUTION_FAILED,
+			`Tool execution failed: ${errorMessage}`,
+			{
+				type: 'unhandled_error',
+				recoverable: true
+			}
 		);
 	}
-
-	// Validate tool parameters BEFORE execution
-	const normalizedParams = normalizeToolParams(args);
-	const paramValidation = validateToolParams(tool, normalizedParams);
-
-	if (!paramValidation.ok) {
-		// Return validation error immediately
-		return createToolParameterValidationError(requestId, name, {
-			missing: paramValidation.missing,
-			toolSchema: {
-				name: tool.name,
-				parameters: tool.parameters
-			}
-		});
-	}
-
-	// Use error handling wrapper for the actual execution only
-	return withErrorHandling(
-		context,
-		requestId,
-		'tools/call',
-		async () => {
-			// Execute the tool with timeout
-			try {
-				const result = await withToolTimeout(tool.execute(normalizedParams), name);
-
-				// Format for MCP response
-				return formatToolResult(result);
-			} catch (error) {
-				// Handle timeout errors specifically
-				if (error instanceof TimeoutError) {
-					const timeoutError = new Error(`Tool execution timed out: ${name}`);
-					(timeoutError as any).code = MCP_ERROR_CODES.TIMEOUT;
-					(timeoutError as any).timeout = error.timeout;
-					throw timeoutError;
-				}
-				throw error;
-			}
-		},
-		{
-			method: 'tools/call',
-			toolName: name,
-			params: normalizedParams
-		}
-	);
 }
 
 /**
