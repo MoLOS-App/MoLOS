@@ -119,3 +119,4 @@ Just drop a module in `modules/` and run `bun run dev` - everything else is auto
 - Use `.js` extension for TypeScript imports in routes
 - Module ID must match between config, routes, and database table prefixes
 - External modules use `MoLOS-{Name}` ID format
+- **Database table naming**: `MoLOS-{ModuleName}_{table_name}` - hyphens in module ID, underscore separator, then table name

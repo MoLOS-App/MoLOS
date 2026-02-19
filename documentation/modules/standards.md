@@ -126,33 +126,45 @@ export default tasksConfig;
 MoLOS-{ModuleName}_{table_name}
 ```
 
-- **Module ID prefix**: Always use the full module ID (e.g., `MoLOS-Tasks`, `MoLOS-Health`)
-- **Underscore separator**: Use `_` between module ID and table name
-- **No duplication**: Don't repeat the module name in the table name
+The naming convention has two parts with different separators:
+
+| Part | Separator | Example |
+|------|-----------|---------|
+| Module ID prefix | **Hyphens** | `MoLOS-LLM-Council` |
+| Separator between module and table | **Underscore** | `_` |
+| Table name | **Underscores** | `conversations` |
+
+**Examples:**
 
 | Pattern | Example | Status |
 |---------|---------|--------|
 | `MoLOS-{Name}_{table}` | `MoLOS-Tasks_tasks` | ✅ Correct |
 | `MoLOS-{Name}_{table}` | `MoLOS-Health_user_profile` | ✅ Correct |
+| `MoLOS-{Name}_{table}` | `MoLOS-LLM-Council_conversations` | ✅ Correct |
+| `MoLOS_{Name}_{table}` | `MoLOS_LLM_Council_conversations` | ❌ Wrong - underscores in module ID |
 | `{module}_{table}` | `health_user_profile` | ❌ Wrong - missing MoLOS prefix |
 | `{module}_{module}_{table}` | `meals_meals_settings` | ❌ Wrong - duplicated prefix |
 | `{table}` | `tasks` | ❌ Wrong - no prefix at all |
 
 ```typescript
-// ✅ Correct: MoLOS-{Name}_{table}
+// ✅ Correct: Module ID with HYPHENS, separator with UNDERSCORE
 export const tasksTasks = sqliteTable("MoLOS-Tasks_tasks", { ... });
 export const healthUserProfile = sqliteTable("MoLOS-Health_user_profile", { ... });
-export const mealsSettings = sqliteTable("MoLOS-Meals_settings", { ... });
+export const llmCouncilConversations = sqliteTable("MoLOS-LLM-Council_conversations", { ... });
+
+// ❌ Wrong: Underscores in module ID (breaks migration verification)
+export const llmCouncilConversations = sqliteTable("MoLOS_LLM_Council_conversations", { ... });
 
 // ❌ Wrong: Missing MoLOS prefix
 export const healthProfile = sqliteTable("health_user_profile", { ... });
 
-// ❌ Wrong: Duplicated module name
-export const mealsSettings = sqliteTable("meals_meals_settings", { ... });
-
 // ❌ Wrong: No prefix at all
 export const tasks = sqliteTable("tasks", { ... });
 ```
+
+**Why this matters:**
+
+The database initialization script verifies module tables by looking for the pattern `MoLOS-{ModuleName}_%`. If you use underscores in the module ID (e.g., `MoLOS_LLM_Council_`), the verification won't find your tables even though they exist, causing confusing errors.
 
 ### Schema File Location
 

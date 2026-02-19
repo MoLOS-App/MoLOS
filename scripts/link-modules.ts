@@ -17,6 +17,7 @@ import path from 'path';
 import { eq } from 'drizzle-orm';
 import { db } from '@molos/database';
 import { settingsExternalModules, ExternalModuleStatus } from '@molos/database/schema/core';
+import { validateModule, formatValidationResult, type ModuleValidationResult } from '../module-management/server/validation';
 
 const MODULES_DIR = path.resolve('modules');
 const NODE_MODULES_MOLOS_DIR = path.resolve('node_modules/@molos');
@@ -38,6 +39,10 @@ export interface ModuleLinkResult {
 	linkedPaths: string[];
 	skipped: boolean;
 	skipReason?: string;
+	/**
+	 * Validation result if validation was performed
+	 */
+	validation?: ModuleValidationResult;
 }
 
 /**
@@ -226,7 +231,33 @@ async function registerModuleIfNeeded(moduleId: string, modulePath: string): Pro
 async function recordLinkResult(moduleId: string, result: ModuleLinkResult): Promise<void> {
 	try {
 		if (result.skipped) {
-			// Don't update database for skipped modules
+			// Record validation failures in the database for tracking
+			if (result.validation && !result.validation.canProceed) {
+				const errorDetails = result.validation.errors.map((e) => ({
+					code: e.code,
+					message: e.message,
+					file: e.file,
+					fixSuggestion: e.fixSuggestion
+				}));
+
+				await db
+					.update(settingsExternalModules)
+					.set({
+						status: ExternalModuleStatus.ERROR_MANIFEST,
+						lastError: result.skipReason || 'Validation failed',
+						errorType: 'validation_failed',
+						errorDetails: JSON.stringify(errorDetails),
+						recoverySteps: JSON.stringify(
+							result.validation.errors
+								.filter((e) => e.fixSuggestion)
+								.map((e) => e.fixSuggestion)
+						),
+						retryCount: 0,
+						updatedAt: new Date()
+					})
+					.where(eq(settingsExternalModules.id, moduleId));
+			}
+			// Don't update database for other skipped modules (disabled, error status)
 			return;
 		}
 
@@ -301,6 +332,25 @@ async function linkSingleModule(
 			result.skipReason = shouldLink.reason;
 			console.log(`[ModuleLinker] Skipping ${moduleId}: ${shouldLink.reason}`);
 			return result;
+		}
+
+		// NEW: Validate module before attempting to link
+		const validation = await validateModule(modulePath, moduleId);
+		result.validation = validation;
+
+		if (!validation.canProceed) {
+			result.skipped = true;
+			result.skipReason = `Validation failed: ${validation.errors.map((e) => e.message).join('; ')}`;
+			console.log(`[ModuleLinker] Skipping ${moduleId}: Validation failed`);
+			console.log(formatValidationResult(validation));
+			return result;
+		}
+
+		if (validation.warnings.length > 0) {
+			console.warn(`[ModuleLinker] Warnings for ${moduleId}:`);
+			for (const warning of validation.warnings) {
+				console.warn(`  - [${warning.code}] ${warning.message}`);
+			}
 		}
 
 		const moduleSrcPath = path.join(modulePath, 'src');

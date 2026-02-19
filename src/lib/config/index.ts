@@ -8,6 +8,9 @@
  * - npm modules: from node_modules/@molos/module-{name}/src/config.ts
  *
  * Configs are loaded eagerly to prevent SSR reloads during navigation.
+ *
+ * Error handling: Failed modules are caught and logged, preventing
+ * one bad module from breaking the entire application.
  */
 
 import type { ModuleConfig } from './types';
@@ -97,43 +100,52 @@ function isNpmModulePath(importPath: string): boolean {
 
 /**
  * Build the module registry with optional filtering
+ * Includes error handling to prevent one bad module from breaking the entire registry
  */
 function buildModuleRegistry(): Record<string, ModuleConfig> {
 	const autoloadFilter = getAutoloadModulesFilter();
 
 	return Object.entries(allModuleConfigs).reduce(
 		(acc, [path, module]) => {
-			if (!module) {
-				const moduleId = extractModuleIdFromPath(path);
-				console.warn(`[ModuleRegistry] Module ${moduleId} loaded as null/undefined`);
-				failedModulesQueue.push({ moduleId, error: new Error('Module loaded as null') });
-				return acc;
-			}
-
 			const moduleId = extractModuleIdFromPath(path);
 
-			// Find the config object in the module exports (either default or named like 'xxxConfig')
-			const config =
-				module.default ||
-				Object.values(module).find(
-					(val: any) => val && typeof val === 'object' && val.id && val.name && val.href
-				);
-
-			if (moduleId && config && config.id) {
-				// Mark as package module if it's from the modules/ directory
-				if (isPackageModulePath(path)) {
-					config.isPackageModule = true;
-				}
-
-				// Skip filter for mandatory modules (always load regardless of env filter)
-				const isMandatory = MANDATORY_MODULES.includes(config.id as (typeof MANDATORY_MODULES)[number]);
-
-				// Apply autoload filter if set (but not for mandatory modules)
-				if (!isMandatory && autoloadFilter && !autoloadFilter.includes(config.id)) {
+			try {
+				if (!module) {
+					console.warn(`[ModuleRegistry] Module ${moduleId} loaded as null/undefined`);
+					failedModulesQueue.push({ moduleId, error: new Error('Module loaded as null') });
 					return acc;
 				}
 
-				acc[config.id] = config;
+				// Find the config object in the module exports (either default or named like 'xxxConfig')
+				const config =
+					module.default ||
+					Object.values(module).find(
+						(val: any) => val && typeof val === 'object' && val.id && val.name && val.href
+					);
+
+				if (moduleId && config && config.id) {
+					// Mark as package module if it's from the modules/ directory
+					if (isPackageModulePath(path)) {
+						config.isPackageModule = true;
+					}
+
+					// Skip filter for mandatory modules (always load regardless of env filter)
+					const isMandatory = MANDATORY_MODULES.includes(config.id as (typeof MANDATORY_MODULES)[number]);
+
+					// Apply autoload filter if set (but not for mandatory modules)
+					if (!isMandatory && autoloadFilter && !autoloadFilter.includes(config.id)) {
+						return acc;
+					}
+
+					acc[config.id] = config;
+				}
+			} catch (error) {
+				// Catch errors during config processing to isolate bad modules
+				console.error(`[ModuleRegistry] Error processing module ${moduleId}:`, error);
+				failedModulesQueue.push({
+					moduleId,
+					error: error instanceof Error ? error : new Error(String(error))
+				});
 			}
 			return acc;
 		},

@@ -244,8 +244,13 @@ function applyModuleMigrationSql(moduleName: string, moduleDir: string, dbPath: 
 			db.close();
 
 			console.log(`[DB:init] Applied migration ${migrationFile} for ${moduleName}`);
-		} catch (error) {
-			console.error(`[DB:init] Failed to apply ${migrationFile} for ${moduleName}:`, error);
+		} catch (error: any) {
+			// If tables already exist, that's fine - the migration was already applied
+			if (error?.code === 'SQLITE_ERROR' && error?.message?.includes('already exists')) {
+				console.log(`[DB:init] Migration ${migrationFile} already applied for ${moduleName}`);
+			} else {
+				console.error(`[DB:init] Failed to apply ${migrationFile} for ${moduleName}:`, error);
+			}
 		}
 	}
 }
@@ -265,7 +270,10 @@ async function main() {
 
 	// Check if already initialized
 	if (isDatabaseInitialized(dbPath)) {
-		console.log('[DB:init] Database already exists and is initialized. Skipping.');
+		console.log('[DB:init] Database already exists.');
+		// Still verify module migrations for new modules that may have been added
+		console.log('[DB:init] Checking for missing module migrations...');
+		verifyAndApplyMissingMigrations();
 		console.log('[DB:init] To re-initialize, delete the database file and run again.');
 		return;
 	}
