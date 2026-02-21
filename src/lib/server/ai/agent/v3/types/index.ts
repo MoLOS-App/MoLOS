@@ -273,9 +273,7 @@ export interface ModuleAgentResult {
 /**
  * Result type for operations that can fail
  */
-export type Result<T, E = Error> =
-	| { ok: true; value: T }
-	| { ok: false; error: E };
+export type Result<T, E = Error> = { ok: true; value: T } | { ok: false; error: E };
 
 /**
  * Creates a successful result
@@ -306,15 +304,15 @@ export function toModelMessage(message: AgentMessage): ModelMessage {
 				{
 					type: 'tool-result' as const,
 					toolCallId: message.toolCallId || '',
-					result: message.content,
-				},
-			],
+					result: message.content
+				}
+			]
 		} as unknown as ModelMessage;
 	}
 
 	return {
 		role: message.role,
-		content: message.content as string,
+		content: message.content as string
 	} as ModelMessage;
 }
 

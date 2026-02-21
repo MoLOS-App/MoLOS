@@ -49,9 +49,7 @@ function getDatabasePath(): string {
 	const rawDbPath =
 		process.env.DATABASE_URL ||
 		(process.env.NODE_ENV === 'production' ? '/data/molos.db' : 'molos.db');
-	const dbPath = rawDbPath
-		.replace(/^sqlite:\/\//, '')
-		.replace(/^sqlite:|^file:/, '');
+	const dbPath = rawDbPath.replace(/^sqlite:\/\//, '').replace(/^sqlite:|^file:/, '');
 	return path.isAbsolute(dbPath) ? dbPath : path.resolve(process.cwd(), dbPath);
 }
 
@@ -149,7 +147,7 @@ function getModuleDirectories(): Array<{ name: string; dir: string; pattern: str
 			// Check if this module has a drizzle directory with SQL files
 			if (existsSync(drizzlePath)) {
 				try {
-					const migrationFiles = readdirSync(drizzlePath).filter(f => f.endsWith('.sql'));
+					const migrationFiles = readdirSync(drizzlePath).filter((f) => f.endsWith('.sql'));
 					if (migrationFiles.length > 0) {
 						moduleDirs.push({
 							name: moduleName,
@@ -186,9 +184,9 @@ function verifyAndApplyMissingMigrations() {
 	for (const module of modulesToCheck) {
 		try {
 			// Check if any tables exist for this module
-			const rows = db.prepare(
-				"SELECT name FROM sqlite_master WHERE type='table' AND name LIKE ?"
-			).all(module.pattern) as { name: string }[];
+			const rows = db
+				.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE ?")
+				.all(module.pattern) as { name: string }[];
 
 			if (rows.length === 0) {
 				console.log(`[DB:init] Tables missing for ${module.name}, applying SQL directly...`);
@@ -222,7 +220,7 @@ function applyModuleMigrationSql(moduleName: string, moduleDir: string, dbPath: 
 
 	// Find migration SQL files (starting with 0000_)
 	const migrationFiles = readdirSync(drizzlePath)
-		.filter(f => f.endsWith('.sql') && f.startsWith('0000_'))
+		.filter((f) => f.endsWith('.sql') && f.startsWith('0000_'))
 		.sort();
 
 	if (migrationFiles.length === 0) {

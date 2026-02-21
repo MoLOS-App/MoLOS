@@ -21,6 +21,7 @@ MoLOS/                          # Main application
 ```
 
 **Pain Points:**
+
 - Complex symlink management during development
 - Version mismatches between core and modules
 - Difficult to coordinate breaking changes
@@ -47,25 +48,27 @@ MoLOS/
 
 ## Key Benefits
 
-| Aspect | Current (Multi-repo + Symlinks) | Monorepo |
-|--------|--------------------------------|----------|
-| **Dependency Management** | Each module manages own deps | Shared deps, no duplication |
-| **Version Control** | Multiple repos, complex sync | Single source of truth |
-| **Breaking Changes** | Hard to coordinate | Atomic commits across packages |
-| **CI/CD** | Separate pipelines | Unified pipeline |
-| **Code Sharing** | Via symlinks (fragile) | Via npm packages (robust) |
-| **Testing** | Per-module only | Cross-module integration tests |
-| **IDE Support** | Multiple project roots | Single workspace |
+| Aspect                    | Current (Multi-repo + Symlinks) | Monorepo                       |
+| ------------------------- | ------------------------------- | ------------------------------ |
+| **Dependency Management** | Each module manages own deps    | Shared deps, no duplication    |
+| **Version Control**       | Multiple repos, complex sync    | Single source of truth         |
+| **Breaking Changes**      | Hard to coordinate              | Atomic commits across packages |
+| **CI/CD**                 | Separate pipelines              | Unified pipeline               |
+| **Code Sharing**          | Via symlinks (fragile)          | Via npm packages (robust)      |
+| **Testing**               | Per-module only                 | Cross-module integration tests |
+| **IDE Support**           | Multiple project roots          | Single workspace               |
 
 ## Tradeoffs
 
 ### What We Gain
+
 - **Simplified dependency management** - One `package.json` for shared deps
 - **Atomic changes** - Update core and modules in one commit
 - **Better tooling** - Standard monorepo tools (Turbo, Nx, pnpm workspaces)
 - **Improved DX** - Single clone, single install
 
 ### What We Accept
+
 - **Larger repository** - All code in one place
 - **Unified versioning** - Can't independently version modules (unless using independent mode)
 - **Team coordination** - More merge conflicts potential
@@ -102,36 +105,43 @@ Phase 5: Documentation & Cleanup (Week 7)
 
 ## Who Should Read What
 
-| Role | Recommended Reading |
-|------|---------------------|
+| Role                         | Recommended Reading                                              |
+| ---------------------------- | ---------------------------------------------------------------- |
 | **Developer (New to MoLOS)** | Start with `01-architecture.md`, then `03-module-development.md` |
-| **Existing Contributor** | `02-migration-guide.md` is essential, then `01-architecture.md` |
-| **DevOps/SRE** | Focus on `06-deployment.md` and `02-migration-guide.md` |
-| **Product Owner** | `07-saas-strategy.md` for business implications |
-| **Security Engineer** | `05-module-interaction.md` for security boundaries |
-| **Module Developer** | `03-module-development.md` and `04-module-activation.md` |
+| **Existing Contributor**     | `02-migration-guide.md` is essential, then `01-architecture.md`  |
+| **DevOps/SRE**               | Focus on `06-deployment.md` and `02-migration-guide.md`          |
+| **Product Owner**            | `07-saas-strategy.md` for business implications                  |
+| **Security Engineer**        | `05-module-interaction.md` for security boundaries               |
+| **Module Developer**         | `03-module-development.md` and `04-module-activation.md`         |
 
 ## Documentation Overview
 
 ### 1. [Architecture](./01-architecture.md)
+
 Deep dive into the new directory structure, npm workspaces mechanics, module loading, and build system.
 
 ### 2. [Migration Guide](./02-migration-guide.md)
+
 Step-by-step instructions for migrating from the current symlink-based system to the monorepo.
 
 ### 3. [Module Development](./03-module-development.md)
+
 How to create, structure, and test modules in the new architecture.
 
 ### 4. [Module Activation](./04-module-activation.md)
+
 Configuration and runtime management of module activation.
 
 ### 5. [Module Interaction](./05-module-interaction.md)
+
 Event bus system, data namespacing, and cross-module communication patterns.
 
 ### 6. [Deployment](./06-deployment.md)
+
 Docker/Podman deployment, production configuration, and version management.
 
 ### 7. [SaaS Strategy](./07-saas-strategy.md)
+
 Self-hosted vs SaaS offerings, module marketplace, and pricing considerations.
 
 ## Quick Start
@@ -165,5 +175,5 @@ npm run build
 
 ---
 
-*Last Updated: 2025-02-15*
-*Version: 1.0*
+_Last Updated: 2025-02-15_
+_Version: 1.0_

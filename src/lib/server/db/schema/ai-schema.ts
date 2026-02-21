@@ -70,6 +70,10 @@ export const aiSessions = sqliteTable('ai_sessions', {
 /**
  * AI Messages - Chat Messages
  * Stores individual messages within chat sessions
+ *
+ * Note: segmentId is stored in contextMetadata as JSON for multi-message segments.
+ * Deduplication is handled at the application level since SQLite can't create
+ * unique constraints on JSON-extracted values.
  */
 export const aiMessages = sqliteTable('ai_messages', {
 	id: text('id').primaryKey(),

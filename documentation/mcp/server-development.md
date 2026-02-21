@@ -34,20 +34,21 @@ AiToolbox.getTools(userId, activeModuleIds)
 ```typescript
 // Location: src/lib/models/ai/index.ts
 export interface ToolDefinition {
-  name: string;
-  description: string;
-  parameters: {
-    type: 'object';
-    properties: Record<string, unknown>;
-    required?: string[];
-  };
-  execute: (params: any) => Promise<any>;
+	name: string;
+	description: string;
+	parameters: {
+		type: 'object';
+		properties: Record<string, unknown>;
+		required?: string[];
+	};
+	execute: (params: any) => Promise<any>;
 }
 ```
 
 ### Example: MoLOS-AI-Knowledge Module Tools
 
 The `MoLOS-AI-Knowledge` external module provides:
+
 - `list_prompts` - List saved prompts
 - `create_prompt` - Create new prompt
 - `update_prompt` - Update existing prompt
@@ -122,14 +123,15 @@ The `MoLOS-AI-Knowledge` external module provides:
 
 **Location:** `src/routes/api/mcp/`
 
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `/api/mcp/tools` | GET | Returns all available tools in MCP format |
-| `/api/mcp/execute` | POST | Executes a tool by name with parameters |
-| `/api/mcp/modules` | GET | Lists available/active modules |
-| `/api/mcp/schema` | GET | Returns JSON Schema for tool parameters |
+| Endpoint           | Method | Purpose                                   |
+| ------------------ | ------ | ----------------------------------------- |
+| `/api/mcp/tools`   | GET    | Returns all available tools in MCP format |
+| `/api/mcp/execute` | POST   | Executes a tool by name with parameters   |
+| `/api/mcp/modules` | GET    | Lists available/active modules            |
+| `/api/mcp/schema`  | GET    | Returns JSON Schema for tool parameters   |
 
 **File Structure:**
+
 ```
 src/routes/api/mcp/
 +-- +server.ts                 # Main MCP endpoint
@@ -144,15 +146,16 @@ src/routes/api/mcp/
 Create a mapper to convert MoLOS `ToolDefinition` to MCP tool format.
 
 **MCP Tool Format:**
+
 ```typescript
 interface MCPTool {
-  name: string;
-  description: string;
-  inputSchema: {
-    type: "object";
-    properties: Record<string, JSONSchema>;
-    required?: string[];
-  };
+	name: string;
+	description: string;
+	inputSchema: {
+		type: 'object';
+		properties: Record<string, JSONSchema>;
+		required?: string[];
+	};
 }
 ```
 
@@ -208,6 +211,7 @@ mcp-server-molos/
 #### 2.3 Configuration
 
 **Environment Variables:**
+
 ```env
 MOLOS_API_URL=http://localhost:5173
 MOLOS_API_KEY=your_api_key_here
@@ -255,19 +259,20 @@ Claude Code                  MCP Server                   MoLOS API
 #### 4.1 MCP Server Configuration
 
 **Claude Code MCP Config (`~/.config/claude-code/mcp_config.json`):**
+
 ```json
 {
-  "mcpServers": {
-    "molos": {
-      "command": "node",
-      "args": ["/path/to/mcp-server-molos/dist/index.js"],
-      "env": {
-        "MOLOS_API_URL": "http://localhost:5173",
-        "MOLOS_API_KEY": "your_api_key",
-        "MOLOS_USER_ID": "user_id"
-      }
-    }
-  }
+	"mcpServers": {
+		"molos": {
+			"command": "node",
+			"args": ["/path/to/mcp-server-molos/dist/index.js"],
+			"env": {
+				"MOLOS_API_URL": "http://localhost:5173",
+				"MOLOS_API_KEY": "your_api_key",
+				"MOLOS_USER_ID": "user_id"
+			}
+		}
+	}
 }
 ```
 
@@ -275,9 +280,9 @@ Claude Code                  MCP Server                   MoLOS API
 
 Tools will be exposed to Claude Code with the following naming:
 
-| Source | Tool Name Format | Example |
-|--------|------------------|---------|
-| Core tools | `molos_{tool_name}` | `molos_get_active_modules` |
+| Source       | Tool Name Format                | Example                                 |
+| ------------ | ------------------------------- | --------------------------------------- |
+| Core tools   | `molos_{tool_name}`             | `molos_get_active_modules`              |
 | Module tools | `molos_{module_id}_{tool_name}` | `molos_MoLOS-AI-Knowledge_list_prompts` |
 
 ---
@@ -287,85 +292,91 @@ Tools will be exposed to Claude Code with the following naming:
 ### Step 1: Create MoLOS MCP API Endpoints
 
 **File: `src/routes/api/mcp/tools/+server.ts`**
+
 ```typescript
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { AiToolbox } from '$lib/server/ai/toolbox';
 
 export const GET: RequestHandler = async ({ locals, url }) => {
-  // Authentication check (API key for MCP)
-  const authHeader = request.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
-    return json({ error: 'Unauthorized' }, { status: 401 });
-  }
+	// Authentication check (API key for MCP)
+	const authHeader = request.headers.get('Authorization');
+	if (!authHeader?.startsWith('Bearer ')) {
+		return json({ error: 'Unauthorized' }, { status: 401 });
+	}
 
-  // Validate API key and get user ID
-  const userId = await validateMcpApiKey(authHeader.slice(7));
-  if (!userId) {
-    return json({ error: 'Invalid API key' }, { status: 401 });
-  }
+	// Validate API key and get user ID
+	const userId = await validateMcpApiKey(authHeader.slice(7));
+	if (!userId) {
+		return json({ error: 'Invalid API key' }, { status: 401 });
+	}
 
-  const activeModuleIds = url.searchParams.getAll('modules');
+	const activeModuleIds = url.searchParams.getAll('modules');
 
-  const toolbox = new AiToolbox();
-  const tools = await toolbox.getTools(userId, activeModuleIds);
+	const toolbox = new AiToolbox();
+	const tools = await toolbox.getTools(userId, activeModuleIds);
 
-  // Convert to MCP format
-  const mcpTools = tools.map(tool => ({
-    name: `molos_${tool.name}`,
-    description: tool.description,
-    inputSchema: tool.parameters
-  }));
+	// Convert to MCP format
+	const mcpTools = tools.map((tool) => ({
+		name: `molos_${tool.name}`,
+		description: tool.description,
+		inputSchema: tool.parameters
+	}));
 
-  return json({ tools: mcpTools });
+	return json({ tools: mcpTools });
 };
 ```
 
 **File: `src/routes/api/mcp/execute/+server.ts`**
+
 ```typescript
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { AiToolbox } from '$lib/server/ai/toolbox';
 
 export const POST: RequestHandler = async ({ request }) => {
-  const authHeader = request.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
-    return json({ error: 'Unauthorized' }, { status: 401 });
-  }
+	const authHeader = request.headers.get('Authorization');
+	if (!authHeader?.startsWith('Bearer ')) {
+		return json({ error: 'Unauthorized' }, { status: 401 });
+	}
 
-  const userId = await validateMcpApiKey(authHeader.slice(7));
-  if (!userId) {
-    return json({ error: 'Invalid API key' }, { status: 401 });
-  }
+	const userId = await validateMcpApiKey(authHeader.slice(7));
+	if (!userId) {
+		return json({ error: 'Invalid API key' }, { status: 401 });
+	}
 
-  const { toolName, params } = await request.json();
+	const { toolName, params } = await request.json();
 
-  const toolbox = new AiToolbox();
-  const tools = await toolbox.getTools(userId);
+	const toolbox = new AiToolbox();
+	const tools = await toolbox.getTools(userId);
 
-  // Remove molos_ prefix if present
-  const baseToolName = toolName.replace(/^molos_/, '');
+	// Remove molos_ prefix if present
+	const baseToolName = toolName.replace(/^molos_/, '');
 
-  const tool = tools.find(t => t.name === baseToolName);
-  if (!tool) {
-    return json({ error: 'Tool not found' }, { status: 404 });
-  }
+	const tool = tools.find((t) => t.name === baseToolName);
+	if (!tool) {
+		return json({ error: 'Tool not found' }, { status: 404 });
+	}
 
-  try {
-    const result = await tool.execute(params);
-    return json({ result });
-  } catch (error) {
-    return json({
-      error: 'Tool execution failed',
-      details: error.message
-    }, { status: 500 });
-  }
+	try {
+		const result = await tool.execute(params);
+		return json({ result });
+	} catch (error) {
+		return json(
+			{
+				error: 'Tool execution failed',
+				details: error.message
+			},
+			{ status: 500 }
+		);
+	}
 };
 ```
 
 ### Step 2: Create MCP Server Package
 
 **Initialize project:**
+
 ```bash
 mkdir mcp-server-molos
 cd mcp-server-molos
@@ -375,6 +386,7 @@ npm install -D typescript @types/node
 ```
 
 **File: `src/index.ts`**
+
 ```typescript
 #!/usr/bin/env node
 
@@ -384,198 +396,195 @@ import { config } from './config.js';
 const server = new MCPServer(config);
 
 server.start().catch((error) => {
-  console.error('Failed to start MCP server:', error);
-  process.exit(1);
+	console.error('Failed to start MCP server:', error);
+	process.exit(1);
 });
 ```
 
 **File: `src/server.ts`**
+
 ```typescript
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-} from '@modelcontextprotocol/sdk/types.js';
+import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { MoLOSApiClient } from './tools/modules.js';
 import type { MCPServerConfig } from './types/index.js';
 
 export class MCPServer {
-  private server: Server;
-  private apiClient: MoLOSApiClient;
-  private config: MCPServerConfig;
+	private server: Server;
+	private apiClient: MoLOSApiClient;
+	private config: MCPServerConfig;
 
-  constructor(config: MCPServerConfig) {
-    this.config = config;
-    this.apiClient = new MoLOSApiClient(config);
-    this.server = new Server(
-      {
-        name: 'mcp-server-molos',
-        version: '0.1.0',
-      },
-      {
-        capabilities: {
-          tools: {},
-        },
-      }
-    );
+	constructor(config: MCPServerConfig) {
+		this.config = config;
+		this.apiClient = new MoLOSApiClient(config);
+		this.server = new Server(
+			{
+				name: 'mcp-server-molos',
+				version: '0.1.0'
+			},
+			{
+				capabilities: {
+					tools: {}
+				}
+			}
+		);
 
-    this.setupHandlers();
-  }
+		this.setupHandlers();
+	}
 
-  private setupHandlers() {
-    // List tools handler
-    this.server.setRequestHandler(ListToolsRequestSchema, async () => {
-      const response = await this.apiClient.fetchTools();
-      return {
-        tools: response.tools,
-      };
-    });
+	private setupHandlers() {
+		// List tools handler
+		this.server.setRequestHandler(ListToolsRequestSchema, async () => {
+			const response = await this.apiClient.fetchTools();
+			return {
+				tools: response.tools
+			};
+		});
 
-    // Call tool handler
-    this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
-      const { name, arguments: args } = request.params;
+		// Call tool handler
+		this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
+			const { name, arguments: args } = request.params;
 
-      try {
-        const result = await this.apiClient.executeTool(name, args);
-        return {
-          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-        };
-      } catch (error) {
-        return {
-          content: [{ type: 'text', text: `Error: ${error.message}` }],
-          isError: true,
-        };
-      }
-    });
-  }
+			try {
+				const result = await this.apiClient.executeTool(name, args);
+				return {
+					content: [{ type: 'text', text: JSON.stringify(result, null, 2) }]
+				};
+			} catch (error) {
+				return {
+					content: [{ type: 'text', text: `Error: ${error.message}` }],
+					isError: true
+				};
+			}
+		});
+	}
 
-  async start() {
-    const transport = new StdioServerTransport();
-    await this.server.connect(transport);
-    console.error('MoLOS MCP server running on stdio');
-  }
+	async start() {
+		const transport = new StdioServerTransport();
+		await this.server.connect(transport);
+		console.error('MoLOS MCP server running on stdio');
+	}
 }
 ```
 
 **File: `src/tools/modules.ts`**
+
 ```typescript
 import type { MoLOSApiConfig } from '../types/index.js';
 
 export class MoLOSApiClient {
-  private baseUrl: string;
-  private apiKey: string;
-  private userId: string;
+	private baseUrl: string;
+	private apiKey: string;
+	private userId: string;
 
-  constructor(config: MoLOSApiConfig) {
-    this.baseUrl = config.apiUrl;
-    this.apiKey = config.apiKey;
-    this.userId = config.userId;
-  }
+	constructor(config: MoLOSApiConfig) {
+		this.baseUrl = config.apiUrl;
+		this.apiKey = config.apiKey;
+		this.userId = config.userId;
+	}
 
-  async fetchTools() {
-    const response = await fetch(`${this.baseUrl}/api/mcp/tools`, {
-      headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-    });
+	async fetchTools() {
+		const response = await fetch(`${this.baseUrl}/api/mcp/tools`, {
+			headers: {
+				Authorization: `Bearer ${this.apiKey}`,
+				'Content-Type': 'application/json'
+			}
+		});
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch tools: ${response.statusText}`);
-    }
+		if (!response.ok) {
+			throw new Error(`Failed to fetch tools: ${response.statusText}`);
+		}
 
-    return response.json();
-  }
+		return response.json();
+	}
 
-  async executeTool(toolName: string, params: Record<string, unknown>) {
-    const response = await fetch(`${this.baseUrl}/api/mcp/execute`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        toolName,
-        params,
-        userId: this.userId,
-      }),
-    });
+	async executeTool(toolName: string, params: Record<string, unknown>) {
+		const response = await fetch(`${this.baseUrl}/api/mcp/execute`, {
+			method: 'POST',
+			headers: {
+				Authorization: `Bearer ${this.apiKey}`,
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({
+				toolName,
+				params,
+				userId: this.userId
+			})
+		});
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Tool execution failed');
-    }
+		if (!response.ok) {
+			const error = await response.json();
+			throw new Error(error.error || 'Tool execution failed');
+		}
 
-    return response.json();
-  }
+		return response.json();
+	}
 }
 ```
 
 ### Step 3: Add API Key Authentication to MoLOS
 
 **Database Schema: `src/lib/server/db/schema/mcp-schema.ts`** (New)
+
 ```typescript
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 
 export const mcpApiKeys = sqliteTable('mcp_api_keys', {
-  id: text('id').primaryKey(),
-  userId: text('user_id').notNull(),
-  name: text('name').notNull(),
-  key: text('key').notNull().unique(),
-  scopes: text('scopes'), // JSON array of scopes
-  expiresAt: integer('expires_at'),
-  createdAt: integer('created_at').notNull(),
-  lastUsedAt: integer('last_used_at'),
+	id: text('id').primaryKey(),
+	userId: text('user_id').notNull(),
+	name: text('name').notNull(),
+	key: text('key').notNull().unique(),
+	scopes: text('scopes'), // JSON array of scopes
+	expiresAt: integer('expires_at'),
+	createdAt: integer('created_at').notNull(),
+	lastUsedAt: integer('last_used_at')
 });
 ```
 
 **File: `src/lib/server/mcp/auth.ts`** (New)
+
 ```typescript
 import { db } from '$lib/server/db';
 import { mcpApiKeys } from '$lib/server/db/schema/mcp-schema';
 import { eq } from 'drizzle-orm';
 
 export async function validateMcpApiKey(apiKey: string): Promise<string | null> {
-  const result = await db
-    .select()
-    .from(mcpApiKeys)
-    .where(eq(mcpApiKeys.key, apiKey))
-    .limit(1);
+	const result = await db.select().from(mcpApiKeys).where(eq(mcpApiKeys.key, apiKey)).limit(1);
 
-  if (result.length === 0) {
-    return null;
-  }
+	if (result.length === 0) {
+		return null;
+	}
 
-  const keyRecord = result[0];
+	const keyRecord = result[0];
 
-  // Check if key is expired
-  if (keyRecord.expiresAt && keyRecord.expiresAt < Math.floor(Date.now() / 1000)) {
-    return null;
-  }
+	// Check if key is expired
+	if (keyRecord.expiresAt && keyRecord.expiresAt < Math.floor(Date.now() / 1000)) {
+		return null;
+	}
 
-  // Update last used timestamp
-  await db
-    .update(mcpApiKeys)
-    .set({ lastUsedAt: Math.floor(Date.now() / 1000) })
-    .where(eq(mcpApiKeys.id, keyRecord.id));
+	// Update last used timestamp
+	await db
+		.update(mcpApiKeys)
+		.set({ lastUsedAt: Math.floor(Date.now() / 1000) })
+		.where(eq(mcpApiKeys.id, keyRecord.id));
 
-  return keyRecord.userId;
+	return keyRecord.userId;
 }
 
 export async function generateMcpApiKey(userId: string, name: string): Promise<string> {
-  const key = `molos_mcp_${crypto.randomUUID()}`;
+	const key = `molos_mcp_${crypto.randomUUID()}`;
 
-  await db.insert(mcpApiKeys).values({
-    id: crypto.randomUUID(),
-    userId,
-    name,
-    key,
-    scopes: JSON.stringify(['read', 'write']),
-    createdAt: Math.floor(Date.now() / 1000),
-  });
+	await db.insert(mcpApiKeys).values({
+		id: crypto.randomUUID(),
+		userId,
+		name,
+		key,
+		scopes: JSON.stringify(['read', 'write']),
+		createdAt: Math.floor(Date.now() / 1000)
+	});
 
-  return key;
+	return key;
 }
 ```
 
@@ -597,23 +606,23 @@ export async function generateMcpApiKey(userId: string, name: string): Promise<s
 ```typescript
 // src/lib/server/mcp/tool-mapper.test.ts
 describe('ToolMapper', () => {
-  it('should convert MoLOS ToolDefinition to MCP format', () => {
-    const molosTool: ToolDefinition = {
-      name: 'get_tasks',
-      description: 'Get user tasks',
-      parameters: {
-        type: 'object',
-        properties: {
-          limit: { type: 'number' }
-        }
-      },
-      execute: async () => ({})
-    };
+	it('should convert MoLOS ToolDefinition to MCP format', () => {
+		const molosTool: ToolDefinition = {
+			name: 'get_tasks',
+			description: 'Get user tasks',
+			parameters: {
+				type: 'object',
+				properties: {
+					limit: { type: 'number' }
+				}
+			},
+			execute: async () => ({})
+		};
 
-    const mcpTool = toMCPTool(molosTool);
-    expect(mcpTool.name).toBe('molos_get_tasks');
-    expect(mcpTool.inputSchema).toEqual(molosTool.parameters);
-  });
+		const mcpTool = toMCPTool(molosTool);
+		expect(mcpTool.name).toBe('molos_get_tasks');
+		expect(mcpTool.inputSchema).toEqual(molosTool.parameters);
+	});
 });
 ```
 
@@ -622,32 +631,34 @@ describe('ToolMapper', () => {
 ```typescript
 // mcp-server-molos/test/integration.test.ts
 describe('MCP Server Integration', () => {
-  it('should list all available tools', async () => {
-    const server = new MCPServer(mockConfig);
-    const tools = await server.listTools();
+	it('should list all available tools', async () => {
+		const server = new MCPServer(mockConfig);
+		const tools = await server.listTools();
 
-    expect(tools).toContainEqual({
-      name: 'molos_get_active_modules',
-      description: expect.any(String),
-      inputSchema: expect.any(Object)
-    });
-  });
+		expect(tools).toContainEqual({
+			name: 'molos_get_active_modules',
+			description: expect.any(String),
+			inputSchema: expect.any(Object)
+		});
+	});
 
-  it('should execute a tool call', async () => {
-    const result = await server.callTool('molos_get_active_modules', {});
-    expect(result).toHaveProperty('content');
-  });
+	it('should execute a tool call', async () => {
+		const result = await server.callTool('molos_get_active_modules', {});
+		expect(result).toHaveProperty('content');
+	});
 });
 ```
 
 ### Manual Testing with Claude Code
 
 1. Start MoLOS development server:
+
    ```bash
    npm run dev
    ```
 
 2. Run MCP server in separate terminal:
+
    ```bash
    cd mcp-server-molos
    npm run dev
@@ -705,14 +716,14 @@ describe('MCP Server Integration', () => {
 
 ### Core Tools (Always Available)
 
-| Tool Name | Description | Parameters |
-|-----------|-------------|------------|
-| `get_active_modules` | Lists all currently active modules | None |
-| `get_user_profile` | Retrieves current user's profile | None |
-| `get_current_time` | Returns current date/time in ISO format | None |
-| `search_codebase` | Searches codebase for patterns | `query`, `path?` |
-| `list_files` | Lists files in a directory | `path`, `recursive?` |
-| `save_memory` | Saves important user information | `content`, `importance?` |
+| Tool Name            | Description                             | Parameters               |
+| -------------------- | --------------------------------------- | ------------------------ |
+| `get_active_modules` | Lists all currently active modules      | None                     |
+| `get_user_profile`   | Retrieves current user's profile        | None                     |
+| `get_current_time`   | Returns current date/time in ISO format | None                     |
+| `search_codebase`    | Searches codebase for patterns          | `query`, `path?`         |
+| `list_files`         | Lists files in a directory              | `path`, `recursive?`     |
+| `save_memory`        | Saves important user information        | `content`, `importance?` |
 
 ---
 

@@ -197,11 +197,13 @@ For each module in `external_modules/`:
 ## Module: [MODULE_NAME]
 
 ### Pre-migration
+
 - [ ] Export all branches to backup
 - [ ] Document any external dependencies
 - [ ] Note any hardcoded paths
 
 ### Migration Steps
+
 - [ ] Create modules/[module-name]/ directory
 - [ ] Copy module files
 - [ ] Create package.json with @molos/module-[name]
@@ -212,6 +214,7 @@ For each module in `external_modules/`:
 - [ ] Test module in isolation
 
 ### Post-migration
+
 - [ ] Update module routes
 - [ ] Verify AI tools work
 - [ ] Check database migrations
@@ -287,10 +290,10 @@ The module's `config.ts` should now export using standard ES modules:
 import type { ModuleConfig } from '@molos/core/types';
 
 export const moduleConfig: ModuleConfig = {
-  id: "product-owner",
-  name: "Product Owner",
-  href: "/ui/product-owner",
-  // ... navigation config
+	id: 'product-owner',
+	name: 'Product Owner',
+	href: '/ui/product-owner'
+	// ... navigation config
 };
 
 export default moduleConfig;
@@ -328,11 +331,11 @@ Ensure all module tables use the `mod_{moduleId}_` prefix:
 // packages/database/src/utils/namespace.ts
 
 export function getTableName(moduleId: string, tableName: string): string {
-  return `mod_${moduleId}_${tableName}`;
+	return `mod_${moduleId}_${tableName}`;
 }
 
 export function getModuleTablePattern(moduleId: string): string {
-  return `mod_${moduleId}_%`;
+	return `mod_${moduleId}_%`;
 }
 ```
 
@@ -345,24 +348,24 @@ import { db } from '@molos/database';
 import { getTableName } from '@molos/database/utils';
 
 const MODULE_TABLES: Record<string, string[]> = {
-  'product-owner': ['projects', 'workflows', 'automation_rules', 'feedback'],
-  'tasks': ['tasks', 'categories', 'tags']
+	'product-owner': ['projects', 'workflows', 'automation_rules', 'feedback'],
+	tasks: ['tasks', 'categories', 'tags']
 };
 
 async function migrateModuleTables() {
-  for (const [moduleId, tables] of Object.entries(MODULE_TABLES)) {
-    for (const table of tables) {
-      const oldName = table;
-      const newName = getTableName(moduleId, table);
+	for (const [moduleId, tables] of Object.entries(MODULE_TABLES)) {
+		for (const table of tables) {
+			const oldName = table;
+			const newName = getTableName(moduleId, table);
 
-      try {
-        await db.execute(`ALTER TABLE ${oldName} RENAME TO ${newName}`);
-        console.log(`Renamed ${oldName} -> ${newName}`);
-      } catch (e) {
-        console.log(`Table ${oldName} not found or already renamed`);
-      }
-    }
-  }
+			try {
+				await db.execute(`ALTER TABLE ${oldName} RENAME TO ${newName}`);
+				console.log(`Renamed ${oldName} -> ${newName}`);
+			} catch (e) {
+				console.log(`Table ${oldName} not found or already renamed`);
+			}
+		}
+	}
 }
 
 migrateModuleTables();
@@ -396,20 +399,17 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  plugins: [
-    tailwindcss(),
-    sveltekit()
-  ],
+	plugins: [tailwindcss(), sveltekit()],
 
-  server: {
-    fs: {
-      allow: [
-        process.cwd(),
-        // Allow access to workspace packages
-        '../..'
-      ]
-    }
-  }
+	server: {
+		fs: {
+			allow: [
+				process.cwd(),
+				// Allow access to workspace packages
+				'../..'
+			]
+		}
+	}
 });
 ```
 
@@ -472,11 +472,13 @@ npm run build
 ### Issue: Module Not Found
 
 **Symptoms:**
+
 ```
 Error: Cannot find module '@molos/module-product-owner'
 ```
 
 **Solution:**
+
 ```bash
 # Ensure workspace dependencies are linked
 npm install
@@ -491,32 +493,36 @@ cat package.json | grep -A5 workspaces
 ### Issue: TypeScript Path Errors
 
 **Symptoms:**
+
 ```
 error TS2307: Cannot find module '@molos/core' or its corresponding type declarations.
 ```
 
 **Solution:**
+
 ```jsonc
 // Add to tsconfig.json in the affected package
 {
-  "compilerOptions": {
-    "paths": {
-      "@molos/core": ["../../packages/core/src"],
-      "@molos/database": ["../../packages/database/src"],
-      "@molos/ui": ["../../packages/ui/src"]
-    }
-  }
+	"compilerOptions": {
+		"paths": {
+			"@molos/core": ["../../packages/core/src"],
+			"@molos/database": ["../../packages/database/src"],
+			"@molos/ui": ["../../packages/ui/src"]
+		}
+	}
 }
 ```
 
 ### Issue: Database Migration Conflicts
 
 **Symptoms:**
+
 ```
 Error: Table "projects" already exists
 ```
 
 **Solution:**
+
 ```bash
 # Check current table names
 sqlite3 apps/web/molos.db ".tables"
@@ -531,11 +537,13 @@ sqlite3 apps/web/molos.db "DROP TABLE IF EXISTS projects;"
 ### Issue: SvelteKit Route Conflicts
 
 **Symptoms:**
+
 ```
 Error: Duplicate route /ui/product-owner
 ```
 
 **Solution:**
+
 1. Ensure each module's routes are unique
 2. Check for leftover symlinks: `find apps/web/src/routes -type l`
 3. Clean and rebuild: `npm run clean && npm run build`
@@ -543,11 +551,13 @@ Error: Duplicate route /ui/product-owner
 ### Issue: Build Order Problems
 
 **Symptoms:**
+
 ```
 Error: Package '@molos/core' is being built
 ```
 
 **Solution:**
+
 ```bash
 # Let Turborepo handle build order
 npm run build
@@ -607,5 +617,5 @@ After successful migration:
 
 ---
 
-*Last Updated: 2025-02-15*
-*Version: 1.0*
+_Last Updated: 2025-02-15_
+_Version: 1.0_

@@ -15,17 +15,17 @@ MoLOS uses a package-based module system where modules can be installed from npm
 
 ### Internal Modules (Always Loaded)
 
-| ID | Location | Description |
-|----|----------|-------------|
+| ID          | Location                    | Description                  |
+| ----------- | --------------------------- | ---------------------------- |
 | `dashboard` | `src/lib/config/dashboard/` | Core dashboard functionality |
-| `ai` | `modules/ai/` | AI assistant interface |
+| `ai`        | `modules/ai/`               | AI assistant interface       |
 
 These cannot be filtered out by environment variables.
 
 ### External Modules (Installable)
 
-| ID | Package | Source |
-|----|---------|--------|
+| ID            | Package               | Source                                             |
+| ------------- | --------------------- | -------------------------------------------------- |
 | `MoLOS-Tasks` | `@molos/module-tasks` | [GitHub](https://github.com/MoLOS-App/MoLOS-Tasks) |
 
 ## Quick Start
@@ -36,6 +36,7 @@ bun run dev
 ```
 
 That's it! The `dev` command automatically:
+
 1. Discovers modules in `modules/`
 2. Installs dependencies
 3. Syncs routes
@@ -93,21 +94,21 @@ VITE_MOLOS_AUTOLOAD_MODULES=MoLOS-Tasks,MoLOS-Finance
 
 ## Key Files
 
-| File | Purpose |
-|------|---------|
+| File                      | Purpose                                           |
+| ------------------------- | ------------------------------------------------- |
 | `src/lib/config/index.ts` | Module registry, discovery, and mandatory modules |
-| `src/lib/config/types.ts` | ModuleConfig type definition |
-| `scripts/sync-modules.ts` | Module synchronization |
-| `scripts/link-modules.ts` | Route symlink creation |
+| `src/lib/config/types.ts` | ModuleConfig type definition                      |
+| `scripts/sync-modules.ts` | Module synchronization                            |
+| `scripts/link-modules.ts` | Route symlink creation                            |
 
 ## Commands
 
-| Command | Description |
-|---------|-------------|
-| `bun run dev` | Start dev (auto-discovers, installs, syncs) |
-| `bun run module:sync-deps` | Auto-discover modules only |
-| `bun run module:sync` | Sync routes only |
-| `bun run module:link` | Link routes only |
+| Command                    | Description                                 |
+| -------------------------- | ------------------------------------------- |
+| `bun run dev`              | Start dev (auto-discovers, installs, syncs) |
+| `bun run module:sync-deps` | Auto-discover modules only                  |
+| `bun run module:sync`      | Sync routes only                            |
+| `bun run module:link`      | Link routes only                            |
 
 ## Adding Modules
 

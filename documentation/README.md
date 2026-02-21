@@ -4,16 +4,16 @@ Welcome to the MoLOS (Modular Life Organization System) documentation. MoLOS is 
 
 ## Quick Links
 
-| I want to... | Go to |
-|--------------|-------|
-| Get started quickly | [Quick Start](./getting-started/quick-start.md) |
-| See command reference | [Quick Reference](./QUICK-REFERENCE.md) |
-| AI context loading | [AI Context](./AI-CONTEXT.md) |
-| Understand the architecture | [Architecture Overview](./architecture/overview.md) |
-| Create a module | [Module Development](./modules/development.md) |
-| Deploy MoLOS | [Deployment Guide](./deployment/docker.md) |
-| Integrate with AI tools | [MCP Integration](./mcp/integration-prd.md) |
-| Troubleshoot issues | [Troubleshooting](./getting-started/troubleshooting.md) |
+| I want to...                | Go to                                                   |
+| --------------------------- | ------------------------------------------------------- |
+| Get started quickly         | [Quick Start](./getting-started/quick-start.md)         |
+| See command reference       | [Quick Reference](./QUICK-REFERENCE.md)                 |
+| AI context loading          | [AI Context](./AI-CONTEXT.md)                           |
+| Understand the architecture | [Architecture Overview](./architecture/overview.md)     |
+| Create a module             | [Module Development](./modules/development.md)          |
+| Deploy MoLOS                | [Deployment Guide](./deployment/docker.md)              |
+| Integrate with AI tools     | [MCP Integration](./mcp/integration-prd.md)             |
+| Troubleshoot issues         | [Troubleshooting](./getting-started/troubleshooting.md) |
 
 ## Documentation Structure
 
@@ -87,13 +87,13 @@ MoLOS/
 
 ## Tech Stack
 
-| Component | Technology |
-|-----------|------------|
-| Frontend/API | [SvelteKit](https://kit.svelte.dev/) |
-| Database | [SQLite](https://www.sqlite.org/) |
-| ORM | [Drizzle](https://orm.drizzle.team/) |
-| Styling | [Tailwind CSS](https://tailwindcss.com/) |
-| Build | [Turborepo](https://turbo.build/) |
+| Component    | Technology                               |
+| ------------ | ---------------------------------------- |
+| Frontend/API | [SvelteKit](https://kit.svelte.dev/)     |
+| Database     | [SQLite](https://www.sqlite.org/)        |
+| ORM          | [Drizzle](https://orm.drizzle.team/)     |
+| Styling      | [Tailwind CSS](https://tailwindcss.com/) |
+| Build        | [Turborepo](https://turbo.build/)        |
 
 ## Contributing
 
@@ -107,4 +107,4 @@ See the [Module Development Guide](./modules/development.md) for information on 
 
 ---
 
-*Last Updated: 2026-02-17*
+_Last Updated: 2026-02-17_

@@ -1,9 +1,4 @@
-import {
-	existsSync,
-	readFileSync,
-	readdirSync,
-	realpathSync
-} from 'fs';
+import { existsSync, readFileSync, readdirSync, realpathSync } from 'fs';
 import path from 'path';
 import { ModulePaths } from './paths';
 import {
@@ -66,7 +61,9 @@ export class ModuleInitialization {
 			}
 		}
 
-		console.log(`[ModuleManager] Module sync complete. Active modules: ${diskModules.map(m => m.id).join(', ') || 'none'}`);
+		console.log(
+			`[ModuleManager] Module sync complete. Active modules: ${diskModules.map((m) => m.id).join(', ') || 'none'}`
+		);
 	}
 
 	/**

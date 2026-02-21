@@ -4,7 +4,9 @@
 
 export interface PreToolUseHook {
 	toolName: string | '*';
-	handler: (params: Record<string, unknown>) => Promise<{ blocked?: boolean; reason?: string; modifiedParams?: Record<string, unknown> }>;
+	handler: (
+		params: Record<string, unknown>
+	) => Promise<{ blocked?: boolean; reason?: string; modifiedParams?: Record<string, unknown> }>;
 }
 
 export interface PostToolUseHook {

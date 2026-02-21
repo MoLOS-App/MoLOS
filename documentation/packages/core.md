@@ -39,21 +39,21 @@ import { utils, types } from '@molos/core';
 
 ### Utilities
 
-| Function | Description |
-|----------|-------------|
-| `formatDate()` | Format dates consistently across the app |
-| `slugify()` | Convert strings to URL-safe slugs |
-| `generateId()` | Generate unique identifiers |
-| `validateUuid()` | UUID validation helper |
+| Function         | Description                              |
+| ---------------- | ---------------------------------------- |
+| `formatDate()`   | Format dates consistently across the app |
+| `slugify()`      | Convert strings to URL-safe slugs        |
+| `generateId()`   | Generate unique identifiers              |
+| `validateUuid()` | UUID validation helper                   |
 
 ### Types
 
-| Type | Description |
-|------|-------------|
+| Type           | Description                    |
+| -------------- | ------------------------------ |
 | `ModuleConfig` | Module configuration interface |
-| `UserId` | User identifier type |
-| `Timestamp` | Unix timestamp type |
-| `JsonValue` | JSON-compatible value type |
+| `UserId`       | User identifier type           |
+| `Timestamp`    | Unix timestamp type            |
+| `JsonValue`    | JSON-compatible value type     |
 
 ## Dependencies
 
@@ -69,4 +69,4 @@ This package has minimal dependencies to keep it lightweight:
 
 ---
 
-*See also: [Architecture Overview](../architecture/overview.md)*
+_See also: [Architecture Overview](../architecture/overview.md)_

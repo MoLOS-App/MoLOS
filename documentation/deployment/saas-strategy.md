@@ -6,27 +6,27 @@ This document outlines the strategic considerations for offering MoLOS as both a
 
 MoLOS is designed to support multiple deployment models:
 
-| Model | Target Audience | Revenue Model |
-|-------|-----------------|---------------|
-| **Self-Hosted** | Technical users, privacy-focused orgs | Support contracts, enterprise licenses |
-| **SaaS (Cloud)** | Non-technical users, small teams | Subscription tiers |
-| **Enterprise** | Large organizations | Custom pricing, SLAs |
+| Model            | Target Audience                       | Revenue Model                          |
+| ---------------- | ------------------------------------- | -------------------------------------- |
+| **Self-Hosted**  | Technical users, privacy-focused orgs | Support contracts, enterprise licenses |
+| **SaaS (Cloud)** | Non-technical users, small teams      | Subscription tiers                     |
+| **Enterprise**   | Large organizations                   | Custom pricing, SLAs                   |
 
 ## Self-Hosted vs SaaS Offerings
 
 ### Feature Comparison
 
-| Feature | Self-Hosted | SaaS (Free) | SaaS (Pro) | SaaS (Enterprise) |
-|---------|-------------|-------------|------------|-------------------|
-| Core functionality | ✅ | ✅ | ✅ | ✅ |
-| All modules | ✅ | Limited | ✅ | ✅ |
-| Cloud sync | ❌ | ❌ | ✅ | ✅ |
-| Team collaboration | Manual | 1 user | 5 users | Unlimited |
-| Priority support | Community | Community | Email | Dedicated |
-| Custom modules | ✅ | ❌ | ❌ | ✅ |
-| SLA | - | - | 99.5% | 99.9% |
-| Data residency | Customer | Shared | Regional | Custom |
-| SSO/SAML | Self-config | ❌ | ❌ | ✅ |
+| Feature            | Self-Hosted | SaaS (Free) | SaaS (Pro) | SaaS (Enterprise) |
+| ------------------ | ----------- | ----------- | ---------- | ----------------- |
+| Core functionality | ✅          | ✅          | ✅         | ✅                |
+| All modules        | ✅          | Limited     | ✅         | ✅                |
+| Cloud sync         | ❌          | ❌          | ✅         | ✅                |
+| Team collaboration | Manual      | 1 user      | 5 users    | Unlimited         |
+| Priority support   | Community   | Community   | Email      | Dedicated         |
+| Custom modules     | ✅          | ❌          | ❌         | ✅                |
+| SLA                | -           | -           | 99.5%      | 99.9%             |
+| Data residency     | Customer    | Shared      | Regional   | Custom            |
+| SSO/SAML           | Self-config | ❌          | ❌         | ✅                |
 
 ### Self-Hosted Advantages
 
@@ -99,49 +99,49 @@ MoLOS is designed to support multiple deployment models:
 // Marketplace module listing
 
 interface ModuleListing {
-  // Basic info
-  id: string;
-  name: string;
-  description: string;
-  version: string;
-  author: AuthorInfo;
+	// Basic info
+	id: string;
+	name: string;
+	description: string;
+	version: string;
+	author: AuthorInfo;
 
-  // Classification
-  category: 'productivity' | 'integration' | 'analytics' | 'ai' | 'custom';
-  tags: string[];
+	// Classification
+	category: 'productivity' | 'integration' | 'analytics' | 'ai' | 'custom';
+	tags: string[];
 
-  // Pricing
-  pricing: {
-    type: 'free' | 'freemium' | 'paid' | 'enterprise';
-    price?: number;
-    currency?: string;
-    billingPeriod?: 'monthly' | 'yearly' | 'one-time';
-  };
+	// Pricing
+	pricing: {
+		type: 'free' | 'freemium' | 'paid' | 'enterprise';
+		price?: number;
+		currency?: string;
+		billingPeriod?: 'monthly' | 'yearly' | 'one-time';
+	};
 
-  // Availability
-  availability: {
-    selfHosted: boolean;
-    saas: {
-      free: boolean;
-      pro: boolean;
-      enterprise: boolean;
-    };
-  };
+	// Availability
+	availability: {
+		selfHosted: boolean;
+		saas: {
+			free: boolean;
+			pro: boolean;
+			enterprise: boolean;
+		};
+	};
 
-  // Statistics
-  stats: {
-    downloads: number;
-    activeInstalls: number;
-    rating: number;
-    reviewCount: number;
-  };
+	// Statistics
+	stats: {
+		downloads: number;
+		activeInstalls: number;
+		rating: number;
+		reviewCount: number;
+	};
 
-  // Links
-  links: {
-    documentation: string;
-    repository?: string;
-    support: string;
-  };
+	// Links
+	links: {
+		documentation: string;
+		repository?: string;
+		support: string;
+	};
 }
 ```
 
@@ -150,32 +150,32 @@ interface ModuleListing {
 ```typescript
 // GET /api/marketplace/modules
 interface MarketplaceSearchResponse {
-  modules: ModuleListing[];
-  total: number;
-  page: number;
-  pageSize: number;
+	modules: ModuleListing[];
+	total: number;
+	page: number;
+	pageSize: number;
 }
 
 // POST /api/marketplace/modules/{id}/install
 interface InstallRequest {
-  targetInstance: string;  // Instance ID
-  version?: string;        // Optional version
+	targetInstance: string; // Instance ID
+	version?: string; // Optional version
 }
 
 interface InstallResponse {
-  status: 'installed' | 'pending' | 'error';
-  message: string;
-  moduleId: string;
+	status: 'installed' | 'pending' | 'error';
+	message: string;
+	moduleId: string;
 }
 
 // GET /api/marketplace/modules/{id}/versions
 interface ModuleVersionsResponse {
-  versions: {
-    version: string;
-    releasedAt: string;
-    changelog: string;
-    minCoreVersion: string;
-  }[];
+	versions: {
+		version: string;
+		releasedAt: string;
+		changelog: string;
+		minCoreVersion: string;
+	}[];
 }
 ```
 
@@ -184,67 +184,61 @@ interface ModuleVersionsResponse {
 ```svelte
 <!-- Module Marketplace Page -->
 <script lang="ts">
-  import { Card, Button, Badge, Rating, SearchInput } from '@molos/ui';
+	import { Card, Button, Badge, Rating, SearchInput } from '@molos/ui';
 
-  let searchQuery = $state('');
-  let category = $state('all');
-  let modules = $state([]);
+	let searchQuery = $state('');
+	let category = $state('all');
+	let modules = $state([]);
 
-  async function searchModules() {
-    const response = await fetch(
-      `/api/marketplace/modules?q=${searchQuery}&category=${category}`
-    );
-    modules = await response.json().then(r => r.modules);
-  }
+	async function searchModules() {
+		const response = await fetch(`/api/marketplace/modules?q=${searchQuery}&category=${category}`);
+		modules = await response.json().then((r) => r.modules);
+	}
 
-  async function installModule(moduleId: string) {
-    await fetch(`/api/marketplace/modules/${moduleId}/install`, {
-      method: 'POST',
-      body: JSON.stringify({ targetInstance: currentInstanceId })
-    });
-  }
+	async function installModule(moduleId: string) {
+		await fetch(`/api/marketplace/modules/${moduleId}/install`, {
+			method: 'POST',
+			body: JSON.stringify({ targetInstance: currentInstanceId })
+		});
+	}
 </script>
 
 <div class="marketplace">
-  <div class="filters">
-    <SearchInput bind:value={searchQuery} onsearch={searchModules} />
-    <select bind:value={category} onchange={searchModules}>
-      <option value="all">All Categories</option>
-      <option value="productivity">Productivity</option>
-      <option value="integration">Integrations</option>
-      <option value="analytics">Analytics</option>
-      <option value="ai">AI & Automation</option>
-    </select>
-  </div>
+	<div class="filters">
+		<SearchInput bind:value={searchQuery} onsearch={searchModules} />
+		<select bind:value={category} onchange={searchModules}>
+			<option value="all">All Categories</option>
+			<option value="productivity">Productivity</option>
+			<option value="integration">Integrations</option>
+			<option value="analytics">Analytics</option>
+			<option value="ai">AI & Automation</option>
+		</select>
+	</div>
 
-  <div class="module-grid">
-    {#each modules as module (module.id)}
-      <Card class="module-card">
-        <div class="module-header">
-          <h3>{module.name}</h3>
-          <Badge variant={module.pricing.type === 'free' ? 'success' : 'default'}>
-            {module.pricing.type === 'free' ? 'Free' : `$${module.pricing.price}/mo`}
-          </Badge>
-        </div>
+	<div class="module-grid">
+		{#each modules as module (module.id)}
+			<Card class="module-card">
+				<div class="module-header">
+					<h3>{module.name}</h3>
+					<Badge variant={module.pricing.type === 'free' ? 'success' : 'default'}>
+						{module.pricing.type === 'free' ? 'Free' : `$${module.pricing.price}/mo`}
+					</Badge>
+				</div>
 
-        <p class="description">{module.description}</p>
+				<p class="description">{module.description}</p>
 
-        <div class="stats">
-          <Rating value={module.stats.rating} />
-          <span>{module.stats.reviewCount} reviews</span>
-        </div>
+				<div class="stats">
+					<Rating value={module.stats.rating} />
+					<span>{module.stats.reviewCount} reviews</span>
+				</div>
 
-        <div class="actions">
-          <Button onclick={() => installModule(module.id)}>
-            Install
-          </Button>
-          <Button variant="outline" href={`/marketplace/${module.id}`}>
-            Learn More
-          </Button>
-        </div>
-      </Card>
-    {/each}
-  </div>
+				<div class="actions">
+					<Button onclick={() => installModule(module.id)}>Install</Button>
+					<Button variant="outline" href={`/marketplace/${module.id}`}>Learn More</Button>
+				</div>
+			</Card>
+		{/each}
+	</div>
 </div>
 ```
 
@@ -252,50 +246,50 @@ interface ModuleVersionsResponse {
 
 ### Module Pricing Tiers
 
-| Tier | Price Range | Target Audience | Examples |
-|------|-------------|-----------------|----------|
-| **Free** | $0 | All users | Core modules, community contributions |
-| **Lite** | $5-15/mo | Individual users | Basic integrations, simple automation |
-| **Pro** | $20-50/mo | Small teams | Advanced integrations, AI features |
-| **Enterprise** | Custom | Large orgs | Custom modules, dedicated support |
+| Tier           | Price Range | Target Audience  | Examples                              |
+| -------------- | ----------- | ---------------- | ------------------------------------- |
+| **Free**       | $0          | All users        | Core modules, community contributions |
+| **Lite**       | $5-15/mo    | Individual users | Basic integrations, simple automation |
+| **Pro**        | $20-50/mo   | Small teams      | Advanced integrations, AI features    |
+| **Enterprise** | Custom      | Large orgs       | Custom modules, dedicated support     |
 
 ### Premium Module Examples
 
 #### 1. Advanced AI Assistant (Pro - $29/mo)
 
 ```yaml
-id: "advanced-ai"
-name: "Advanced AI Assistant"
+id: 'advanced-ai'
+name: 'Advanced AI Assistant'
 pricing:
-  type: "freemium"
+  type: 'freemium'
   tiers:
-    - name: "Basic"
+    - name: 'Basic'
       price: 0
       features:
-        - "100 AI queries/month"
-        - "Basic context understanding"
-    - name: "Pro"
+        - '100 AI queries/month'
+        - 'Basic context understanding'
+    - name: 'Pro'
       price: 29
       features:
-        - "Unlimited AI queries"
-        - "Advanced context (100k tokens)"
-        - "Custom AI training"
-        - "Priority processing"
+        - 'Unlimited AI queries'
+        - 'Advanced context (100k tokens)'
+        - 'Custom AI training'
+        - 'Priority processing'
 ```
 
 #### 2. Enterprise SSO Module (Enterprise - Custom)
 
 ```yaml
-id: "enterprise-sso"
-name: "Enterprise SSO & Security"
+id: 'enterprise-sso'
+name: 'Enterprise SSO & Security'
 pricing:
-  type: "enterprise"
+  type: 'enterprise'
   features:
-    - "SAML 2.0 integration"
-    - "OAuth 2.0 / OIDC"
-    - "Active Directory / LDAP"
-    - "Audit logging"
-    - "Compliance reports"
+    - 'SAML 2.0 integration'
+    - 'OAuth 2.0 / OIDC'
+    - 'Active Directory / LDAP'
+    - 'Audit logging'
+    - 'Compliance reports'
   availability:
     selfHosted: true
     saas:
@@ -307,17 +301,17 @@ pricing:
 #### 3. Advanced Analytics (Pro - $19/mo)
 
 ```yaml
-id: "advanced-analytics"
-name: "Advanced Analytics Dashboard"
+id: 'advanced-analytics'
+name: 'Advanced Analytics Dashboard'
 pricing:
-  type: "paid"
+  type: 'paid'
   price: 19
   features:
-    - "Custom dashboards"
-    - "Trend analysis"
-    - "Export to PDF/Excel"
-    - "Scheduled reports"
-    - "Team metrics"
+    - 'Custom dashboards'
+    - 'Trend analysis'
+    - 'Export to PDF/Excel'
+    - 'Scheduled reports'
+    - 'Team metrics'
 ```
 
 ### License Verification
@@ -326,50 +320,50 @@ pricing:
 // packages/core/src/licensing/verifier.ts
 
 interface License {
-  id: string;
-  customerId: string;
-  moduleId: string;
-  type: 'free' | 'paid' | 'trial' | 'enterprise';
-  expiresAt: number;
-  features: string[];
-  signature: string;
+	id: string;
+	customerId: string;
+	moduleId: string;
+	type: 'free' | 'paid' | 'trial' | 'enterprise';
+	expiresAt: number;
+	features: string[];
+	signature: string;
 }
 
 export class LicenseVerifier {
-  private publicKey: CryptoKey;
+	private publicKey: CryptoKey;
 
-  async verify(license: License): Promise<boolean> {
-    // Verify signature
-    const data = JSON.stringify({
-      id: license.id,
-      customerId: license.customerId,
-      moduleId: license.moduleId,
-      type: license.type,
-      expiresAt: license.expiresAt,
-      features: license.features
-    });
+	async verify(license: License): Promise<boolean> {
+		// Verify signature
+		const data = JSON.stringify({
+			id: license.id,
+			customerId: license.customerId,
+			moduleId: license.moduleId,
+			type: license.type,
+			expiresAt: license.expiresAt,
+			features: license.features
+		});
 
-    const signature = base64ToBytes(license.signature);
+		const signature = base64ToBytes(license.signature);
 
-    const isValid = await crypto.subtle.verify(
-      { name: 'RSASSA-PKCS1-v1_5' },
-      this.publicKey,
-      signature,
-      new TextEncoder().encode(data)
-    );
+		const isValid = await crypto.subtle.verify(
+			{ name: 'RSASSA-PKCS1-v1_5' },
+			this.publicKey,
+			signature,
+			new TextEncoder().encode(data)
+		);
 
-    if (!isValid) return false;
+		if (!isValid) return false;
 
-    // Check expiration
-    if (license.expiresAt < Date.now()) return false;
+		// Check expiration
+		if (license.expiresAt < Date.now()) return false;
 
-    return true;
-  }
+		return true;
+	}
 
-  async checkFeature(license: License, feature: string): Promise<boolean> {
-    if (!await this.verify(license)) return false;
-    return license.features.includes(feature);
-  }
+	async checkFeature(license: License, feature: string): Promise<boolean> {
+		if (!(await this.verify(license))) return false;
+		return license.features.includes(feature);
+	}
 }
 ```
 
@@ -408,33 +402,33 @@ export class LicenseVerifier {
 // packages/core/src/sync/protocol.ts
 
 interface SyncRequest {
-  clientId: string;
-  lastSyncTimestamp: number;
-  changes: ChangeRecord[];
+	clientId: string;
+	lastSyncTimestamp: number;
+	changes: ChangeRecord[];
 }
 
 interface SyncResponse {
-  serverTimestamp: number;
-  changes: ChangeRecord[];
-  conflicts: ConflictRecord[];
-  deletions: string[];
+	serverTimestamp: number;
+	changes: ChangeRecord[];
+	conflicts: ConflictRecord[];
+	deletions: string[];
 }
 
 interface ChangeRecord {
-  id: string;
-  table: string;
-  operation: 'insert' | 'update' | 'delete';
-  data: Record<string, unknown>;
-  timestamp: number;
-  clientId: string;
+	id: string;
+	table: string;
+	operation: 'insert' | 'update' | 'delete';
+	data: Record<string, unknown>;
+	timestamp: number;
+	clientId: string;
 }
 
 interface ConflictRecord {
-  id: string;
-  table: string;
-  localVersion: Record<string, unknown>;
-  serverVersion: Record<string, unknown>;
-  resolution: 'local' | 'server' | 'manual';
+	id: string;
+	table: string;
+	localVersion: Record<string, unknown>;
+	serverVersion: Record<string, unknown>;
+	resolution: 'local' | 'server' | 'manual';
 }
 ```
 
@@ -444,61 +438,56 @@ interface ConflictRecord {
 // packages/core/src/sync/conflict.ts
 
 export enum ConflictStrategy {
-  // Server always wins
-  SERVER_WINS = 'server_wins',
+	// Server always wins
+	SERVER_WINS = 'server_wins',
 
-  // Client always wins
-  CLIENT_WINS = 'client_wins',
+	// Client always wins
+	CLIENT_WINS = 'client_wins',
 
-  // Most recent wins
-  LAST_WRITE_WINS = 'last_write_wins',
+	// Most recent wins
+	LAST_WRITE_WINS = 'last_write_wins',
 
-  // Custom merge function
-  CUSTOM = 'custom',
+	// Custom merge function
+	CUSTOM = 'custom',
 
-  // Manual resolution required
-  MANUAL = 'manual'
+	// Manual resolution required
+	MANUAL = 'manual'
 }
 
 export class ConflictResolver {
-  resolve(
-    conflict: ConflictRecord,
-    strategy: ConflictStrategy
-  ): Record<string, unknown> {
-    switch (strategy) {
-      case ConflictStrategy.SERVER_WINS:
-        return conflict.serverVersion;
+	resolve(conflict: ConflictRecord, strategy: ConflictStrategy): Record<string, unknown> {
+		switch (strategy) {
+			case ConflictStrategy.SERVER_WINS:
+				return conflict.serverVersion;
 
-      case ConflictStrategy.CLIENT_WINS:
-        return conflict.localVersion;
+			case ConflictStrategy.CLIENT_WINS:
+				return conflict.localVersion;
 
-      case ConflictStrategy.LAST_WRITE_WINS:
-        // Compare timestamps
-        const localTime = conflict.localVersion.updatedAt;
-        const serverTime = conflict.serverVersion.updatedAt;
-        return localTime > serverTime
-          ? conflict.localVersion
-          : conflict.serverVersion;
+			case ConflictStrategy.LAST_WRITE_WINS:
+				// Compare timestamps
+				const localTime = conflict.localVersion.updatedAt;
+				const serverTime = conflict.serverVersion.updatedAt;
+				return localTime > serverTime ? conflict.localVersion : conflict.serverVersion;
 
-      case ConflictStrategy.CUSTOM:
-        // Use module-specific merge logic
-        return this.customMerge(conflict);
+			case ConflictStrategy.CUSTOM:
+				// Use module-specific merge logic
+				return this.customMerge(conflict);
 
-      case ConflictStrategy.MANUAL:
-        // Mark for manual resolution
-        throw new ManualResolutionRequired(conflict);
-    }
-  }
+			case ConflictStrategy.MANUAL:
+				// Mark for manual resolution
+				throw new ManualResolutionRequired(conflict);
+		}
+	}
 
-  private customMerge(conflict: ConflictRecord): Record<string, unknown> {
-    // Module can register custom merge handlers
-    const handler = this.mergeHandlers.get(conflict.table);
-    if (handler) {
-      return handler(conflict.localVersion, conflict.serverVersion);
-    }
-    // Default to server wins
-    return conflict.serverVersion;
-  }
+	private customMerge(conflict: ConflictRecord): Record<string, unknown> {
+		// Module can register custom merge handlers
+		const handler = this.mergeHandlers.get(conflict.table);
+		if (handler) {
+			return handler(conflict.localVersion, conflict.serverVersion);
+		}
+		// Default to server wins
+		return conflict.serverVersion;
+	}
 }
 ```
 
@@ -508,49 +497,49 @@ export class ConflictResolver {
 // packages/core/src/sync/offline.ts
 
 export class OfflineManager {
-  private pendingChanges: ChangeRecord[] = [];
-  private isOnline: boolean = true;
+	private pendingChanges: ChangeRecord[] = [];
+	private isOnline: boolean = true;
 
-  constructor() {
-    // Listen for online/offline events
-    window.addEventListener('online', () => this.onOnline());
-    window.addEventListener('offline', () => this.onOffline());
-  }
+	constructor() {
+		// Listen for online/offline events
+		window.addEventListener('online', () => this.onOnline());
+		window.addEventListener('offline', () => this.onOffline());
+	}
 
-  async queueChange(change: ChangeRecord): Promise<void> {
-    if (this.isOnline) {
-      // Try to sync immediately
-      try {
-        await this.syncChange(change);
-      } catch {
-        // If sync fails, queue for later
-        this.pendingChanges.push(change);
-      }
-    } else {
-      // Queue for when back online
-      this.pendingChanges.push(change);
-    }
-  }
+	async queueChange(change: ChangeRecord): Promise<void> {
+		if (this.isOnline) {
+			// Try to sync immediately
+			try {
+				await this.syncChange(change);
+			} catch {
+				// If sync fails, queue for later
+				this.pendingChanges.push(change);
+			}
+		} else {
+			// Queue for when back online
+			this.pendingChanges.push(change);
+		}
+	}
 
-  private async onOnline(): Promise<void> {
-    this.isOnline = true;
+	private async onOnline(): Promise<void> {
+		this.isOnline = true;
 
-    // Process pending changes
-    while (this.pendingChanges.length > 0) {
-      const change = this.pendingChanges.shift()!;
-      try {
-        await this.syncChange(change);
-      } catch (error) {
-        // Re-queue failed changes
-        this.pendingChanges.unshift(change);
-        break;
-      }
-    }
-  }
+		// Process pending changes
+		while (this.pendingChanges.length > 0) {
+			const change = this.pendingChanges.shift()!;
+			try {
+				await this.syncChange(change);
+			} catch (error) {
+				// Re-queue failed changes
+				this.pendingChanges.unshift(change);
+				break;
+			}
+		}
+	}
 
-  private onOffline(): void {
-    this.isOnline = false;
-  }
+	private onOffline(): void {
+		this.isOnline = false;
+	}
 }
 ```
 
@@ -561,33 +550,33 @@ export class OfflineManager {
 ```typescript
 // Team structure
 interface Team {
-  id: string;
-  name: string;
-  slug: string;
-  plan: 'free' | 'pro' | 'enterprise';
-  members: TeamMember[];
-  settings: TeamSettings;
+	id: string;
+	name: string;
+	slug: string;
+	plan: 'free' | 'pro' | 'enterprise';
+	members: TeamMember[];
+	settings: TeamSettings;
 }
 
 interface TeamMember {
-  userId: string;
-  role: 'owner' | 'admin' | 'member' | 'viewer';
-  joinedAt: number;
+	userId: string;
+	role: 'owner' | 'admin' | 'member' | 'viewer';
+	joinedAt: number;
 }
 
 interface TeamSettings {
-  // Module permissions
-  modulePermissions: Record<string, ('view' | 'edit' | 'admin')[]>;
+	// Module permissions
+	modulePermissions: Record<string, ('view' | 'edit' | 'admin')[]>;
 
-  // Feature flags
-  features: Record<string, boolean>;
+	// Feature flags
+	features: Record<string, boolean>;
 
-  // Security settings
-  security: {
-    twoFactorRequired: boolean;
-    ipWhitelist: string[];
-    sessionTimeout: number;
-  };
+	// Security settings
+	security: {
+		twoFactorRequired: boolean;
+		ipWhitelist: string[];
+		sessionTimeout: number;
+	};
 }
 ```
 
@@ -597,63 +586,48 @@ interface TeamSettings {
 // packages/core/src/auth/rbac.ts
 
 export const ROLES = {
-  owner: {
-    permissions: ['*']  // All permissions
-  },
-  admin: {
-    permissions: [
-      'team.manage',
-      'members.manage',
-      'modules.*',
-      'settings.*',
-      'billing.view'
-    ]
-  },
-  member: {
-    permissions: [
-      'modules.view',
-      'modules.use',
-      'settings.view'
-    ]
-  },
-  viewer: {
-    permissions: [
-      'modules.view'
-    ]
-  }
+	owner: {
+		permissions: ['*'] // All permissions
+	},
+	admin: {
+		permissions: ['team.manage', 'members.manage', 'modules.*', 'settings.*', 'billing.view']
+	},
+	member: {
+		permissions: ['modules.view', 'modules.use', 'settings.view']
+	},
+	viewer: {
+		permissions: ['modules.view']
+	}
 };
 
-export function hasPermission(
-  role: string,
-  permission: string
-): boolean {
-  const rolePerms = ROLES[role]?.permissions ?? [];
+export function hasPermission(role: string, permission: string): boolean {
+	const rolePerms = ROLES[role]?.permissions ?? [];
 
-  // Check for wildcard
-  if (rolePerms.includes('*')) return true;
+	// Check for wildcard
+	if (rolePerms.includes('*')) return true;
 
-  // Check exact match
-  if (rolePerms.includes(permission)) return true;
+	// Check exact match
+	if (rolePerms.includes(permission)) return true;
 
-  // Check wildcard prefix (e.g., 'modules.*' matches 'modules.view')
-  const prefix = permission.split('.').slice(0, -1).join('.') + '.*';
-  if (rolePerms.includes(prefix)) return true;
+	// Check wildcard prefix (e.g., 'modules.*' matches 'modules.view')
+	const prefix = permission.split('.').slice(0, -1).join('.') + '.*';
+	if (rolePerms.includes(prefix)) return true;
 
-  return false;
+	return false;
 }
 ```
 
 ### Enterprise Features
 
-| Feature | Description | Implementation |
-|---------|-------------|----------------|
-| **SSO/SAML** | Single sign-on integration | `enterprise-sso` module |
-| **Audit Logs** | Detailed activity logging | Built into core |
-| **Data Export** | GDPR compliance, backups | `data-export` module |
-| **Custom Branding** | White-label support | Theme configuration |
-| **Dedicated Support** | Priority support channel | SLA in contract |
-| **Custom SLA** | Uptime guarantees | Infrastructure config |
-| **On-Premise Option** | Self-hosted with support | Enterprise license |
+| Feature               | Description                | Implementation          |
+| --------------------- | -------------------------- | ----------------------- |
+| **SSO/SAML**          | Single sign-on integration | `enterprise-sso` module |
+| **Audit Logs**        | Detailed activity logging  | Built into core         |
+| **Data Export**       | GDPR compliance, backups   | `data-export` module    |
+| **Custom Branding**   | White-label support        | Theme configuration     |
+| **Dedicated Support** | Priority support channel   | SLA in contract         |
+| **Custom SLA**        | Uptime guarantees          | Infrastructure config   |
+| **On-Premise Option** | Self-hosted with support   | Enterprise license      |
 
 ## Pricing Model Recommendations
 
@@ -680,13 +654,13 @@ export function hasPermission(
 
 ### Pricing Rationale
 
-| Factor | Consideration |
-|--------|---------------|
-| **Market Research** | Compare with Notion ($8-15), Linear ($8-14), Asana ($10.99+) |
-| **Value-Based** | Price based on value delivered, not cost |
-| **Freemium Funnel** | Free tier drives adoption, Pro tier captures value |
-| **Enterprise Premium** | 3-5x Pro pricing for enterprise features |
-| **Annual Discount** | 20% discount for annual billing |
+| Factor                 | Consideration                                                |
+| ---------------------- | ------------------------------------------------------------ |
+| **Market Research**    | Compare with Notion ($8-15), Linear ($8-14), Asana ($10.99+) |
+| **Value-Based**        | Price based on value delivered, not cost                     |
+| **Freemium Funnel**    | Free tier drives adoption, Pro tier captures value           |
+| **Enterprise Premium** | 3-5x Pro pricing for enterprise features                     |
+| **Annual Discount**    | 20% discount for annual billing                              |
 
 ### Revenue Projections (Example)
 
@@ -713,67 +687,71 @@ Total ARR:                                    ~$155,000/year
 ```typescript
 // Stripe integration
 interface Subscription {
-  id: string;
-  customerId: string;
-  status: 'active' | 'past_due' | 'canceled' | 'trialing';
-  plan: 'free' | 'pro' | 'enterprise';
-  quantity: number;  // Number of seats
-  currentPeriodEnd: number;
+	id: string;
+	customerId: string;
+	status: 'active' | 'past_due' | 'canceled' | 'trialing';
+	plan: 'free' | 'pro' | 'enterprise';
+	quantity: number; // Number of seats
+	currentPeriodEnd: number;
 }
 
 // apps/web/src/lib/server/billing/stripe.ts
 
 export async function createSubscription(
-  customerId: string,
-  plan: 'pro' | 'enterprise',
-  quantity: number
+	customerId: string,
+	plan: 'pro' | 'enterprise',
+	quantity: number
 ): Promise<Subscription> {
-  const priceId = plan === 'pro'
-    ? process.env.STRIPE_PRO_PRICE_ID
-    : process.env.STRIPE_ENTERPRISE_PRICE_ID;
+	const priceId =
+		plan === 'pro' ? process.env.STRIPE_PRO_PRICE_ID : process.env.STRIPE_ENTERPRISE_PRICE_ID;
 
-  const subscription = await stripe.subscriptions.create({
-    customer: customerId,
-    items: [{ price: priceId, quantity }],
-    payment_behavior: 'default_incomplete',
-    expand: ['latest_invoice.payment_intent']
-  });
+	const subscription = await stripe.subscriptions.create({
+		customer: customerId,
+		items: [{ price: priceId, quantity }],
+		payment_behavior: 'default_incomplete',
+		expand: ['latest_invoice.payment_intent']
+	});
 
-  return {
-    id: subscription.id,
-    customerId,
-    status: subscription.status,
-    plan,
-    quantity,
-    currentPeriodEnd: subscription.current_period_end * 1000
-  };
+	return {
+		id: subscription.id,
+		customerId,
+		status: subscription.status,
+		plan,
+		quantity,
+		currentPeriodEnd: subscription.current_period_end * 1000
+	};
 }
 ```
 
 ## Implementation Roadmap
 
 ### Phase 1: Foundation (Months 1-2)
+
 - [ ] Implement subscription billing (Stripe)
 - [ ] Add team management basics
 - [ ] Create free/pro tier separation
 
 ### Phase 2: Marketplace (Months 3-4)
+
 - [ ] Build module registry
 - [ ] Create marketplace UI
 - [ ] Implement license verification
 
 ### Phase 3: Cloud Sync (Months 5-6)
+
 - [ ] Implement sync protocol
 - [ ] Build offline support
 - [ ] Add conflict resolution
 
 ### Phase 4: Enterprise (Months 7-9)
+
 - [ ] SSO/SAML module
 - [ ] Audit logging
 - [ ] Advanced RBAC
 - [ ] Custom contracts
 
 ### Phase 5: Scale (Months 10-12)
+
 - [ ] Multi-region deployment
 - [ ] Performance optimization
 - [ ] Advanced analytics
@@ -781,5 +759,5 @@ export async function createSubscription(
 
 ---
 
-*Last Updated: 2025-02-15*
-*Version: 1.0*
+_Last Updated: 2025-02-15_
+_Version: 1.0_

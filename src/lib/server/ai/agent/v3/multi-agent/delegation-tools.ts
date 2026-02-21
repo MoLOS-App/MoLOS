@@ -26,7 +26,7 @@ export function createDelegationTool(module: ModuleAgentConfig) {
 		description: `Delegate to ${module.name} module: ${module.description}. Capabilities: ${module.capabilities.join(', ')}`,
 		inputSchema: z.object({
 			task: z.string().describe('The specific task to perform'),
-			context: z.record(z.string(), z.any()).optional().describe('Additional context for the task'),
+			context: z.record(z.string(), z.any()).optional().describe('Additional context for the task')
 		}),
 		execute: async ({ task, context }): Promise<ModuleAgentResult> => {
 			const startTime = Date.now();
@@ -37,16 +37,16 @@ export function createDelegationTool(module: ModuleAgentConfig) {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
-						Authorization: `Bearer ${getModuleAuthToken(module.id)}`,
+						Authorization: `Bearer ${getModuleAuthToken(module.id)}`
 					},
-					body: JSON.stringify({ task, context }),
+					body: JSON.stringify({ task, context })
 				});
 
 				if (!response.ok) {
 					return {
 						success: false,
 						result: null,
-						message: `Module ${module.id} error: ${response.status} ${response.statusText}`,
+						message: `Module ${module.id} error: ${response.status} ${response.statusText}`
 					};
 				}
 
@@ -54,16 +54,16 @@ export function createDelegationTool(module: ModuleAgentConfig) {
 
 				return {
 					...result,
-					result: result.result,
+					result: result.result
 				};
 			} catch (error) {
 				return {
 					success: false,
 					result: null,
-					message: `Failed to delegate to ${module.id}: ${error instanceof Error ? error.message : String(error)}`,
+					message: `Failed to delegate to ${module.id}: ${error instanceof Error ? error.message : String(error)}`
 				};
 			}
-		},
+		}
 	});
 }
 
@@ -87,13 +87,16 @@ export function createLocalModuleTool(
 	moduleId: string,
 	moduleName: string,
 	description: string,
-	handler: (task: string, context: Record<string, unknown> | undefined) => Promise<ModuleAgentResult>
+	handler: (
+		task: string,
+		context: Record<string, unknown> | undefined
+	) => Promise<ModuleAgentResult>
 ) {
 	return tool({
 		description: `Use ${moduleName} module: ${description}`,
 		inputSchema: z.object({
 			task: z.string().describe('The specific task to perform'),
-			context: z.record(z.string(), z.any()).optional().describe('Additional context for the task'),
+			context: z.record(z.string(), z.any()).optional().describe('Additional context for the task')
 		}),
 		execute: async ({ task, context }): Promise<ModuleAgentResult> => {
 			try {
@@ -102,10 +105,10 @@ export function createLocalModuleTool(
 				return {
 					success: false,
 					result: null,
-					message: `Failed to execute ${moduleId} task: ${error instanceof Error ? error.message : String(error)}`,
+					message: `Failed to execute ${moduleId} task: ${error instanceof Error ? error.message : String(error)}`
 				};
 			}
-		},
+		}
 	});
 }
 

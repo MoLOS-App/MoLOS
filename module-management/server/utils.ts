@@ -77,7 +77,10 @@ export function ensureSymlinkDirectories(): void {
 /**
  * Get route symlink destinations for a module
  */
-export function getModuleRouteSymlinks(moduleId: string): { uiRoutes?: string; apiRoutes?: string } {
+export function getModuleRouteSymlinks(moduleId: string): {
+	uiRoutes?: string;
+	apiRoutes?: string;
+} {
 	return {
 		uiRoutes: path.join(ROUTE_CONFIG.uiRoutesDir, moduleId),
 		apiRoutes: path.join(ROUTE_CONFIG.apiRoutesDir, moduleId)

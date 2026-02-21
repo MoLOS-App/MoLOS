@@ -31,6 +31,7 @@ BETTER_AUTH_SECRET=your-secret-here
 ```
 
 Generate a secret:
+
 ```bash
 openssl rand -base64 32
 ```
@@ -53,30 +54,30 @@ The application will be available at `http://localhost:5173`.
 
 ### Development
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start development server |
-| `npm run build` | Build for production |
+| Command           | Description              |
+| ----------------- | ------------------------ |
+| `npm run dev`     | Start development server |
+| `npm run build`   | Build for production     |
 | `npm run preview` | Preview production build |
 
 ### Database
 
-| Command | Description |
-|---------|-------------|
-| `npm run db:push` | Push schema to database |
-| `npm run db:migrate` | Run migrations |
-| `npm run db:generate` | Generate migrations |
-| `npm run db:studio` | Open Drizzle Studio |
-| `npm run db:reset` | Reset database |
+| Command               | Description             |
+| --------------------- | ----------------------- |
+| `npm run db:push`     | Push schema to database |
+| `npm run db:migrate`  | Run migrations          |
+| `npm run db:generate` | Generate migrations     |
+| `npm run db:studio`   | Open Drizzle Studio     |
+| `npm run db:reset`    | Reset database          |
 
 ### Modules
 
-| Command | Description |
-|---------|-------------|
-| `npm run modules:sync` | Sync external modules |
-| `npm run module:create <name>` | Create a new module |
+| Command                          | Description               |
+| -------------------------------- | ------------------------- |
+| `npm run modules:sync`           | Sync external modules     |
+| `npm run module:create <name>`   | Create a new module       |
 | `npm run module:validate <path>` | Validate module structure |
-| `npm run module:test <path>` | Test a module |
+| `npm run module:test <path>`     | Test a module             |
 
 ## Code Style
 

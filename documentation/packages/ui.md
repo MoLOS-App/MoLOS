@@ -27,13 +27,13 @@ npm install @molos/ui
 
 ```svelte
 <script lang="ts">
-  import { Button, Card, Badge } from '@molos/ui';
+	import { Button, Card, Badge } from '@molos/ui';
 </script>
 
 <Card>
-  <h2>Card Title</h2>
-  <Badge>Active</Badge>
-  <Button>Click me</Button>
+	<h2>Card Title</h2>
+	<Badge>Active</Badge>
+	<Button>Click me</Button>
 </Card>
 ```
 
@@ -41,40 +41,40 @@ npm install @molos/ui
 
 ### Layout Components
 
-| Component | Description |
-|-----------|-------------|
-| `Card` | Container with border and padding |
-| `Modal` | Overlay dialog |
-| `Tabs` | Tab navigation container |
-| `Sidebar` | Side navigation panel |
+| Component | Description                       |
+| --------- | --------------------------------- |
+| `Card`    | Container with border and padding |
+| `Modal`   | Overlay dialog                    |
+| `Tabs`    | Tab navigation container          |
+| `Sidebar` | Side navigation panel             |
 
 ### Form Components
 
-| Component | Description |
-|-----------|-------------|
-| `Button` | Clickable button with variants |
-| `Input` | Text input field |
-| `Select` | Dropdown selection |
-| `Checkbox` | Checkbox input |
-| `Switch` | Toggle switch |
+| Component  | Description                    |
+| ---------- | ------------------------------ |
+| `Button`   | Clickable button with variants |
+| `Input`    | Text input field               |
+| `Select`   | Dropdown selection             |
+| `Checkbox` | Checkbox input                 |
+| `Switch`   | Toggle switch                  |
 
 ### Feedback Components
 
-| Component | Description |
-|-----------|-------------|
-| `Badge` | Status indicator |
-| `Alert` | Notification message |
-| `Toast` | Temporary notification |
-| `Spinner` | Loading indicator |
+| Component | Description            |
+| --------- | ---------------------- |
+| `Badge`   | Status indicator       |
+| `Alert`   | Notification message   |
+| `Toast`   | Temporary notification |
+| `Spinner` | Loading indicator      |
 
 ### Data Display
 
-| Component | Description |
-|-----------|-------------|
-| `Table` | Data table |
-| `List` | Vertical list |
-| `Avatar` | User avatar |
-| `Icon` | Lucide icon wrapper |
+| Component | Description         |
+| --------- | ------------------- |
+| `Table`   | Data table          |
+| `List`    | Vertical list       |
+| `Avatar`  | User avatar         |
+| `Icon`    | Lucide icon wrapper |
 
 ## Component Variants
 
@@ -103,10 +103,7 @@ Components use Tailwind CSS classes. Ensure Tailwind is configured in your proje
 ```javascript
 // tailwind.config.js
 export default {
-  content: [
-    './src/**/*.{html,js,svelte,ts}',
-    './node_modules/@molos/ui/**/*.{html,js,svelte,ts}'
-  ]
+	content: ['./src/**/*.{html,js,svelte,ts}', './node_modules/@molos/ui/**/*.{html,js,svelte,ts}']
 };
 ```
 
@@ -124,4 +121,4 @@ export default {
 
 ---
 
-*See also: [Architecture Overview](../architecture/overview.md)*
+_See also: [Architecture Overview](../architecture/overview.md)_

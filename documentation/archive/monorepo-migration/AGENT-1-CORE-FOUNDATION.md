@@ -7,6 +7,7 @@
 ### ✅ VERIFICATION COMPLETE
 
 All monorepo foundation requirements have been successfully implemented and verified:
+
 - ✅ `packages/` directory exists with `@molos/core` package
 - ✅ `turbo.json` exists with complete pipeline configuration
 - ✅ `tsconfig.base.json` exists with enhanced compiler options
@@ -34,6 +35,7 @@ $ cat package.json | grep -A2 workspaces
 ```
 
 ### What EXISTS in Codebase (Post-Migration)
+
 - `packages/core/` - Core package with utils and types
 - `packages/ui/` - UI components package (bonus, completed by Agent 4)
 - `turbo.json` - Turborepo pipeline configuration
@@ -46,6 +48,7 @@ $ cat package.json | grep -A2 workspaces
 ---
 
 ## Agent Assignment
+
 - **Agent**: Agent 1
 - **Worktree**: `/home/eduardez/Workspace/MoLOS-org/MoLOS-core`
 - **Branch**: `feature/core`
@@ -58,6 +61,7 @@ You are setting up the foundation for converting MoLOS from a single SvelteKit a
 ### Current State
 
 MoLOS is currently:
+
 - A single SvelteKit application in `src/`
 - External modules in `external_modules/` symlinked to `src/lib/external_modules/`
 - Database schema scattered across `src/lib/server/db/schema/` and module directories
@@ -66,6 +70,7 @@ MoLOS is currently:
 ### Target State
 
 A Turborepo monorepo with:
+
 - Shared packages: `@molos/core`, `@molos/database`, `@molos/ui`
 - Module packages: `@molos/module-*`
 - Main app: `apps/web`
@@ -117,13 +122,13 @@ apps/web/
 
 ## Files to Modify
 
-| Current Path | Action | Notes |
-|-------------|--------|-------|
-| `package.json` | Replace | Convert to root workspace config |
-| `tsconfig.json` | Modify | Extend from tsconfig.base.json |
-| `vite.config.ts` | Modify | Update for monorepo paths |
-| `src/lib/utils/` | Move | To packages/core/src/utils/ |
-| `src/lib/types/` | Move | To packages/core/src/types/ |
+| Current Path     | Action  | Notes                            |
+| ---------------- | ------- | -------------------------------- |
+| `package.json`   | Replace | Convert to root workspace config |
+| `tsconfig.json`  | Modify  | Extend from tsconfig.base.json   |
+| `vite.config.ts` | Modify  | Update for monorepo paths        |
+| `src/lib/utils/` | Move    | To packages/core/src/utils/      |
+| `src/lib/types/` | Move    | To packages/core/src/types/      |
 
 ## Implementation Steps
 
@@ -141,32 +146,28 @@ Create a new root `package.json` that sets up npm workspaces:
 
 ```json
 {
-  "name": "molos-monorepo",
-  "version": "0.0.1",
-  "private": true,
-  "workspaces": [
-    "packages/*",
-    "modules/*",
-    "apps/*"
-  ],
-  "scripts": {
-    "dev": "turbo run dev",
-    "build": "turbo run build",
-    "lint": "turbo run lint",
-    "test": "turbo run test",
-    "clean": "turbo run clean && rm -rf node_modules",
-    "format": "prettier --write \"**/*.{ts,tsx,md,svelte}\""
-  },
-  "devDependencies": {
-    "turbo": "^2.0.0",
-    "typescript": "^5.0.0",
-    "prettier": "^3.0.0",
-    "prettier-plugin-svelte": "^3.0.0"
-  },
-  "packageManager": "npm@10.0.0",
-  "engines": {
-    "node": ">=18"
-  }
+	"name": "molos-monorepo",
+	"version": "0.0.1",
+	"private": true,
+	"workspaces": ["packages/*", "modules/*", "apps/*"],
+	"scripts": {
+		"dev": "turbo run dev",
+		"build": "turbo run build",
+		"lint": "turbo run lint",
+		"test": "turbo run test",
+		"clean": "turbo run clean && rm -rf node_modules",
+		"format": "prettier --write \"**/*.{ts,tsx,md,svelte}\""
+	},
+	"devDependencies": {
+		"turbo": "^2.0.0",
+		"typescript": "^5.0.0",
+		"prettier": "^3.0.0",
+		"prettier-plugin-svelte": "^3.0.0"
+	},
+	"packageManager": "npm@10.0.0",
+	"engines": {
+		"node": ">=18"
+	}
 }
 ```
 
@@ -174,27 +175,27 @@ Create a new root `package.json` that sets up npm workspaces:
 
 ```json
 {
-  "$schema": "https://turbo.build/schema.json",
-  "globalDependencies": ["**/.env.*local"],
-  "tasks": {
-    "build": {
-      "dependsOn": ["^build"],
-      "outputs": [".svelte-kit/**", "dist/**", ".next/**", "!.next/cache/**"]
-    },
-    "dev": {
-      "cache": false,
-      "persistent": true
-    },
-    "lint": {
-      "dependsOn": ["^lint"]
-    },
-    "test": {
-      "dependsOn": ["^build"]
-    },
-    "clean": {
-      "cache": false
-    }
-  }
+	"$schema": "https://turbo.build/schema.json",
+	"globalDependencies": ["**/.env.*local"],
+	"tasks": {
+		"build": {
+			"dependsOn": ["^build"],
+			"outputs": [".svelte-kit/**", "dist/**", ".next/**", "!.next/cache/**"]
+		},
+		"dev": {
+			"cache": false,
+			"persistent": true
+		},
+		"lint": {
+			"dependsOn": ["^lint"]
+		},
+		"test": {
+			"dependsOn": ["^build"]
+		},
+		"clean": {
+			"cache": false
+		}
+	}
 }
 ```
 
@@ -202,25 +203,25 @@ Create a new root `package.json` that sets up npm workspaces:
 
 ```json
 {
-  "$schema": "https://json.schemastore.org/tsconfig",
-  "display": "Default",
-  "compilerOptions": {
-    "composite": false,
-    "declaration": true,
-    "declarationMap": true,
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "inlineSources": false,
-    "isolatedModules": true,
-    "moduleResolution": "bundler",
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "preserveWatchOutput": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "strictNullChecks": true
-  },
-  "exclude": ["node_modules"]
+	"$schema": "https://json.schemastore.org/tsconfig",
+	"display": "Default",
+	"compilerOptions": {
+		"composite": false,
+		"declaration": true,
+		"declarationMap": true,
+		"esModuleInterop": true,
+		"forceConsistentCasingInFileNames": true,
+		"inlineSources": false,
+		"isolatedModules": true,
+		"moduleResolution": "bundler",
+		"noUnusedLocals": false,
+		"noUnusedParameters": false,
+		"preserveWatchOutput": true,
+		"skipLibCheck": true,
+		"strict": true,
+		"strictNullChecks": true
+	},
+	"exclude": ["node_modules"]
 }
 ```
 
@@ -234,33 +235,33 @@ Create `packages/core/package.json`:
 
 ```json
 {
-  "name": "@molos/core",
-  "version": "0.0.1",
-  "private": true,
-  "type": "module",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    },
-    "./utils": {
-      "types": "./dist/utils/index.d.ts",
-      "import": "./dist/utils/index.js"
-    },
-    "./types": {
-      "types": "./dist/types/index.d.ts",
-      "import": "./dist/types/index.js"
-    }
-  },
-  "files": ["dist"],
-  "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
-    "clean": "rm -rf dist"
-  },
-  "devDependencies": {
-    "typescript": "^5.0.0"
-  }
+	"name": "@molos/core",
+	"version": "0.0.1",
+	"private": true,
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		},
+		"./utils": {
+			"types": "./dist/utils/index.d.ts",
+			"import": "./dist/utils/index.js"
+		},
+		"./types": {
+			"types": "./dist/types/index.d.ts",
+			"import": "./dist/types/index.js"
+		}
+	},
+	"files": ["dist"],
+	"scripts": {
+		"build": "tsc",
+		"dev": "tsc --watch",
+		"clean": "rm -rf dist"
+	},
+	"devDependencies": {
+		"typescript": "^5.0.0"
+	}
 }
 ```
 
@@ -268,15 +269,15 @@ Create `packages/core/tsconfig.json`:
 
 ```json
 {
-  "extends": "../../tsconfig.base.json",
-  "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "module": "ESNext",
-    "target": "ES2022"
-  },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"outDir": "./dist",
+		"rootDir": "./src",
+		"module": "ESNext",
+		"target": "ES2022"
+	},
+	"include": ["src/**/*"],
+	"exclude": ["node_modules", "dist"]
 }
 ```
 
@@ -287,6 +288,7 @@ Create `packages/core/tsconfig.json`:
 3. Keep SvelteKit-specific utilities in the app
 
 Common candidates for extraction:
+
 - Date/time helpers
 - String manipulation
 - Validation functions
@@ -309,6 +311,7 @@ export * from './validation';
 3. Keep app-specific types in the app
 
 Common candidates:
+
 - Module types
 - API response types
 - Common interfaces
@@ -335,6 +338,7 @@ export * from './types';
 ### Step 9: Set Up apps/web Structure
 
 Option A: Move src/ to apps/web/
+
 ```bash
 mkdir -p apps/web
 mv src apps/web/
@@ -343,6 +347,7 @@ mv tests apps/web/ 2>/dev/null || true
 ```
 
 Option B: Keep src/ in root, update config
+
 - Simpler approach for initial migration
 - Can reorganize later
 
@@ -354,28 +359,28 @@ If moving to apps/web/, create `apps/web/package.json`:
 
 ```json
 {
-  "name": "@molos/web",
-  "version": "0.0.1",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "dev": "vite dev",
-    "build": "vite build",
-    "preview": "vite preview",
-    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-    "lint": "prettier --check . && eslint .",
-    "clean": "rm -rf .svelte-kit"
-  },
-  "dependencies": {
-    "@molos/core": "workspace:*"
-  },
-  "devDependencies": {
-    "@sveltejs/kit": "^2.0.0",
-    "svelte": "^5.0.0",
-    "typescript": "^5.0.0",
-    "vite": "^5.0.0"
-  }
+	"name": "@molos/web",
+	"version": "0.0.1",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "vite dev",
+		"build": "vite build",
+		"preview": "vite preview",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"lint": "prettier --check . && eslint .",
+		"clean": "rm -rf .svelte-kit"
+	},
+	"dependencies": {
+		"@molos/core": "workspace:*"
+	},
+	"devDependencies": {
+		"@sveltejs/kit": "^2.0.0",
+		"svelte": "^5.0.0",
+		"typescript": "^5.0.0",
+		"vite": "^5.0.0"
+	}
 }
 ```
 
@@ -388,13 +393,13 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  plugins: [sveltekit()],
-  resolve: {
-    alias: {
-      '@molos/core': path.resolve('../packages/core/src'),
-      // Add more aliases as packages are created
-    }
-  }
+	plugins: [sveltekit()],
+	resolve: {
+		alias: {
+			'@molos/core': path.resolve('../packages/core/src')
+			// Add more aliases as packages are created
+		}
+	}
 });
 ```
 
@@ -429,7 +434,7 @@ Create a test file to verify package imports work:
 
 ```typescript
 // test-imports.ts
-import { /* exported items */ } from '@molos/core';
+import {} from /* exported items */ '@molos/core';
 console.log('Core imports work!');
 ```
 
@@ -454,6 +459,7 @@ tree -L 3 -d
 ### For Agent 2 (Modules)
 
 After you complete:
+
 - Package names will be: `@molos/core`, `@molos/database`, `@molos/ui`
 - Module packages should be: `@molos/module-*`
 - Import path: `import { ... } from '@molos/core'`
@@ -461,6 +467,7 @@ After you complete:
 ### For Agent 3 (Database)
 
 After you complete:
+
 - Create `packages/database/` following the same structure
 - Extend from `tsconfig.base.json`
 - Use `"@molos/core": "workspace:*"` in dependencies
@@ -468,6 +475,7 @@ After you complete:
 ### For Agent 4 (UI)
 
 After you complete:
+
 - Create `packages/ui/` following the same structure
 - Extend from `tsconfig.base.json`
 - Use `"@molos/core": "workspace:*"` in dependencies
@@ -477,6 +485,7 @@ After you complete:
 ### What NOT to Move to Core
 
 Keep these in the main app:
+
 - SvelteKit-specific utilities (hooks, server functions)
 - Route handlers
 - Svelte components
@@ -485,6 +494,7 @@ Keep these in the main app:
 ### Gradual Migration
 
 This is a foundation. The full migration will be iterative:
+
 1. First, establish the structure
 2. Other agents create their packages
 3. Gradually update imports in the main app
@@ -496,12 +506,12 @@ Consider adding path aliases in `tsconfig.json`:
 
 ```json
 {
-  "compilerOptions": {
-    "paths": {
-      "@molos/core": ["./packages/core/src"],
-      "@molos/core/*": ["./packages/core/src/*"]
-    }
-  }
+	"compilerOptions": {
+		"paths": {
+			"@molos/core": ["./packages/core/src"],
+			"@molos/core/*": ["./packages/core/src/*"]
+		}
+	}
 }
 ```
 
@@ -527,7 +537,7 @@ git branch -D feature/core
 All implementation steps verified and completed:
 
 - [x] Step 1: Worktree initialized (feature/core branch)
-- [x] Step 2: Root package.json created (with workspaces: packages/*, modules/*)
+- [x] Step 2: Root package.json created (with workspaces: packages/_, modules/_)
 - [x] Step 3: turbo.json created (with build, dev, lint, test, clean tasks)
 - [x] Step 4: tsconfig.base.json created (with enhanced compiler options)
 - [x] Step 5: packages/core structure created (src/, dist/, package.json, tsconfig.json)
@@ -540,12 +550,14 @@ All implementation steps verified and completed:
 - [x] Step 12: Build and test successful (verified with `npx turbo build --filter=@molos/core`)
 
 ### Additional Completiions (Beyond Original Spec)
+
 - [x] Bonus: packages/ui/ created by Agent 4 (shadcn-svelte components)
 - [x] Enhanced: Common types added (PaginationParams, PaginatedResponse, ApiError, etc.)
 - [x] Enhanced: Zod validation schemas for module types
 - [x] Enhanced: MCP protocol types with comprehensive JSON-RPC definitions
 
 ### Prerequisites Completed
+
 1. ✅ Reviewed and extracted uuid utility from src/lib/utils/uuid.ts
 2. ✅ Reviewed and extracted types from:
    - src/lib/config/module-types.ts → packages/core/src/types/module.ts
@@ -558,6 +570,7 @@ All implementation steps verified and completed:
 ## Completion Criteria
 
 ✅ **All completion criteria met:**
+
 1. ✅ `npm install` succeeds in root (pnpm workspaces configured)
 2. ✅ `npx turbo build --filter=@molos/core` builds successfully (verified)
 3. ✅ Other agents can reference `@molos/core` in their work (imports work via aliases)
@@ -566,21 +579,25 @@ All implementation steps verified and completed:
 ## Implementation Summary
 
 ### Commits on feature/core
+
 1. `8a0f1a5` - feat: Add Turborepo monorepo with @molos/core package
 2. `2919b1b` - feat: Improve core package configuration and add common types
 
 ### Key Files Created
+
 - `turbo.json` - Turborepo pipeline configuration
 - `tsconfig.base.json` - Shared TypeScript configuration
 - `packages/core/` - Core package with utils and types
 - `packages/ui/` - UI components package (Agent 4 work)
 
 ### Key Files Modified
+
 - `package.json` - Added workspaces, turbo, packageManager
 - `vite.config.ts` - Added @molos/core resolve alias
 - `svelte.config.js` - Added @molos/core alias
 
 ### Deviations from Original Document
+
 1. **No helpers.ts or validation.ts**: These were template placeholders in the document; actual codebase used uuid.ts
 2. **Enhanced common.ts**: Created comprehensive shared types beyond document's minimal example
 3. **Kept src/ in root**: Chose simpler approach over moving to apps/web/
@@ -589,16 +606,19 @@ All implementation steps verified and completed:
 ## Next Steps for Other Agents
 
 ### Agent 2 (Modules)
+
 - ✅ Can use `import { ModuleConfig, ToolDefinition } from '@molos/core'`
 - Create `packages/module-*` following same structure
 - Reference: packages/core/src/types/module.ts:82
 
 ### Agent 3 (Database)
+
 - ✅ Can use `import { PaginatedResponse, ApiError } from '@molos/core'`
 - Create `packages/database/` following same structure
 - Reference: packages/core/src/types/common.ts:25
 
 ### Agent 4 (UI)
+
 - ✅ Already completed: `packages/ui/` with shadcn-svelte components
 - ✅ Can use `import { ... } from '@molos/core'` for shared types
 - Reference: packages/ui/src/lib/index.ts

@@ -47,11 +47,13 @@
 ### Technical Details
 
 **Error Flow Before Fix:**
+
 ```
 AI Agent → Tool Call → Tool Execute → Repository → textEnum Validation → THROW ERROR → Crash
 ```
 
 **Error Flow After Fix:**
+
 ```
 AI Agent → Tool Call → Tool Validation → Map to Default → Repository → Success
      ↓ (if error)
@@ -78,11 +80,11 @@ Tool Wrapper → Categorize Error → Return Error Result → Agent Handles → 
 
 ### Results
 
-| Metric | Before | After |
-|--------|--------|-------|
-| Directories linked | 4 | 58 |
-| Modules discovered | 2 | 9 |
-| Dev server | Failed | Works |
+| Metric             | Before | After |
+| ------------------ | ------ | ----- |
+| Directories linked | 4      | 58    |
+| Modules discovered | 2      | 9     |
+| Dev server         | Failed | Works |
 
 ---
 
@@ -100,11 +102,11 @@ Tool Wrapper → Categorize Error → Return Error Result → Agent Handles → 
 
 ### Module Classification
 
-| Module | Type | ID | Package |
-|--------|------|----|----|
-| Dashboard | Internal | `dashboard` | Core |
-| AI | Internal | `ai` | `@molos/module-ai` |
-| Tasks | External | `MoLOS-Tasks` | `@molos/module-tasks` |
+| Module    | Type     | ID            | Package               |
+| --------- | -------- | ------------- | --------------------- |
+| Dashboard | Internal | `dashboard`   | Core                  |
+| AI        | Internal | `ai`          | `@molos/module-ai`    |
+| Tasks     | External | `MoLOS-Tasks` | `@molos/module-tasks` |
 
 ---
 
@@ -115,6 +117,7 @@ Tool Wrapper → Categorize Error → Return Error Result → Agent Handles → 
 ### Module Structure Migration
 
 **Before:**
+
 ```
 external_modules/MoLOS-MyModule/
 ├── config.ts
@@ -124,6 +127,7 @@ external_modules/MoLOS-MyModule/
 ```
 
 **After:**
+
 ```
 modules/my-module/
 ├── package.json           # @molos/module-my-module
@@ -152,14 +156,14 @@ modules/my-module/
 
 ### Modules Migrated
 
-| Module | Status |
-|--------|--------|
-| MoLOS-AI-Knowledge | Active |
-| MoLOS-Finance | Active |
-| MoLOS-Goals | Active |
-| MoLOS-Google | Active |
-| MoLOS-Health | Active |
-| MoLOS-Meals | Active |
+| Module              | Status |
+| ------------------- | ------ |
+| MoLOS-AI-Knowledge  | Active |
+| MoLOS-Finance       | Active |
+| MoLOS-Goals         | Active |
+| MoLOS-Google        | Active |
+| MoLOS-Health        | Active |
+| MoLOS-Meals         | Active |
 | MoLOS-Sample-Module | Active |
 
 ### Changes
@@ -184,13 +188,13 @@ modules/my-module/
 
 ### Package Structure
 
-| Package | Location | Status |
-|---------|----------|--------|
-| `@molos/core` | `packages/core/` | Active |
-| `@molos/database` | `packages/database/` | Active |
-| `@molos/ui` | `packages/ui/` | Active |
-| `@molos/module-tasks` | `modules/tasks/` | Active |
-| `@molos/module-ai` | `modules/ai/` | Active |
+| Package               | Location             | Status |
+| --------------------- | -------------------- | ------ |
+| `@molos/core`         | `packages/core/`     | Active |
+| `@molos/database`     | `packages/database/` | Active |
+| `@molos/ui`           | `packages/ui/`       | Active |
+| `@molos/module-tasks` | `modules/tasks/`     | Active |
+| `@molos/module-ai`    | `modules/ai/`        | Active |
 
 ---
 
@@ -211,4 +215,4 @@ modules/my-module/
 
 ---
 
-*For detailed information about specific changes, see the archived CHANGELOG-*.md files.*
+_For detailed information about specific changes, see the archived CHANGELOG-_.md files.\*

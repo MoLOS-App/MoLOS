@@ -5,11 +5,13 @@ Complete guide for developing MoLOS modules.
 ## Module Types
 
 ### Internal Modules
+
 - Always loaded, cannot be filtered
 - Examples: `dashboard`, `ai`
 - Location: `modules/ai/` or `src/lib/config/dashboard/`
 
 ### External Modules
+
 - Installable from GitHub/npm
 - Examples: `MoLOS-Tasks`, `MoLOS-Finance`
 - Developed in `modules/`, published to separate repos
@@ -40,25 +42,25 @@ touch drizzle.config.ts
 
 ```json
 {
-  "name": "@molos/module-my-module",
-  "version": "1.0.0",
-  "type": "module",
-  "description": "My Module Description",
-  "main": "./src/index.ts",
-  "exports": {
-    ".": "./src/index.ts",
-    "./config": "./src/config.ts",
-    "./models": "./src/models/index.ts",
-    "./ai": "./src/server/ai/ai-tools.ts"
-  },
-  "files": ["src", "manifest.yaml", "drizzle"],
-  "peerDependencies": {
-    "svelte": "^5.45.0"
-  },
-  "dependencies": {
-    "lucide-svelte": "^0.561.0",
-    "zod": "^3.0.0"
-  }
+	"name": "@molos/module-my-module",
+	"version": "1.0.0",
+	"type": "module",
+	"description": "My Module Description",
+	"main": "./src/index.ts",
+	"exports": {
+		".": "./src/index.ts",
+		"./config": "./src/config.ts",
+		"./models": "./src/models/index.ts",
+		"./ai": "./src/server/ai/ai-tools.ts"
+	},
+	"files": ["src", "manifest.yaml", "drizzle"],
+	"peerDependencies": {
+		"svelte": "^5.45.0"
+	},
+	"dependencies": {
+		"lucide-svelte": "^0.561.0",
+		"zod": "^3.0.0"
+	}
 }
 ```
 
@@ -70,22 +72,22 @@ import { MyIcon } from 'lucide-svelte';
 import type { ModuleConfig } from '$lib/config/types';
 
 export const myModuleConfig: ModuleConfig = {
-  // External modules: MoLOS-{Name}
-  // Internal modules: lowercase
-  id: 'MoLOS-MyModule',
+	// External modules: MoLOS-{Name}
+	// Internal modules: lowercase
+	id: 'MoLOS-MyModule',
 
-  name: 'My Module',
-  href: '/ui/MoLOS-MyModule',
-  icon: MyIcon,
-  description: 'Description of my module',
+	name: 'My Module',
+	href: '/ui/MoLOS-MyModule',
+	icon: MyIcon,
+	description: 'Description of my module',
 
-  navigation: [
-    {
-      name: 'Dashboard',
-      icon: MyIcon,
-      href: '/ui/MoLOS-MyModule/dashboard',
-    },
-  ],
+	navigation: [
+		{
+			name: 'Dashboard',
+			icon: MyIcon,
+			href: '/ui/MoLOS-MyModule/dashboard'
+		}
+	]
 };
 
 export default myModuleConfig;
@@ -102,12 +104,14 @@ import { MyStatus } from '../../../models/index.js';
 
 // Table names MUST be prefixed with module ID
 export const myModuleItems = sqliteTable('MoLOS-MyModule_items', {
-  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
-  userId: text('user_id'),
-  name: text('name').notNull(),
-  status: textEnum('status', MyStatus).default('active'),
-  createdAt: integer('created_at').default(sql`(strftime('%s','now'))`),
-  updatedAt: integer('updated_at').default(sql`(strftime('%s','now'))`),
+	id: text('id')
+		.primaryKey()
+		.$defaultFn(() => crypto.randomUUID()),
+	userId: text('user_id'),
+	name: text('name').notNull(),
+	status: textEnum('status', MyStatus).default('active'),
+	createdAt: integer('created_at').default(sql`(strftime('%s','now'))`),
+	updatedAt: integer('updated_at').default(sql`(strftime('%s','now'))`)
 });
 ```
 
@@ -121,11 +125,11 @@ export * from './tables.js';
 ```typescript
 // src/models/index.ts
 export const MyStatus = {
-  ACTIVE: 'active',
-  INACTIVE: 'inactive',
+	ACTIVE: 'active',
+	INACTIVE: 'inactive'
 } as const;
 
-export type MyStatusType = typeof MyStatus[keyof typeof MyStatus];
+export type MyStatusType = (typeof MyStatus)[keyof typeof MyStatus];
 ```
 
 ### Step 6: Create Drizzle Config
@@ -135,12 +139,12 @@ export type MyStatusType = typeof MyStatus[keyof typeof MyStatus];
 import { defineConfig } from 'drizzle-kit';
 
 export default defineConfig({
-  schema: './src/server/db/schema/tables.ts',
-  out: './drizzle',
-  dialect: 'sqlite',
-  dbCredentials: { url: 'file:../../molos.db' },
-  verbose: true,
-  strict: true
+	schema: './src/server/db/schema/tables.ts',
+	out: './drizzle',
+	dialect: 'sqlite',
+	dbCredentials: { url: 'file:../../molos.db' },
+	verbose: true,
+	strict: true
 });
 ```
 
@@ -149,23 +153,23 @@ export default defineConfig({
 ```svelte
 <!-- src/routes/ui/+layout.svelte -->
 <script lang="ts">
-  let { children } = $props();
+	let { children } = $props();
 </script>
 
 <div class="module-layout">
-  <nav>
-    <a href="/ui/MoLOS-MyModule/dashboard">Dashboard</a>
-  </nav>
-  <main>
-    {@render children()}
-  </main>
+	<nav>
+		<a href="/ui/MoLOS-MyModule/dashboard">Dashboard</a>
+	</nav>
+	<main>
+		{@render children()}
+	</main>
 </div>
 ```
 
 ```svelte
 <!-- src/routes/ui/dashboard/+page.svelte -->
 <script lang="ts">
-  let { data } = $props();
+	let { data } = $props();
 </script>
 
 <h1>Dashboard</h1>
@@ -176,9 +180,9 @@ export default defineConfig({
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ fetch }) => {
-  const response = await fetch('/api/MoLOS-MyModule/items');
-  const items = await response.json();
-  return { items };
+	const response = await fetch('/api/MoLOS-MyModule/items');
+	const items = await response.json();
+	return { items };
 };
 ```
 
@@ -192,14 +196,14 @@ import { db } from '$lib/server/db';
 import { myModuleItems } from '../server/database/schema.js';
 
 export const GET: RequestHandler = async () => {
-  const items = await db.select().from(myModuleItems);
-  return json(items);
+	const items = await db.select().from(myModuleItems);
+	return json(items);
 };
 
 export const POST: RequestHandler = async ({ request }) => {
-  const data = await request.json();
-  const result = await db.insert(myModuleItems).values(data).returning();
-  return json(result[0]);
+	const data = await request.json();
+	const result = await db.insert(myModuleItems).values(data).returning();
+	return json(result[0]);
 };
 ```
 

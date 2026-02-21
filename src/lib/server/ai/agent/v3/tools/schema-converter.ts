@@ -35,9 +35,7 @@ function createCaseInsensitiveEnum(
 			// Case-insensitive match
 			const normalized = caseMap.get(val.toLowerCase());
 			if (normalized) {
-				console.log(
-					`[SchemaConverter] Normalized enum value: "${val}" -> "${normalized}"`
-				);
+				console.log(`[SchemaConverter] Normalized enum value: "${val}" -> "${normalized}"`);
 				return normalized;
 			}
 			// No match - let validation fail with helpful message

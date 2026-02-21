@@ -21,11 +21,17 @@ export default defineConfig({
 			'@molos/module-ai': path.resolve(__dirname, 'modules/ai/src'),
 			'@molos/module-ai/config': path.resolve(__dirname, 'modules/ai/src/config.ts'),
 			'@molos/module-ai-knowledge': path.resolve(__dirname, 'modules/MoLOS-AI-Knowledge/src'),
-			'@molos/module-ai-knowledge/config': path.resolve(__dirname, 'modules/MoLOS-AI-Knowledge/src/config.ts'),
+			'@molos/module-ai-knowledge/config': path.resolve(
+				__dirname,
+				'modules/MoLOS-AI-Knowledge/src/config.ts'
+			),
 			'@molos/module-google': path.resolve(__dirname, 'modules/MoLOS-Google/src'),
 			'@molos/module-google/config': path.resolve(__dirname, 'modules/MoLOS-Google/src/config.ts'),
 			'@molos/module-sample': path.resolve(__dirname, 'modules/MoLOS-Sample-Module/src'),
-			'@molos/module-sample/config': path.resolve(__dirname, 'modules/MoLOS-Sample-Module/src/config.ts')
+			'@molos/module-sample/config': path.resolve(
+				__dirname,
+				'modules/MoLOS-Sample-Module/src/config.ts'
+			)
 		}
 	},
 

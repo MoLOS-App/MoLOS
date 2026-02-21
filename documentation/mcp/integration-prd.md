@@ -3,9 +3,11 @@
 ## Module: AI Module - MCP Submodule
 
 ### 1. Executive Summary
+
 **Project Name:** MoLOS MCP Server (Integrated into AI Module)
 **Module ID:** `ai` (existing module) → New MCP submodule
 **Target Routes:**
+
 - Dashboard: `/ui/ai/mcp`
 - API Keys: `/ui/ai/mcp/keys`
 - Resources: `/ui/ai/mcp/resources`
@@ -13,6 +15,7 @@
 - Logs: `/ui/ai/mcp/logs`
 
 **API Routes:**
+
 - Transport: `/api/ai/mcp/transport`
 - Keys Management: `/api/ai/mcp/keys`
 
@@ -65,6 +68,7 @@
 Add to `src/lib/server/db/schema/ai-schema.ts`:
 
 #### 3.1 Table: `ai_mcp_api_keys`
+
 Scoped API keys for MCP access.
 
 ```typescript
@@ -107,6 +111,7 @@ export const aiMcpApiKeys = sqliteTable('ai_mcp_api_keys', {
 ```
 
 #### 3.2 Table: `ai_mcp_logs`
+
 Request/response logging with API key tracking.
 
 ```typescript
@@ -139,6 +144,7 @@ export const aiMcpLogs = sqliteTable('ai_mcp_logs', {
 ```
 
 #### 3.3 Table: `ai_mcp_resources`
+
 User-defined resources for MCP access.
 
 ```typescript
@@ -164,6 +170,7 @@ export const aiMcpResources = sqliteTable('ai_mcp_resources', {
 ```
 
 #### 3.4 Table: `ai_mcp_prompts`
+
 User-defined prompt templates for MCP.
 
 ```typescript
@@ -270,6 +277,7 @@ src/
 ### 5. MCP Protocol Methods (Phase 1)
 
 #### 5.1 Initialize
+
 ```json
 // Request
 {
@@ -300,16 +308,19 @@ src/
 ```
 
 #### 5.2 Tools Methods
+
 **tools/list** - Returns available tools (filtered by API key scope)
 
 **tools/call** - Executes a tool with arguments
 
 #### 5.3 Resources Methods
+
 **resources/list** - Returns available resources
 
 **resources/read** - Reads a resource's content
 
 #### 5.4 Prompts Methods
+
 **prompts/list** - Returns available prompts
 
 **prompts/get** - Gets a prompt with arguments filled
@@ -361,12 +372,14 @@ Examples:
 ### 8. UI Components
 
 #### 8.1 MCP Dashboard (`/ui/ai/mcp`)
+
 - Connection status indicator
 - Quick stats (active keys, tool calls today)
 - Recent activity log
 - Quick actions (create key, view docs)
 
 #### 8.2 API Keys (`/ui/ai/mcp/keys`)
+
 - List of API keys with status
 - Create new key dialog
 - Edit key (name, module scope, expiration)
@@ -374,16 +387,19 @@ Examples:
 - Show key prefix (last 4 of prefix for identification)
 
 #### 8.3 Resources (`/ui/ai/mcp/resources`)
+
 - List of MCP resources
 - Create/edit/delete resources
 - Associate with modules
 
 #### 8.4 Prompts (`/ui/ai/mcp/prompts`)
+
 - List of prompt templates
 - Create/edit/delete prompts
 - Define arguments schema
 
 #### 8.5 Logs (`/ui/ai/mcp/logs`)
+
 - Paginated request/response log
 - Filter by method, status, API key
 - View full request/response

@@ -4,10 +4,10 @@ Welcome to MoLOS! This guide will help you get up and running quickly.
 
 ## Choose Your Path
 
-| I am... | Recommended Path |
-|---------|-----------------|
-| **New User** | [Quick Start](./quick-start.md) - Get running in minutes |
-| **Developer** | [Development Guide](./development.md) - Set up for coding |
+| I am...             | Recommended Path                                                  |
+| ------------------- | ----------------------------------------------------------------- |
+| **New User**        | [Quick Start](./quick-start.md) - Get running in minutes          |
+| **Developer**       | [Development Guide](./development.md) - Set up for coding         |
 | **Troubleshooting** | [Troubleshooting Guide](./troubleshooting.md) - Fix common issues |
 
 ## Quick Start Guide
@@ -27,6 +27,7 @@ bun run dev
 ```
 
 The dev server automatically:
+
 1. Discovers modules in `modules/` and `external_modules/`
 2. Installs module dependencies
 3. Syncs routes via symlinks
@@ -42,13 +43,13 @@ Open http://localhost:5173 to see MoLOS running.
 
 ## Available Guides
 
-| Guide | Description |
-|-------|-------------|
-| [Quick Start](./quick-start.md) | Essential commands and shortcuts |
-| [Development](./development.md) | Development environment setup |
-| [Installation](./installation.md) | Installing modules from npm/GitHub |
-| [Testing](./testing.md) | Running and writing tests |
-| [Troubleshooting](./troubleshooting.md) | Common issues and solutions |
+| Guide                                   | Description                        |
+| --------------------------------------- | ---------------------------------- |
+| [Quick Start](./quick-start.md)         | Essential commands and shortcuts   |
+| [Development](./development.md)         | Development environment setup      |
+| [Installation](./installation.md)       | Installing modules from npm/GitHub |
+| [Testing](./testing.md)                 | Running and writing tests          |
+| [Troubleshooting](./troubleshooting.md) | Common issues and solutions        |
 
 ## Next Steps
 
@@ -66,4 +67,4 @@ After getting started:
 
 ---
 
-*Last Updated: 2026-02-17*
+_Last Updated: 2026-02-17_

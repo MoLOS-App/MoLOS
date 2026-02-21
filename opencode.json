@@ -1,0 +1,63 @@
+{
+	"$schema": "https://opencode.ai/config.json",
+	"model": "glm-4.7",
+
+	"instructions": ["AGENTS.md", "documentation/AI-CONTEXT.md"],
+
+	"permission": {
+		"edit": "allow",
+		"write": "allow",
+		"bash(git*)": "deny",
+		"bash": "allow"
+	},
+
+	"watcher": {
+		"ignore": [
+			"node_modules/**",
+			".svelte-kit/**",
+			"dist/**",
+			"build/**",
+			".turbo/**",
+			"*.db",
+			"*.db-wal",
+			"*.db-shm"
+		]
+	},
+
+	"formatter": {
+		"prettier": {
+			"command": ["bun", "run", "format"],
+			"extensions": [".ts", ".js", ".svelte", ".json", ".md"]
+		}
+	},
+
+	"agent": {
+		"module-developer": {
+			"description": "Create, develop, fix, or verify modules in ./modules directory",
+			"prompt": "{file:.opencode/agents/module-developer.md}"
+		},
+		"sveltekit-guardian": {
+			"description": "Review code changes and validate module implementations",
+			"prompt": "{file:.opencode/agents/sveltekit-guardian.md}"
+		},
+		"ui-ux-reviewer": {
+			"description": "Review UI/UX implementations for design consistency and accessibility",
+			"prompt": "{file:.opencode/agents/ui-ux-reviewer.md}"
+		}
+	},
+
+	"command": {
+		"sync": {
+			"template": "Run bun run module:sync to sync all modules, then verify the symlinks are correct.",
+			"description": "Sync modules"
+		},
+		"check": {
+			"template": "Run type checking and linting with bun run check and bun run lint. Fix any issues found.",
+			"description": "Type check and lint"
+		},
+		"migrate": {
+			"template": "Generate and run database migrations: bun run db:generate && bun run db:migrate",
+			"description": "Run DB migrations"
+		}
+	}
+}

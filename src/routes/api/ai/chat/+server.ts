@@ -136,11 +136,15 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			let streamClosed = false;
 
 			// Track message segments for multi-message persistence
-			const completedSegments: Array<{
-				id: string;
-				content: string;
-				segmentIndex: number;
-			}> = [];
+			// Use a Map to ensure uniqueness by segment ID
+			const completedSegmentsMap = new Map<
+				string,
+				{
+					id: string;
+					content: string;
+					segmentIndex: number;
+				}
+			>();
 			const progressLog: string[] = [];
 
 			const stream = new ReadableStream({
@@ -196,13 +200,20 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 											});
 
 											if (segmentData.isComplete && segmentData.content) {
-												// Track completed segment for persistence
-												completedSegments.push({
-													id: segId,
-													content: segmentData.content,
-													segmentIndex: segmentData.segmentIndex
-												});
-												console.log('[AI Chat] Segment added to completedSegments, total:', completedSegments.length);
+												// Only track if not already present (deduplication)
+												if (!completedSegmentsMap.has(segId)) {
+													completedSegmentsMap.set(segId, {
+														id: segId,
+														content: segmentData.content,
+														segmentIndex: segmentData.segmentIndex
+													});
+													console.log(
+														'[AI Chat] Segment added to completedSegmentsMap, total:',
+														completedSegmentsMap.size
+													);
+												} else {
+													console.log('[AI Chat] Segment already tracked, skipping:', segId);
+												}
 												// Send it as a full message
 												sendEvent('message_segment', {
 													id: segId,
@@ -258,7 +269,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 												} else if (stepData.description) {
 													progressLine = `✓ ${stepData.description}`;
 												} else if (stepData.toolCalls?.length > 0) {
-													const toolNames = stepData.toolCalls.map((tc: any) => tc.toolName).join(', ');
+													const toolNames = stepData.toolCalls
+														.map((tc: any) => tc.toolName)
+														.join(', ');
 													progressLine = `✓ Tools: ${toolNames}`;
 												} else {
 													progressLine = '✓ Step completed';
@@ -313,7 +326,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 							messageLength: response.message?.length,
 							actionsCount: response.actions?.length,
 							eventsCount: response.events?.length,
-							segmentsCount: completedSegments.length
+							segmentsCount: completedSegmentsMap.size
 						});
 
 						// Stream the final message in chunks (for compatibility)
@@ -334,12 +347,18 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 						});
 
 						// Save completed segments to database for persistence
-						// Sort segments by index to ensure correct order
-						completedSegments.sort((a, b) => a.segmentIndex - b.segmentIndex);
+						// Convert Map to array and sort by index to ensure correct order
+						const completedSegments = Array.from(completedSegmentsMap.values()).sort(
+							(a, b) => a.segmentIndex - b.segmentIndex
+						);
 
 						console.log('[AI Chat] Saving', completedSegments.length, 'segments to database');
 						for (const segment of completedSegments) {
-							if (!segment.content.trim()) continue; // Skip empty segments
+							// Skip empty segments BEFORE any processing
+							if (!segment.content?.trim()) {
+								console.log('[AI Chat] Skipping empty segment', segment.segmentIndex);
+								continue;
+							}
 
 							// Extract thought/plan from first segment only
 							const isFirst = segment.segmentIndex === 0;
@@ -367,7 +386,12 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 								if (plan) metadata.plan = plan;
 							}
 
-							console.log('[AI Chat] Saving segment', segment.segmentIndex, 'length:', cleanContent.length);
+							console.log(
+								'[AI Chat] Saving segment',
+								segment.segmentIndex,
+								'length:',
+								cleanContent.length
+							);
 							await aiRepo.addMessage(locals.user.id, {
 								role: 'assistant',
 								content: cleanContent,
@@ -389,18 +413,18 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 						const errorMessage = (error as any)?.message || 'Internal Server Error';
 						const errorType = (error as any)?.constructor?.name || 'Error';
 						console.error('[AI Chat] Streaming error:', error);
-						serverLog('ERROR', { 
-							message: errorMessage, 
-							type: errorType 
+						serverLog('ERROR', {
+							message: errorMessage,
+							type: errorType
 						});
-						
+
 						// Send detailed error event to client
-						sendEvent('error', { 
+						sendEvent('error', {
 							message: errorMessage,
 							type: errorType,
 							timestamp: Date.now()
 						});
-						
+
 						// Close stream gracefully
 						try {
 							safeEnqueue(encoder.encode('data: [DONE]\n\n'));
@@ -438,14 +462,17 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		console.error('[AI Chat] Error in AI Chat POST:', error);
 		const errorMessage = (error as any)?.message || 'Internal Server Error';
 		const errorType = (error as any)?.constructor?.name || 'Error';
-		
+
 		// Return structured error response to client
-		return json({ 
-			error: errorMessage,
-			errorType,
-			success: false,
-			timestamp: Date.now()
-		}, { status: 500 });
+		return json(
+			{
+				error: errorMessage,
+				errorType,
+				success: false,
+				timestamp: Date.now()
+			},
+			{ status: 500 }
+		);
 	}
 };
 

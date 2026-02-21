@@ -8,14 +8,15 @@
 
 ### Location Clarification
 
-| Location | Role | Status |
-|----------|------|--------|
-| `/home/eduardez/Workspace/MoLOS-org/MoLOS-ui` | SOURCE - Components copied FROM | ✅ Components still exist (not moved) |
-| `/home/eduardez/Workspace/MoLOS-org/MoLOS-core/packages/ui` | TARGET - Package created HERE | ✅ Package exists |
+| Location                                                    | Role                            | Status                                |
+| ----------------------------------------------------------- | ------------------------------- | ------------------------------------- |
+| `/home/eduardez/Workspace/MoLOS-org/MoLOS-ui`               | SOURCE - Components copied FROM | ✅ Components still exist (not moved) |
+| `/home/eduardez/Workspace/MoLOS-org/MoLOS-core/packages/ui` | TARGET - Package created HERE   | ✅ Package exists                     |
 
 ### Verification (Feb 15, 2026)
 
 **In MoLOS-core (TARGET - where package exists):**
+
 ```bash
 $ ls /home/eduardez/Workspace/MoLOS-org/MoLOS-core/packages/ui/
 package.json  tsconfig.json  svelte.config.js  tailwind.config.js
@@ -31,6 +32,7 @@ collapsible  command  context-menu  data-table  dialog  drawer
 ```
 
 **In MoLOS-ui (SOURCE - original components):**
+
 ```bash
 $ ls src/lib/components/ui/ | wc -l
 57  # Source components still here (COPIED, not moved)
@@ -39,6 +41,7 @@ $ ls src/lib/components/ui/ | wc -l
 ### ✅ COMPLETED - All Deliverables
 
 ---
+
 - **Agent**: Agent 4
 - **Worktree**: `/home/eduardez/Workspace/MoLOS-org/MoLOS-ui`
 - **Branch**: `feature/ui`
@@ -51,6 +54,7 @@ You are extracting the 80+ shared UI components from the main SvelteKit app into
 ### Current State
 
 **UI Components** (`src/lib/components/ui/`):
+
 ```
 src/lib/components/ui/
 ├── accordion/
@@ -83,6 +87,7 @@ src/lib/components/ui/
 ```
 
 **Shared Components** (`src/lib/components/shared/`):
+
 ```
 src/lib/components/shared/
 ├── Navigation.svelte
@@ -93,6 +98,7 @@ src/lib/components/shared/
 ```
 
 **Styles** (`src/lib/styles/`):
+
 ```
 src/lib/styles/
 ├── app.css
@@ -129,9 +135,11 @@ packages/ui/
 ## Dependencies
 
 **Depends on:**
+
 - Agent 1 (Core Foundation) - for package structure patterns
 
 **Blocks:**
+
 - Agent 2 (Module Conversion) - needs UI package for component imports
 
 ## Files to Create
@@ -164,14 +172,14 @@ packages/ui/
 
 ## Files to Modify/Move
 
-| Current Path | Action | New Path |
-|-------------|--------|----------|
-| `src/lib/components/ui/` | Copy | `packages/ui/src/components/ui/` |
-| `src/lib/components/shared/` | Copy (selected) | `packages/ui/src/components/shared/` |
-| `src/lib/utils.ts` (cn function) | Copy | `packages/ui/src/lib/utils.ts` |
-| `src/lib/styles/` | Copy | `packages/ui/src/styles/` |
-| `tailwind.config.ts` | Copy + Modify | `packages/ui/tailwind.config.ts` |
-| Main app imports | Update | Use `@molos/ui` |
+| Current Path                     | Action          | New Path                             |
+| -------------------------------- | --------------- | ------------------------------------ |
+| `src/lib/components/ui/`         | Copy            | `packages/ui/src/components/ui/`     |
+| `src/lib/components/shared/`     | Copy (selected) | `packages/ui/src/components/shared/` |
+| `src/lib/utils.ts` (cn function) | Copy            | `packages/ui/src/lib/utils.ts`       |
+| `src/lib/styles/`                | Copy            | `packages/ui/src/styles/`            |
+| `tailwind.config.ts`             | Copy + Modify   | `packages/ui/tailwind.config.ts`     |
+| Main app imports                 | Update          | Use `@molos/ui`                      |
 
 ## Implementation Steps
 
@@ -202,59 +210,59 @@ Create `packages/ui/package.json`:
 
 ```json
 {
-  "name": "@molos/ui",
-  "version": "0.0.1",
-  "private": true,
-  "type": "module",
-  "svelte": "./dist/index.js",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "svelte": "./dist/index.js",
-      "default": "./dist/index.js"
-    },
-    "./styles": "./dist/styles/index.css",
-    "./components/ui/*": {
-      "types": "./dist/components/ui/*/index.d.ts",
-      "svelte": "./dist/components/ui/*/index.js",
-      "default": "./dist/components/ui/*/index.js"
-    },
-    "./components/shared/*": {
-      "types": "./dist/components/shared/*/index.d.ts",
-      "svelte": "./dist/components/shared/*/index.js",
-      "default": "./dist/components/shared/*/index.js"
-    },
-    "./lib/utils": {
-      "types": "./dist/lib/utils.d.ts",
-      "default": "./dist/lib/utils.js"
-    }
-  },
-  "files": ["dist", "!dist/**/*.test.*", "src/**/*.css"],
-  "scripts": {
-    "build": "svelte-package",
-    "dev": "svelte-package --watch",
-    "check": "svelte-check --tsconfig ./tsconfig.json",
-    "clean": "rm -rf dist"
-  },
-  "dependencies": {
-    "@molos/core": "workspace:*",
-    "clsx": "^2.0.0",
-    "tailwind-merge": "^2.0.0"
-  },
-  "devDependencies": {
-    "@sveltejs/package": "^2.0.0",
-    "svelte": "^5.0.0",
-    "svelte-check": "^3.0.0",
-    "typescript": "^5.0.0",
-    "tailwindcss": "^3.4.0",
-    "autoprefixer": "^10.4.0",
-    "postcss": "^8.4.0"
-  },
-  "peerDependencies": {
-    "svelte": "^5.0.0",
-    "tailwindcss": "^3.4.0"
-  },
-  "sideEffects": ["**/*.css"]
+	"name": "@molos/ui",
+	"version": "0.0.1",
+	"private": true,
+	"type": "module",
+	"svelte": "./dist/index.js",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"svelte": "./dist/index.js",
+			"default": "./dist/index.js"
+		},
+		"./styles": "./dist/styles/index.css",
+		"./components/ui/*": {
+			"types": "./dist/components/ui/*/index.d.ts",
+			"svelte": "./dist/components/ui/*/index.js",
+			"default": "./dist/components/ui/*/index.js"
+		},
+		"./components/shared/*": {
+			"types": "./dist/components/shared/*/index.d.ts",
+			"svelte": "./dist/components/shared/*/index.js",
+			"default": "./dist/components/shared/*/index.js"
+		},
+		"./lib/utils": {
+			"types": "./dist/lib/utils.d.ts",
+			"default": "./dist/lib/utils.js"
+		}
+	},
+	"files": ["dist", "!dist/**/*.test.*", "src/**/*.css"],
+	"scripts": {
+		"build": "svelte-package",
+		"dev": "svelte-package --watch",
+		"check": "svelte-check --tsconfig ./tsconfig.json",
+		"clean": "rm -rf dist"
+	},
+	"dependencies": {
+		"@molos/core": "workspace:*",
+		"clsx": "^2.0.0",
+		"tailwind-merge": "^2.0.0"
+	},
+	"devDependencies": {
+		"@sveltejs/package": "^2.0.0",
+		"svelte": "^5.0.0",
+		"svelte-check": "^3.0.0",
+		"typescript": "^5.0.0",
+		"tailwindcss": "^3.4.0",
+		"autoprefixer": "^10.4.0",
+		"postcss": "^8.4.0"
+	},
+	"peerDependencies": {
+		"svelte": "^5.0.0",
+		"tailwindcss": "^3.4.0"
+	},
+	"sideEffects": ["**/*.css"]
 }
 ```
 
@@ -264,18 +272,18 @@ Create `packages/ui/tsconfig.json`:
 
 ```json
 {
-  "extends": "../../tsconfig.base.json",
-  "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "module": "ESNext",
-    "target": "ES2022",
-    "verbatimModuleSyntax": true,
-    "isolatedModules": true,
-    "lib": ["ES2022", "DOM", "DOM.Iterable"]
-  },
-  "include": ["src/**/*.ts", "src/**/*.svelte"],
-  "exclude": ["node_modules", "dist"]
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"outDir": "./dist",
+		"rootDir": "./src",
+		"module": "ESNext",
+		"target": "ES2022",
+		"verbatimModuleSyntax": true,
+		"isolatedModules": true,
+		"lib": ["ES2022", "DOM", "DOM.Iterable"]
+	},
+	"include": ["src/**/*.ts", "src/**/*.svelte"],
+	"exclude": ["node_modules", "dist"]
 }
 ```
 
@@ -288,7 +296,7 @@ import { svelte } from '@sveltejs/vite-plugin-svelte';
 
 /** @type {import('@sveltejs/package').Config} */
 export default {
-  // Package configuration for svelte-package
+	// Package configuration for svelte-package
 };
 ```
 
@@ -304,7 +312,7 @@ import { twMerge } from 'tailwind-merge';
  * Utility function to merge Tailwind CSS classes with clsx
  */
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+	return twMerge(clsx(inputs));
 }
 ```
 
@@ -435,39 +443,39 @@ Create `packages/ui/src/styles/index.css`:
 
 /* shadcn-svelte CSS variables */
 @layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
-  }
+	:root {
+		--background: 0 0% 100%;
+		--foreground: 222.2 84% 4.9%;
+		--card: 0 0% 100%;
+		--card-foreground: 222.2 84% 4.9%;
+		--popover: 0 0% 100%;
+		--popover-foreground: 222.2 84% 4.9%;
+		--primary: 222.2 47.4% 11.2%;
+		--primary-foreground: 210 40% 98%;
+		--secondary: 210 40% 96.1%;
+		--secondary-foreground: 222.2 47.4% 11.2%;
+		--muted: 210 40% 96.1%;
+		--muted-foreground: 215.4 16.3% 46.9%;
+		--accent: 210 40% 96.1%;
+		--accent-foreground: 222.2 47.4% 11.2%;
+		--destructive: 0 84.2% 60.2%;
+		--destructive-foreground: 210 40% 98%;
+		--border: 214.3 31.8% 91.4%;
+		--input: 214.3 31.8% 91.4%;
+		--ring: 222.2 84% 4.9%;
+		--radius: 0.5rem;
+	}
 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    /* ... dark mode values */
-  }
+	.dark {
+		--background: 222.2 84% 4.9%;
+		--foreground: 210 40% 98%;
+		/* ... dark mode values */
+	}
 }
 
 /* Component-specific styles */
 @layer components {
-  /* Add any custom component styles here */
+	/* Add any custom component styles here */
 }
 ```
 
@@ -479,72 +487,72 @@ Create `packages/ui/tailwind.config.ts`:
 import type { Config } from 'tailwindcss';
 
 const config: Config = {
-  darkMode: 'class',
-  content: [
-    './src/**/*.{html,js,svelte,ts}',
-    // Include consuming packages
-    '../app/src/**/*.{html,js,svelte,ts}',
-    '../modules/**/src/**/*.{html,js,svelte,ts}',
-  ],
-  theme: {
-    extend: {
-      colors: {
-        border: 'hsl(var(--border))',
-        input: 'hsl(var(--input))',
-        ring: 'hsl(var(--ring))',
-        background: 'hsl(var(--background))',
-        foreground: 'hsl(var(--foreground))',
-        primary: {
-          DEFAULT: 'hsl(var(--primary))',
-          foreground: 'hsl(var(--primary-foreground))',
-        },
-        secondary: {
-          DEFAULT: 'hsl(var(--secondary))',
-          foreground: 'hsl(var(--secondary-foreground))',
-        },
-        destructive: {
-          DEFAULT: 'hsl(var(--destructive))',
-          foreground: 'hsl(var(--destructive-foreground))',
-        },
-        muted: {
-          DEFAULT: 'hsl(var(--muted))',
-          foreground: 'hsl(var(--muted-foreground))',
-        },
-        accent: {
-          DEFAULT: 'hsl(var(--accent))',
-          foreground: 'hsl(var(--accent-foreground))',
-        },
-        popover: {
-          DEFAULT: 'hsl(var(--popover))',
-          foreground: 'hsl(var(--popover-foreground))',
-        },
-        card: {
-          DEFAULT: 'hsl(var(--card))',
-          foreground: 'hsl(var(--card-foreground))',
-        },
-      },
-      borderRadius: {
-        lg: 'var(--radius)',
-        md: 'calc(var(--radius) - 2px)',
-        sm: 'calc(var(--radius) - 4px)',
-      },
-      keyframes: {
-        'accordion-down': {
-          from: { height: '0' },
-          to: { height: 'var(--bits-accordion-content-height)' },
-        },
-        'accordion-up': {
-          from: { height: 'var(--bits-accordion-content-height)' },
-          to: { height: '0' },
-        },
-      },
-      animation: {
-        'accordion-down': 'accordion-down 0.2s ease-out',
-        'accordion-up': 'accordion-up 0.2s ease-out',
-      },
-    },
-  },
-  plugins: [require('tailwindcss-animate')],
+	darkMode: 'class',
+	content: [
+		'./src/**/*.{html,js,svelte,ts}',
+		// Include consuming packages
+		'../app/src/**/*.{html,js,svelte,ts}',
+		'../modules/**/src/**/*.{html,js,svelte,ts}'
+	],
+	theme: {
+		extend: {
+			colors: {
+				border: 'hsl(var(--border))',
+				input: 'hsl(var(--input))',
+				ring: 'hsl(var(--ring))',
+				background: 'hsl(var(--background))',
+				foreground: 'hsl(var(--foreground))',
+				primary: {
+					DEFAULT: 'hsl(var(--primary))',
+					foreground: 'hsl(var(--primary-foreground))'
+				},
+				secondary: {
+					DEFAULT: 'hsl(var(--secondary))',
+					foreground: 'hsl(var(--secondary-foreground))'
+				},
+				destructive: {
+					DEFAULT: 'hsl(var(--destructive))',
+					foreground: 'hsl(var(--destructive-foreground))'
+				},
+				muted: {
+					DEFAULT: 'hsl(var(--muted))',
+					foreground: 'hsl(var(--muted-foreground))'
+				},
+				accent: {
+					DEFAULT: 'hsl(var(--accent))',
+					foreground: 'hsl(var(--accent-foreground))'
+				},
+				popover: {
+					DEFAULT: 'hsl(var(--popover))',
+					foreground: 'hsl(var(--popover-foreground))'
+				},
+				card: {
+					DEFAULT: 'hsl(var(--card))',
+					foreground: 'hsl(var(--card-foreground))'
+				}
+			},
+			borderRadius: {
+				lg: 'var(--radius)',
+				md: 'calc(var(--radius) - 2px)',
+				sm: 'calc(var(--radius) - 4px)'
+			},
+			keyframes: {
+				'accordion-down': {
+					from: { height: '0' },
+					to: { height: 'var(--bits-accordion-content-height)' }
+				},
+				'accordion-up': {
+					from: { height: 'var(--bits-accordion-content-height)' },
+					to: { height: '0' }
+				}
+			},
+			animation: {
+				'accordion-down': 'accordion-down 0.2s ease-out',
+				'accordion-up': 'accordion-up 0.2s ease-out'
+			}
+		}
+	},
+	plugins: [require('tailwindcss-animate')]
 };
 
 export default config;
@@ -556,10 +564,10 @@ Create `packages/ui/postcss.config.js`:
 
 ```javascript
 export default {
-  plugins: {
-    tailwindcss: {},
-    autoprefixer: {},
-  },
+	plugins: {
+		tailwindcss: {},
+		autoprefixer: {}
+	}
 };
 ```
 
@@ -641,22 +649,22 @@ Create a test page to verify components work:
 ```svelte
 <!-- src/routes/test-ui/+page.svelte -->
 <script>
-  import {
-    Button,
-    Card,
-    Input,
-    Label,
-    Select,
-    Dialog,
-    // ... test various components
-  } from '@molos/ui';
+	import {
+		Button,
+		Card,
+		Input,
+		Label,
+		Select,
+		Dialog
+		// ... test various components
+	} from '@molos/ui';
 </script>
 
 <Card>
-  <h2>UI Package Test</h2>
-  <Button>Click me</Button>
-  <Label for="test">Test Input</Label>
-  <Input id="test" />
+	<h2>UI Package Test</h2>
+	<Button>Click me</Button>
+	<Label for="test">Test Input</Label>
+	<Input id="test" />
 </Card>
 ```
 
@@ -664,7 +672,7 @@ Create a test page to verify components work:
 
 Create `packages/ui/README.md`:
 
-```markdown
+````markdown
 # @molos/ui
 
 Shared UI components for MoLOS monorepo.
@@ -672,6 +680,7 @@ Shared UI components for MoLOS monorepo.
 ## Usage
 
 \`\`\`svelte
+
 <script>
   import { Button, Card, Input } from '@molos/ui';
 </script>
@@ -687,42 +696,50 @@ Shared UI components for MoLOS monorepo.
 Import the styles in your app's root layout:
 
 \`\`\`svelte
+
 <script>
   import '@molos/ui/styles';
 </script>
+
 \`\`\`
 
 ## Components
 
 ### Actions
+
 - Button
 - ...
 
 ### Data Display
+
 - Card
 - Table
 - ...
 
 ### Forms
+
 - Input
 - Select
 - ...
 
 ### Feedback
+
 - Alert
 - Toast
 - ...
 
 ### Navigation
+
 - Navigation
 - Tabs
 - ...
 
 ### Overlay
+
 - Dialog
 - Sheet
 - Tooltip
-\`\`\`
+  \`\`\`
 
 ## Verification
 
@@ -738,13 +755,14 @@ ls dist/
 # - lib/utils.js
 # - styles/index.css
 ```
+````
 
 ### Component Import Verification
 
 ```svelte
 <!-- test-component.svelte -->
 <script>
-  import { Button, Card, cn } from '@molos/ui';
+	import { Button, Card, cn } from '@molos/ui';
 </script>
 
 <Button class={cn('custom-class')}>Test Button</Button>
@@ -756,57 +774,60 @@ Verify CSS variables are applied:
 
 ```svelte
 <script>
-  import '@molos/ui/styles';
+	import '@molos/ui/styles';
 </script>
 
-<div class="bg-background text-foreground">
-  Should use CSS variable colors
-</div>
+<div class="bg-background text-foreground">Should use CSS variable colors</div>
 ```
 
 ## Component Categories
 
 ### Action Components
-| Component | Description | Status |
-|-----------|-------------|--------|
-| Button | Primary action button | ✅ |
-| Toggle | Toggle switch | ✅ |
-| Switch | Binary switch | ✅ |
+
+| Component | Description           | Status |
+| --------- | --------------------- | ------ |
+| Button    | Primary action button | ✅     |
+| Toggle    | Toggle switch         | ✅     |
+| Switch    | Binary switch         | ✅     |
 
 ### Form Components
-| Component | Description | Status |
-|-----------|-------------|--------|
-| Input | Text input | ✅ |
-| Select | Dropdown select | ✅ |
-| Checkbox | Checkbox input | ✅ |
-| RadioGroup | Radio button group | ✅ |
-| Textarea | Multi-line input | ✅ |
-| Form | Form wrapper with validation | ✅ |
+
+| Component  | Description                  | Status |
+| ---------- | ---------------------------- | ------ |
+| Input      | Text input                   | ✅     |
+| Select     | Dropdown select              | ✅     |
+| Checkbox   | Checkbox input               | ✅     |
+| RadioGroup | Radio button group           | ✅     |
+| Textarea   | Multi-line input             | ✅     |
+| Form       | Form wrapper with validation | ✅     |
 
 ### Layout Components
-| Component | Description | Status |
-|-----------|-------------|--------|
-| Card | Content card | ✅ |
-| Separator | Visual divider | ✅ |
-| Tabs | Tabbed content | ✅ |
-| Accordion | Collapsible content | ✅ |
+
+| Component | Description         | Status |
+| --------- | ------------------- | ------ |
+| Card      | Content card        | ✅     |
+| Separator | Visual divider      | ✅     |
+| Tabs      | Tabbed content      | ✅     |
+| Accordion | Collapsible content | ✅     |
 
 ### Feedback Components
-| Component | Description | Status |
-|-----------|-------------|--------|
-| Alert | Alert messages | ✅ |
-| Toast | Notification toast | ✅ |
-| Progress | Progress indicator | ✅ |
-| Skeleton | Loading placeholder | ✅ |
+
+| Component | Description         | Status |
+| --------- | ------------------- | ------ |
+| Alert     | Alert messages      | ✅     |
+| Toast     | Notification toast  | ✅     |
+| Progress  | Progress indicator  | ✅     |
+| Skeleton  | Loading placeholder | ✅     |
 
 ### Overlay Components
-| Component | Description | Status |
-|-----------|-------------|--------|
-| Dialog | Modal dialog | ✅ |
-| Sheet | Slide-out panel | ✅ |
-| Popover | Floating content | ✅ |
-| Tooltip | Hover tooltip | ✅ |
-| DropdownMenu | Dropdown menu | ✅ |
+
+| Component    | Description      | Status |
+| ------------ | ---------------- | ------ |
+| Dialog       | Modal dialog     | ✅     |
+| Sheet        | Slide-out panel  | ✅     |
+| Popover      | Floating content | ✅     |
+| Tooltip      | Hover tooltip    | ✅     |
+| DropdownMenu | Dropdown menu    | ✅     |
 
 ## Integration Notes
 
@@ -817,12 +838,12 @@ After this package is ready:
 ```svelte
 <!-- In module components -->
 <script>
-  import { Button, Card, Input } from '@molos/ui';
+	import { Button, Card, Input } from '@molos/ui';
 </script>
 
 <Card>
-  <Input bind:value={name} />
-  <Button on:click={submit}>Submit</Button>
+	<Input bind:value={name} />
+	<Button on:click={submit}>Submit</Button>
 </Card>
 ```
 
@@ -847,11 +868,8 @@ The main app should extend the UI package's Tailwind config:
 import baseConfig from '@molos/ui/tailwind.config';
 
 export default {
-  ...baseConfig,
-  content: [
-    ...baseConfig.content,
-    './src/**/*.{html,js,svelte,ts}',
-  ],
+	...baseConfig,
+	content: [...baseConfig.content, './src/**/*.{html,js,svelte,ts}']
 };
 ```
 
@@ -930,6 +948,7 @@ git branch -D feature/ui
 - [x] Step 20: Documentation created (README.md)
 
 ### Dependencies Status
+
 - [x] Agent 1 (Core) complete - **COMPLETED**
 
 ### Completion Summary
@@ -937,6 +956,7 @@ git branch -D feature/ui
 **Package Location:** `/home/eduardez/Workspace/MoLOS-org/MoLOS-core/packages/ui/`
 
 **Deliverables:**
+
 - 374 Svelte component files
 - 57 UI components (accordion, alert, avatar, badge, button, card, etc.)
 - 46 Shared components:
@@ -952,14 +972,15 @@ git branch -D feature/ui
 **Git Commit:** `6245aef` - "feat: Complete @molos/ui package implementation"
 
 **Usage:**
+
 ```svelte
 <script>
-  import { Button, Card, Input, cn } from '@molos/ui';
+	import { Button, Card, Input, cn } from '@molos/ui';
 </script>
 
 <Card>
-  <Button class={cn('bg-primary')}>Click me</Button>
-  <Input placeholder="Enter text..." />
+	<Button class={cn('bg-primary')}>Click me</Button>
+	<Input placeholder="Enter text..." />
 </Card>
 ```
 
@@ -992,6 +1013,7 @@ All 57 components successfully migrated:
 ```
 
 **Plus 46 Shared Components:**
+
 - 6 Module components (ModuleManager, BuiltinModuleCard, ExternalModuleCard, etc.)
 - 3 Navigation components (AppNavDrawer, SubmenuRail, SubmenuSection)
 - 37 AI/Chat/MCP components (AiChatWorkspace, Chat components, MCP components, etc.)

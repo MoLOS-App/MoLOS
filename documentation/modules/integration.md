@@ -26,13 +26,13 @@ MoLOS modules are **isolated by design**. Modules cannot directly import or call
 
 ### Why Isolation Matters
 
-| Benefit | Description |
-|---------|-------------|
-| **Security** | Modules can't access other modules' internal state |
-| **Stability** | A module crash doesn't cascade to other modules |
-| **Independent Updates** | Modules can be updated without affecting others |
-| **Clear Boundaries** | Well-defined interfaces between modules |
-| **Auditability** | All module communication is traceable |
+| Benefit                 | Description                                        |
+| ----------------------- | -------------------------------------------------- |
+| **Security**            | Modules can't access other modules' internal state |
+| **Stability**           | A module crash doesn't cascade to other modules    |
+| **Independent Updates** | Modules can be updated without affecting others    |
+| **Clear Boundaries**    | Well-defined interfaces between modules            |
+| **Auditability**        | All module communication is traceable              |
 
 ## Event Bus System
 
@@ -73,20 +73,20 @@ The event bus is the primary mechanism for asynchronous communication between mo
  * A module event
  */
 export interface ModuleEvent<T = unknown> {
-  /** Event type (e.g., "task.created", "project.updated") */
-  type: string;
+	/** Event type (e.g., "task.created", "project.updated") */
+	type: string;
 
-  /** Module ID that published the event */
-  source: string;
+	/** Module ID that published the event */
+	source: string;
 
-  /** Event payload */
-  data: T;
+	/** Event payload */
+	data: T;
 
-  /** Timestamp when event was created */
-  timestamp: number;
+	/** Timestamp when event was created */
+	timestamp: number;
 
-  /** Optional correlation ID for tracing */
-  correlationId?: string;
+	/** Optional correlation ID for tracing */
+	correlationId?: string;
 }
 
 /**
@@ -107,110 +107,100 @@ import type { ModuleEvent, EventHandler } from './types';
  * Simple in-memory event bus for module communication
  */
 export class ModuleEventBus {
-  private emitter: EventEmitter;
-  private subscriptions = new Map<string, EventSubscription[]>();
+	private emitter: EventEmitter;
+	private subscriptions = new Map<string, EventSubscription[]>();
 
-  constructor() {
-    this.emitter = new EventEmitter();
-    // Allow many listeners for many modules
-    this.emitter.setMaxListeners(1000);
-  }
+	constructor() {
+		this.emitter = new EventEmitter();
+		// Allow many listeners for many modules
+		this.emitter.setMaxListeners(1000);
+	}
 
-  /**
-   * Publish an event from a module
-   */
-  publish<T = unknown>(source: string, type: string, data: T): void {
-    const event: ModuleEvent<T> = {
-      type,
-      source,
-      data,
-      timestamp: Date.now()
-    };
+	/**
+	 * Publish an event from a module
+	 */
+	publish<T = unknown>(source: string, type: string, data: T): void {
+		const event: ModuleEvent<T> = {
+			type,
+			source,
+			data,
+			timestamp: Date.now()
+		};
 
-    // Emit to all subscribers of this event type
-    this.emitter.emit(type, event);
+		// Emit to all subscribers of this event type
+		this.emitter.emit(type, event);
 
-    // Also emit to wildcard subscribers
-    this.emitter.emit('*', event);
-  }
+		// Also emit to wildcard subscribers
+		this.emitter.emit('*', event);
+	}
 
-  /**
-   * Subscribe to an event type
-   * @returns Unsubscribe function
-   */
-  subscribe<T = unknown>(
-    moduleId: string,
-    type: string,
-    handler: EventHandler<T>
-  ): () => void {
-    // Track subscription
-    if (!this.subscriptions.has(type)) {
-      this.subscriptions.set(type, []);
-    }
-    this.subscriptions.get(type)!.push({ moduleId, type, handler });
+	/**
+	 * Subscribe to an event type
+	 * @returns Unsubscribe function
+	 */
+	subscribe<T = unknown>(moduleId: string, type: string, handler: EventHandler<T>): () => void {
+		// Track subscription
+		if (!this.subscriptions.has(type)) {
+			this.subscriptions.set(type, []);
+		}
+		this.subscriptions.get(type)!.push({ moduleId, type, handler });
 
-    // Register with emitter
-    this.emitter.on(type, handler);
+		// Register with emitter
+		this.emitter.on(type, handler);
 
-    // Return unsubscribe function
-    return () => this.unsubscribe(moduleId, type, handler);
-  }
+		// Return unsubscribe function
+		return () => this.unsubscribe(moduleId, type, handler);
+	}
 
-  /**
-   * Unsubscribe from an event type
-   */
-  unsubscribe<T = unknown>(
-    moduleId: string,
-    type: string,
-    handler: EventHandler<T>
-  ): void {
-    const subs = this.subscriptions.get(type);
-    if (!subs) return;
+	/**
+	 * Unsubscribe from an event type
+	 */
+	unsubscribe<T = unknown>(moduleId: string, type: string, handler: EventHandler<T>): void {
+		const subs = this.subscriptions.get(type);
+		if (!subs) return;
 
-    // Remove from tracking
-    const index = subs.findIndex(
-      s => s.moduleId === moduleId && s.handler === handler
-    );
-    if (index !== -1) {
-      subs.splice(index, 1);
-    }
+		// Remove from tracking
+		const index = subs.findIndex((s) => s.moduleId === moduleId && s.handler === handler);
+		if (index !== -1) {
+			subs.splice(index, 1);
+		}
 
-    // Remove from emitter
-    this.emitter.off(type, handler);
-  }
+		// Remove from emitter
+		this.emitter.off(type, handler);
+	}
 
-  /**
-   * Unsubscribe all handlers for a module
-   */
-  unsubscribeAll(moduleId: string): void {
-    for (const [type, subs] of this.subscriptions.entries()) {
-      const toRemove = subs.filter(s => s.moduleId === moduleId);
-      for (const sub of toRemove) {
-        this.emitter.off(type, sub.handler);
-      }
-      this.subscriptions.set(
-        type,
-        subs.filter(s => s.moduleId !== moduleId)
-      );
-    }
-  }
+	/**
+	 * Unsubscribe all handlers for a module
+	 */
+	unsubscribeAll(moduleId: string): void {
+		for (const [type, subs] of this.subscriptions.entries()) {
+			const toRemove = subs.filter((s) => s.moduleId === moduleId);
+			for (const sub of toRemove) {
+				this.emitter.off(type, sub.handler);
+			}
+			this.subscriptions.set(
+				type,
+				subs.filter((s) => s.moduleId !== moduleId)
+			);
+		}
+	}
 
-  /**
-   * Get subscriber count for an event type
-   */
-  getSubscriberCount(type: string): number {
-    return this.subscriptions.get(type)?.length ?? 0;
-  }
+	/**
+	 * Get subscriber count for an event type
+	 */
+	getSubscriberCount(type: string): number {
+		return this.subscriptions.get(type)?.length ?? 0;
+	}
 }
 
 // Singleton instance
 let globalBus: ModuleEventBus | null = null;
 
 export function getEventBus(): ModuleEventBus {
-  if (!globalBus) {
-    globalBus = new ModuleEventBus();
-  }
-  return globalBus;
+	if (!globalBus) {
+		globalBus = new ModuleEventBus();
+	}
+	return globalBus;
 }
 ```
 
@@ -223,26 +213,26 @@ import type { ModuleEventBus } from './events/bus';
 import type { EventHandler } from './events/types';
 
 export interface ModuleEventContext {
-  /** Publish an event */
-  publish<T = unknown>(type: string, data: T): void;
+	/** Publish an event */
+	publish<T = unknown>(type: string, data: T): void;
 
-  /** Subscribe to events (returns unsubscribe function) */
-  subscribe<T = unknown>(type: string, handler: EventHandler<T>): () => void;
+	/** Subscribe to events (returns unsubscribe function) */
+	subscribe<T = unknown>(type: string, handler: EventHandler<T>): () => void;
 }
 
 export function createModuleEventContext(
-  moduleId: string,
-  eventBus: ModuleEventBus
+	moduleId: string,
+	eventBus: ModuleEventBus
 ): ModuleEventContext {
-  return {
-    publish: <T = unknown>(type: string, data: T) => {
-      eventBus.publish(moduleId, type, data);
-    },
+	return {
+		publish: <T = unknown>(type: string, data: T) => {
+			eventBus.publish(moduleId, type, data);
+		},
 
-    subscribe: <T = unknown>(type: string, handler: EventHandler<T>) => {
-      return eventBus.subscribe(moduleId, type, handler);
-    }
-  };
+		subscribe: <T = unknown>(type: string, handler: EventHandler<T>) => {
+			return eventBus.subscribe(moduleId, type, handler);
+		}
+	};
 }
 ```
 
@@ -254,19 +244,19 @@ export function createModuleEventContext(
 // modules/product-owner/src/routes/api/projects/+server.ts
 
 export const POST: RequestHandler = async ({ request, locals }) => {
-  const data = await request.json();
+	const data = await request.json();
 
-  // Create the project
-  const project = await projectRepository.create(data);
+	// Create the project
+	const project = await projectRepository.create(data);
 
-  // Publish event
-  locals.modules.get('product-owner').events.publish('project.created', {
-    projectId: project.id,
-    name: project.name,
-    createdBy: locals.user.id
-  });
+	// Publish event
+	locals.modules.get('product-owner').events.publish('project.created', {
+		projectId: project.id,
+		name: project.name,
+		createdBy: locals.user.id
+	});
 
-  return json(project);
+	return json(project);
 };
 ```
 
@@ -278,26 +268,26 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 import type { ModuleDefinition, ModuleContext } from '@molos/core/modules';
 
 export const module: ModuleDefinition = {
-  async onEnable(context: ModuleContext) {
-    // Subscribe to project events
-    context.events.subscribe('project.created', async (event) => {
-      await trackEvent('ProjectCreated', {
-        projectId: event.data.projectId,
-        source: event.source
-      });
-    });
+	async onEnable(context: ModuleContext) {
+		// Subscribe to project events
+		context.events.subscribe('project.created', async (event) => {
+			await trackEvent('ProjectCreated', {
+				projectId: event.data.projectId,
+				source: event.source
+			});
+		});
 
-    context.events.subscribe('project.deleted', async (event) => {
-      await trackEvent('ProjectDeleted', {
-        projectId: event.data.projectId
-      });
-    });
-  },
+		context.events.subscribe('project.deleted', async (event) => {
+			await trackEvent('ProjectDeleted', {
+				projectId: event.data.projectId
+			});
+		});
+	},
 
-  async onDisable(context: ModuleContext) {
-    // Subscriptions are automatically cleaned up
-    // But you can also manually unsubscribe
-  }
+	async onDisable(context: ModuleContext) {
+		// Subscriptions are automatically cleaned up
+		// But you can also manually unsubscribe
+	}
 };
 ```
 
@@ -309,24 +299,24 @@ export const module: ModuleDefinition = {
 import type { ModuleDefinition } from '@molos/core/modules';
 
 export const module: ModuleDefinition = {
-  // Define event handlers inline
-  eventHandlers: {
-    'project.created': async (event) => {
-      await sendNotification({
-        type: 'project',
-        message: `New project: ${event.data.name}`,
-        userId: event.data.createdBy
-      });
-    },
+	// Define event handlers inline
+	eventHandlers: {
+		'project.created': async (event) => {
+			await sendNotification({
+				type: 'project',
+				message: `New project: ${event.data.name}`,
+				userId: event.data.createdBy
+			});
+		},
 
-    'task.completed': async (event) => {
-      await sendNotification({
-        type: 'task',
-        message: `Task completed: ${event.data.title}`,
-        userId: event.data.assignee
-      });
-    }
-  }
+		'task.completed': async (event) => {
+			await sendNotification({
+				type: 'task',
+				message: `Task completed: ${event.data.title}`,
+				userId: event.data.assignee
+			});
+		}
+	}
 };
 ```
 
@@ -338,20 +328,20 @@ Use a consistent naming pattern to avoid conflicts:
 {domain}.{entity}.{action}
 ```
 
-| Pattern | Example | Description |
-|---------|---------|-------------|
-| `{entity}.{action}` | `task.created` | Standard entity action |
-| `{entity}.{subentity}.{action}` | `project.task.added` | Nested entity action |
-| `{module}.{entity}.{action}` | `product-owner.project.imported` | Module-qualified event |
+| Pattern                         | Example                          | Description            |
+| ------------------------------- | -------------------------------- | ---------------------- |
+| `{entity}.{action}`             | `task.created`                   | Standard entity action |
+| `{entity}.{subentity}.{action}` | `project.task.added`             | Nested entity action   |
+| `{module}.{entity}.{action}`    | `product-owner.project.imported` | Module-qualified event |
 
 #### Reserved Prefixes
 
-| Prefix | Purpose |
-|--------|---------|
+| Prefix     | Purpose                                     |
+| ---------- | ------------------------------------------- |
 | `system.*` | System lifecycle events (startup, shutdown) |
-| `module.*` | Module lifecycle events (loaded, unloaded) |
-| `user.*` | User events (login, logout, updated) |
-| `db.*` | Database events (migration, backup) |
+| `module.*` | Module lifecycle events (loaded, unloaded)  |
+| `user.*`   | User events (login, logout, updated)        |
+| `db.*`     | Database events (migration, backup)         |
 
 ### Event Patterns
 
@@ -362,19 +352,19 @@ For operations that need a response:
 ```typescript
 // Publisher: Request
 context.events.publish('cache.invalidate', {
-  key: 'user:123',
-  requestId: crypto.randomUUID()
+	key: 'user:123',
+	requestId: crypto.randomUUID()
 });
 
 // Subscriber: Response
 context.events.subscribe('cache.invalidate', async (event) => {
-  await cache.delete(event.data.key);
+	await cache.delete(event.data.key);
 
-  // Publish response
-  context.events.publish('cache.invalidated', {
-    requestId: event.data.requestId,
-    success: true
-  });
+	// Publish response
+	context.events.publish('cache.invalidated', {
+		requestId: event.data.requestId,
+		success: true
+	});
 });
 ```
 
@@ -385,8 +375,8 @@ For notifying multiple modules:
 ```typescript
 // Publisher
 context.events.publish('settings.changed', {
-  key: 'theme',
-  value: 'dark'
+	key: 'theme',
+	value: 'dark'
 });
 
 // Multiple subscribers can react
@@ -405,12 +395,12 @@ All module database tables are automatically prefixed to prevent collisions:
 mod_{moduleId}_{tableName}
 ```
 
-| Module | Base Table | Prefixed Table |
-|--------|------------|----------------|
-| product-owner | projects | `mod_product_owner_projects` |
-| product-owner | workflows | `mod_product_owner_workflows` |
-| tasks | tasks | `mod_tasks_tasks` |
-| tasks | categories | `mod_tasks_categories` |
+| Module        | Base Table | Prefixed Table                |
+| ------------- | ---------- | ----------------------------- |
+| product-owner | projects   | `mod_product_owner_projects`  |
+| product-owner | workflows  | `mod_product_owner_workflows` |
+| tasks         | tasks      | `mod_tasks_tasks`             |
+| tasks         | categories | `mod_tasks_categories`        |
 
 ### Namespace Helper
 
@@ -421,22 +411,22 @@ mod_{moduleId}_{tableName}
  * Get the prefixed table name for a module
  */
 export function getTableName(moduleId: string, tableName: string): string {
-  const sanitized = tableName.replace(/[^a-zA-Z0-9_]/g, '');
-  return `mod_${moduleId}_${sanitized}`;
+	const sanitized = tableName.replace(/[^a-zA-Z0-9_]/g, '');
+	return `mod_${moduleId}_${sanitized}`;
 }
 
 /**
  * Check if a table name belongs to a specific module
  */
 export function isModuleTable(fullTableName: string, moduleId: string): boolean {
-  return fullTableName.startsWith(`mod_${moduleId}_`);
+	return fullTableName.startsWith(`mod_${moduleId}_`);
 }
 
 /**
  * Get pattern for matching module tables
  */
 export function getModuleTablePattern(moduleId: string): string {
-  return `mod_${moduleId}_%`;
+	return `mod_${moduleId}_%`;
 }
 ```
 
@@ -450,14 +440,11 @@ import { getTableName } from '@molos/database';
 
 const MODULE_ID = 'product-owner';
 
-export const projects = sqliteTable(
-  getTableName(MODULE_ID, 'projects'),
-  {
-    id: text('id').primaryKey(),
-    name: text('name').notNull(),
-    createdAt: integer('created_at').notNull()
-  }
-);
+export const projects = sqliteTable(getTableName(MODULE_ID, 'projects'), {
+	id: text('id').primaryKey(),
+	name: text('name').notNull(),
+	createdAt: integer('created_at').notNull()
+});
 ```
 
 ### Data Isolation Benefits
@@ -482,20 +469,20 @@ SELECT * FROM mod_tasks_tasks;              -- OK
 ```typescript
 // Publisher (Product Owner module)
 async function createProject(data) {
-  const project = await db.insert(projects).values(data);
+	const project = await db.insert(projects).values(data);
 
-  context.events.publish('project.created', {
-    projectId: project.id,
-    name: project.name
-  });
+	context.events.publish('project.created', {
+		projectId: project.id,
+		name: project.name
+	});
 
-  return project;
+	return project;
 }
 
 // Subscriber (Tasks module)
 context.events.subscribe('project.created', async (event) => {
-  // Create default task list for new project
-  await createDefaultTaskList(event.data.projectId);
+	// Create default task list for new project
+	await createDefaultTaskList(event.data.projectId);
 });
 ```
 
@@ -506,42 +493,36 @@ context.events.subscribe('project.created', async (event) => {
 ```typescript
 // Requester
 async function getProjectStats(projectId: string) {
-  const requestId = crypto.randomUUID();
+	const requestId = crypto.randomUUID();
 
-  // Subscribe to response
-  const responsePromise = new Promise((resolve) => {
-    const unsubscribe = context.events.subscribe(
-      'project.stats.response',
-      (event) => {
-        if (event.data.requestId === requestId) {
-          unsubscribe();
-          resolve(event.data.stats);
-        }
-      }
-    );
-  });
+	// Subscribe to response
+	const responsePromise = new Promise((resolve) => {
+		const unsubscribe = context.events.subscribe('project.stats.response', (event) => {
+			if (event.data.requestId === requestId) {
+				unsubscribe();
+				resolve(event.data.stats);
+			}
+		});
+	});
 
-  // Publish request
-  context.events.publish('project.stats.request', {
-    projectId,
-    requestId
-  });
+	// Publish request
+	context.events.publish('project.stats.request', {
+		projectId,
+		requestId
+	});
 
-  // Wait for response with timeout
-  return Promise.race([
-    responsePromise,
-    sleep(5000).then(() => ({ error: 'timeout' }))
-  ]);
+	// Wait for response with timeout
+	return Promise.race([responsePromise, sleep(5000).then(() => ({ error: 'timeout' }))]);
 }
 
 // Responder (Product Owner module)
 context.events.subscribe('project.stats.request', async (event) => {
-  const stats = await calculateProjectStats(event.data.projectId);
+	const stats = await calculateProjectStats(event.data.projectId);
 
-  context.events.publish('project.stats.response', {
-    requestId: event.data.requestId,
-    stats
-  });
+	context.events.publish('project.stats.response', {
+		requestId: event.data.requestId,
+		stats
+	});
 });
 ```
 
@@ -556,8 +537,8 @@ context.events.subscribe('project.stats.request', async (event) => {
 // User asks: "What's the status of my projects and tasks?"
 
 // AI calls:
-const projects = await project_list();    // From product-owner
-const tasks = await task_list();          // From tasks
+const projects = await project_list(); // From product-owner
+const tasks = await task_list(); // From tasks
 
 // AI combines and responds:
 return `You have ${projects.length} projects and ${tasks.length} tasks.`;
@@ -587,18 +568,18 @@ await queue.enqueue('email', { to, subject, body });
 // packages/core/src/modules/sandbox.ts
 
 export interface ModuleSandbox {
-  /** Module ID */
-  id: string;
+	/** Module ID */
+	id: string;
 
-  /** Allowed capabilities */
-  capabilities: {
-    database: boolean;
-    network: string[];
-    filesystem: string[];
-  };
+	/** Allowed capabilities */
+	capabilities: {
+		database: boolean;
+		network: string[];
+		filesystem: string[];
+	};
 
-  /** Validate operation is allowed */
-  validate(operation: string, resource: string): boolean;
+	/** Validate operation is allowed */
+	validate(operation: string, resource: string): boolean;
 }
 ```
 
@@ -607,33 +588,29 @@ export interface ModuleSandbox {
 ```typescript
 // Module manifest declares allowed domains
 // manifest.yaml
-permissions:
-  network:
-    allowedDomains:
-      - "api.github.com"
-      - "api.linear.app"
-    maxRequestsPerMinute: 100
+permissions: network: allowedDomains: -'api.github.com' - 'api.linear.app';
+maxRequestsPerMinute: 100;
 
 // Enforcement in module context
 export class ModuleNetworkContext {
-  private allowedDomains: string[];
-  private rateLimiter: RateLimiter;
+	private allowedDomains: string[];
+	private rateLimiter: RateLimiter;
 
-  async fetch(url: string, options?: RequestInit): Promise<Response> {
-    const domain = new URL(url).hostname;
+	async fetch(url: string, options?: RequestInit): Promise<Response> {
+		const domain = new URL(url).hostname;
 
-    // Check if domain is allowed
-    if (!this.allowedDomains.includes(domain)) {
-      throw new Error(`Domain ${domain} is not allowed for this module`);
-    }
+		// Check if domain is allowed
+		if (!this.allowedDomains.includes(domain)) {
+			throw new Error(`Domain ${domain} is not allowed for this module`);
+		}
 
-    // Check rate limit
-    if (!this.rateLimiter.check()) {
-      throw new Error('Rate limit exceeded');
-    }
+		// Check rate limit
+		if (!this.rateLimiter.check()) {
+			throw new Error('Rate limit exceeded');
+		}
 
-    return fetch(url, options);
-  }
+		return fetch(url, options);
+	}
 }
 ```
 
@@ -641,38 +618,34 @@ export class ModuleNetworkContext {
 
 ```typescript
 // Module manifest declares allowed paths
-permissions:
-  filesystem:
-    allowedPaths:
-      - "/uploads/{moduleId}"
-      - "/exports/{moduleId}"
-    maxStorageMB: 100
+permissions: filesystem: allowedPaths: -'/uploads/{moduleId}' - '/exports/{moduleId}';
+maxStorageMB: 100;
 
 // Enforcement
 export class ModuleFilesystemContext {
-  private allowedPaths: string[];
-  private moduleId: string;
+	private allowedPaths: string[];
+	private moduleId: string;
 
-  private validatePath(path: string): void {
-    const resolved = resolve(path);
-    const allowed = this.allowedPaths.some(p =>
-      resolved.startsWith(p.replace('{moduleId}', this.moduleId))
-    );
+	private validatePath(path: string): void {
+		const resolved = resolve(path);
+		const allowed = this.allowedPaths.some((p) =>
+			resolved.startsWith(p.replace('{moduleId}', this.moduleId))
+		);
 
-    if (!allowed) {
-      throw new Error(`Path ${path} is not allowed for this module`);
-    }
-  }
+		if (!allowed) {
+			throw new Error(`Path ${path} is not allowed for this module`);
+		}
+	}
 
-  async readFile(path: string): Promise<string> {
-    this.validatePath(path);
-    return fs.readFile(path, 'utf-8');
-  }
+	async readFile(path: string): Promise<string> {
+		this.validatePath(path);
+		return fs.readFile(path, 'utf-8');
+	}
 
-  async writeFile(path: string, content: string): Promise<void> {
-    this.validatePath(path);
-    return fs.writeFile(path, content);
-  }
+	async writeFile(path: string, content: string): Promise<void> {
+		this.validatePath(path);
+		return fs.writeFile(path, content);
+	}
 }
 ```
 
@@ -684,24 +657,24 @@ All cross-module communication is logged:
 // packages/core/src/modules/audit.ts
 
 export class ModuleAuditLog {
-  log(event: {
-    type: 'publish' | 'subscribe' | 'api_call';
-    sourceModule: string;
-    targetModule?: string;
-    eventType?: string;
-    data?: unknown;
-    timestamp: number;
-  }): void {
-    // Write to audit log
-    this.db.insert(auditLog).values({
-      type: event.type,
-      sourceModule: event.sourceModule,
-      targetModule: event.targetModule,
-      eventType: event.eventType,
-      data: JSON.stringify(event.data),
-      timestamp: event.timestamp
-    });
-  }
+	log(event: {
+		type: 'publish' | 'subscribe' | 'api_call';
+		sourceModule: string;
+		targetModule?: string;
+		eventType?: string;
+		data?: unknown;
+		timestamp: number;
+	}): void {
+		// Write to audit log
+		this.db.insert(auditLog).values({
+			type: event.type,
+			sourceModule: event.sourceModule,
+			targetModule: event.targetModule,
+			eventType: event.eventType,
+			data: JSON.stringify(event.data),
+			timestamp: event.timestamp
+		});
+	}
 }
 ```
 
@@ -722,8 +695,8 @@ context.events.publish('project.get', { projectId });
 ```typescript
 // Events are async by nature - design accordingly
 context.events.publish('notification.send', {
-  userId,
-  message
+	userId,
+	message
 });
 // Don't wait for response - fire and forget
 ```
@@ -744,14 +717,14 @@ context.events.publish('analytics.track', { event: 'page_view' });
 const correlationId = crypto.randomUUID();
 
 context.events.publish('order.created', {
-  orderId,
-  correlationId
+	orderId,
+	correlationId
 });
 
 // Other events can include the same correlationId
 context.events.publish('payment.processed', {
-  orderId,
-  correlationId
+	orderId,
+	correlationId
 });
 ```
 
@@ -760,17 +733,17 @@ context.events.publish('payment.processed', {
 ```typescript
 // Include event version for backward compatibility
 context.events.publish('user.created', {
-  version: 2,
-  user: {
-    id,
-    email,
-    // v2 adds name field
-    name
-  }
+	version: 2,
+	user: {
+		id,
+		email,
+		// v2 adds name field
+		name
+	}
 });
 ```
 
 ---
 
-*Last Updated: 2025-02-15*
-*Version: 1.0*
+_Last Updated: 2025-02-15_
+_Version: 1.0_

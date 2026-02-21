@@ -74,7 +74,9 @@ export class AiToolbox {
 		);
 
 		// We include all package modules by default (they have AI tools), and external modules only if active
-		const modulesToLoad = allModules.filter((m) => m.isPackageModule || activeModuleIds.includes(m.id));
+		const modulesToLoad = allModules.filter(
+			(m) => m.isPackageModule || activeModuleIds.includes(m.id)
+		);
 		console.log('[AiToolbox] activeModuleIds:', activeModuleIds);
 		console.log(
 			'[AiToolbox] Modules to load:',
@@ -82,7 +84,9 @@ export class AiToolbox {
 		);
 
 		for (const module of modulesToLoad) {
-			logDebug(`[AiToolbox] Processing module: ${module.id} (packageModule: ${module.isPackageModule}, external: ${module.isExternal})`);
+			logDebug(
+				`[AiToolbox] Processing module: ${module.id} (packageModule: ${module.isPackageModule}, external: ${module.isExternal})`
+			);
 			try {
 				// Skip non-package modules (they don't have AI tools in modules/*/src/server/ai/ai-tools.ts)
 				if (!module.isPackageModule) {
@@ -94,10 +98,12 @@ export class AiToolbox {
 				// Find the AI tools module by matching the module ID
 				const modulePath = Object.keys(moduleAiTools).find((p) => {
 					const moduleName = extractModuleNameFromPath(p);
-					return moduleName === module.id ||
+					return (
+						moduleName === module.id ||
 						// Handle legacy module IDs that may differ from directory names
 						module.id.toLowerCase().includes(moduleName?.toLowerCase() || '') ||
-						moduleName?.toLowerCase().includes(module.id.toLowerCase());
+						moduleName?.toLowerCase().includes(module.id.toLowerCase())
+					);
 				});
 
 				if (!modulePath) {
@@ -205,7 +211,9 @@ export class AiToolbox {
 		if (cached) return cached;
 
 		const allModules = getAllModules();
-		const activeModules = allModules.filter((m) => activeModuleIds.includes(m.id) || m.isPackageModule);
+		const activeModules = allModules.filter(
+			(m) => activeModuleIds.includes(m.id) || m.isPackageModule
+		);
 
 		const prompt = `You are the MoLOS Architect Agent, an advanced in-app developer assistant integrated into the Modular Life Organization System (MoLOS).
 Your mission is to provide proactive, intelligent, and context-aware management of the user's digital life.

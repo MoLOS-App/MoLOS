@@ -39,7 +39,10 @@ function getAutoloadModulesFilter(): string[] | null {
 	if (!env || typeof env !== 'string') {
 		return null;
 	}
-	return env.split(',').map((id: string) => id.trim()).filter(Boolean);
+	return env
+		.split(',')
+		.map((id: string) => id.trim())
+		.filter(Boolean);
 }
 
 /**
@@ -52,7 +55,11 @@ function getAutoloadModulesFilter(): string[] | null {
  * Eager loading prevents Vite from detecting "new" SSR dependencies during navigation.
  */
 const allModuleConfigs = import.meta.glob(
-	['./**/config.ts', '/modules/*/src/config.ts', '../../node_modules/@molos/module-*/src/config.ts'],
+	[
+		'./**/config.ts',
+		'/modules/*/src/config.ts',
+		'../../node_modules/@molos/module-*/src/config.ts'
+	],
 	{ eager: true }
 ) as Record<string, any>;
 
@@ -64,7 +71,9 @@ const allModuleConfigs = import.meta.glob(
  */
 function extractModuleIdFromPath(importPath: string): string {
 	// Handle npm module paths (node_modules/@molos/module-*)
-	const npmModuleMatch = importPath.match(/\/node_modules\/@molos\/module-([^/]+)\/src\/config\.ts$/);
+	const npmModuleMatch = importPath.match(
+		/\/node_modules\/@molos\/module-([^/]+)\/src\/config\.ts$/
+	);
 	if (npmModuleMatch) {
 		return npmModuleMatch[1];
 	}
@@ -130,7 +139,9 @@ function buildModuleRegistry(): Record<string, ModuleConfig> {
 					}
 
 					// Skip filter for mandatory modules (always load regardless of env filter)
-					const isMandatory = MANDATORY_MODULES.includes(config.id as (typeof MANDATORY_MODULES)[number]);
+					const isMandatory = MANDATORY_MODULES.includes(
+						config.id as (typeof MANDATORY_MODULES)[number]
+					);
 
 					// Apply autoload filter if set (but not for mandatory modules)
 					if (!isMandatory && autoloadFilter && !autoloadFilter.includes(config.id)) {

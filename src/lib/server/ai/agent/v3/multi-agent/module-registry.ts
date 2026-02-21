@@ -6,10 +6,7 @@
 
 import type { ToolSet } from 'ai';
 import type { ModuleAgentConfig } from '../types';
-import {
-	createModuleDelegationTools,
-	generateModuleDescriptions,
-} from './delegation-tools';
+import { createModuleDelegationTools, generateModuleDescriptions } from './delegation-tools';
 
 /**
  * Module Registry - Tracks available module agents
@@ -100,8 +97,8 @@ export class ModuleRegistry {
 				const response = await fetch(`${module.baseUrl}/api/agent/health`, {
 					method: 'GET',
 					headers: {
-						Authorization: `Bearer module-token-${id}`,
-					},
+						Authorization: `Bearer module-token-${id}`
+					}
 				});
 
 				if (response.ok) {
@@ -110,13 +107,13 @@ export class ModuleRegistry {
 				} else {
 					results.set(id, {
 						healthy: false,
-						error: `HTTP ${response.status}`,
+						error: `HTTP ${response.status}`
 					});
 				}
 			} catch (error) {
 				results.set(id, {
 					healthy: false,
-					error: error instanceof Error ? error.message : String(error),
+					error: error instanceof Error ? error.message : String(error)
 				});
 			}
 		}

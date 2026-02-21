@@ -104,7 +104,10 @@ export class MigrationManager {
 	 * @param includeRolledBack - Include rolled-back migrations
 	 * @returns List of migration records, newest first
 	 */
-	async getMigrationHistory(moduleId: string, includeRolledBack = false): Promise<MigrationRecord[]> {
+	async getMigrationHistory(
+		moduleId: string,
+		includeRolledBack = false
+	): Promise<MigrationRecord[]> {
 		const conditions = includeRolledBack
 			? eq(coreModuleMigrations.moduleId, moduleId)
 			: and(eq(coreModuleMigrations.moduleId, moduleId), isNull(coreModuleMigrations.rolledBackAt));
@@ -250,7 +253,11 @@ export class MigrationManager {
 	 *
 	 * @returns true if migration matches, false if it was modified
 	 */
-	async verifyMigrationChecksum(moduleId: string, migrationName: string, currentSql: string): Promise<boolean> {
+	async verifyMigrationChecksum(
+		moduleId: string,
+		migrationName: string,
+		currentSql: string
+	): Promise<boolean> {
 		const records = await db
 			.select()
 			.from(coreModuleMigrations)

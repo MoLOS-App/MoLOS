@@ -46,9 +46,7 @@ function createLoggingFetch(originalFetch: typeof fetch): typeof fetch {
 			const valueStr = Array.isArray(value) ? value.join(', ') : value;
 			headerEntries.push([key, valueStr]);
 			// Truncate very long values for readability
-			const displayValue = valueStr.length > 100
-				? valueStr.substring(0, 100) + '...'
-				: valueStr;
+			const displayValue = valueStr.length > 100 ? valueStr.substring(0, 100) + '...' : valueStr;
 			console.log(`  ${key}: ${displayValue}`);
 		}
 
@@ -57,13 +55,20 @@ function createLoggingFetch(originalFetch: typeof fetch): typeof fetch {
 		console.log('[AI Agent HTTP Debug] Total header size:', headerSize, 'bytes');
 		console.log('[AI Agent HTTP Debug] HTTP header limit: 8192 bytes (8KB)');
 		console.log('[AI Agent HTTP Debug] Over limit?', headerSize > 8192 ? 'YES - ERROR!' : 'No');
-		console.log('[AI Agent HTTP Debug] Buffer to limit (8192 -', headerSize, ') =', 8192 - headerSize, 'bytes');
+		console.log(
+			'[AI Agent HTTP Debug] Buffer to limit (8192 -',
+			headerSize,
+			') =',
+			8192 - headerSize,
+			'bytes'
+		);
 
 		// Log body size if present
 		if (options?.body) {
-			const bodySize = typeof options.body === 'string'
-				? options.body.length
-				: JSON.stringify(options.body).length;
+			const bodySize =
+				typeof options.body === 'string'
+					? options.body.length
+					: JSON.stringify(options.body).length;
 			console.log('[AI Agent HTTP Debug] Body size:', bodySize, 'bytes');
 			console.log('[AI Agent HTTP Debug] Total request size:', headerSize + bodySize, 'bytes');
 		}
@@ -111,7 +116,7 @@ const loggingFetch = createLoggingFetch(fetch);
 export function createProvider(config: ProviderConfig) {
 	// Common fetch options for all providers
 	const fetchOptions = {
-		fetch: loggingFetch, // Use our logging fetch wrapper
+		fetch: loggingFetch // Use our logging fetch wrapper
 	};
 
 	switch (config.provider) {
@@ -121,7 +126,7 @@ export function createProvider(config: ProviderConfig) {
 			}
 			return createAnthropic({
 				apiKey: config.apiKey,
-				...fetchOptions,
+				...fetchOptions
 			})(config.modelName);
 
 		case 'openai':
@@ -130,7 +135,7 @@ export function createProvider(config: ProviderConfig) {
 			}
 			return createOpenAI({
 				apiKey: config.apiKey,
-				...fetchOptions,
+				...fetchOptions
 			}).chat(config.modelName);
 
 		case 'openrouter':
@@ -138,7 +143,7 @@ export function createProvider(config: ProviderConfig) {
 				name: 'openrouter',
 				baseURL: 'https://openrouter.ai/api/v1',
 				apiKey: config.apiKey,
-				...fetchOptions,
+				...fetchOptions
 			}).chat(config.modelName);
 
 		case 'ollama':
@@ -146,7 +151,7 @@ export function createProvider(config: ProviderConfig) {
 				name: 'ollama',
 				baseURL: config.baseUrl || 'http://localhost:11434/v1',
 				apiKey: 'ollama', // Ollama doesn't need a real API key
-				...fetchOptions,
+				...fetchOptions
 			}).chat(config.modelName);
 
 		case 'zai':
@@ -154,7 +159,7 @@ export function createProvider(config: ProviderConfig) {
 				name: 'zai',
 				baseURL: config.baseUrl || 'https://api.z.ai/api/coding/paas/v4',
 				apiKey: config.apiKey,
-				...fetchOptions,
+				...fetchOptions
 			}).chat(config.modelName);
 
 		default:
@@ -171,7 +176,7 @@ export function mapProvider(provider: string): LlmProvider {
 		anthropic: 'anthropic',
 		ollama: 'ollama',
 		openrouter: 'openrouter',
-		zai: 'zai',
+		zai: 'zai'
 	};
 	return providerMap[provider] || 'openai';
 }
@@ -209,7 +214,7 @@ export function getProviderOptions(
 			minimal: 1024,
 			low: 2048,
 			medium: 4096,
-			high: 8192,
+			high: 8192
 		};
 
 		const budget = thinkingBudgets[options.thinkingLevel] || 0;
@@ -219,9 +224,9 @@ export function getProviderOptions(
 				anthropic: {
 					thinking: {
 						type: 'enabled',
-						budgetTokens: budget,
-					},
-				},
+						budgetTokens: budget
+					}
+				}
 			};
 		}
 	}

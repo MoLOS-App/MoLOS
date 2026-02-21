@@ -9,6 +9,7 @@ bun run dev
 ```
 
 This automatically:
+
 1. Discovers all modules in `modules/`
 2. Adds them as workspace dependencies
 3. Installs dependencies
@@ -91,6 +92,7 @@ bun run module:sync
 ```
 
 This command:
+
 - Discovers modules in `node_modules/@molos/module-*`
 - Creates route symlinks
 - Initializes module in the app
@@ -234,9 +236,9 @@ import { db } from '../../../../../src/lib/server/db';
 
 ## Available Modules
 
-| Module | Package | Source |
-|--------|---------|--------|
-| Tasks | `@molos/module-tasks` | [GitHub](https://github.com/MoLOS-App/MoLOS-Tasks) |
+| Module | Package               | Source                                             |
+| ------ | --------------------- | -------------------------------------------------- |
+| Tasks  | `@molos/module-tasks` | [GitHub](https://github.com/MoLOS-App/MoLOS-Tasks) |
 
 ## Installation Checklist
 

@@ -15,15 +15,18 @@ The database package has been **successfully implemented and merged** to the dev
 ### What Was Implemented
 
 **Package Created:**
+
 - `packages/database/` - @molos/database package with schema and utilities
 
 **Features:**
+
 - Core schema extraction (auth, ai, settings)
 - Module schema extraction with namespacing
 - Database connection utilities
 - Drizzle configuration
 
 ### Verification (in develop branch)
+
 ```bash
 $ ls packages/database/
 package.json  src/  tsconfig.json
@@ -42,6 +45,7 @@ $ cat packages/database/package.json
 ```
 
 ### Package Structure
+
 ```
 packages/database/
 ├── src/
@@ -64,6 +68,7 @@ You are extracting all database schema definitions and migrations into a dedicat
 ### Current State
 
 **Core Schema** (`src/lib/server/db/schema/`):
+
 ```
 src/lib/server/db/schema/
 ├── core/
@@ -77,12 +82,14 @@ src/lib/server/db/schema/
 ```
 
 **Module Schemas** (in external modules):
+
 ```
 external_modules/MoLOS-Product-Owner/lib/server/db/schema/
 └── tables.ts
 ```
 
 **Current Drizzle Setup**:
+
 - Config: `drizzle.config.ts`
 - Migrations: `drizzle/` directory
 - Journal: `drizzle/meta/_journal.json`
@@ -118,9 +125,11 @@ packages/database/
 ## Dependencies
 
 **Depends on:**
+
 - Agent 1 (Core Foundation) - for package structure patterns
 
 **Blocks:**
+
 - Agent 2 (Module Conversion) - needs database package for imports
 
 ## Files to Create
@@ -150,13 +159,13 @@ utils/
 
 ## Files to Modify/Move
 
-| Current Path | Action | New Path |
-|-------------|--------|----------|
-| `src/lib/server/db/schema/core/` | Move | `packages/database/src/schema/core/` |
-| `external_modules/*/lib/server/db/schema/` | Move | `packages/database/src/schema/external/` |
-| `drizzle/` | Move | `packages/database/drizzle/` |
-| `drizzle.config.ts` | Move + Modify | `packages/database/drizzle.config.ts` |
-| `src/lib/server/db/index.ts` | Modify | Import from new package |
+| Current Path                               | Action        | New Path                                 |
+| ------------------------------------------ | ------------- | ---------------------------------------- |
+| `src/lib/server/db/schema/core/`           | Move          | `packages/database/src/schema/core/`     |
+| `external_modules/*/lib/server/db/schema/` | Move          | `packages/database/src/schema/external/` |
+| `drizzle/`                                 | Move          | `packages/database/drizzle/`             |
+| `drizzle.config.ts`                        | Move + Modify | `packages/database/drizzle.config.ts`    |
+| `src/lib/server/db/index.ts`               | Modify        | Import from new package                  |
 
 ## Implementation Steps
 
@@ -188,51 +197,51 @@ Create `packages/database/package.json`:
 
 ```json
 {
-  "name": "@molos/database",
-  "version": "0.0.1",
-  "private": true,
-  "type": "module",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    },
-    "./schema": {
-      "types": "./dist/schema/index.d.ts",
-      "import": "./dist/schema/index.js"
-    },
-    "./schema/core": {
-      "types": "./dist/schema/core/index.d.ts",
-      "import": "./dist/schema/core/index.js"
-    },
-    "./schema/external": {
-      "types": "./dist/schema/external/index.d.ts",
-      "import": "./dist/schema/external/index.js"
-    },
-    "./utils": {
-      "types": "./dist/utils/index.d.ts",
-      "import": "./dist/utils/index.js"
-    }
-  },
-  "files": ["dist", "drizzle"],
-  "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio",
-    "clean": "rm -rf dist"
-  },
-  "dependencies": {
-    "drizzle-orm": "^0.29.0",
-    "better-sqlite3": "^9.0.0"
-  },
-  "devDependencies": {
-    "@types/better-sqlite3": "^7.6.0",
-    "drizzle-kit": "^0.20.0",
-    "typescript": "^5.0.0"
-  }
+	"name": "@molos/database",
+	"version": "0.0.1",
+	"private": true,
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		},
+		"./schema": {
+			"types": "./dist/schema/index.d.ts",
+			"import": "./dist/schema/index.js"
+		},
+		"./schema/core": {
+			"types": "./dist/schema/core/index.d.ts",
+			"import": "./dist/schema/core/index.js"
+		},
+		"./schema/external": {
+			"types": "./dist/schema/external/index.d.ts",
+			"import": "./dist/schema/external/index.js"
+		},
+		"./utils": {
+			"types": "./dist/utils/index.d.ts",
+			"import": "./dist/utils/index.js"
+		}
+	},
+	"files": ["dist", "drizzle"],
+	"scripts": {
+		"build": "tsc",
+		"dev": "tsc --watch",
+		"db:generate": "drizzle-kit generate",
+		"db:migrate": "drizzle-kit migrate",
+		"db:push": "drizzle-kit push",
+		"db:studio": "drizzle-kit studio",
+		"clean": "rm -rf dist"
+	},
+	"dependencies": {
+		"drizzle-orm": "^0.29.0",
+		"better-sqlite3": "^9.0.0"
+	},
+	"devDependencies": {
+		"@types/better-sqlite3": "^7.6.0",
+		"drizzle-kit": "^0.20.0",
+		"typescript": "^5.0.0"
+	}
 }
 ```
 
@@ -242,16 +251,16 @@ Create `packages/database/tsconfig.json`:
 
 ```json
 {
-  "extends": "../../tsconfig.base.json",
-  "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "module": "ESNext",
-    "target": "ES2022",
-    "types": ["node"]
-  },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "drizzle"]
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"outDir": "./dist",
+		"rootDir": "./src",
+		"module": "ESNext",
+		"target": "ES2022",
+		"types": ["node"]
+	},
+	"include": ["src/**/*"],
+	"exclude": ["node_modules", "dist", "drizzle"]
 }
 ```
 
@@ -270,11 +279,13 @@ Create `packages/database/src/utils/namespace.ts`:
  * Example: "MoLOS-Product-Owner" -> "mod_product_owner_"
  */
 export function getTablePrefix(moduleName: string): string {
-  return moduleName
-    .replace(/^MoLOS-/, '')           // Remove MoLOS- prefix
-    .replace(/-/g, '_')               // Convert hyphens to underscores
-    .toLowerCase()                    // Lowercase
-    + '_';                            // Add trailing underscore
+	return (
+		moduleName
+			.replace(/^MoLOS-/, '') // Remove MoLOS- prefix
+			.replace(/-/g, '_') // Convert hyphens to underscores
+			.toLowerCase() + // Lowercase
+		'_'
+	); // Add trailing underscore
 }
 
 /**
@@ -282,40 +293,40 @@ export function getTablePrefix(moduleName: string): string {
  * Example: namespaceTableName("MoLOS-Product-Owner", "projects") -> "mod_product_owner_projects"
  */
 export function namespaceTableName(moduleName: string, tableName: string): string {
-  return getTablePrefix(moduleName) + tableName;
+	return getTablePrefix(moduleName) + tableName;
 }
 
 /**
  * Schema for module table creation with automatic namespacing
  */
 export function createModuleTableSchema<T extends Record<string, unknown>>(
-  moduleName: string,
-  tables: T
+	moduleName: string,
+	tables: T
 ): T {
-  const prefix = getTablePrefix(moduleName);
+	const prefix = getTablePrefix(moduleName);
 
-  // This would be implemented based on Drizzle's API
-  // to automatically add prefixes to all table names
-  return tables;
+	// This would be implemented based on Drizzle's API
+	// to automatically add prefixes to all table names
+	return tables;
 }
 
 /**
  * List of reserved table names that shouldn't be namespaced
  */
 export const RESERVED_TABLE_NAMES = [
-  'users',
-  'sessions',
-  'settings',
-  'migrations',
-  '_journal',
-  // Add more as needed
+	'users',
+	'sessions',
+	'settings',
+	'migrations',
+	'_journal'
+	// Add more as needed
 ] as const;
 
 /**
  * Check if a table name should be namespaced
  */
 export function shouldNamespace(tableName: string): boolean {
-  return !RESERVED_TABLE_NAMES.includes(tableName as typeof RESERVED_TABLE_NAMES[number]);
+	return !RESERVED_TABLE_NAMES.includes(tableName as (typeof RESERVED_TABLE_NAMES)[number]);
 }
 ```
 
@@ -382,23 +393,17 @@ import { namespaceTableName } from '../utils/namespace';
 // After (namespaced):
 const MODULE_NAME = 'MoLOS-Product-Owner';
 
-export const projects = sqliteTable(
-  namespaceTableName(MODULE_NAME, 'projects'),
-  {
-    id: integer('id').primaryKey(),
-    name: text('name').notNull(),
-    // ... other fields
-  }
-);
+export const projects = sqliteTable(namespaceTableName(MODULE_NAME, 'projects'), {
+	id: integer('id').primaryKey(),
+	name: text('name').notNull()
+	// ... other fields
+});
 
-export const products = sqliteTable(
-  namespaceTableName(MODULE_NAME, 'products'),
-  {
-    id: integer('id').primaryKey(),
-    projectId: integer('project_id').references(() => projects.id),
-    // ... other fields
-  }
-);
+export const products = sqliteTable(namespaceTableName(MODULE_NAME, 'products'), {
+	id: integer('id').primaryKey(),
+	projectId: integer('project_id').references(() => projects.id)
+	// ... other fields
+});
 ```
 
 ### Step 11: Create External Schema Index
@@ -488,14 +493,14 @@ Create `packages/database/drizzle.config.ts`:
 import type { Config } from 'drizzle-kit';
 
 export default {
-  schema: './src/schema/index.ts',
-  out: './drizzle',
-  driver: 'better-sqlite',
-  dbCredentials: {
-    url: '../molos.db',  // Relative to this config file
-  },
-  verbose: true,
-  strict: true,
+	schema: './src/schema/index.ts',
+	out: './drizzle',
+	driver: 'better-sqlite',
+	dbCredentials: {
+		url: '../molos.db' // Relative to this config file
+	},
+	verbose: true,
+	strict: true
 } satisfies Config;
 ```
 
@@ -612,33 +617,33 @@ sqlite3 ../molos.db ".tables"
 
 ## Table Namespacing Reference
 
-| Module | Original Table | Namespaced Table |
-|--------|---------------|------------------|
-| MoLOS-Tasks | tasks | tasks_tasks |
-| MoLOS-Tasks | projects | tasks_projects |
-| MoLOS-Tasks | areas | tasks_areas |
-| MoLOS-Tasks | daily_log | tasks_daily_log |
-| MoLOS-Tasks | settings | tasks_settings |
-| MoLOS-Finance | expenses | finance_expenses |
-| MoLOS-Finance | subscriptions | finance_subscriptions |
-| MoLOS-Finance | accounts | finance_accounts |
-| MoLOS-Finance | settings | finance_settings |
-| MoLOS-Finance | budget | finance_budget |
-| MoLOS-Goals | resources | goals_resources |
-| MoLOS-Goals | tracker | goals_tracker |
-| MoLOS-Goals | progress_history | goals_progress_history |
-| MoLOS-Goals | settings | goals_settings |
-| MoLOS-Health | user_profile | health_user_profile |
-| MoLOS-Health | weight_log | health_weight_log |
-| MoLOS-Health | measurement_log | health_measurement_log |
-| MoLOS-Health | activity_log | health_activity_log |
-| MoLOS-Health | goal | health_goal |
-| MoLOS-Health | settings | health_settings |
-| Core | user | user (no namespace) |
-| Core | session | session (no namespace) |
-| Core | account | account (no namespace) |
-| Core | verification | verification (no namespace) |
-| Core | apikey | apikey (no namespace) |
+| Module        | Original Table   | Namespaced Table            |
+| ------------- | ---------------- | --------------------------- |
+| MoLOS-Tasks   | tasks            | tasks_tasks                 |
+| MoLOS-Tasks   | projects         | tasks_projects              |
+| MoLOS-Tasks   | areas            | tasks_areas                 |
+| MoLOS-Tasks   | daily_log        | tasks_daily_log             |
+| MoLOS-Tasks   | settings         | tasks_settings              |
+| MoLOS-Finance | expenses         | finance_expenses            |
+| MoLOS-Finance | subscriptions    | finance_subscriptions       |
+| MoLOS-Finance | accounts         | finance_accounts            |
+| MoLOS-Finance | settings         | finance_settings            |
+| MoLOS-Finance | budget           | finance_budget              |
+| MoLOS-Goals   | resources        | goals_resources             |
+| MoLOS-Goals   | tracker          | goals_tracker               |
+| MoLOS-Goals   | progress_history | goals_progress_history      |
+| MoLOS-Goals   | settings         | goals_settings              |
+| MoLOS-Health  | user_profile     | health_user_profile         |
+| MoLOS-Health  | weight_log       | health_weight_log           |
+| MoLOS-Health  | measurement_log  | health_measurement_log      |
+| MoLOS-Health  | activity_log     | health_activity_log         |
+| MoLOS-Health  | goal             | health_goal                 |
+| MoLOS-Health  | settings         | health_settings             |
+| Core          | user             | user (no namespace)         |
+| Core          | session          | session (no namespace)      |
+| Core          | account          | account (no namespace)      |
+| Core          | verification     | verification (no namespace) |
+| Core          | apikey           | apikey (no namespace)       |
 
 ## Handling Module-Specific Migrations
 
@@ -661,7 +666,7 @@ Modules register their migrations:
 import { registerMigration } from '@molos/database';
 
 registerMigration('product-owner', '001_initial', () => {
-  // migration logic
+	// migration logic
 });
 ```
 
@@ -672,6 +677,7 @@ Recommend Option A for simplicity during initial migration.
 ### For Agent 2 (Modules)
 
 After this package is ready:
+
 ```typescript
 // In module code
 import { db, productOwner } from '@molos/database';
@@ -684,6 +690,7 @@ const projects = await db.select().from(productOwner.projects);
 ### For Main App
 
 Update all database imports:
+
 ```typescript
 // Before
 import { db } from '$lib/server/db';
@@ -731,9 +738,11 @@ git branch -D feature/database
 - [x] Step 20: Migrations tested
 
 ### Dependencies Status
+
 - [x] Agent 1 (Core) complete - **COMPLETED & MERGED**
 
 ### Package Structure (in develop branch)
+
 ```
 packages/database/
 ├── src/
@@ -750,6 +759,7 @@ packages/database/
 ## Completion Criteria
 
 Task is complete when:
+
 1. `@molos/database` package builds successfully
 2. All core tables are in `schema/core/`
 3. All module tables are in `schema/external/` with namespacing

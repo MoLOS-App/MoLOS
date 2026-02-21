@@ -70,9 +70,15 @@ function categorizeError(errorMessage: string): { code: number; data?: Record<st
 			data: {
 				type: 'validation_error',
 				column: columnMatch?.[1],
-				expected: expectedMatch?.[1]?.trim().split(',').map((s) => s.trim()),
+				expected: expectedMatch?.[1]
+					?.trim()
+					.split(',')
+					.map((s) => s.trim()),
 				found: foundMatch?.[1],
-				suggestions: suggestionMatch?.[1]?.trim().split(',').map((s) => s.trim())
+				suggestions: suggestionMatch?.[1]
+					?.trim()
+					.split(',')
+					.map((s) => s.trim())
 			}
 		};
 	}

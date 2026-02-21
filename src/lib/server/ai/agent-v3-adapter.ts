@@ -15,15 +15,19 @@ import type {
 	AiAction,
 	AiChatResponse,
 	AiAgentTelemetry,
-	AiAgentEvent,
+	AiAgentEvent
 } from '$lib/models/ai';
 import type {
 	AgentMessage,
 	ExecutionResult,
 	ProgressEvent,
-	ToolDefinition,
+	ToolDefinition
 } from './agent/v3/types';
-import { MoLOSAgent, createMoLOSAgent, type MoLOSAgentInitConfig } from './agent/v3/core/molos-agent';
+import {
+	MoLOSAgent,
+	createMoLOSAgent,
+	type MoLOSAgentInitConfig
+} from './agent/v3/core/molos-agent';
 import { createProvider, mapProvider, getProviderOptions } from './agent/v3/providers';
 import { AiRepository } from '$lib/repositories/ai/ai-repository';
 import { AiToolbox } from '$lib/server/ai/toolbox';
@@ -38,11 +42,7 @@ import type { ModuleAgentConfig } from './agent/v3/types';
  * Calculate estimated HTTP header size for a request
  * This is a rough estimate since AI SDK constructs final headers
  */
-function estimateHeaderSize(
-	provider: string,
-	modelName: string,
-	apiKeyLength: number
-): number {
+function estimateHeaderSize(provider: string, modelName: string, apiKeyLength: number): number {
 	// Base headers: Content-Type, Host, etc.
 	let size = 500;
 
@@ -96,7 +96,7 @@ function estimateRequestSize(
 		headers: totalHeaderSize,
 		body: bodySize,
 		total,
-		overLimit: total > 8192, // 8KB HTTP header limit
+		overLimit: total > 8192 // 8KB HTTP header limit
 	};
 }
 
@@ -107,10 +107,10 @@ function getEssentialTools(allTools: ToolDefinition[]): ToolDefinition[] {
 	const essentialToolNames = new Set([
 		'get_active_modules',
 		'get_user_profile',
-		'get_current_time',
+		'get_current_time'
 	]);
 
-	return allTools.filter(t => essentialToolNames.has(t.name));
+	return allTools.filter((t) => essentialToolNames.has(t.name));
 }
 
 // ============================================================================
@@ -118,10 +118,7 @@ function getEssentialTools(allTools: ToolDefinition[]): ToolDefinition[] {
 /**
  * Convert AiSettings to MoLOSAgentInitConfig
  */
-function settingsToAgentConfig(
-	settings: AiSettings,
-	model: unknown
-): MoLOSAgentInitConfig {
+function settingsToAgentConfig(settings: AiSettings, model: unknown): MoLOSAgentInitConfig {
 	const runtime = getAgentRuntimeConfig(settings);
 
 	return {
@@ -132,7 +129,7 @@ function settingsToAgentConfig(
 		maxDurationMs: runtime.maxDurationMs,
 		thinkingLevel: 'low',
 		streamEnabled: settings.streamEnabled ?? true,
-		telemetryEnabled: runtime.telemetryEnabled,
+		telemetryEnabled: runtime.telemetryEnabled
 	};
 }
 
@@ -150,7 +147,7 @@ function mapActions(result: ExecutionResult): AiAction[] {
 		entity: action.entity,
 		description: action.description,
 		status: action.status,
-		data: action.data,
+		data: action.data
 	}));
 }
 
@@ -167,7 +164,7 @@ function mapTelemetry(result: ExecutionResult): AiAgentTelemetry {
 		retries: 0,
 		errors: result.telemetry.errors,
 		tokenEstimateIn: result.telemetry.tokenEstimateIn,
-		tokenEstimateOut: result.telemetry.tokenEstimateOut,
+		tokenEstimateOut: result.telemetry.tokenEstimateOut
 	};
 }
 
@@ -178,7 +175,7 @@ function mapEvents(result: ExecutionResult): AiAgentEvent[] {
 	return result.events.map((event) => ({
 		type: event.type as AiAgentEvent['type'],
 		timestamp: event.timestamp,
-		detail: event.data,
+		detail: event.data
 	}));
 }
 
@@ -191,10 +188,7 @@ export class AiAgentV3Adapter {
 	private toolbox: AiToolbox;
 	private moduleAgents: ModuleAgentConfig[];
 
-	constructor(
-		userId: string,
-		options: { moduleAgents?: ModuleAgentConfig[] } = {}
-	) {
+	constructor(userId: string, options: { moduleAgents?: ModuleAgentConfig[] } = {}) {
 		this.userId = userId;
 		this.aiRepo = new AiRepository();
 		this.toolbox = new AiToolbox();
@@ -225,7 +219,7 @@ export class AiAgentV3Adapter {
 			content,
 			sessionId,
 			attachments: attachments as Array<{ name: string }> | undefined,
-			parts,
+			parts
 		});
 
 		// Get settings
@@ -233,8 +227,7 @@ export class AiAgentV3Adapter {
 
 		if (!settings || !settings.apiKey) {
 			return {
-				message:
-					'I need an API key to function. Please configure your AI settings.',
+				message: 'I need an API key to function. Please configure your AI settings.'
 			};
 		}
 
@@ -244,7 +237,7 @@ export class AiAgentV3Adapter {
 			provider: providerType,
 			modelName: settings.modelName,
 			apiKey: settings.apiKey,
-			baseUrl: settings.baseUrl,
+			baseUrl: settings.baseUrl
 		});
 
 		// Get history for context
@@ -255,7 +248,7 @@ export class AiAgentV3Adapter {
 			role: m.role as 'user' | 'assistant' | 'system' | 'tool',
 			content: m.content,
 			toolCalls: m.toolCalls as any,
-			toolCallId: m.toolCallId,
+			toolCallId: m.toolCallId
 		}));
 
 		// Get tools from toolbox with mention prioritization
@@ -293,8 +286,7 @@ Remember: When a task requires using tools, CALL THE TOOL IMMEDIATELY. Do not ju
 		// Override with options if provided
 		if (options.maxSteps) agentConfig.maxSteps = options.maxSteps;
 		if (options.maxDurationMs) agentConfig.maxDurationMs = options.maxDurationMs;
-		if (options.streamEnabled !== undefined)
-			agentConfig.streamEnabled = options.streamEnabled;
+		if (options.streamEnabled !== undefined) agentConfig.streamEnabled = options.streamEnabled;
 
 		// Create v3 Agent
 		const agent = createMoLOSAgent(agentConfig);
@@ -317,18 +309,26 @@ Remember: When a task requires using tools, CALL THE TOOL IMMEDIATELY. Do not ju
 		const toolsJson = JSON.stringify(tools);
 		console.log('[AI Agent Debug] Tools JSON size:', toolsJson.length, 'bytes');
 		if (toolsJson.length > 0) {
-			console.log('[AI Agent Debug] Tools JSON (first 300 chars):', toolsJson.substring(0, 300) + '...');
+			console.log(
+				'[AI Agent Debug] Tools JSON (first 300 chars):',
+				toolsJson.substring(0, 300) + '...'
+			);
 		}
 
 		const messagesSize = JSON.stringify(agentHistory).length;
 		console.log('[AI Agent Debug] Messages size:', messagesSize, 'bytes');
-		console.log('[AI Agent Debug] Total estimated body:', systemPromptWithTools.length + messagesSize + toolsJson.length, 'bytes');
+		console.log(
+			'[AI Agent Debug] Total estimated body:',
+			systemPromptWithTools.length + messagesSize + toolsJson.length,
+			'bytes'
+		);
 
 		// Log each message
 		agentHistory.forEach((msg, i) => {
-			const contentPreview = typeof msg.content === 'string'
-				? msg.content.substring(0, 100)
-				: JSON.stringify(msg.content).substring(0, 100);
+			const contentPreview =
+				typeof msg.content === 'string'
+					? msg.content.substring(0, 100)
+					: JSON.stringify(msg.content).substring(0, 100);
 			console.log(`[AI Agent Debug] Message ${i}:`, msg.role, '-', contentPreview + '...');
 		});
 
@@ -342,11 +342,22 @@ Remember: When a task requires using tools, CALL THE TOOL IMMEDIATELY. Do not ju
 			systemPromptWithTools
 		);
 
-		console.log('[AI Agent Debug] Estimated total request (headers + body):', estimatedSize.total, 'bytes');
+		console.log(
+			'[AI Agent Debug] Estimated total request (headers + body):',
+			estimatedSize.total,
+			'bytes'
+		);
 		console.log('[AI Agent Debug] Estimated headers:', estimatedSize.headers, 'bytes');
 		console.log('[AI Agent Debug] Estimated body:', estimatedSize.body, 'bytes');
 		console.log('[AI Agent Debug] HTTP header limit: 8192 bytes (8KB)');
-		console.log('[AI Agent Debug] Approaching limit?', estimatedSize.overLimit ? 'YES - WARNING!' : estimatedSize.total > 7000 ? 'Close to limit' : 'No');
+		console.log(
+			'[AI Agent Debug] Approaching limit?',
+			estimatedSize.overLimit
+				? 'YES - WARNING!'
+				: estimatedSize.total > 7000
+					? 'Close to limit'
+					: 'No'
+		);
 		console.log('[AI Agent Debug] ============================\n');
 		// =====================================================================
 
@@ -357,18 +368,18 @@ Remember: When a task requires using tools, CALL THE TOOL IMMEDIATELY. Do not ju
 			{
 				name: 'full-tools',
 				tools: tools,
-				prompt: systemPromptWithTools,
+				prompt: systemPromptWithTools
 			},
 			{
 				name: 'essential-tools',
 				tools: getEssentialTools(tools),
-				prompt: systemPromptWithTools,
+				prompt: systemPromptWithTools
 			},
 			{
 				name: 'no-tools',
 				tools: [],
-				prompt: `You are MoLOS AI assistant. You currently have no tools available due to technical limitations. Please respond conversationally and let the user know about the limitation.`,
-			},
+				prompt: `You are MoLOS AI assistant. You currently have no tools available due to technical limitations. Please respond conversationally and let the user know about the limitation.`
+			}
 		];
 
 		let result: ExecutionResult | null = null;
@@ -376,7 +387,9 @@ Remember: When a task requires using tools, CALL THE TOOL IMMEDIATELY. Do not ju
 
 		for (const strategy of strategies) {
 			try {
-				console.log(`[AiAgent] Trying strategy: ${strategy.name} with ${strategy.tools.length} tools`);
+				console.log(
+					`[AiAgent] Trying strategy: ${strategy.name} with ${strategy.tools.length} tools`
+				);
 
 				// Update agent with strategy-specific tools
 				const agent = createMoLOSAgent(agentConfig);
@@ -390,24 +403,30 @@ Remember: When a task requires using tools, CALL THE TOOL IMMEDIATELY. Do not ju
 					maxDurationMs: options.maxDurationMs ?? agentConfig.maxDurationMs,
 					onProgress: options.onProgress,
 					streamEnabled: options.streamEnabled ?? agentConfig.streamEnabled,
-					systemPrompt: strategy.prompt,
+					systemPrompt: strategy.prompt
 				});
 
 				console.log(`[AiAgent] Strategy ${strategy.name} succeeded!`);
 				break; // Success! Exit the fallback loop
 			} catch (error: any) {
 				lastError = error;
-				const is431 = error?.statusCode === 431 ||
+				const is431 =
+					error?.statusCode === 431 ||
 					error?.status === 431 ||
 					error?.message?.includes('431') ||
 					error?.message?.includes('header');
 
 				if (is431) {
-					console.warn(`[AiAgent] Strategy ${strategy.name} failed with 431 (header too large), trying next fallback...`);
+					console.warn(
+						`[AiAgent] Strategy ${strategy.name} failed with 431 (header too large), trying next fallback...`
+					);
 					continue;
 				}
 				// For non-431 errors, don't fallback - let it propagate
-				console.error(`[AiAgent] Strategy ${strategy.name} failed with non-431 error:`, error?.message || error);
+				console.error(
+					`[AiAgent] Strategy ${strategy.name} failed with non-431 error:`,
+					error?.message || error
+				);
 				throw error;
 			}
 		}
@@ -421,7 +440,9 @@ Remember: When a task requires using tools, CALL THE TOOL IMMEDIATELY. Do not ju
 
 		// DEBUG: Log message saving status
 		console.log('[AiAgentV3Adapter] Final result message length:', result.message?.length || 0);
-		console.log('[AiAgentV3Adapter] Note: Message persistence handled by API endpoint from message_segment events');
+		console.log(
+			'[AiAgentV3Adapter] Note: Message persistence handled by API endpoint from message_segment events'
+		);
 		// The API endpoint saves message_segment events to avoid duplicates
 		// If messages are not being saved, check if message_segment events are being emitted
 
@@ -430,7 +451,7 @@ Remember: When a task requires using tools, CALL THE TOOL IMMEDIATELY. Do not ju
 			message: result.message,
 			actions: mapActions(result),
 			events: mapEvents(result),
-			telemetry: mapTelemetry(result),
+			telemetry: mapTelemetry(result)
 		};
 	}
 
@@ -455,7 +476,7 @@ Remember: When a task requires using tools, CALL THE TOOL IMMEDIATELY. Do not ju
 			role: 'tool',
 			content: JSON.stringify(result),
 			sessionId,
-			toolCallId: data?.toolCallId || 'manual-confirmation',
+			toolCallId: data?.toolCallId || 'manual-confirmation'
 		});
 
 		// Build a simple response confirming the action
@@ -463,26 +484,20 @@ Remember: When a task requires using tools, CALL THE TOOL IMMEDIATELY. Do not ju
 			message: 'The action was confirmed and executed successfully.',
 			actions: [
 				{
-					type:
-						action.type === 'read' || action.type === 'write'
-							? action.type
-							: 'read',
+					type: action.type === 'read' || action.type === 'write' ? action.type : 'read',
 					entity: action.entity,
 					description: `Executed: ${action.description}`,
 					status: 'executed',
-					data: { toolName: (data as any)?.toolName, result },
-				},
-			],
+					data: { toolName: (data as any)?.toolName, result }
+				}
+			]
 		};
 	}
 
 	/**
 	 * Execute a single action
 	 */
-	async executeAction(
-		action: AiAction,
-		activeModuleIds: string[] = []
-	): Promise<unknown> {
+	async executeAction(action: AiAction, activeModuleIds: string[] = []): Promise<unknown> {
 		if (action.status !== 'pending') return undefined;
 
 		try {

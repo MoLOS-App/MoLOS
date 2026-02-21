@@ -10,21 +10,22 @@ Migrated 7 external modules from sibling directories into `external_modules/`, f
 
 ## Modules Migrated
 
-| Module | Source | Has package.json | Status |
-|--------|--------|------------------|--------|
-| MoLOS-AI-Knowledge | `../MoLOS-AI-Knowledge/` | Yes | Active |
-| MoLOS-Finance | `../MoLOS-Finance/` | Created | Active |
-| MoLOS-Goals | `../MoLOS-Goals/` | Created | Active |
-| MoLOS-Google | `../MoLOS-Google/` | Yes | Active |
-| MoLOS-Health | `../MoLOS-Health/` | Created | Active |
-| MoLOS-Meals | `../MoLOS-Meals/` | Created | Active |
-| MoLOS-Sample-Module | `../MoLOS-Sample-Module/` | Yes | Active |
+| Module              | Source                    | Has package.json | Status |
+| ------------------- | ------------------------- | ---------------- | ------ |
+| MoLOS-AI-Knowledge  | `../MoLOS-AI-Knowledge/`  | Yes              | Active |
+| MoLOS-Finance       | `../MoLOS-Finance/`       | Created          | Active |
+| MoLOS-Goals         | `../MoLOS-Goals/`         | Created          | Active |
+| MoLOS-Google        | `../MoLOS-Google/`        | Yes              | Active |
+| MoLOS-Health        | `../MoLOS-Health/`        | Created          | Active |
+| MoLOS-Meals         | `../MoLOS-Meals/`         | Created          | Active |
+| MoLOS-Sample-Module | `../MoLOS-Sample-Module/` | Yes              | Active |
 
 ## Changes Made
 
 ### 1. Workspace Configuration
 
 **File:** `package.json`
+
 - Added `modules/*` to workspaces array
 - Changed `@molos/module-*` dependencies to use `workspace:*` protocol
 - Added `@molos/database` as workspace dependency
@@ -36,6 +37,7 @@ Migrated 7 external modules from sibling directories into `external_modules/`, f
 **Problem:** The standardization logic was setting `changed = true` when regex patterns matched, even if no actual replacement occurred. This caused a rebuild loop.
 
 **Fix:** Added content comparison before setting `changed` flag:
+
 ```typescript
 const originalContent = content;
 content = content.replace(regex, ...);
@@ -45,6 +47,7 @@ if (content !== originalContent) {
 ```
 
 **Also added:** Standardization patterns for `$lib/modules/{moduleId}/` imports (without `/lib/` prefix):
+
 - `$lib/modules/{moduleId}/stores` → `$lib/stores/external_modules/{moduleId}`
 - `$lib/modules/{moduleId}/components` → `$lib/components/external_modules/{moduleId}`
 - `$lib/modules/{moduleId}/models` → `$lib/models/external_modules/{moduleId}`
@@ -53,11 +56,13 @@ if (content !== originalContent) {
 ### 3. Cleanup
 
 **Files Modified:**
+
 - `modules/ai/src/config.ts` - Removed unused icons (Key, ScrollText, List, Activity)
 - `src/lib/server/ai/mcp/oauth/token-service.ts` - Removed unused `timingSafeEqual` import
 - `src/lib/server/ai/module-tools.ts` - Removed dead commented code
 
 **Files Deleted:**
+
 - `src/lib/config/modules/` directory (legacy, marked for removal)
 - `src/server/` (empty directory)
 - `module-management/validation/` (empty directory)
@@ -65,6 +70,7 @@ if (content !== originalContent) {
 ### 4. Module Setup
 
 For each migrated module:
+
 1. Copied to `external_modules/MoLOS-{NAME}/`
 2. Removed `.git`, `node_modules`, `.svelte-kit`
 3. Created/updated `package.json` with `@molos/external-{id}` name
@@ -74,6 +80,7 @@ For each migrated module:
 ## Verification
 
 All 7 modules registered and active in database:
+
 ```
 MoLOS-AI-Knowledge|active
 MoLOS-Finance|active
@@ -123,6 +130,7 @@ external_modules/
 ## Symlink Structure
 
 Modules are linked via symlinks to:
+
 - `src/lib/config/external_modules/{ModuleId}.ts`
 - `src/lib/stores/external_modules/{ModuleId}/`
 - `src/lib/components/external_modules/{ModuleId}/`

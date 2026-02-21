@@ -116,7 +116,12 @@
 				mentionStartPosition = lastAtIndex;
 				pickerPosition = getCaretCoordinates(textareaElement);
 				showMentionPicker = true;
-				console.log('[Mention] Showing picker, query:', textAfterAt, 'available modules:', availableModules.length);
+				console.log(
+					'[Mention] Showing picker, query:',
+					textAfterAt,
+					'available modules:',
+					availableModules.length
+				);
 				return;
 			}
 		}
@@ -223,7 +228,7 @@
 				class="max-h-50 min-h-10 w-full resize-none border-none bg-transparent text-[14px] leading-relaxed shadow-none focus-visible:ring-0"
 				disabled={isLoading || !!pendingAction}
 				placeholder={mentionedModules.length > 0
-					? `Ask about ${mentionedModules.map(m => m.name).join(', ')}...`
+					? `Ask about ${mentionedModules.map((m) => m.name).join(', ')}...`
 					: 'Type @ to mention a module...'}
 			/>
 		</div>

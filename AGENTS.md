@@ -1,5 +1,13 @@
 # Repository Guidelines
 
+## Critical Constraints
+
+- **NEVER run git commands** - No add, commit, push, pull, rebase, branch, checkout, or any git operations
+- User handles all version control manually
+- **Do NOT commit or push changes** unless explicitly requested by the user
+
+---
+
 ## MCP Server Integration (Model Context Protocol)
 
 This repository leverages several MCP servers for enhanced development capabilities. Always prefer MCP tools over manual searches or external browsing.

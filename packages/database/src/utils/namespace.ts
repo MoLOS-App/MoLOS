@@ -63,5 +63,5 @@ export const RESERVED_TABLE_NAMES = [
  * Check if a table name should be namespaced
  */
 export function shouldNamespace(tableName: string): boolean {
-	return !RESERVED_TABLE_NAMES.includes(tableName as typeof RESERVED_TABLE_NAMES[number]);
+	return !RESERVED_TABLE_NAMES.includes(tableName as (typeof RESERVED_TABLE_NAMES)[number]);
 }

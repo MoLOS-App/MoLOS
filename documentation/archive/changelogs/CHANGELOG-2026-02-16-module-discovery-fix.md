@@ -24,7 +24,7 @@ const MANDATORY_MODULES = ['dashboard', 'ai'] as const;
 // In buildModuleRegistry():
 const isMandatory = MANDATORY_MODULES.includes(config.id);
 if (!isMandatory && autoloadFilter && !autoloadFilter.includes(config.id)) {
-    return acc;  // Skip non-mandatory modules not in filter
+	return acc; // Skip non-mandatory modules not in filter
 }
 ```
 
@@ -47,12 +47,12 @@ VITE_MOLOS_AUTOLOAD_MODULES=  # Empty = load all
 ```typescript
 // External modules use MoLOS-{Name} format
 export const tasksConfig: ModuleConfig = {
-  id: 'MoLOS-Tasks',
-  href: '/ui/MoLOS-Tasks',
-  navigation: [
-    { href: '/ui/MoLOS-Tasks/dashboard' },
-    // ...
-  ]
+	id: 'MoLOS-Tasks',
+	href: '/ui/MoLOS-Tasks',
+	navigation: [
+		{ href: '/ui/MoLOS-Tasks/dashboard' }
+		// ...
+	]
 };
 ```
 
@@ -79,11 +79,11 @@ export const tasksConfig: ModuleConfig = {
 
 ## Module Classification
 
-| Module | Type | ID | Package |
-|--------|------|----|----|
-| Dashboard | Internal | `dashboard` | Core |
-| AI | Internal | `ai` | `@molos/module-ai` (workspace) |
-| Tasks | External | `MoLOS-Tasks` | `@molos/module-tasks` |
+| Module    | Type     | ID            | Package                        |
+| --------- | -------- | ------------- | ------------------------------ |
+| Dashboard | Internal | `dashboard`   | Core                           |
+| AI        | Internal | `ai`          | `@molos/module-ai` (workspace) |
+| Tasks     | External | `MoLOS-Tasks` | `@molos/module-tasks`          |
 
 ## Installation Method
 
@@ -120,14 +120,14 @@ import { db } from '../../../../../src/lib/server/db';
 
 ## Files Modified
 
-| File | Change |
-|------|--------|
-| `src/lib/config/index.ts` | Added MANDATORY_MODULES, updated filter logic |
-| `.env` | Cleared VITE_MOLOS_AUTOLOAD_MODULES |
-| `package.json` | Changed tasks to GitHub dependency |
-| `scripts/link-modules.ts` | Read module ID from config |
-| `modules/tasks/src/config.ts` | Updated to MoLOS-Tasks ID |
-| `modules/tasks/drizzle.config.ts` | Created |
-| `modules/tasks/drizzle/0000_*.sql` | Created migrations |
-| `packages/database/package.json` | Added default exports |
-| Documentation files | Created/updated |
+| File                               | Change                                        |
+| ---------------------------------- | --------------------------------------------- |
+| `src/lib/config/index.ts`          | Added MANDATORY_MODULES, updated filter logic |
+| `.env`                             | Cleared VITE_MOLOS_AUTOLOAD_MODULES           |
+| `package.json`                     | Changed tasks to GitHub dependency            |
+| `scripts/link-modules.ts`          | Read module ID from config                    |
+| `modules/tasks/src/config.ts`      | Updated to MoLOS-Tasks ID                     |
+| `modules/tasks/drizzle.config.ts`  | Created                                       |
+| `modules/tasks/drizzle/0000_*.sql` | Created migrations                            |
+| `packages/database/package.json`   | Added default exports                         |
+| Documentation files                | Created/updated                               |

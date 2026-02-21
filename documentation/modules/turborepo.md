@@ -75,16 +75,16 @@ graph TD
 
 Tasks in `turbo.json`:
 
-| Task | Description | Cache |
-|------|-------------|-------|
-| `build` | Build packages | ✅ |
-| `lint` | Lint code | ✅ |
-| `test` | Run tests | ✅ |
-| `typecheck` | Type check | ✅ |
-| `db:generate` | Generate migrations | ❌ |
-| `db:migrate` | Run migrations | ❌ |
-| `dev` | Dev servers | ❌ (persistent) |
-| `clean` | Clean artifacts | ❌ |
+| Task          | Description         | Cache           |
+| ------------- | ------------------- | --------------- |
+| `build`       | Build packages      | ✅              |
+| `lint`        | Lint code           | ✅              |
+| `test`        | Run tests           | ✅              |
+| `typecheck`   | Type check          | ✅              |
+| `db:generate` | Generate migrations | ❌              |
+| `db:migrate`  | Run migrations      | ❌              |
+| `dev`         | Dev servers         | ❌ (persistent) |
+| `clean`       | Clean artifacts     | ❌              |
 
 ## Caching
 
@@ -139,12 +139,12 @@ Each module should have these scripts for Turborepo:
 
 ```json
 {
-  "scripts": {
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "lint": "prettier --check .",
-    "test": "vitest run",
-    "typecheck": "tsc --noEmit"
-  }
+	"scripts": {
+		"db:generate": "drizzle-kit generate",
+		"db:migrate": "drizzle-kit migrate",
+		"lint": "prettier --check .",
+		"test": "vitest run",
+		"typecheck": "tsc --noEmit"
+	}
 }
 ```

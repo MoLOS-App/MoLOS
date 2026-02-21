@@ -4,11 +4,11 @@ This folder contains plugin definitions for MoLOS workflows.
 
 ## Available Plugins
 
-| Plugin | Description |
-|--------|-------------|
+| Plugin                                            | Description                 |
+| ------------------------------------------------- | --------------------------- |
 | [Module Management](./molos-module-management.md) | Module lifecycle management |
-| [Database](./molos-db.md) | Database operations |
-| [AI Tools](./molos-ai-tools.md) | AI integration tools |
+| [Database](./molos-db.md)                         | Database operations         |
+| [AI Tools](./molos-ai-tools.md)                   | AI integration tools        |
 
 ## Plugin Schema
 

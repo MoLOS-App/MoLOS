@@ -147,7 +147,10 @@ describe('Provider Factory', () => {
 		});
 
 		it('should map thinking levels to correct token budgets', () => {
-			const levels: Array<{ level: 'off' | 'minimal' | 'low' | 'medium' | 'high'; budget: number }> = [
+			const levels: Array<{
+				level: 'off' | 'minimal' | 'low' | 'medium' | 'high';
+				budget: number;
+			}> = [
 				{ level: 'minimal', budget: 1024 },
 				{ level: 'low', budget: 2048 },
 				{ level: 'medium', budget: 4096 },

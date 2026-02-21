@@ -35,9 +35,9 @@ bun run db:reset         # Reset database (WARNING: deletes data)
 
 ## Module ID Convention
 
-| Type | Format | Example |
-|------|--------|---------|
-| Internal | lowercase | `dashboard`, `ai` |
+| Type     | Format         | Example                      |
+| -------- | -------------- | ---------------------------- |
+| Internal | lowercase      | `dashboard`, `ai`            |
 | External | `MoLOS-{Name}` | `MoLOS-Tasks`, `MoLOS-Goals` |
 
 ---
@@ -98,14 +98,12 @@ import { Icon } from 'lucide-svelte';
 import type { ModuleConfig } from '$lib/config/types';
 
 export default {
-  id: 'MoLOS-MyModule',
-  name: 'My Module',
-  href: '/ui/MoLOS-MyModule',
-  icon: Icon,
-  description: 'Module description',
-  navigation: [
-    { name: 'Dashboard', icon: Icon, href: '/ui/MoLOS-MyModule/dashboard' }
-  ]
+	id: 'MoLOS-MyModule',
+	name: 'My Module',
+	href: '/ui/MoLOS-MyModule',
+	icon: Icon,
+	description: 'Module description',
+	navigation: [{ name: 'Dashboard', icon: Icon, href: '/ui/MoLOS-MyModule/dashboard' }]
 } satisfies ModuleConfig;
 ```
 
@@ -135,12 +133,12 @@ MoLOS/
 
 ## Symlink Locations
 
-| Path | Points To |
-|------|-----------|
-| `src/routes/ui/(modules)/(external_modules)/{id}` | `{module}/src/routes/ui` |
-| `src/routes/api/(external_modules)/{id}` | `{module}/src/routes/api` |
-| `src/lib/modules/{id}` | `{module}/src/lib` |
-| `src/lib/models/external_modules/{id}` | `{module}/src/lib/models` |
+| Path                                              | Points To                 |
+| ------------------------------------------------- | ------------------------- |
+| `src/routes/ui/(modules)/(external_modules)/{id}` | `{module}/src/routes/ui`  |
+| `src/routes/api/(external_modules)/{id}`          | `{module}/src/routes/api` |
+| `src/lib/modules/{id}`                            | `{module}/src/lib`        |
+| `src/lib/models/external_modules/{id}`            | `{module}/src/lib/models` |
 
 ---
 
@@ -160,14 +158,14 @@ DATABASE_URL=./molos.db
 
 ## Troubleshooting Quick Fixes
 
-| Issue | Solution |
-|-------|----------|
-| Module not in sidebar | `bun run module:sync` |
-| 404 on routes | Check symlinks, run `module:link` |
-| Table not found | Generate + run migrations |
-| Import errors | Use `$lib` alias, check symlinks |
-| tsconfig errors | Remove standalone configs from module |
+| Issue                 | Solution                              |
+| --------------------- | ------------------------------------- |
+| Module not in sidebar | `bun run module:sync`                 |
+| 404 on routes         | Check symlinks, run `module:link`     |
+| Table not found       | Generate + run migrations             |
+| Import errors         | Use `$lib` alias, check symlinks      |
+| tsconfig errors       | Remove standalone configs from module |
 
 ---
 
-*See [AI-CONTEXT.md](./AI-CONTEXT.md) for comprehensive reference.*
+_See [AI-CONTEXT.md](./AI-CONTEXT.md) for comprehensive reference._

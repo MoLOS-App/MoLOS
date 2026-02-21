@@ -75,9 +75,9 @@ A **simple naming convention** enforced through helper functions:
  * // => "mod_MoLOS-Tasks_projects"
  */
 export function getTableName(moduleId: string, tableName: string): string {
-    // Sanitize table name to prevent SQL injection
-    const sanitized = tableName.replace(/[^a-zA-Z0-9_]/g, '');
-    return `mod_${moduleId}_${sanitized}`;
+	// Sanitize table name to prevent SQL injection
+	const sanitized = tableName.replace(/[^a-zA-Z0-9_]/g, '');
+	return `mod_${moduleId}_${sanitized}`;
 }
 
 /**
@@ -88,7 +88,7 @@ export function getTableName(moduleId: string, tableName: string): string {
  * @returns true if table belongs to module
  */
 export function isModuleTable(fullTableName: string, moduleId: string): boolean {
-    return fullTableName.startsWith(`mod_${moduleId}_`);
+	return fullTableName.startsWith(`mod_${moduleId}_`);
 }
 
 /**
@@ -98,8 +98,8 @@ export function isModuleTable(fullTableName: string, moduleId: string): boolean 
  * @returns Base table name (e.g., "projects") or original if not prefixed
  */
 export function getBaseTableName(fullTableName: string): string {
-    const match = fullTableName.match(/^mod_[^_]+_(.+)$/);
-    return match ? match[1] : fullTableName;
+	const match = fullTableName.match(/^mod_[^_]+_(.+)$/);
+	return match ? match[1] : fullTableName;
 }
 
 /**
@@ -109,7 +109,7 @@ export function getBaseTableName(fullTableName: string): string {
  * @returns SQL LIKE pattern for matching module tables
  */
 export function getModuleTablePattern(moduleId: string): string {
-    return `mod_${moduleId}_%`;
+	return `mod_${moduleId}_%`;
 }
 
 /**
@@ -117,12 +117,12 @@ export function getModuleTablePattern(moduleId: string): string {
  * Throws if table name contains dangerous characters
  */
 export function validateTableName(tableName: string): void {
-    if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(tableName)) {
-        throw new Error(
-            `Invalid table name "${tableName}". ` +
-            `Table names must start with letter/underscore and contain only letters, numbers, and underscores.`
-        );
-    }
+	if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(tableName)) {
+		throw new Error(
+			`Invalid table name "${tableName}". ` +
+				`Table names must start with letter/underscore and contain only letters, numbers, and underscores.`
+		);
+	}
 }
 ```
 
@@ -141,136 +141,139 @@ import type { Database } from '$lib/server/db';
  * Provides prefixed table names and safe table operations
  */
 export class ModuleData {
-    constructor(
-        private readonly moduleId: string,
-        private readonly db: Database
-    ) {}
+	constructor(
+		private readonly moduleId: string,
+		private readonly db: Database
+	) {}
 
-    /**
-     * Get the prefixed table name for this module
-     *
-     * @param tableName - Base table name
-     * @returns Prefixed table name
-     */
-    table(tableName: string): string {
-        validateTableName(tableName);
-        return getTableName(this.moduleId, tableName);
-    }
+	/**
+	 * Get the prefixed table name for this module
+	 *
+	 * @param tableName - Base table name
+	 * @returns Prefixed table name
+	 */
+	table(tableName: string): string {
+		validateTableName(tableName);
+		return getTableName(this.moduleId, tableName);
+	}
 
-    /**
-     * Get the raw database connection
-     * Use with caution - queries are not automatically namespaced
-     */
-    get db(): Database {
-        return this.db;
-    }
+	/**
+	 * Get the raw database connection
+	 * Use with caution - queries are not automatically namespaced
+	 */
+	get db(): Database {
+		return this.db;
+	}
 
-    /**
-     * Create a table for this module
-     *
-     * @param tableName - Base table name (will be prefixed)
-     * @param definition - Table definition callback
-     *
-     * @example
-     * await data.createTable('projects', (table) => {
-     *     table.text('id').primary();
-     *     table.text('name').notNull();
-     * });
-     */
-    async createTable(
-        tableName: string,
-        definition: (table: any) => void
-    ): Promise<void> {
-        const prefixedTable = this.table(tableName);
+	/**
+	 * Create a table for this module
+	 *
+	 * @param tableName - Base table name (will be prefixed)
+	 * @param definition - Table definition callback
+	 *
+	 * @example
+	 * await data.createTable('projects', (table) => {
+	 *     table.text('id').primary();
+	 *     table.text('name').notNull();
+	 * });
+	 */
+	async createTable(tableName: string, definition: (table: any) => void): Promise<void> {
+		const prefixedTable = this.table(tableName);
 
-        // Use Drizzle schema builder
-        // Note: This is pseudo-code - adapt to your ORM
-        await this.db.schema.createTable(prefixedTable, definition);
-    }
+		// Use Drizzle schema builder
+		// Note: This is pseudo-code - adapt to your ORM
+		await this.db.schema.createTable(prefixedTable, definition);
+	}
 
-    /**
-     * Drop a table for this module
-     *
-     * @param tableName - Base table name (will be prefixed)
-     */
-    async dropTable(tableName: string): Promise<void> {
-        const prefixedTable = this.table(tableName);
-        await this.db.schema.dropTable(prefixedTable);
-    }
+	/**
+	 * Drop a table for this module
+	 *
+	 * @param tableName - Base table name (will be prefixed)
+	 */
+	async dropTable(tableName: string): Promise<void> {
+		const prefixedTable = this.table(tableName);
+		await this.db.schema.dropTable(prefixedTable);
+	}
 
-    /**
-     * Check if a table exists for this module
-     *
-     * @param tableName - Base table name
-     */
-    async tableExists(tableName: string): Promise<boolean> {
-        const prefixedTable = this.table(tableName);
-        const result = await this.db.execute(`
+	/**
+	 * Check if a table exists for this module
+	 *
+	 * @param tableName - Base table name
+	 */
+	async tableExists(tableName: string): Promise<boolean> {
+		const prefixedTable = this.table(tableName);
+		const result = await this.db.execute(
+			`
             SELECT name FROM sqlite_master
             WHERE type='table' AND name = ?
-        `, [prefixedTable]);
-        return result.rows.length > 0;
-    }
+        `,
+			[prefixedTable]
+		);
+		return result.rows.length > 0;
+	}
 
-    /**
-     * Get all tables for this module
-     */
-    async getTables(): Promise<string[]> {
-        const pattern = getModuleTablePattern(this.moduleId);
-        const result = await this.db.execute(`
+	/**
+	 * Get all tables for this module
+	 */
+	async getTables(): Promise<string[]> {
+		const pattern = getModuleTablePattern(this.moduleId);
+		const result = await this.db.execute(
+			`
             SELECT name FROM sqlite_master
             WHERE type='table' AND name LIKE ?
-        `, [pattern]);
-        return result.rows.map((r: any) => r.name);
-    }
+        `,
+			[pattern]
+		);
+		return result.rows.map((r: any) => r.name);
+	}
 
-    /**
-     * Drop all tables for this module
-     * Use with caution - this is destructive
-     */
-    async dropAllTables(): Promise<void> {
-        const tables = await this.getTables();
-        for (const table of tables) {
-            await this.db.schema.dropTable(table);
-        }
-    }
+	/**
+	 * Drop all tables for this module
+	 * Use with caution - this is destructive
+	 */
+	async dropAllTables(): Promise<void> {
+		const tables = await this.getTables();
+		for (const table of tables) {
+			await this.db.schema.dropTable(table);
+		}
+	}
 
-    /**
-     * Execute a query with table name auto-prefixing
-     * Parses SQL and replaces table references with prefixed names
-     *
-     * WARNING: This uses simple regex - only use with simple queries
-     * For complex queries, use prefixed table names directly
-     *
-     * @example
-     * await data.query(`
-     *     INSERT INTO projects (id, name) VALUES (?, ?)
-     * `, [1, 'My Project'])
-     * // Becomes: INSERT INTO mod_MyModule_projects ...
-     */
-    async query(sql: string, params: unknown[] = []): Promise<unknown> {
-        // Simple regex-based table name replacement
-        // This is basic - for production, consider using a proper SQL parser
-        const prefixedSql = sql.replace(
-            /\b(FROM|JOIN|INTO|UPDATE|TABLE)\s+([a-zA-Z_][a-zA-Z0-9_]*)/gi,
-            (match, keyword, table) => {
-                // Don't prefix sqlite_ tables or already prefixed tables
-                if (table.startsWith('sqlite_') || table.startsWith('mod_')) {
-                    return `${keyword} ${table}`;
-                }
-                return `${keyword} ${this.table(table)}`;
-            }
-        );
+	/**
+	 * Execute a query with table name auto-prefixing
+	 * Parses SQL and replaces table references with prefixed names
+	 *
+	 * WARNING: This uses simple regex - only use with simple queries
+	 * For complex queries, use prefixed table names directly
+	 *
+	 * @example
+	 * await data.query(`
+	 *     INSERT INTO projects (id, name) VALUES (?, ?)
+	 * `, [1, 'My Project'])
+	 * // Becomes: INSERT INTO mod_MyModule_projects ...
+	 */
+	async query(sql: string, params: unknown[] = []): Promise<unknown> {
+		// Simple regex-based table name replacement
+		// This is basic - for production, consider using a proper SQL parser
+		const prefixedSql = sql.replace(
+			/\b(FROM|JOIN|INTO|UPDATE|TABLE)\s+([a-zA-Z_][a-zA-Z0-9_]*)/gi,
+			(match, keyword, table) => {
+				// Don't prefix sqlite_ tables or already prefixed tables
+				if (table.startsWith('sqlite_') || table.startsWith('mod_')) {
+					return `${keyword} ${table}`;
+				}
+				return `${keyword} ${this.table(table)}`;
+			}
+		);
 
-        return this.db.execute(prefixedSql, params);
-    }
+		return this.db.execute(prefixedSql, params);
+	}
 }
 
 /**
  * Create a ModuleData instance for a specific module
  */
 export function createModuleData(moduleId: string, db: Database): ModuleData {
-    return new ModuleData(moduleId, db);
+	return new ModuleData(moduleId, db);
 }
 ```
 
@@ -289,48 +292,45 @@ import type { Database } from '$lib/server/db';
  * Provides helpers for writing module migrations
  */
 export class ModuleMigrationContext {
-    constructor(
-        private readonly moduleId: string,
-        private readonly db: Database
-    ) {}
+	constructor(
+		private readonly moduleId: string,
+		private readonly db: Database
+	) {}
 
-    /**
-     * Get prefixed table name
-     */
-    table(tableName: string): string {
-        return getTableName(this.moduleId, tableName);
-    }
+	/**
+	 * Get prefixed table name
+	 */
+	table(tableName: string): string {
+		return getTableName(this.moduleId, tableName);
+	}
 
-    /**
-     * Execute raw SQL
-     */
-    async sql(sql: string, params: unknown[] = []): Promise<unknown> {
-        return this.db.execute(sql, params);
-    }
+	/**
+	 * Execute raw SQL
+	 */
+	async sql(sql: string, params: unknown[] = []): Promise<unknown> {
+		return this.db.execute(sql, params);
+	}
 
-    /**
-     * Run a migration callback
-     */
-    async up(callback: (ctx: ModuleMigrationContext) => Promise<void>): Promise<void> {
-        await callback(this);
-    }
+	/**
+	 * Run a migration callback
+	 */
+	async up(callback: (ctx: ModuleMigrationContext) => Promise<void>): Promise<void> {
+		await callback(this);
+	}
 
-    /**
-     * Rollback a migration callback
-     */
-    async down(callback: (ctx: ModuleMigrationContext) => Promise<void>): Promise<void> {
-        await callback(this);
-    }
+	/**
+	 * Rollback a migration callback
+	 */
+	async down(callback: (ctx: ModuleMigrationContext) => Promise<void>): Promise<void> {
+		await callback(this);
+	}
 }
 
 /**
  * Create a migration context for a module
  */
-export function createMigrationContext(
-    moduleId: string,
-    db: Database
-): ModuleMigrationContext {
-    return new ModuleMigrationContext(moduleId, db);
+export function createMigrationContext(moduleId: string, db: Database): ModuleMigrationContext {
+	return new ModuleMigrationContext(moduleId, db);
 }
 ```
 
@@ -348,47 +348,49 @@ import type { Database } from '$lib/server/db';
  * Context given to a module
  */
 export interface ModuleContext {
-    /** Module ID */
-    readonly id: string;
-    /** Data access helper */
-    readonly data: {
-        /** Get prefixed table name */
-        table(tableName: string): string;
-        /** Create a table */
-        createTable(tableName: string, definition: (table: any) => void): Promise<void>;
-        /** Drop a table */
-        dropTable(tableName: string): Promise<void>;
-        /** Check if table exists */
-        tableExists(tableName: string): Promise<boolean>;
-        /** Get all tables for this module */
-        getTables(): Promise<string[]>;
-        /** Execute query with auto-prefixing */
-        query(sql: string, params?: unknown[]): Promise<unknown>;
-    };
+	/** Module ID */
+	readonly id: string;
+	/** Data access helper */
+	readonly data: {
+		/** Get prefixed table name */
+		table(tableName: string): string;
+		/** Create a table */
+		createTable(tableName: string, definition: (table: any) => void): Promise<void>;
+		/** Drop a table */
+		dropTable(tableName: string): Promise<void>;
+		/** Check if table exists */
+		tableExists(tableName: string): Promise<boolean>;
+		/** Get all tables for this module */
+		getTables(): Promise<string[]>;
+		/** Execute query with auto-prefixing */
+		query(sql: string, params?: unknown[]): Promise<unknown>;
+	};
 }
 
 /**
  * Create module context
  */
 export function createModuleContext(
-    moduleId: string,
-    db: Database,
-    eventBus: ModuleEventBus
+	moduleId: string,
+	db: Database,
+	eventBus: ModuleEventBus
 ): ModuleContext {
-    const data = createModuleData(moduleId, db);
+	const data = createModuleData(moduleId, db);
 
-    return {
-        id: moduleId,
-        events: { /* ... */ },
-        data: {
-            table: (tableName: string) => data.table(tableName),
-            createTable: (tableName: string, def: any) => data.createTable(tableName, def),
-            dropTable: (tableName: string) => data.dropTable(tableName),
-            tableExists: (tableName: string) => data.tableExists(tableName),
-            getTables: () => data.getTables(),
-            query: (sql: string, params?: unknown[]) => data.query(sql, params)
-        }
-    };
+	return {
+		id: moduleId,
+		events: {
+			/* ... */
+		},
+		data: {
+			table: (tableName: string) => data.table(tableName),
+			createTable: (tableName: string, def: any) => data.createTable(tableName, def),
+			dropTable: (tableName: string) => data.dropTable(tableName),
+			tableExists: (tableName: string) => data.tableExists(tableName),
+			getTables: () => data.getTables(),
+			query: (sql: string, params?: unknown[]) => data.query(sql, params)
+		}
+	};
 }
 ```
 
@@ -404,28 +406,28 @@ export function createModuleContext(
 import type { ModuleDefinition, ModuleContext } from '$lib/server/modules/types';
 
 export const module: ModuleDefinition = {
-    async onInstall(context: ModuleContext) {
-        // Creates: mod_MoLOS-Tasks_projects
-        await context.data.createTable('projects', (table) => {
-            table.text('id').primary();
-            table.text('name').notNull();
-            table.timestamps();
-        });
+	async onInstall(context: ModuleContext) {
+		// Creates: mod_MoLOS-Tasks_projects
+		await context.data.createTable('projects', (table) => {
+			table.text('id').primary();
+			table.text('name').notNull();
+			table.timestamps();
+		});
 
-        // Creates: mod_MoLOS-Tasks_tasks
-        await context.data.createTable('tasks', (table) => {
-            table.text('id').primary();
-            table.text('project_id').references('mod_MoLOS-Tasks_projects.id');
-            table.text('title').notNull();
-            table.timestamps();
-        });
-    },
+		// Creates: mod_MoLOS-Tasks_tasks
+		await context.data.createTable('tasks', (table) => {
+			table.text('id').primary();
+			table.text('project_id').references('mod_MoLOS-Tasks_projects.id');
+			table.text('title').notNull();
+			table.timestamps();
+		});
+	},
 
-    async onUninstall(context: ModuleContext) {
-        // Drops only this module's tables
-        await context.data.dropTable('tasks');
-        await context.data.dropTable('projects');
-    }
+	async onUninstall(context: ModuleContext) {
+		// Drops only this module's tables
+		await context.data.dropTable('tasks');
+		await context.data.dropTable('projects');
+	}
 };
 ```
 
@@ -440,27 +442,22 @@ import { getTableName } from '$lib/server/modules/data/namespace';
 const moduleId = 'MoLOS-Tasks';
 
 export async function GET({ url }) {
-    // Use prefixed table name directly
-    const tasksTable = getTableName(moduleId, 'tasks');
+	// Use prefixed table name directly
+	const tasksTable = getTableName(moduleId, 'tasks');
 
-    const tasks = await db
-        .select()
-        .from(tasksTable)
-        .all();
+	const tasks = await db.select().from(tasksTable).all();
 
-    return json(tasks);
+	return json(tasks);
 }
 
 export async function POST({ request }) {
-    const { title, projectId } = await request.json();
+	const { title, projectId } = await request.json();
 
-    const tasksTable = getTableName(moduleId, 'tasks');
+	const tasksTable = getTableName(moduleId, 'tasks');
 
-    await db
-        .insert(tasksTable)
-        .values({ id: crypto.randomUUID(), title, project_id: projectId });
+	await db.insert(tasksTable).values({ id: crypto.randomUUID(), title, project_id: projectId });
 
-    return json({ success: true });
+	return json({ success: true });
 }
 ```
 
@@ -472,8 +469,8 @@ export async function POST({ request }) {
 import type { ModuleMigrationContext } from '$lib/server/modules/data/migration';
 
 export async function up(ctx: ModuleMigrationContext): Promise<void> {
-    // ctx.table() automatically applies prefix
-    await ctx.sql(`
+	// ctx.table() automatically applies prefix
+	await ctx.sql(`
         CREATE TABLE ${ctx.table('projects')} (
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
@@ -483,7 +480,7 @@ export async function up(ctx: ModuleMigrationContext): Promise<void> {
 }
 
 export async function down(ctx: ModuleMigrationContext): Promise<void> {
-    await ctx.sql(`DROP TABLE ${ctx.table('projects')}`);
+	await ctx.sql(`DROP TABLE ${ctx.table('projects')}`);
 }
 ```
 
@@ -495,22 +492,24 @@ export async function down(ctx: ModuleMigrationContext): Promise<void> {
 import { getModuleTablePattern } from '$lib/server/modules/data/namespace';
 
 export async function uninstallModule(moduleId: string) {
-    // Get all tables for this module
-    const pattern = getModuleTablePattern(moduleId);
+	// Get all tables for this module
+	const pattern = getModuleTablePattern(moduleId);
 
-    const tables = await db.execute(`
+	const tables = await db.execute(
+		`
         SELECT name FROM sqlite_master
         WHERE type='table' AND name LIKE ?
-    `, [pattern]);
+    `,
+		[pattern]
+	);
 
-    // Drop them all
-    for (const table of tables.rows) {
-        await db.schema.dropTable(table.name);
-    }
+	// Drop them all
+	for (const table of tables.rows) {
+		await db.schema.dropTable(table.name);
+	}
 
-    // Delete module from registry
-    await db.delete(settingsExternalModules)
-        .where(eq(settingsExternalModules.id, moduleId));
+	// Delete module from registry
+	await db.delete(settingsExternalModules).where(eq(settingsExternalModules.id, moduleId));
 }
 ```
 
@@ -529,26 +528,20 @@ import { getTableName } from '$lib/server/modules/data/namespace';
 const MODULE_ID = 'MoLOS-Tasks';
 
 // Create tables with prefix
-export const projects = sqliteTable(
-    getTableName(MODULE_ID, 'projects'),
-    {
-        id: text('id').primaryKey(),
-        name: text('name').notNull(),
-        createdAt: integer('created_at').notNull()
-    }
-);
+export const projects = sqliteTable(getTableName(MODULE_ID, 'projects'), {
+	id: text('id').primaryKey(),
+	name: text('name').notNull(),
+	createdAt: integer('created_at').notNull()
+});
 
-export const tasks = sqliteTable(
-    getTableName(MODULE_ID, 'tasks'),
-    {
-        id: text('id').primaryKey(),
-        projectId: text('project_id').references(
-            () => projects.id  // References are fine with prefixes
-        ),
-        title: text('title').notNull(),
-        createdAt: integer('created_at').notNull()
-    }
-);
+export const tasks = sqliteTable(getTableName(MODULE_ID, 'tasks'), {
+	id: text('id').primaryKey(),
+	projectId: text('project_id').references(
+		() => projects.id // References are fine with prefixes
+	),
+	title: text('title').notNull(),
+	createdAt: integer('created_at').notNull()
+});
 
 // Export a schema object
 export const schema = { projects, tasks };
@@ -584,42 +577,34 @@ import { describe, it, expect } from 'vitest';
 import { getTableName, isModuleTable, getBaseTableName } from '$lib/server/modules/data/namespace';
 
 describe('Module Data Namespace', () => {
-    describe('getTableName', () => {
-        it('should prefix table names', () => {
-            expect(getTableName('MyModule', 'projects'))
-                .toBe('mod_MyModule_projects');
-        });
+	describe('getTableName', () => {
+		it('should prefix table names', () => {
+			expect(getTableName('MyModule', 'projects')).toBe('mod_MyModule_projects');
+		});
 
-        it('should sanitize table names', () => {
-            expect(getTableName('MyModule', 'pro;jects'))
-                .toBe('mod_MyModule_projects');
-        });
+		it('should sanitize table names', () => {
+			expect(getTableName('MyModule', 'pro;jects')).toBe('mod_MyModule_projects');
+		});
 
-        it('should handle multiple words', () => {
-            expect(getTableName('MyModule', 'user_settings'))
-                .toBe('mod_MyModule_user_settings');
-        });
-    });
+		it('should handle multiple words', () => {
+			expect(getTableName('MyModule', 'user_settings')).toBe('mod_MyModule_user_settings');
+		});
+	});
 
-    describe('isModuleTable', () => {
-        it('should identify module tables', () => {
-            expect(isModuleTable('mod_MyModule_projects', 'MyModule'))
-                .toBe(true);
-            expect(isModuleTable('mod_OtherModule_projects', 'MyModule'))
-                .toBe(false);
-            expect(isModuleTable('projects', 'MyModule'))
-                .toBe(false);
-        });
-    });
+	describe('isModuleTable', () => {
+		it('should identify module tables', () => {
+			expect(isModuleTable('mod_MyModule_projects', 'MyModule')).toBe(true);
+			expect(isModuleTable('mod_OtherModule_projects', 'MyModule')).toBe(false);
+			expect(isModuleTable('projects', 'MyModule')).toBe(false);
+		});
+	});
 
-    describe('getBaseTableName', () => {
-        it('should extract base name', () => {
-            expect(getBaseTableName('mod_MyModule_projects'))
-                .toBe('projects');
-            expect(getBaseTableName('projects'))
-                .toBe('projects');
-        });
-    });
+	describe('getBaseTableName', () => {
+		it('should extract base name', () => {
+			expect(getBaseTableName('mod_MyModule_projects')).toBe('projects');
+			expect(getBaseTableName('projects')).toBe('projects');
+		});
+	});
 });
 ```
 
@@ -628,18 +613,21 @@ describe('Module Data Namespace', () => {
 ## Migration Path
 
 ### Phase 1: Implementation (1 day)
+
 1. Create namespace helper functions
 2. Create ModuleData class
 3. Write tests
 4. Update module context
 
 ### Phase 2: Migration (1-2 days)
+
 1. Audit existing module tables
 2. Rename existing tables to use prefix
 3. Update all module code to use helper
 4. Update migrations to use helper
 
 ### Phase 3: Cleanup (1 day)
+
 1. Drop old (non-prefixed) tables
 2. Update documentation
 3. Update module development CLI
@@ -656,20 +644,20 @@ If you already have modules with tables, you'll need to migrate them:
 import { getTableName } from '$lib/server/modules/data/namespace';
 
 async function migrateModuleTables(moduleId: string, tables: string[]) {
-    for (const tableName of tables) {
-        const prefixedTable = getTableName(moduleId, tableName);
+	for (const tableName of tables) {
+		const prefixedTable = getTableName(moduleId, tableName);
 
-        // Rename table
-        await db.execute(`ALTER TABLE ${tableName} RENAME TO ${prefixedTable}`);
+		// Rename table
+		await db.execute(`ALTER TABLE ${tableName} RENAME TO ${prefixedTable}`);
 
-        // Track the change
-        await db.insert(moduleTables).values({
-            moduleId,
-            tableName,
-            fullName: prefixedTable,
-            createdAt: Date.now()
-        });
-    }
+		// Track the change
+		await db.insert(moduleTables).values({
+			moduleId,
+			tableName,
+			fullName: prefixedTable,
+			createdAt: Date.now()
+		});
+	}
 }
 
 // Example usage for existing modules
@@ -692,13 +680,13 @@ await migrateModuleTables('MoLOS-Tasks', ['tasks', 'categories']);
 
 ## Files to Create
 
-| File | Lines | Purpose |
-|------|-------|---------|
-| `src/lib/server/modules/data/namespace.ts` | ~80 | Table name helpers |
-| `src/lib/server/modules/data/access.ts` | ~150 | ModuleData class |
-| `src/lib/server/modules/data/migration.ts` | ~60 | Migration context |
-| `src/lib/server/modules/context.ts` (update) | ~20 | Integrate into context |
-| `tests/modules/data-namespace.test.ts` | ~80 | Tests |
+| File                                         | Lines | Purpose                |
+| -------------------------------------------- | ----- | ---------------------- |
+| `src/lib/server/modules/data/namespace.ts`   | ~80   | Table name helpers     |
+| `src/lib/server/modules/data/access.ts`      | ~150  | ModuleData class       |
+| `src/lib/server/modules/data/migration.ts`   | ~60   | Migration context      |
+| `src/lib/server/modules/context.ts` (update) | ~20   | Integrate into context |
+| `tests/modules/data-namespace.test.ts`       | ~80   | Tests                  |
 
 **Total:** ~400 lines of code
 
@@ -723,5 +711,5 @@ A: Yes, foreign keys work fine with prefixed names. Just reference the full pref
 
 ---
 
-*Last Updated: 2025-02-09*
-*Status: Ready for Implementation*
+_Last Updated: 2025-02-09_
+_Status: Ready for Implementation_

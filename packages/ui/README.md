@@ -20,13 +20,13 @@ pnpm add @molos/ui
 
 ```svelte
 <script>
-  import { Button, Card, Input } from '@molos/ui';
-  import { cn } from '@molos/ui';
+	import { Button, Card, Input } from '@molos/ui';
+	import { cn } from '@molos/ui';
 </script>
 
 <Card>
-  <Button variant="default">Click me</Button>
-  <Input placeholder="Enter text..." />
+	<Button variant="default">Click me</Button>
+	<Input placeholder="Enter text..." />
 </Card>
 ```
 
@@ -68,6 +68,7 @@ import '@molos/ui/styles/themes/blue.css';
 ### Shared Components
 
 #### Modules (6 components)
+
 - `ModuleManagerHeader` - Header for module management interface
 - `ModuleManagerFooter` - Footer for module management interface
 - `ExternalModuleCard` - Card component for external modules
@@ -76,6 +77,7 @@ import '@molos/ui/styles/themes/blue.css';
 - `GitRefDialog` - Dialog for selecting git references
 
 #### Navigation (3 components)
+
 - `AppNavDrawer` - Main navigation drawer component
 - `SubmenuRail` - Submenu rail component
 - `SubmenuSection` - Submenu section component
@@ -83,6 +85,7 @@ import '@molos/ui/styles/themes/blue.css';
 #### AI Components (37 components)
 
 **Chat & Messaging:**
+
 - `AiChatWorkspace` - Main AI chat workspace
 - `TelegramChatWorkspace` - Telegram-style chat workspace
 - `ChatSidepanel` - Chat sidepanel component
@@ -93,6 +96,7 @@ import '@molos/ui/styles/themes/blue.css';
 - `SessionList` - List of chat sessions
 
 **Code & Execution:**
+
 - `CodeBlock` - Code block display component
 - `ExecutionLog` - Execution log display
 - `ExecutionLogActions` - Actions for execution logs
@@ -101,6 +105,7 @@ import '@molos/ui/styles/themes/blue.css';
 - `ReviewChangesOverlay` - Review changes overlay
 
 **MCP Components (24 components):**
+
 - `McpApiKeyTable` - API key management table
 - `McpConnectionInfo` - Connection information display
 - `McpCreateKeyDialog` - Create API key dialog
@@ -128,6 +133,7 @@ import '@molos/ui/styles/themes/blue.css';
 ## Themes
 
 The package includes 10 theme CSS files:
+
 - `base.css` - Base theme with CSS variables
 - `blue.css`, `green.css`, `lavender.css`, `mint.css`
 - `neutral.css`, `orange.css`, `peach.css`, `rose.css`, `sky.css`
@@ -142,7 +148,7 @@ Utility function for combining Tailwind CSS classes:
 import { cn } from '@molos/ui';
 
 const className = cn('base-class', 'additional-class', {
-  'conditional-class': isActive
+	'conditional-class': isActive
 });
 ```
 

@@ -55,13 +55,7 @@ function getExpectedExportsForModule(moduleId: string): string[] {
 	const pluralName = `${baseName}s`;
 	const tableName = `${baseName}${baseName}`;
 
-	return [
-		baseName,
-		pluralName,
-		tableName,
-		`${baseName}Settings`,
-		`${pluralName}Settings`
-	];
+	return [baseName, pluralName, tableName, `${baseName}Settings`, `${pluralName}Settings`];
 }
 
 /**
@@ -195,8 +189,8 @@ export function validateSchemaExports(
 		}
 
 		// If the file has table definitions but no obvious table exports, warn
-		const hasTableExport = Array.from(foundExports).some((name) =>
-			/table/i.test(name) || /schema/i.test(name)
+		const hasTableExport = Array.from(foundExports).some(
+			(name) => /table/i.test(name) || /schema/i.test(name)
 		);
 
 		if (!hasTableExport && content.includes('sqliteTable')) {

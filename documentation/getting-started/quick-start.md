@@ -13,5 +13,6 @@
   - `bun run db:studio` - Open Drizzle Studio
 
 Notes
+
 - Use tabs, single quotes, printWidth 100 (Prettier).
 - Prefer server-side data loading via +page.server.ts or load.

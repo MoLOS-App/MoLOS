@@ -29,7 +29,10 @@
 			"source": "./src/utils/index.ts"
 		}
 	},
-	"files": ["dist", "drizzle"],
+	"files": [
+		"dist",
+		"drizzle"
+	],
 	"scripts": {
 		"build": "tsc",
 		"dev": "tsc --watch",

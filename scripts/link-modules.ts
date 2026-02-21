@@ -17,7 +17,11 @@ import path from 'path';
 import { eq } from 'drizzle-orm';
 import { db } from '@molos/database';
 import { settingsExternalModules, ExternalModuleStatus } from '@molos/database/schema/core';
-import { validateModule, formatValidationResult, type ModuleValidationResult } from '../module-management/server/validation';
+import {
+	validateModule,
+	formatValidationResult,
+	type ModuleValidationResult
+} from '../module-management/server/validation';
 
 const MODULES_DIR = path.resolve('modules');
 const NODE_MODULES_MOLOS_DIR = path.resolve('node_modules/@molos');
@@ -149,7 +153,10 @@ async function shouldLinkModule(
 		return { shouldLink: true };
 	} catch (error) {
 		// If database query fails, log but allow linking attempt
-		console.warn(`[ModuleLinker] Database query failed for ${moduleId}, allowing link attempt:`, error);
+		console.warn(
+			`[ModuleLinker] Database query failed for ${moduleId}, allowing link attempt:`,
+			error
+		);
 		return { shouldLink: true };
 	}
 }
@@ -248,9 +255,7 @@ async function recordLinkResult(moduleId: string, result: ModuleLinkResult): Pro
 						errorType: 'validation_failed',
 						errorDetails: JSON.stringify(errorDetails),
 						recoverySteps: JSON.stringify(
-							result.validation.errors
-								.filter((e) => e.fixSuggestion)
-								.map((e) => e.fixSuggestion)
+							result.validation.errors.filter((e) => e.fixSuggestion).map((e) => e.fixSuggestion)
 						),
 						retryCount: 0,
 						updatedAt: new Date()
@@ -310,10 +315,7 @@ async function recordLinkResult(moduleId: string, result: ModuleLinkResult): Pro
 /**
  * Link a single module with tracking
  */
-async function linkSingleModule(
-	moduleId: string,
-	modulePath: string
-): Promise<ModuleLinkResult> {
+async function linkSingleModule(moduleId: string, modulePath: string): Promise<ModuleLinkResult> {
 	const result: ModuleLinkResult = {
 		moduleId,
 		success: false,
@@ -438,7 +440,9 @@ async function linkSingleModule(
 		}
 
 		result.success = true;
-		console.log(`[ModuleLinker] Successfully linked ${moduleId} (${result.linkedPaths.length} paths)`);
+		console.log(
+			`[ModuleLinker] Successfully linked ${moduleId} (${result.linkedPaths.length} paths)`
+		);
 	} catch (error) {
 		result.success = false;
 		result.error = error as Error;

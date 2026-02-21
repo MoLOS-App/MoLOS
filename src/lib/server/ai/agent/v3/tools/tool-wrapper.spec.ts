@@ -1,9 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import {
-	wrapToolWithHooks,
-	convertToolsToAiSdk,
-	clearToolCache
-} from './tool-wrapper';
+import { wrapToolWithHooks, convertToolsToAiSdk, clearToolCache } from './tool-wrapper';
 import type { ToolDefinition } from '../types';
 import type { EventBus } from '../events/event-bus';
 

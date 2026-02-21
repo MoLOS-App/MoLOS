@@ -95,10 +95,9 @@ const checkTsconfigExtends: ValidationCheck = (modulePath, moduleId) => {
 						code: 'TSCONFIG_EXTENDS_MISSING',
 						message: `tsconfig.json extends "${extendsPath}" but this file does not exist`,
 						file: 'tsconfig.json',
-						fixSuggestion:
-							extendsPath.includes('.svelte-kit')
-								? 'Run `bun run dev` in the module directory first to generate SvelteKit files, or remove the extends'
-								: `Create the referenced file or fix the extends path`
+						fixSuggestion: extendsPath.includes('.svelte-kit')
+							? 'Run `bun run dev` in the module directory first to generate SvelteKit files, or remove the extends'
+							: `Create the referenced file or fix the extends path`
 					});
 				}
 			}
@@ -176,7 +175,11 @@ const checkConfigFile: ValidationCheck = (modulePath, moduleId) => {
 		const openParens = (content.match(/\(/g) || []).length;
 		const closeParens = (content.match(/\)/g) || []).length;
 
-		if (openBraces !== closeBraces || openBrackets !== closeBrackets || openParens !== closeParens) {
+		if (
+			openBraces !== closeBraces ||
+			openBrackets !== closeBrackets ||
+			openParens !== closeParens
+		) {
 			errors.push({
 				code: 'CONFIG_SYNTAX_ERROR',
 				message: 'Config file appears to have unbalanced braces, brackets, or parentheses',

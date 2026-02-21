@@ -8,20 +8,20 @@ This document defines the standards and conventions for MoLOS modules.
 
 Internal modules are always loaded and cannot be filtered out. They live in the main app.
 
-| Module ID | Location | Description |
-|-----------|----------|-------------|
-| `dashboard` | `src/lib/config/dashboard/config.ts` | Core dashboard |
-| `ai` | `modules/ai/` | AI assistant interface |
+| Module ID   | Location                             | Description            |
+| ----------- | ------------------------------------ | ---------------------- |
+| `dashboard` | `src/lib/config/dashboard/config.ts` | Core dashboard         |
+| `ai`        | `modules/ai/`                        | AI assistant interface |
 
 ### External Modules
 
 External modules can be installed from npm or GitHub. They follow the naming convention `MoLOS-{Name}` for the repo and `@molos/module-{name}` for the package.
 
-| Module ID | Package | GitHub Repo |
-|-----------|---------|-------------|
-| `MoLOS-Tasks` | `@molos/module-tasks` | `github:MoLOS-App/MoLOS-Tasks` |
-| `MoLOS-Finance` | `@molos/module-finance` | `github:MoLOS-App/MoLOS-Finance` |
-| `MoLOS-Goals` | `@molos/module-goals` | `github:MoLOS-App/MoLOS-Goals` |
+| Module ID        | Package                  | GitHub Repo                       |
+| ---------------- | ------------------------ | --------------------------------- |
+| `MoLOS-Tasks`    | `@molos/module-tasks`    | `github:MoLOS-App/MoLOS-Tasks`    |
+| `MoLOS-Finance`  | `@molos/module-finance`  | `github:MoLOS-App/MoLOS-Finance`  |
+| `MoLOS-Goals`    | `@molos/module-goals`    | `github:MoLOS-App/MoLOS-Goals`    |
 | `MoLOS-Markdown` | `@molos/module-markdown` | `github:MoLOS-App/MoLOS-Markdown` |
 
 ## Module ID Convention
@@ -30,6 +30,7 @@ External modules can be installed from npm or GitHub. They follow the naming con
 - **External modules**: `MoLOS-{Name}` format (`MoLOS-Tasks`, `MoLOS-Finance`)
 
 This distinction is important because:
+
 - Routes are prefixed with the module ID: `/ui/MoLOS-Tasks/dashboard`
 - Database tables are prefixed: `MoLOS-Tasks_tasks`, `MoLOS-Tasks_projects`
 - The module ID must match between config, routes, and database schema
@@ -86,18 +87,19 @@ import { SquareCheck, ListTodo } from 'lucide-svelte';
 import type { ModuleConfig } from '@molos/module-types';
 
 export const tasksConfig: ModuleConfig = {
-  id: 'MoLOS-Tasks',              // REQUIRED: Must match module ID convention
-  name: 'Tasks',                  // REQUIRED: Display name
-  href: '/ui/MoLOS-Tasks',        // REQUIRED: Base route
-  icon: SquareCheck,              // REQUIRED: Lucide icon
-  description: 'Task management', // REQUIRED: Short description
-  navigation: [                   // OPTIONAL: Sidebar navigation items
-    {
-      name: 'Dashboard',
-      icon: ListTodo,
-      href: '/ui/MoLOS-Tasks/dashboard',  // Must start with base href
-    },
-  ],
+	id: 'MoLOS-Tasks', // REQUIRED: Must match module ID convention
+	name: 'Tasks', // REQUIRED: Display name
+	href: '/ui/MoLOS-Tasks', // REQUIRED: Base route
+	icon: SquareCheck, // REQUIRED: Lucide icon
+	description: 'Task management', // REQUIRED: Short description
+	navigation: [
+		// OPTIONAL: Sidebar navigation items
+		{
+			name: 'Dashboard',
+			icon: ListTodo,
+			href: '/ui/MoLOS-Tasks/dashboard' // Must start with base href
+		}
+	]
 };
 
 export default tasksConfig;
@@ -107,18 +109,18 @@ export default tasksConfig;
 
 ```json
 {
-  "name": "@molos/module-tasks",
-  "version": "1.0.0",
-  "type": "module",
-  "exports": {
-    ".": "./src/index.ts",
-    "./config": "./src/config.ts",
-    "./server/database/schema": "./src/server/database/schema.ts",
-    "./models": "./src/models/index.ts"
-  },
-  "peerDependencies": {
-    "svelte": "^5.45.0"
-  }
+	"name": "@molos/module-tasks",
+	"version": "1.0.0",
+	"type": "module",
+	"exports": {
+		".": "./src/index.ts",
+		"./config": "./src/config.ts",
+		"./server/database/schema": "./src/server/database/schema.ts",
+		"./models": "./src/models/index.ts"
+	},
+	"peerDependencies": {
+		"svelte": "^5.45.0"
+	}
 }
 ```
 
@@ -134,23 +136,23 @@ MoLOS-{ModuleName}_{table_name}
 
 The naming convention has two parts with different separators:
 
-| Part | Separator | Example |
-|------|-----------|---------|
-| Module ID prefix | **Hyphens** | `MoLOS-LLM-Council` |
-| Separator between module and table | **Underscore** | `_` |
-| Table name | **Underscores** | `conversations` |
+| Part                               | Separator       | Example             |
+| ---------------------------------- | --------------- | ------------------- |
+| Module ID prefix                   | **Hyphens**     | `MoLOS-LLM-Council` |
+| Separator between module and table | **Underscore**  | `_`                 |
+| Table name                         | **Underscores** | `conversations`     |
 
 **Examples:**
 
-| Pattern | Example | Status |
-|---------|---------|--------|
-| `MoLOS-{Name}_{table}` | `MoLOS-Tasks_tasks` | ✅ Correct |
-| `MoLOS-{Name}_{table}` | `MoLOS-Health_user_profile` | ✅ Correct |
-| `MoLOS-{Name}_{table}` | `MoLOS-LLM-Council_conversations` | ✅ Correct |
-| `MoLOS_{Name}_{table}` | `MoLOS_LLM_Council_conversations` | ❌ Wrong - underscores in module ID |
-| `{module}_{table}` | `health_user_profile` | ❌ Wrong - missing MoLOS prefix |
-| `{module}_{module}_{table}` | `meals_meals_settings` | ❌ Wrong - duplicated prefix |
-| `{table}` | `tasks` | ❌ Wrong - no prefix at all |
+| Pattern                     | Example                           | Status                              |
+| --------------------------- | --------------------------------- | ----------------------------------- |
+| `MoLOS-{Name}_{table}`      | `MoLOS-Tasks_tasks`               | ✅ Correct                          |
+| `MoLOS-{Name}_{table}`      | `MoLOS-Health_user_profile`       | ✅ Correct                          |
+| `MoLOS-{Name}_{table}`      | `MoLOS-LLM-Council_conversations` | ✅ Correct                          |
+| `MoLOS_{Name}_{table}`      | `MoLOS_LLM_Council_conversations` | ❌ Wrong - underscores in module ID |
+| `{module}_{table}`          | `health_user_profile`             | ❌ Wrong - missing MoLOS prefix     |
+| `{module}_{module}_{table}` | `meals_meals_settings`            | ❌ Wrong - duplicated prefix        |
+| `{table}`                   | `tasks`                           | ❌ Wrong - no prefix at all         |
 
 ```typescript
 // ✅ Correct: Module ID with HYPHENS, separator with UNDERSCORE
@@ -186,12 +188,12 @@ src/server/db/schema/index.ts
 import { defineConfig } from 'drizzle-kit';
 
 export default defineConfig({
-  schema: './src/server/db/schema/tables.ts',
-  out: './drizzle',
-  dialect: 'sqlite',
-  dbCredentials: { url: 'file:../../molos.db' },  // Relative to main app DB
-  verbose: true,
-  strict: true
+	schema: './src/server/db/schema/tables.ts',
+	out: './drizzle',
+	dialect: 'sqlite',
+	dbCredentials: { url: 'file:../../molos.db' }, // Relative to main app DB
+	verbose: true,
+	strict: true
 });
 ```
 
@@ -226,6 +228,7 @@ import { GoalRepository } from '$lib/repositories/external_modules/MoLOS-Goals';
 ```
 
 These paths are resolved via symlinks created by `bun run module:sync`:
+
 - `src/lib/modules/{ModuleName}` → `modules/{ModuleName}/src/lib`
 - `src/lib/{type}/external_modules/{ModuleName}` → `modules/{ModuleName}/src/lib/{type}`
 
@@ -279,9 +282,9 @@ Use the event's fetch for API calls:
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ fetch }) => {
-  const response = await fetch('/api/MoLOS-Tasks/tasks');
-  const tasks = await response.json();
-  return { tasks };
+	const response = await fetch('/api/MoLOS-Tasks/tasks');
+	const tasks = await response.json();
+	return { tasks };
 };
 ```
 
@@ -301,6 +304,7 @@ VITE_MOLOS_AUTOLOAD_MODULES=MoLOS-Tasks,MoLOS-Finance
 ### Mandatory Modules
 
 The following modules are always loaded regardless of the filter:
+
 - `dashboard`
 - `ai`
 
@@ -328,13 +332,13 @@ bun run module:link    # Link routes only
 
 ## Commands Reference
 
-| Command | Description |
-|---------|-------------|
-| `bun run module:sync` | Sync and initialize modules |
-| `bun run module:link` | Create route symlinks |
+| Command                    | Description                                   |
+| -------------------------- | --------------------------------------------- |
+| `bun run module:sync`      | Sync and initialize modules                   |
+| `bun run module:link`      | Create route symlinks                         |
 | `npx drizzle-kit generate` | Generate migrations (run in module directory) |
-| `npx drizzle-kit migrate` | Apply migrations (run in module directory) |
-| `bun run dev` | Start development server |
+| `npx drizzle-kit migrate`  | Apply migrations (run in module directory)    |
+| `bun run dev`              | Start development server                      |
 
 ## Error Checklist
 
@@ -371,5 +375,6 @@ bun run module:link    # Link routes only
 ### tsconfig.json/vite.config.ts errors
 
 If you see errors about `.svelte-kit/tsconfig.json` not found:
+
 1. Remove standalone `tsconfig.json`, `vite.config.ts`, `svelte.config.js` from module root
 2. Modules in the monorepo don't need these files

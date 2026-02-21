@@ -48,3 +48,6 @@ src/lib/modules/
 *.log
 .codex/
 db.sqlite
+.opencode
+AGENTS.md
+.gitignore

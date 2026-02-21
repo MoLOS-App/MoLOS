@@ -39,9 +39,9 @@ npx drizzle-kit studio
 
 ## Module ID Convention
 
-| Type | ID Format | Example |
-|------|-----------|---------|
-| Internal | lowercase | `dashboard`, `ai` |
+| Type     | ID Format      | Example                        |
+| -------- | -------------- | ------------------------------ |
+| Internal | lowercase      | `dashboard`, `ai`              |
 | External | `MoLOS-{Name}` | `MoLOS-Tasks`, `MoLOS-Finance` |
 
 ## Environment Variables
@@ -130,12 +130,12 @@ npx drizzle-kit migrate
 
 ### Troubleshooting
 
-| Issue | Solution |
-|-------|----------|
+| Issue                 | Solution                                            |
+| --------------------- | --------------------------------------------------- |
 | Module not in sidebar | Check `config.ts` exists, run `bun run module:sync` |
-| 404 on routes | Check symlink exists, run `bun run module:link` |
-| Table not found | Generate and run migrations |
-| Import errors | Use `$lib` alias instead of relative paths |
+| 404 on routes         | Check symlink exists, run `bun run module:link`     |
+| Table not found       | Generate and run migrations                         |
+| Import errors         | Use `$lib` alias instead of relative paths          |
 
 ## SQL Queries
 

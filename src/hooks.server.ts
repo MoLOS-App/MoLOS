@@ -164,7 +164,12 @@ export const handle = sequence(authHandler, moduleAccessHandler, themeHandler);
  * Handle unexpected errors gracefully
  * This prevents the dev server from crashing on unhandled exceptions
  */
-export const handleError = async ({ error, event, status, message }: {
+export const handleError = async ({
+	error,
+	event,
+	status,
+	message
+}: {
 	error: unknown;
 	event: {
 		url: URL;
@@ -179,11 +184,14 @@ export const handleError = async ({ error, event, status, message }: {
 		status,
 		message,
 		url: event.url.pathname,
-		error: error instanceof Error ? {
-			name: error.name,
-			message: error.message,
-			stack: error.stack?.split('\n').slice(0, 3).join('\n')
-		} : error
+		error:
+			error instanceof Error
+				? {
+						name: error.name,
+						message: error.message,
+						stack: error.stack?.split('\n').slice(0, 3).join('\n')
+					}
+				: error
 	});
 
 	// Check if this is an API request (MCP or other)

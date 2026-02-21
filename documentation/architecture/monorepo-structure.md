@@ -75,12 +75,12 @@ MoLOS/
 
 ### Key Directories Explained
 
-| Directory | Purpose | Published? |
-|-----------|---------|------------|
-| `apps/` | Deployable applications | No |
-| `packages/` | Reusable shared code | Yes (optional) |
-| `modules/` | MoLOS feature modules | No (bundled with app) |
-| `tools/` | Development tooling | No |
+| Directory   | Purpose                 | Published?            |
+| ----------- | ----------------------- | --------------------- |
+| `apps/`     | Deployable applications | No                    |
+| `packages/` | Reusable shared code    | Yes (optional)        |
+| `modules/`  | MoLOS feature modules   | No (bundled with app) |
+| `tools/`    | Development tooling     | No                    |
 
 ## npm Workspaces
 
@@ -90,22 +90,18 @@ The root `package.json` defines the workspace structure:
 
 ```json
 {
-  "name": "molos-monorepo",
-  "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*",
-    "modules/*"
-  ],
-  "devDependencies": {
-    "turbo": "^2.0.0"
-  },
-  "scripts": {
-    "dev": "turbo run dev",
-    "build": "turbo run build",
-    "test": "turbo run test",
-    "lint": "turbo run lint"
-  }
+	"name": "molos-monorepo",
+	"private": true,
+	"workspaces": ["apps/*", "packages/*", "modules/*"],
+	"devDependencies": {
+		"turbo": "^2.0.0"
+	},
+	"scripts": {
+		"dev": "turbo run dev",
+		"build": "turbo run build",
+		"test": "turbo run test",
+		"lint": "turbo run lint"
+	}
 }
 ```
 
@@ -116,18 +112,18 @@ Each workspace package has its own `package.json`:
 ```json
 // modules/product-owner/package.json
 {
-  "name": "@molos/module-product-owner",
-  "version": "1.0.0",
-  "private": true,
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
-  "dependencies": {
-    "@molos/core": "workspace:*",
-    "@molos/database": "workspace:*"
-  },
-  "peerDependencies": {
-    "svelte": "^5.0.0"
-  }
+	"name": "@molos/module-product-owner",
+	"version": "1.0.0",
+	"private": true,
+	"main": "./src/index.ts",
+	"types": "./src/index.ts",
+	"dependencies": {
+		"@molos/core": "workspace:*",
+		"@molos/database": "workspace:*"
+	},
+	"peerDependencies": {
+		"svelte": "^5.0.0"
+	}
 }
 ```
 
@@ -144,6 +140,7 @@ npm install (at root)
 ```
 
 **Benefits:**
+
 - Single `node_modules/` at root (with workspace symlinks)
 - Deduplication of common dependencies
 - Clear dependency boundaries between packages
@@ -158,22 +155,17 @@ Modules are discovered at build time using SvelteKit's `import.meta.glob`:
 // apps/web/src/lib/server/modules/registry.ts
 
 // Discover all module configs
-const moduleConfigs = import.meta.glob(
-  '../../../modules/*/src/index.ts',
-  { eager: true }
-);
+const moduleConfigs = import.meta.glob('../../../modules/*/src/index.ts', { eager: true });
 
 // Discover all module routes (for route table)
-const moduleRoutes = import.meta.glob(
-  '../../../modules/*/src/routes/**/+page.svelte',
-  { eager: false }
-);
+const moduleRoutes = import.meta.glob('../../../modules/*/src/routes/**/+page.svelte', {
+	eager: false
+});
 
 // Discover AI tools from modules
-const moduleAiTools = import.meta.glob(
-  '../../../modules/*/src/lib/server/ai/*.ts',
-  { eager: false }
-);
+const moduleAiTools = import.meta.glob('../../../modules/*/src/lib/server/ai/*.ts', {
+	eager: false
+});
 ```
 
 ### Module Registration
@@ -182,31 +174,31 @@ const moduleAiTools = import.meta.glob(
 // apps/web/src/lib/server/modules/loader.ts
 
 interface DiscoveredModule {
-  id: string;
-  manifest: ModuleManifest;
-  config: ModuleConfig;
-  routes: RouteDefinition[];
-  aiTools: AiToolDefinition[];
+	id: string;
+	manifest: ModuleManifest;
+	config: ModuleConfig;
+	routes: RouteDefinition[];
+	aiTools: AiToolDefinition[];
 }
 
 export async function discoverModules(): Promise<DiscoveredModule[]> {
-  const modules: DiscoveredModule[] = [];
+	const modules: DiscoveredModule[] = [];
 
-  for (const [path, moduleExports] of Object.entries(moduleConfigs)) {
-    const moduleId = extractModuleId(path);
-    const manifest = await loadManifest(moduleId);
-    const config = (moduleExports as any).moduleConfig;
+	for (const [path, moduleExports] of Object.entries(moduleConfigs)) {
+		const moduleId = extractModuleId(path);
+		const manifest = await loadManifest(moduleId);
+		const config = (moduleExports as any).moduleConfig;
 
-    modules.push({
-      id: moduleId,
-      manifest,
-      config,
-      routes: await discoverRoutes(moduleId),
-      aiTools: await discoverAiTools(moduleId)
-    });
-  }
+		modules.push({
+			id: moduleId,
+			manifest,
+			config,
+			routes: await discoverRoutes(moduleId),
+			aiTools: await discoverAiTools(moduleId)
+		});
+	}
 
-  return modules;
+	return modules;
 }
 ```
 
@@ -221,13 +213,13 @@ import { discoverModules } from '$lib/server/modules/loader';
 import { getActiveModuleIds } from '$lib/server/db/queries/modules';
 
 export async function handle({ event, resolve }) {
-  // Get active modules from database
-  const activeModuleIds = await getActiveModuleIds();
+	// Get active modules from database
+	const activeModuleIds = await getActiveModuleIds();
 
-  // Attach module context to event
-  event.locals.modules = await getModuleContexts(activeModuleIds);
+	// Attach module context to event
+	event.locals.modules = await getModuleContexts(activeModuleIds);
 
-  return resolve(event);
+	return resolve(event);
 }
 ```
 
@@ -238,30 +230,30 @@ export async function handle({ event, resolve }) {
 ```jsonc
 // turbo.json
 {
-  "$schema": "https://turbo.build/schema.json",
-  "pipeline": {
-    "build": {
-      "dependsOn": ["^build"],
-      "outputs": [".svelte-kit/**", "dist/**"]
-    },
-    "dev": {
-      "cache": false,
-      "persistent": true
-    },
-    "test": {
-      "dependsOn": ["build"],
-      "outputs": []
-    },
-    "lint": {
-      "outputs": []
-    },
-    "db:generate": {
-      "outputs": ["drizzle/**"]
-    },
-    "db:migrate": {
-      "cache": false
-    }
-  }
+	"$schema": "https://turbo.build/schema.json",
+	"pipeline": {
+		"build": {
+			"dependsOn": ["^build"],
+			"outputs": [".svelte-kit/**", "dist/**"]
+		},
+		"dev": {
+			"cache": false,
+			"persistent": true
+		},
+		"test": {
+			"dependsOn": ["build"],
+			"outputs": []
+		},
+		"lint": {
+			"outputs": []
+		},
+		"db:generate": {
+			"outputs": ["drizzle/**"]
+		},
+		"db:migrate": {
+			"cache": false
+		}
+	}
 }
 ```
 
@@ -303,12 +295,12 @@ Dependencies used across multiple packages should be hoisted to the root:
 ```json
 // Root package.json
 {
-  "devDependencies": {
-    "svelte": "^5.45.0",
-    "@sveltejs/kit": "^2.49.0",
-    "typescript": "^5.9.0",
-    "vitest": "^4.0.0"
-  }
+	"devDependencies": {
+		"svelte": "^5.45.0",
+		"@sveltejs/kit": "^2.49.0",
+		"typescript": "^5.9.0",
+		"vitest": "^4.0.0"
+	}
 }
 ```
 
@@ -319,10 +311,10 @@ Dependencies only used by one package stay in that package:
 ```json
 // modules/product-owner/package.json
 {
-  "dependencies": {
-    "marked": "^17.0.0",  // Only used by this module
-    "@molos/core": "workspace:*"
-  }
+	"dependencies": {
+		"marked": "^17.0.0", // Only used by this module
+		"@molos/core": "workspace:*"
+	}
 }
 ```
 
@@ -333,10 +325,10 @@ Framework packages use peer dependencies:
 ```json
 // packages/ui/package.json
 {
-  "peerDependencies": {
-    "svelte": "^5.0.0",
-    "@sveltejs/kit": "^2.0.0"
-  }
+	"peerDependencies": {
+		"svelte": "^5.0.0",
+		"@sveltejs/kit": "^2.0.0"
+	}
 }
 ```
 
@@ -365,6 +357,7 @@ graph LR
 ### Import Paths
 
 **Before (with symlinks):**
+
 ```typescript
 // Symlinked from external_modules/MoLOS-Product-Owner/lib/...
 import { moduleConfig } from '$lib/config/external_modules/MoLOS-Product-Owner';
@@ -372,6 +365,7 @@ import { ProjectCard } from '$lib/components/external_modules/MoLOS-Product-Owne
 ```
 
 **After (with packages):**
+
 ```typescript
 // Direct import from workspace package
 import { moduleConfig, ProjectCard } from '@molos/module-product-owner';
@@ -380,6 +374,7 @@ import { moduleConfig, ProjectCard } from '@molos/module-product-owner';
 ### Build Process
 
 **Before:**
+
 ```bash
 # Multiple steps, manual coordination
 cd external_modules/MoLOS-Product-Owner && npm install && npm run build
@@ -389,6 +384,7 @@ npm run build
 ```
 
 **After:**
+
 ```bash
 # Single command
 npm run build  # Turborepo handles everything
@@ -406,13 +402,10 @@ import { getTableName } from '@molos/database';
 
 const MODULE_ID = 'product-owner';
 
-export const projects = sqliteTable(
-  getTableName(MODULE_ID, 'projects'),
-  {
-    id: text('id').primaryKey(),
-    name: text('name').notNull()
-  }
-);
+export const projects = sqliteTable(getTableName(MODULE_ID, 'projects'), {
+	id: text('id').primaryKey(),
+	name: text('name').notNull()
+});
 // Creates table: mod_product_owner_projects
 ```
 
@@ -442,16 +435,16 @@ See [05-module-interaction.md](./05-module-interaction.md) for details.
 ```jsonc
 // tsconfig.json (root)
 {
-  "references": [
-    { "path": "./packages/core" },
-    { "path": "./packages/database" },
-    { "path": "./packages/ui" },
-    { "path": "./modules/product-owner" },
-    { "path": "./apps/web" }
-  ],
-  "compilerOptions": {
-    "composite": true
-  }
+	"references": [
+		{ "path": "./packages/core" },
+		{ "path": "./packages/database" },
+		{ "path": "./packages/ui" },
+		{ "path": "./modules/product-owner" },
+		{ "path": "./apps/web" }
+	],
+	"compilerOptions": {
+		"composite": true
+	}
 }
 ```
 
@@ -460,17 +453,17 @@ See [05-module-interaction.md](./05-module-interaction.md) for details.
 ```jsonc
 // modules/product-owner/tsconfig.json
 {
-  "extends": "../../tsconfig.base.json",
-  "compilerOptions": {
-    "rootDir": "./src",
-    "outDir": "./dist",
-    "paths": {
-      "@molos/core": ["../../packages/core/src"],
-      "@molos/database": ["../../packages/database/src"]
-    }
-  },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"rootDir": "./src",
+		"outDir": "./dist",
+		"paths": {
+			"@molos/core": ["../../packages/core/src"],
+			"@molos/database": ["../../packages/database/src"]
+		}
+	},
+	"include": ["src/**/*"],
+	"exclude": ["node_modules", "dist"]
 }
 ```
 
@@ -482,5 +475,5 @@ See [05-module-interaction.md](./05-module-interaction.md) for details.
 
 ---
 
-*Last Updated: 2025-02-15*
-*Version: 1.0*
+_Last Updated: 2025-02-15_
+_Version: 1.0_

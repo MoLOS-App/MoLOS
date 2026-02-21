@@ -145,6 +145,7 @@ src/
 ```
 
 **Notes:**
+
 - Symbolic links are created dynamically for each module in `external_modules/`
 - The symlink structure allows modules to be imported as if they were part of the main codebase
 

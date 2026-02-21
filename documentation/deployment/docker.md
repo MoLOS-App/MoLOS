@@ -115,7 +115,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - '3000:3000'
     environment:
       - NODE_ENV=production
       - DATABASE_URL=file:/data/molos.db
@@ -125,7 +125,7 @@ services:
       - molos-data:/data
       - molos-uploads:/app/uploads
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/health"]
+      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:3000/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -135,7 +135,7 @@ services:
     image: ghcr.io/molos-app/molos-backup:latest
     environment:
       - DATABASE_URL=file:/data/molos.db
-      - BACKUP_SCHEDULE=0 2 * * *  # 2 AM daily
+      - BACKUP_SCHEDULE=0 2 * * * # 2 AM daily
       - BACKUP_RETENTION_DAYS=30
       - S3_BUCKET=${BACKUP_S3_BUCKET}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
@@ -212,11 +212,11 @@ spec:
                   key: encryption-key
           resources:
             requests:
-              memory: "512Mi"
-              cpu: "250m"
+              memory: '512Mi'
+              cpu: '250m'
             limits:
-              memory: "1Gi"
-              cpu: "500m"
+              memory: '1Gi'
+              cpu: '500m'
           livenessProbe:
             httpGet:
               path: /health
@@ -326,25 +326,25 @@ MOLOS_FEATURE_FLAGS=ai-assistant,real-time-sync
 // modules.config.production.ts
 
 export const modulesConfig: ModulesConfig = {
-  mode: 'explicit',
+	mode: 'explicit',
 
-  modules: {
-    // Core modules - always active
-    'core': { enabled: true, required: true },
-    'product-owner': { enabled: true },
-    'tasks': { enabled: true },
+	modules: {
+		// Core modules - always active
+		core: { enabled: true, required: true },
+		'product-owner': { enabled: true },
+		tasks: { enabled: true },
 
-    // Optional modules
-    'analytics': {
-      enabled: process.env.MOLOS_ENABLE_ANALYTICS === 'true',
-      config: {
-        trackingId: process.env.ANALYTICS_TRACKING_ID
-      }
-    },
+		// Optional modules
+		analytics: {
+			enabled: process.env.MOLOS_ENABLE_ANALYTICS === 'true',
+			config: {
+				trackingId: process.env.ANALYTICS_TRACKING_ID
+			}
+		},
 
-    // Debug tools - disabled in production
-    'debug-tools': { enabled: false },
-  }
+		// Debug tools - disabled in production
+		'debug-tools': { enabled: false }
+	}
 };
 ```
 
@@ -356,18 +356,16 @@ export const modulesConfig: ModulesConfig = {
 import pino from 'pino';
 
 export const logger = pino({
-  level: process.env.LOG_LEVEL || 'info',
-  transport: process.env.NODE_ENV === 'development'
-    ? { target: 'pino-pretty' }
-    : undefined,
-  formatters: {
-    level: (label) => ({ level: label })
-  },
-  serializers: {
-    req: pino.stdSerializers.req,
-    res: pino.stdSerializers.res,
-    err: pino.stdSerializers.err
-  }
+	level: process.env.LOG_LEVEL || 'info',
+	transport: process.env.NODE_ENV === 'development' ? { target: 'pino-pretty' } : undefined,
+	formatters: {
+		level: (label) => ({ level: label })
+	},
+	serializers: {
+		req: pino.stdSerializers.req,
+		res: pino.stdSerializers.res,
+		err: pino.stdSerializers.err
+	}
 });
 ```
 
@@ -380,33 +378,36 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async ({ locals }) => {
-  // Check database connection
-  let dbHealthy = false;
-  try {
-    await locals.db.execute('SELECT 1');
-    dbHealthy = true;
-  } catch {
-    dbHealthy = false;
-  }
+	// Check database connection
+	let dbHealthy = false;
+	try {
+		await locals.db.execute('SELECT 1');
+		dbHealthy = true;
+	} catch {
+		dbHealthy = false;
+	}
 
-  const healthy = dbHealthy;
+	const healthy = dbHealthy;
 
-  return json({
-    status: healthy ? 'healthy' : 'unhealthy',
-    timestamp: new Date().toISOString(),
-    checks: {
-      database: dbHealthy ? 'ok' : 'error'
-    }
-  }, {
-    status: healthy ? 200 : 503
-  });
+	return json(
+		{
+			status: healthy ? 'healthy' : 'unhealthy',
+			timestamp: new Date().toISOString(),
+			checks: {
+				database: dbHealthy ? 'ok' : 'error'
+			}
+		},
+		{
+			status: healthy ? 200 : 503
+		}
+	);
 };
 
 // apps/web/src/routes/health/ready/+server.ts
 
 export const GET: RequestHandler = async () => {
-  // Readiness check - is the app ready to receive traffic?
-  return json({ ready: true });
+	// Readiness check - is the app ready to receive traffic?
+	return json({ ready: true });
 };
 ```
 
@@ -427,11 +428,13 @@ COPY --from=builder /app /app
 ```
 
 **Pros:**
+
 - Simple deployment
 - Fast module activation
 - No additional downloads
 
 **Cons:**
+
 - Larger image size
 - Unused code in container
 
@@ -451,11 +454,13 @@ COPY modules/tasks /app/modules/tasks
 ```
 
 **Pros:**
+
 - Smaller base image
 - Mix and match modules
 - A/B testing capability
 
 **Cons:**
+
 - More complex deployment
 - Module download on first use
 
@@ -483,16 +488,16 @@ MoLOS v1.2.3
 
 ```yaml
 # manifest.yaml
-id: "product-owner"
-version: "2.1.0"
+id: 'product-owner'
+version: '2.1.0'
 
 # Declare core version requirement
-requiresCore: ">=1.0.0 <2.0.0"
+requiresCore: '>=1.0.0 <2.0.0'
 
 # Module dependencies
 dependencies:
-  - id: "tasks"
-    version: ">=1.5.0"
+  - id: 'tasks'
+    version: '>=1.5.0'
     optional: true
 ```
 
@@ -504,36 +509,32 @@ dependencies:
 import semver from 'semver';
 
 export function checkModuleCompatibility(
-  module: ModuleManifest,
-  coreVersion: string
+	module: ModuleManifest,
+	coreVersion: string
 ): { compatible: boolean; errors: string[] } {
-  const errors: string[] = [];
+	const errors: string[] = [];
 
-  // Check core version requirement
-  if (module.requiresCore) {
-    if (!semver.satisfies(coreVersion, module.requiresCore)) {
-      errors.push(
-        `Module requires core ${module.requiresCore}, but ${coreVersion} is installed`
-      );
-    }
-  }
+	// Check core version requirement
+	if (module.requiresCore) {
+		if (!semver.satisfies(coreVersion, module.requiresCore)) {
+			errors.push(`Module requires core ${module.requiresCore}, but ${coreVersion} is installed`);
+		}
+	}
 
-  // Check module dependencies
-  for (const dep of module.dependencies ?? []) {
-    const installed = getInstalledModuleVersion(dep.id);
-    if (!installed && !dep.optional) {
-      errors.push(`Missing required dependency: ${dep.id}`);
-    } else if (installed && !semver.satisfies(installed, dep.version)) {
-      errors.push(
-        `Dependency ${dep.id} version ${dep.version} required, ${installed} installed`
-      );
-    }
-  }
+	// Check module dependencies
+	for (const dep of module.dependencies ?? []) {
+		const installed = getInstalledModuleVersion(dep.id);
+		if (!installed && !dep.optional) {
+			errors.push(`Missing required dependency: ${dep.id}`);
+		} else if (installed && !semver.satisfies(installed, dep.version)) {
+			errors.push(`Dependency ${dep.id} version ${dep.version} required, ${installed} installed`);
+		}
+	}
 
-  return {
-    compatible: errors.length === 0,
-    errors
-  };
+	return {
+		compatible: errors.length === 0,
+		errors
+	};
 }
 ```
 
@@ -575,13 +576,13 @@ kubectl delete -f k8s/deployment-green.yaml
 import { runMigrations } from '@molos/database/migrations';
 
 export async function handle({ event, resolve }) {
-  // Run migrations on startup (once)
-  if (!migrationsRun) {
-    await runMigrations();
-    migrationsRun = true;
-  }
+	// Run migrations on startup (once)
+	if (!migrationsRun) {
+		await runMigrations();
+		migrationsRun = true;
+	}
 
-  return resolve(event);
+	return resolve(event);
 }
 ```
 
@@ -591,23 +592,23 @@ export async function handle({ event, resolve }) {
 // packages/database/src/migrations/runner.ts
 
 export async function runMigrations(): Promise<void> {
-  const pending = await getPendingMigrations();
+	const pending = await getPendingMigrations();
 
-  for (const migration of pending) {
-    console.log(`Running migration: ${migration.name}`);
+	for (const migration of pending) {
+		console.log(`Running migration: ${migration.name}`);
 
-    try {
-      await db.transaction(async (tx) => {
-        await migration.up(tx);
-        await markMigrationComplete(migration.name);
-      });
+		try {
+			await db.transaction(async (tx) => {
+				await migration.up(tx);
+				await markMigrationComplete(migration.name);
+			});
 
-      console.log(`Migration complete: ${migration.name}`);
-    } catch (error) {
-      console.error(`Migration failed: ${migration.name}`, error);
-      throw error;
-    }
-  }
+			console.log(`Migration complete: ${migration.name}`);
+		} catch (error) {
+			console.error(`Migration failed: ${migration.name}`, error);
+			throw error;
+		}
+	}
 }
 ```
 
@@ -621,32 +622,32 @@ export async function runMigrations(): Promise<void> {
 import prometheus from 'prom-client';
 
 export const metrics = {
-  httpRequestDuration: new prometheus.Histogram({
-    name: 'molos_http_request_duration_seconds',
-    help: 'HTTP request duration',
-    labelNames: ['method', 'route', 'status']
-  }),
+	httpRequestDuration: new prometheus.Histogram({
+		name: 'molos_http_request_duration_seconds',
+		help: 'HTTP request duration',
+		labelNames: ['method', 'route', 'status']
+	}),
 
-  moduleActivationCount: new prometheus.Gauge({
-    name: 'molos_module_activation_count',
-    help: 'Number of active modules',
-    labelNames: ['module_id']
-  }),
+	moduleActivationCount: new prometheus.Gauge({
+		name: 'molos_module_activation_count',
+		help: 'Number of active modules',
+		labelNames: ['module_id']
+	}),
 
-  dbQueryDuration: new prometheus.Histogram({
-    name: 'molos_db_query_duration_seconds',
-    help: 'Database query duration',
-    labelNames: ['query_type']
-  })
+	dbQueryDuration: new prometheus.Histogram({
+		name: 'molos_db_query_duration_seconds',
+		help: 'Database query duration',
+		labelNames: ['query_type']
+	})
 };
 
 // Metrics endpoint
 // apps/web/src/routes/metrics/+server.ts
 export const GET: RequestHandler = async () => {
-  const metrics = await prometheus.register.metrics();
-  return new Response(metrics, {
-    headers: { 'Content-Type': prometheus.register.contentType }
-  });
+	const metrics = await prometheus.register.metrics();
+	return new Response(metrics, {
+		headers: { 'Content-Type': prometheus.register.contentType }
+	});
 };
 ```
 
@@ -655,12 +656,12 @@ export const GET: RequestHandler = async () => {
 ```typescript
 // Structured logging for production
 logger.info({
-  event: 'http_request',
-  method: event.request.method,
-  path: event.url.pathname,
-  status: response.status,
-  duration: Date.now() - startTime,
-  userId: event.locals.user?.id
+	event: 'http_request',
+	method: event.request.method,
+	path: event.url.pathname,
+	status: response.status,
+	duration: Date.now() - startTime,
+	userId: event.locals.user?.id
 });
 ```
 
@@ -678,7 +679,7 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "MoLOS health check failing"
+          summary: 'MoLOS health check failing'
 
       - alert: MoLOSHighErrorRate
         expr: rate(molos_http_request_duration_seconds_count{status=~"5.."}[5m]) > 0.1
@@ -686,7 +687,7 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "High error rate detected"
+          summary: 'High error rate detected'
 
       - alert: MoLOSModuleError
         expr: molos_module_status{status="error"} > 0
@@ -694,7 +695,7 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "Module in error state"
+          summary: 'Module in error state'
 ```
 
 ## Backup and Recovery
@@ -799,5 +800,5 @@ sqlite3 /data/molos.db "PRAGMA busy_timeout=5000"
 
 ---
 
-*Last Updated: 2025-02-15*
-*Version: 1.0*
+_Last Updated: 2025-02-15_
+_Version: 1.0_

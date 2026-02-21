@@ -22,6 +22,7 @@ AI tools are functions that the AI assistant can call to interact with your modu
 **Problem**: AI generates values that don't match database enum constraints.
 
 **Example Error**:
+
 ```
 Error: Invalid value for column category. Expected: rent, groceries, entertainment, savings, other | Found: Software
 ```
@@ -64,7 +65,7 @@ function validateCategory(category: string): string {
         items: {
           type: 'object',
           properties: {
-            category: { 
+            category: {
               type: 'string',
               enum: ['rent', 'groceries', 'entertainment', 'savings', 'other'],
               description: 'Expense category. Invalid values will be mapped to "other".'
@@ -117,30 +118,30 @@ Wrap individual operations in try-catch blocks:
 
 ```typescript
 execute: async (params: Record<string, unknown>) => {
-  const results: any[] = [];
-  const errors: Array<{ item: any; error: string }> = [];
+	const results: any[] = [];
+	const errors: Array<{ item: any; error: string }> = [];
 
-  for (const item of params.items) {
-    try {
-      const result = await repository.create({ userId, ...item });
-      results.push(result);
-    } catch (error) {
-      // Log and continue instead of throwing
-      console.error(`[Tool] Failed to process item:`, error);
-      errors.push({
-        item,
-        error: error instanceof Error ? error.message : String(error)
-      });
-    }
-  }
+	for (const item of params.items) {
+		try {
+			const result = await repository.create({ userId, ...item });
+			results.push(result);
+		} catch (error) {
+			// Log and continue instead of throwing
+			console.error(`[Tool] Failed to process item:`, error);
+			errors.push({
+				item,
+				error: error instanceof Error ? error.message : String(error)
+			});
+		}
+	}
 
-  return {
-    success: results.length > 0,
-    created: results.length,
-    failed: errors.length,
-    errors
-  };
-}
+	return {
+		success: results.length > 0,
+		created: results.length,
+		failed: errors.length,
+		errors
+	};
+};
 ```
 
 ### Pattern 3: Case-Insensitive Matching
@@ -149,16 +150,16 @@ For text-based enums, consider case-insensitive matching:
 
 ```typescript
 function normalizeValue<T extends string>(value: T, validValues: T[], defaultValue: T): T {
-  const normalized = value.toLowerCase().trim();
-  const validLower = validValues.map(v => v.toLowerCase());
-  
-  const index = validLower.indexOf(normalized);
-  if (index !== -1) {
-    return validValues[index];
-  }
-  
-  console.warn(`[Module] Invalid value "${value}", using default "${defaultValue}"`);
-  return defaultValue;
+	const normalized = value.toLowerCase().trim();
+	const validLower = validValues.map((v) => v.toLowerCase());
+
+	const index = validLower.indexOf(normalized);
+	if (index !== -1) {
+		return validValues[index];
+	}
+
+	console.warn(`[Module] Invalid value "${value}", using default "${defaultValue}"`);
+	return defaultValue;
 }
 ```
 
@@ -191,7 +192,7 @@ Always document valid enum values in the tool description:
 Document what happens with invalid values:
 
 ```typescript
-description: 'Add expenses. Valid categories: rent, groceries, entertainment, savings, other. Invalid categories will be mapped to "other" with a warning logged.'
+description: 'Add expenses. Valid categories: rent, groceries, entertainment, savings, other. Invalid categories will be mapped to "other" with a warning logged.';
 ```
 
 ### 3. Be Specific About Constraints
@@ -220,11 +221,11 @@ import { FinanceCategory } from '../db/schema/tables';
 const VALID_CATEGORIES = Object.values(FinanceCategory);
 
 function validateCategory(category: string): string {
-  if (VALID_CATEGORIES.includes(category)) {
-    return category;
-  }
-  console.warn(`[Finance] Invalid category "${category}", mapping to "other"`);
-  return 'other';
+	if (VALID_CATEGORIES.includes(category)) {
+		return category;
+	}
+	console.warn(`[Finance] Invalid category "${category}", mapping to "other"`);
+	return 'other';
 }
 ```
 
@@ -238,11 +239,11 @@ import { HealthActivityType } from '../../../models';
 const VALID_ACTIVITY_TYPES: string[] = Object.values(HealthActivityType);
 
 function validateActivityType(activityType: string): string {
-  if (VALID_ACTIVITY_TYPES.includes(activityType)) {
-    return activityType;
-  }
-  console.warn(`[Health] Invalid activity type "${activityType}", mapping to "Other"`);
-  return 'Other';
+	if (VALID_ACTIVITY_TYPES.includes(activityType)) {
+		return activityType;
+	}
+	console.warn(`[Health] Invalid activity type "${activityType}", mapping to "Other"`);
+	return 'Other';
 }
 ```
 
@@ -269,9 +270,9 @@ The MoLOS system has multiple layers of error handling. Each layer should handle
 
 ```typescript
 return {
-  created: results.length,
-  skipped: errors.length,
-  skippedDetails: errors  // Detailed info for AI to understand what failed
+	created: results.length,
+	skipped: errors.length,
+	skippedDetails: errors // Detailed info for AI to understand what failed
 };
 ```
 
@@ -283,6 +284,7 @@ return {
 - **Return**: Error result with categorization
 
 The tool wrapper automatically:
+
 - Catches all errors during tool execution
 - Categorizes errors (validation, database, network, etc.)
 - Returns structured error results
@@ -321,8 +323,8 @@ async executeAction(action: AiAction, activeModuleIds: string[] = []): Promise<u
 } catch (error) {
   const errorMessage = (error as any)?.message || 'Internal Server Error';
   const errorType = (error as any)?.constructor?.name || 'Error';
-  
-  return json({ 
+
+  return json({
     error: errorMessage,
     errorType,
     success: false,
@@ -350,6 +352,7 @@ When developing AI tools, test the following scenarios:
 ## Common Enum Values Reference
 
 ### Finance Module Categories
+
 - `rent`
 - `groceries`
 - `entertainment`
@@ -357,6 +360,7 @@ When developing AI tools, test the following scenarios:
 - `other` (fallback)
 
 ### Health Module Activity Types
+
 - `Running`
 - `Lifting`
 - `Cycling`
@@ -365,11 +369,13 @@ When developing AI tools, test the following scenarios:
 - `Other` (fallback)
 
 ### Health Module Sex Values
+
 - `Male`
 - `Female`
 - `Other`
 
 ### Health Module Units
+
 - `metric`
 - `imperial`
 
@@ -384,4 +390,4 @@ When developing AI tools, test the following scenarios:
 
 ---
 
-*Last Updated: 2026-02-17*
+_Last Updated: 2026-02-17_

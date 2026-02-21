@@ -22,6 +22,7 @@ Fixed the old module system to work with the monorepo setup. The dev server was 
 ## Changes Made
 
 ### 1. Fixed `@molos/database`
+
 - **File**: `packages/database/package.json`
 - Removed `db:migrate` script (root handles core migrations, modules handle their own)
 
@@ -29,16 +30,17 @@ Fixed the old module system to work with the monorepo setup. The dev server was 
 
 For each old module (MoLOS-Goals, MoLOS-Health, MoLOS-Meals, MoLOS-AI-Knowledge, MoLOS-Google, MoLOS-Sample-Module):
 
-| Module | Package Name | Changes |
-|--------|-------------|---------|
-| MoLOS-Goals | `@molos/module-goals` | Created package.json, moved to src/ structure |
-| MoLOS-Health | `@molos/module-health` | Created package.json, moved to src/ structure |
-| MoLOS-Meals | `@molos/module-meals` | Created package.json, moved to src/ structure |
-| MoLOS-AI-Knowledge | `@molos/module-ai-knowledge` | Renamed, added exports, moved to src/ structure |
-| MoLOS-Google | `@molos/module-google` | Renamed, added exports, moved to src/ structure |
-| MoLOS-Sample-Module | `@molos/module-sample` | Added exports, moved to src/ structure |
+| Module              | Package Name                 | Changes                                         |
+| ------------------- | ---------------------------- | ----------------------------------------------- |
+| MoLOS-Goals         | `@molos/module-goals`        | Created package.json, moved to src/ structure   |
+| MoLOS-Health        | `@molos/module-health`       | Created package.json, moved to src/ structure   |
+| MoLOS-Meals         | `@molos/module-meals`        | Created package.json, moved to src/ structure   |
+| MoLOS-AI-Knowledge  | `@molos/module-ai-knowledge` | Renamed, added exports, moved to src/ structure |
+| MoLOS-Google        | `@molos/module-google`       | Renamed, added exports, moved to src/ structure |
+| MoLOS-Sample-Module | `@molos/module-sample`       | Added exports, moved to src/ structure          |
 
 **Standard structure now:**
+
 ```
 modules/MoLOS-{Name}/
 ├── package.json           # @molos/module-{name}
@@ -62,6 +64,7 @@ modules/MoLOS-{Name}/
 ### 3. Removed Standalone Configs
 
 Deleted from external modules (they interfered with monorepo Vite resolution):
+
 - `tsconfig.json`
 - `vite.config.ts`
 - `svelte.config.js`
@@ -102,13 +105,14 @@ import { GoalRepository } from '$lib/repositories/external_modules/MoLOS-Goals';
 
 ## Results
 
-| Metric | Before | After |
-|--------|--------|-------|
-| Directories linked | 4 | 58 |
-| Modules discovered | 2 | 9 |
-| Dev server | Failed | Works |
+| Metric             | Before | After |
+| ------------------ | ------ | ----- |
+| Directories linked | 4      | 58    |
+| Modules discovered | 2      | 9     |
+| Dev server         | Failed | Works |
 
 All 9 modules now properly discovered and registered:
+
 - `@molos/module-ai-knowledge`
 - `@molos/module-finance`
 - `@molos/module-goals`

@@ -42,7 +42,7 @@ export type {
 	ModuleAgentConfig,
 	ModuleAgentResult,
 	// Utility types
-	Result,
+	Result
 } from './types';
 
 export { Ok, Err, toCoreMessage, toCoreMessages, toModelMessage, toModelMessages } from './types';
@@ -58,7 +58,7 @@ export {
 	wrapToolWithHooks,
 	convertToolsToAiSdk,
 	clearToolCache,
-	type ToolWrapperOptions,
+	type ToolWrapperOptions
 } from './tools';
 
 // Multi-agent
@@ -73,5 +73,5 @@ export {
 	type ModuleHealthResponse,
 	type DelegationRequest,
 	type DelegationResponse,
-	type ModuleCapabilitiesResponse,
+	type ModuleCapabilitiesResponse
 } from './multi-agent';

@@ -32,8 +32,12 @@
 
 	// Filter tools based on search and selected module
 	let displayedTools = $derived.by(() => {
-		let tools: Array<{ name: string; description: string; moduleName?: string; moduleId?: string }> =
-			[];
+		let tools: Array<{
+			name: string;
+			description: string;
+			moduleName?: string;
+			moduleId?: string;
+		}> = [];
 
 		// First, determine which tools to include based on module selection
 		if (selectedModule === 'all') {
@@ -106,12 +110,12 @@
 </svelte:head>
 
 <div class="min-h-screen bg-background">
-	<div class="p-4 mx-auto space-y-8 max-w-7xl md:p-6 lg:p-8">
+	<div class="mx-auto max-w-7xl space-y-8 p-4 md:p-6 lg:p-8">
 		<!-- Header -->
 		<div class="space-y-6">
 			<div class="flex items-center gap-3">
-				<div class="flex items-center justify-center w-12 h-12 rounded-lg bg-primary/10">
-					<Wrench class="w-6 h-6 text-primary" />
+				<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+					<Wrench class="h-6 w-6 text-primary" />
 				</div>
 				<div>
 					<h1 class="text-3xl font-bold tracking-tight">AI Tools Discovery</h1>
@@ -123,8 +127,8 @@
 
 			<!-- Search and Filter Controls -->
 			<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<div class="relative flex-1 max-w-md">
-					<Search class="absolute w-4 h-4 -translate-y-1/2 left-3 top-1/2 text-muted-foreground" />
+				<div class="relative max-w-md flex-1">
+					<Search class="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
 					<Input
 						bind:value={searchTerm}
 						placeholder="Search tools by name or description..."
@@ -152,7 +156,7 @@
 			<!-- Search Filter Display -->
 			{#if searchTerm}
 				<div class="flex flex-wrap items-center gap-2">
-					<span class="text-sm text-muted-foreground">Active filters:</span>
+					<span class="text-muted-foreground text-sm">Active filters:</span>
 					<Badge variant="outline" class="gap-1">
 						Search: "{searchTerm}"
 						<button class="ml-1 hover:text-destructive" onclick={() => (searchTerm = '')}>
@@ -162,7 +166,7 @@
 					<Button
 						variant="ghost"
 						size="sm"
-						class="text-xs h-7"
+						class="h-7 text-xs"
 						onclick={() => {
 							searchTerm = '';
 						}}
@@ -174,10 +178,10 @@
 		</div>
 
 		<!-- Current Selection Header -->
-		<div class="flex items-center justify-between pb-4 border-b">
+		<div class="flex items-center justify-between border-b pb-4">
 			<div>
 				<h2 class="text-2xl font-semibold">{selectedModuleDisplay}</h2>
-				<p class="mt-1 text-sm text-muted-foreground">
+				<p class="text-muted-foreground mt-1 text-sm">
 					{toolCount} tool{toolCount !== 1 ? 's' : ''} found
 				</p>
 			</div>
@@ -190,8 +194,8 @@
 					<Card class="transition-colors hover:border-primary/50">
 						<CardHeader class="pb-3">
 							<div class="flex items-start justify-between gap-2">
-								<div class="flex-1 min-w-0">
-									<CardTitle class="font-mono text-base truncate">{tool.name}</CardTitle>
+								<div class="min-w-0 flex-1">
+									<CardTitle class="truncate font-mono text-base">{tool.name}</CardTitle>
 									{#if tool.moduleId}
 										<Badge variant="outline" class="mt-2 text-xs">
 											{tool.moduleName}
@@ -203,7 +207,7 @@
 							</div>
 						</CardHeader>
 						<CardContent>
-							<p class="text-sm text-muted-foreground line-clamp-3">{tool.description}</p>
+							<p class="text-muted-foreground line-clamp-3 text-sm">{tool.description}</p>
 						</CardContent>
 					</Card>
 				{/each}
@@ -211,9 +215,9 @@
 		{:else}
 			<Card>
 				<CardContent class="flex flex-col items-center justify-center py-16">
-					<Search class="w-16 h-16 mb-4 text-muted-foreground" />
+					<Search class="text-muted-foreground mb-4 h-16 w-16" />
 					<h3 class="text-xl font-semibold">No tools found</h3>
-					<p class="max-w-md mt-2 text-center text-muted-foreground">
+					<p class="text-muted-foreground mt-2 max-w-md text-center">
 						{searchTerm
 							? 'No tools match your current filters. Try adjusting your selection.'
 							: 'No tools available for the selected module.'}

@@ -50,27 +50,24 @@ import { getTableName } from '@molos/database';
 const MODULE_ID = 'MoLOS-Tasks';
 
 // Creates table: MoLOS-Tasks_projects
-export const projects = sqliteTable(
-  getTableName(MODULE_ID, 'projects'),
-  {
-    id: text('id').primaryKey(),
-    name: text('name').notNull()
-  }
-);
+export const projects = sqliteTable(getTableName(MODULE_ID, 'projects'), {
+	id: text('id').primaryKey(),
+	name: text('name').notNull()
+});
 ```
 
-| Pattern | Example | Status |
-|---------|---------|--------|
-| `MoLOS-{Name}_{table}` | `MoLOS-Tasks_tasks` | Correct |
-| `mod_{module}_{table}` | `mod_tasks_tasks` | Deprecated |
+| Pattern                | Example             | Status     |
+| ---------------------- | ------------------- | ---------- |
+| `MoLOS-{Name}_{table}` | `MoLOS-Tasks_tasks` | Correct    |
+| `mod_{module}_{table}` | `mod_tasks_tasks`   | Deprecated |
 
 ### Helper Functions
 
-| Function | Description |
-|----------|-------------|
-| `getTableName(moduleId, tableName)` | Generate prefixed table name |
-| `isModuleTable(fullName, moduleId)` | Check table ownership |
-| `getModuleTablePattern(moduleId)` | Get LIKE pattern for module tables |
+| Function                            | Description                        |
+| ----------------------------------- | ---------------------------------- |
+| `getTableName(moduleId, tableName)` | Generate prefixed table name       |
+| `isModuleTable(fullName, moduleId)` | Check table ownership              |
+| `getModuleTablePattern(moduleId)`   | Get LIKE pattern for module tables |
 
 ## Schema Structure
 
@@ -85,10 +82,10 @@ export const projects = sqliteTable(
 
 External module tables follow the `MoLOS-{ModuleName}_{table_name}` naming convention:
 
-| Module | Tables |
-|--------|--------|
-| `@molos/module-tasks` | `MoLOS-Tasks_tasks`, `MoLOS-Tasks_categories` |
-| `@molos/module-goals` | `MoLOS-Goals_goals`, `MoLOS-Goals_milestones` |
+| Module                 | Tables                                              |
+| ---------------------- | --------------------------------------------------- |
+| `@molos/module-tasks`  | `MoLOS-Tasks_tasks`, `MoLOS-Tasks_categories`       |
+| `@molos/module-goals`  | `MoLOS-Goals_goals`, `MoLOS-Goals_milestones`       |
 | `@molos/module-health` | `MoLOS-Health_user_profile`, `MoLOS-Health_metrics` |
 
 ## Migrations
@@ -117,4 +114,4 @@ npm run db:push
 
 ---
 
-*See also: [Architecture Overview](../architecture/overview.md)*
+_See also: [Architecture Overview](../architecture/overview.md)_
