@@ -80,7 +80,7 @@ $lib                 → src/lib
 
 ### Formatting (Prettier)
 - Tabs, single quotes, no trailing commas, printWidth 100
-- Run `bun run format` before commits
+- Run `bun run format`
 
 ### Database Schema
 - Location: `src/lib/server/db/schema/{module}/` or module's `src/server/database/schema.ts`
@@ -112,7 +112,7 @@ Priority levels: 0=critical, 1=high, 2=medium, 3=low, 4=backlog
 
 ## Git Workflow
 
-- **Do NOT push or commit unless explicitly asked**
+- **Do NOT push or commit or add anything never**
 - When committing: simple messages, no Co-Authored-By lines
 
 ## MCP Server Integration

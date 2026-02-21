@@ -68,6 +68,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		sessionId,
 		actionToExecute,
 		activeModuleIds,
+		mentionedModuleIds,
 		attachments,
 		parts,
 		stream: streamRequested = true
@@ -78,7 +79,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		hasMessages: !!messages,
 		messageCount: messages?.length,
 		content: directContent?.substring(0, 50),
-		activeModuleIds
+		activeModuleIds,
+		mentionedModuleIds
 	});
 
 	const agent = new AiAgentV3Adapter(locals.user.id);
@@ -175,6 +177,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 							messageAttachments,
 							messageParts,
 							{
+								mentionedModuleIds: mentionedModuleIds || [],
 								onProgress: async (event: any) => {
 									serverLog('PROGRESS', { type: event.type, data: event.data });
 
@@ -427,7 +430,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			activeSessionId,
 			activeModuleIds || [],
 			messageAttachments,
-			messageParts
+			messageParts,
+			{ mentionedModuleIds: mentionedModuleIds || [] }
 		);
 		return json({ ...response, sessionId: activeSessionId });
 	} catch (error) {

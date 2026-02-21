@@ -23,11 +23,15 @@ cd MoLOS/modules
 mkdir my-module
 cd my-module
 
-mkdir -p src/{routes/{ui,api},server/database,models,components,stores}
+mkdir -p src/{routes/{ui,api},server/{db/schema,repositories,ai},models,lib/components,stores}
 touch src/index.ts
 touch src/config.ts
-touch src/server/database/schema.ts
+touch src/server/db/schema/index.ts
+touch src/server/db/schema/tables.ts
 touch src/models/index.ts
+touch src/stores/index.ts
+touch src/server/repositories/base-repository.ts
+touch src/server/ai/ai-tools.ts
 touch package.json
 touch drizzle.config.ts
 ```
@@ -44,15 +48,16 @@ touch drizzle.config.ts
   "exports": {
     ".": "./src/index.ts",
     "./config": "./src/config.ts",
-    "./server/database/schema": "./src/server/database/schema.ts",
-    "./models": "./src/models/index.ts"
+    "./models": "./src/models/index.ts",
+    "./ai": "./src/server/ai/ai-tools.ts"
   },
+  "files": ["src", "manifest.yaml", "drizzle"],
   "peerDependencies": {
     "svelte": "^5.45.0"
   },
   "dependencies": {
     "lucide-svelte": "^0.561.0",
-    "zod": "^4.3.6"
+    "zod": "^3.0.0"
   }
 }
 ```
@@ -89,11 +94,11 @@ export default myModuleConfig;
 ### Step 4: Create Database Schema
 
 ```typescript
-// src/server/database/schema.ts
+// src/server/db/schema/tables.ts
 import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 import { textEnum } from '@molos/database/utils';
-import { MyStatus } from '../../models/index.js';
+import { MyStatus } from '../../../models/index.js';
 
 // Table names MUST be prefixed with module ID
 export const myModuleItems = sqliteTable('MoLOS-MyModule_items', {
@@ -104,6 +109,11 @@ export const myModuleItems = sqliteTable('MoLOS-MyModule_items', {
   createdAt: integer('created_at').default(sql`(strftime('%s','now'))`),
   updatedAt: integer('updated_at').default(sql`(strftime('%s','now'))`),
 });
+```
+
+```typescript
+// src/server/db/schema/index.ts
+export * from './tables.js';
 ```
 
 ### Step 5: Create Models
@@ -125,7 +135,7 @@ export type MyStatusType = typeof MyStatus[keyof typeof MyStatus];
 import { defineConfig } from 'drizzle-kit';
 
 export default defineConfig({
-  schema: './src/server/database/schema.ts',
+  schema: './src/server/db/schema/tables.ts',
   out: './drizzle',
   dialect: 'sqlite',
   dbCredentials: { url: 'file:../../molos.db' },
@@ -211,7 +221,8 @@ import { db } from '../../../../../src/lib/server/db';
 ```typescript
 // Use relative paths with .js extension
 import { MyRepository } from '../server/repositories/my-repository.js';
-import { MyStatus } from '../models/index.js';
+import { MyStatus } from '../../models/index.js';
+import { myModuleItems } from '../server/db/schema.js';
 ```
 
 ## Generate Migrations

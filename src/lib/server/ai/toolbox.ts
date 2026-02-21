@@ -1,6 +1,7 @@
 import { getCoreAiTools } from './core-tools';
-import { getAllModules } from '$lib/config';
+import { getAllModules, getModuleById } from '$lib/config';
 import type { ToolDefinition } from '$lib/models/ai';
+import type { ModuleConfig } from '@molos/module-types';
 import { TtlCache } from './agent-utils';
 
 // Lazy load module AI tools - this is the CORRECT path to the modules directory
@@ -39,15 +40,22 @@ export class AiToolbox {
 	/**
 	 * Dynamically discover and return all available tools for the user.
 	 * This includes core tools and tools from active external modules.
+	 * Tools from mentioned modules are prioritized (appear first in the list).
 	 */
-	async getTools(userId: string, activeModuleIds: string[] = []): Promise<ToolDefinition[]> {
+	async getTools(
+		userId: string,
+		activeModuleIds: string[] = [],
+		mentionedModuleIds: string[] = []
+	): Promise<ToolDefinition[]> {
 		console.log(
 			'[AiToolbox] getTools called with userId:',
 			userId,
 			'activeModuleIds:',
-			activeModuleIds
+			activeModuleIds,
+			'mentionedModuleIds:',
+			mentionedModuleIds
 		);
-		const cacheKey = `${userId}:${[...activeModuleIds].sort().join(',') || 'core'}`;
+		const cacheKey = `${userId}:${[...activeModuleIds].sort().join(',') || 'core'}:${[...mentionedModuleIds].sort().join(',') || 'none'}`;
 		const cached = toolCache.get(cacheKey);
 		if (cached) {
 			console.log('[AiToolbox] Returning cached tools, count:', cached.length);
@@ -142,9 +150,50 @@ export class AiToolbox {
 			}
 		}
 
+		// Sort tools: mentioned module tools first, then other tools
+		if (mentionedModuleIds.length > 0) {
+			tools = this.prioritizeToolsByMentionedModules(tools, mentionedModuleIds);
+			logDebug('[AiToolbox] Tools reordered with mentioned module tools first');
+		}
+
 		toolCache.set(cacheKey, tools, TOOLBOX_CACHE_TTL_MS);
 		logDebug('[AiToolbox] Total tools returned:', tools.length);
 		return tools;
+	}
+
+	/**
+	 * Sort tools so that tools from mentioned modules appear first.
+	 */
+	private prioritizeToolsByMentionedModules(
+		tools: ToolDefinition[],
+		mentionedModuleIds: string[]
+	): ToolDefinition[] {
+		const mentionedSet = new Set(mentionedModuleIds);
+
+		const mentionedTools: ToolDefinition[] = [];
+		const otherTools: ToolDefinition[] = [];
+
+		for (const tool of tools) {
+			// Check if tool belongs to a mentioned module (tool name is prefixed with module ID)
+			const toolModuleId = this.extractModuleIdFromToolName(tool.name);
+			if (toolModuleId && mentionedSet.has(toolModuleId)) {
+				mentionedTools.push(tool);
+			} else {
+				otherTools.push(tool);
+			}
+		}
+
+		logDebug(`[AiToolbox] Prioritized ${mentionedTools.length} mentioned module tools`);
+		return [...mentionedTools, ...otherTools];
+	}
+
+	/**
+	 * Extract module ID from prefixed tool name (e.g., "MoLOS-Tasks_get_tasks" -> "MoLOS-Tasks")
+	 */
+	private extractModuleIdFromToolName(toolName: string): string | null {
+		const underscoreIndex = toolName.indexOf('_');
+		if (underscoreIndex === -1) return null;
+		return toolName.substring(0, underscoreIndex);
 	}
 
 	/**
@@ -249,6 +298,39 @@ Use the provided tools to interact with the database. Your goal is to make the u
 
 		promptCache.set(cacheKey, prompt, TOOLBOX_CACHE_TTL_MS);
 		return prompt;
+	}
+
+	/**
+	 * Generate a prompt section for priority modules that were @mentioned by the user.
+	 */
+	getPriorityModulesPrompt(mentionedModuleIds: string[]): string {
+		const mentionedModules: Array<{ id: string; name: string; description: string }> = [];
+
+		for (const moduleId of mentionedModuleIds) {
+			const module = getModuleById(moduleId);
+			if (module) {
+				mentionedModules.push({
+					id: module.id,
+					name: module.name,
+					description: module.description || 'No description available'
+				});
+			}
+		}
+
+		if (mentionedModules.length === 0) {
+			return '';
+		}
+
+		const moduleList = mentionedModules
+			.map((m) => `- **${m.name}** (${m.id}): ${m.description}`)
+			.join('\n');
+
+		return `# PRIORITY MODULES
+The user has specifically mentioned these modules. **Prioritize using tools from these modules first**:
+
+${moduleList}
+
+These modules' tools should be your primary tools for this request. Only use tools from other modules if the mentioned modules cannot accomplish the task.`;
 	}
 }
 

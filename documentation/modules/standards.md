@@ -22,6 +22,7 @@ External modules can be installed from npm or GitHub. They follow the naming con
 | `MoLOS-Tasks` | `@molos/module-tasks` | `github:MoLOS-App/MoLOS-Tasks` |
 | `MoLOS-Finance` | `@molos/module-finance` | `github:MoLOS-App/MoLOS-Finance` |
 | `MoLOS-Goals` | `@molos/module-goals` | `github:MoLOS-App/MoLOS-Goals` |
+| `MoLOS-Markdown` | `@molos/module-markdown` | `github:MoLOS-App/MoLOS-Markdown` |
 
 ## Module ID Convention
 
@@ -48,9 +49,15 @@ modules/{module-name}/
     ├── config.ts             # Module configuration (REQUIRED)
     ├── models/               # TypeScript types and enums
     │   └── index.ts
+    ├── lib/                  # Library code
+    │   └── components/       # Svelte components
     ├── server/
-    │   ├── database/
-    │   │   └── schema.ts     # Drizzle schema
+    │   ├── ai/               # AI tools (optional)
+    │   │   └── ai-tools.ts
+    │   ├── db/               # Database schema
+    │   │   └── schema/
+    │   │       ├── index.ts
+    │   │       └── tables.ts
     │   └── repositories/     # Data access layer
     │       ├── base-repository.ts
     │       └── *.ts
@@ -61,9 +68,8 @@ modules/{module-name}/
     │   │   └── */            # Sub-routes
     │   └── api/              # API endpoints
     │       └── +server.ts
-    ├── components/           # Svelte components
-    ├── stores/               # Svelte stores
-    └── repositories/         # Data repositories
+    └── stores/               # Svelte stores
+        └── index.ts
 ```
 
 **Note**: Modules in the monorepo do NOT need their own `tsconfig.json`, `vite.config.ts`, or `svelte.config.js`. These are handled by the main SvelteKit app.
@@ -169,7 +175,8 @@ The database initialization script verifies module tables by looking for the pat
 ### Schema File Location
 
 ```
-src/server/database/schema.ts
+src/server/db/schema/tables.ts
+src/server/db/schema/index.ts
 ```
 
 ### drizzle.config.ts
@@ -179,7 +186,7 @@ src/server/database/schema.ts
 import { defineConfig } from 'drizzle-kit';
 
 export default defineConfig({
-  schema: './src/server/database/schema.ts',
+  schema: './src/server/db/schema/tables.ts',
   out: './drizzle',
   dialect: 'sqlite',
   dbCredentials: { url: 'file:../../molos.db' },  // Relative to main app DB

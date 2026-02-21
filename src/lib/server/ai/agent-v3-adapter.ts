@@ -216,6 +216,7 @@ export class AiAgentV3Adapter {
 			maxDurationMs?: number;
 			onProgress?: (event: ProgressEvent) => void | Promise<void>;
 			autonomousMode?: boolean;
+			mentionedModuleIds?: string[];
 		} = {}
 	): Promise<AiChatResponse> {
 		// Save user message
@@ -257,14 +258,21 @@ export class AiAgentV3Adapter {
 			toolCallId: m.toolCallId,
 		}));
 
-		// Get tools from toolbox
-		const tools = await this.toolbox.getTools(this.userId, activeModuleIds);
+		// Get tools from toolbox with mention prioritization
+		const mentionedModuleIds = options.mentionedModuleIds || [];
+		const tools = await this.toolbox.getTools(this.userId, activeModuleIds, mentionedModuleIds);
 
 		// Get dynamic system prompt from toolbox
-		const dynamicSystemPrompt = await this.toolbox.getDynamicSystemPrompt(
+		let dynamicSystemPrompt = await this.toolbox.getDynamicSystemPrompt(
 			this.userId,
 			activeModuleIds
 		);
+
+		// Add priority module context if modules were mentioned
+		if (mentionedModuleIds.length > 0) {
+			const priorityPrompt = this.toolbox.getPriorityModulesPrompt(mentionedModuleIds);
+			dynamicSystemPrompt = `${priorityPrompt}\n\n${dynamicSystemPrompt}`;
+		}
 
 		// Append available tools to the system prompt
 		const toolsList = tools.map((t) => `- ${t.name}: ${t.description}`).join('\n');

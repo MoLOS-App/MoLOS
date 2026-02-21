@@ -13,6 +13,8 @@
 	import type { ProgressState } from './progress-types';
 	import { INITIAL_PROGRESS_STATE } from './progress-types';
 	import type { UIMessage } from 'ai';
+	import type { ModuleConfig } from '@molos/module-types';
+	import { getAllModules } from '$lib/config';
 
 	let { userName } = $props<{ userName?: string }>();
 
@@ -52,6 +54,12 @@
 
 	// Active modules from page data
 	let activeModuleIds = $derived($page.data.activeExternalIds || []);
+
+	// Mentioned modules (user @mentioned for prioritization)
+	let mentionedModules = $state<ModuleConfig[]>([]);
+
+	// Available modules for mention picker
+	let availableModules = $state<ModuleConfig[]>([]);
 
 	// Greeting based on time
 	const now = new Date();
@@ -100,6 +108,8 @@
 		isStreaming = false;
 		isCancelling = false;
 		isSidebarOpen = false;
+		// Clear mentioned modules
+		mentionedModules = [];
 		// Cancel any ongoing request
 		if (abortController) {
 			abortController.abort();
@@ -478,6 +488,8 @@
 		if (!input.trim() || isLoading) return;
 
 		const userContent = input;
+		// Capture mentioned module IDs before clearing
+		const mentionedModuleIds = mentionedModules.map(m => m.id);
 		input = '';
 		isLoading = true;
 		isStreaming = false;
@@ -488,6 +500,8 @@
 		progressLog = [];
 		// Reset current assistant message ID
 		currentAssistantMessageId = null;
+		// Clear mentioned modules after capturing
+		mentionedModules = [];
 
 		// Create AbortController for this request
 		abortController = new AbortController();
@@ -524,6 +538,7 @@
 				})),
 				sessionId: currentSessionId,
 				activeModuleIds,
+				mentionedModuleIds,
 				stream: streamEnabled
 			};
 
@@ -639,7 +654,23 @@
 	onMount(() => {
 		loadSessions();
 		loadSettings();
+		// Load available modules for mention picker (all modules with AI tools)
+		const allModules = getAllModules();
+		console.log('[AiChatWorkspace] All modules:', allModules.map(m => ({ id: m.id, name: m.name, isPackageModule: m.isPackageModule })));
+		// Include all modules that could have AI tools (package modules or explicitly marked)
+		availableModules = allModules;
 	});
+
+	// Mention handlers
+	function handleMentionModule(module: ModuleConfig) {
+		if (!mentionedModules.some(m => m.id === module.id)) {
+			mentionedModules = [...mentionedModules, module];
+		}
+	}
+
+	function handleRemoveMention(moduleId: string) {
+		mentionedModules = mentionedModules.filter(m => m.id !== moduleId);
+	}
 </script>
 
 <div class="flex h-full flex-col overflow-hidden">
@@ -793,9 +824,13 @@
 							bind:input
 							isLoading={isProcessing}
 							{pendingAction}
+							mentionedModules={mentionedModules}
+							modules={availableModules}
 							onSendMessage={sendMessage}
 							onInput={(value: string) => (input = value)}
 							onKeydown={handleKeydown}
+							onMentionModule={handleMentionModule}
+							onRemoveMention={handleRemoveMention}
 						/>
 					</div>
 				</div>
