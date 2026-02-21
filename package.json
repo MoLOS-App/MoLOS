@@ -22,6 +22,7 @@
 		"module:cleanup": "tsx scripts/cleanup-module-symlinks.ts",
 		"module:tui": "tsx scripts/module-tui.ts",
 		"db:init": "tsx scripts/init-database.ts",
+		"db:audit-modules": "tsx scripts/audit-module-migrations.ts",
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",

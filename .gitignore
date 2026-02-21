@@ -51,3 +51,4 @@ db.sqlite
 .opencode
 AGENTS.md
 .gitignore
+*.db*

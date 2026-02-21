@@ -16,7 +16,7 @@
  */
 
 import { execSync } from 'child_process';
-import { existsSync, readFileSync, readdirSync, statSync } from 'fs';
+import { copyFileSync, existsSync, readFileSync, readdirSync, statSync } from 'fs';
 import * as path from 'path';
 // @ts-ignore - better-sqlite3 doesn't have perfect ESM types
 import Database from 'better-sqlite3';
@@ -51,6 +51,36 @@ function getDatabasePath(): string {
 		(process.env.NODE_ENV === 'production' ? '/data/molos.db' : 'molos.db');
 	const dbPath = rawDbPath.replace(/^sqlite:\/\//, '').replace(/^sqlite:|^file:/, '');
 	return path.isAbsolute(dbPath) ? dbPath : path.resolve(process.cwd(), dbPath);
+}
+
+/**
+ * Create a timestamped backup of the database file
+ * @returns Path to backup file, or null if no database exists
+ */
+function backupDatabase(dbPath: string): string | null {
+	if (!existsSync(dbPath)) {
+		return null;
+	}
+
+	const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+
+	const backupPath = `${dbPath}.backup-${timestamp}`;
+
+	copyFileSync(dbPath, backupPath);
+	console.log(`[DB:init] Database backed up to: ${backupPath}`);
+
+	return backupPath;
+}
+
+/**
+ * Restore database from a backup file
+ */
+function restoreDatabase(backupPath: string, dbPath: string): void {
+	if (!existsSync(backupPath)) {
+		throw new Error(`Backup not found: ${backupPath}`);
+	}
+	copyFileSync(backupPath, dbPath);
+	console.log(`[DB:init] Database restored from: ${backupPath}`);
 }
 
 /**
@@ -112,10 +142,10 @@ function runModuleMigrations() {
 		// even if the actual SQL wasn't executed. This fallback ensures tables exist.
 		verifyAndApplyMissingMigrations();
 	} catch (error) {
-		// Module migrations are less critical, warn but continue
-		console.warn('[DB:init] Some module migrations failed (non-critical):', error);
-		// Still try to apply missing migrations
-		verifyAndApplyMissingMigrations();
+		console.error('[DB:init] MODULE MIGRATIONS FAILED - Halting initialization.');
+		console.error('[DB:init] Error:', error);
+		console.error('[DB:init] Fix the failing migration and run again.');
+		process.exit(1);
 	}
 }
 
@@ -266,6 +296,12 @@ async function main() {
 	const dbPath = getDatabasePath();
 	console.log(`[DB:init] Database path: ${dbPath}`);
 
+	// Backup existing database before any operations
+	const backupPath = backupDatabase(dbPath);
+	if (backupPath) {
+		console.log(`[DB:init] Backup created at: ${backupPath}`);
+	}
+
 	// Check if already initialized
 	if (isDatabaseInitialized(dbPath)) {
 		console.log('[DB:init] Database already exists.');
@@ -285,7 +321,7 @@ async function main() {
 		// Step 2: Run core migrations
 		runCoreMigrations();
 
-		// Step 3: Run module migrations (non-critical)
+		// Step 3: Run module migrations
 		runModuleMigrations();
 
 		console.log('[DB:init] Database initialization complete!');
