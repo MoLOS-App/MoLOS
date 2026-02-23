@@ -7,7 +7,7 @@
 		ModuleManagerFooter,
 		ExternalModuleCard,
 		BuiltinModuleCard,
-		InstallModuleForm,
+		// InstallModuleForm, // DISABLED: Install functionality temporarily disabled
 		GitRefDialog,
 		type ModuleData,
 		type ModuleState
@@ -116,7 +116,7 @@
 	let activeTab = $state<'builtin' | 'external'>('builtin');
 	let searchQuery = $state('');
 	let isSaving = $state(false);
-	let isInstalling = $state(false);
+	// let isInstalling = $state(false); // DISABLED: Install functionality temporarily disabled
 
 	// Loading states for external modules
 	let loadingStates = $state<
@@ -362,7 +362,8 @@
 				onSearchChange={(q) => (searchQuery = q)}
 			/>
 
-			{#if hasPendingModules}
+			<!-- DISABLED: Restart functionality temporarily disabled -->
+			<!-- {#if hasPendingModules}
 				<div class="flex items-center justify-between rounded-lg border bg-accent p-4">
 					<div class="flex items-center gap-3">
 						<span class="text-muted-foreground">⚠️</span>
@@ -384,7 +385,7 @@
 						</Button>
 					</form>
 				</div>
-			{/if}
+			{/if} -->
 
 			<div class="space-y-6">
 				{#if activeTab === 'builtin'}
@@ -414,9 +415,11 @@
 					</section>
 				{:else}
 					<section class="space-y-6">
-						<InstallModuleForm {isInstalling} />
+						<!-- DISABLED: Install form temporarily disabled -->
+						<!-- <InstallModuleForm {isInstalling} /> -->
 
-						{#if externalModules.length > 0}
+						<!-- DISABLED: External modules section temporarily disabled -->
+						<!-- {#if externalModules.length > 0}
 							<div class="grid gap-4">
 								{#each externalModules as mod}
 									{@const modState = moduleStates[mod.id] ?? {
@@ -442,7 +445,16 @@
 								<p class="text-lg font-medium">No external modules installed</p>
 								<p class="text-sm">Install a module from a git repository to extend MoLOS.</p>
 							</div>
-						{/if}
+						{/if} -->
+
+						<!-- Placeholder message for disabled external modules -->
+						<div
+							class="text-muted-foreground flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-muted p-12"
+						>
+							<span class="mb-4 text-4xl opacity-20">🔧</span>
+							<p class="text-lg font-medium">External modules disabled</p>
+							<p class="text-sm">Module installation is temporarily disabled.</p>
+						</div>
 					</section>
 				{/if}
 			</div>
