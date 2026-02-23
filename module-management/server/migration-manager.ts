@@ -3,13 +3,22 @@
  *
  * Handles tracking and rollback of module database migrations.
  * Works with Drizzle ORM to manage migration history per module.
+ *
+ * @deprecated This class is deprecated per ADR-001. Use Drizzle's native
+ *             migration tracking with .down.sql files for rollback support.
  */
 
 import { eq, and, isNull, desc } from 'drizzle-orm';
 import { db } from '@molos/database';
 import { coreModuleMigrations } from '@molos/database/schema/core';
 import type { CoreModuleMigration } from '@molos/database/schema/core';
+import { existsSync, readFileSync } from 'fs';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
 import crypto from 'crypto';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 /**
  * Migration record with additional metadata
@@ -34,34 +43,87 @@ export interface RollbackResult {
 /**
  * Generates a simple rollback SQL for common operations
  * This is a best-effort generation - complex migrations may need manual rollback
+ *
+ * Supports:
+ * - Manual .down.sql files (checked first)
+ * - CREATE TABLE → DROP TABLE
+ * - CREATE INDEX → DROP INDEX
+ * - ALTER TABLE ADD COLUMN → ALTER TABLE DROP COLUMN
  */
-function generateRollbackSql(migrationSql: string): string | null {
+function generateRollbackSql(
+	migrationSql: string,
+	migrationPath?: string
+): { sql: string | null; source: 'manual' | 'auto' | 'none' } {
+	// 1. Check for manual down migration file
+	if (migrationPath) {
+		const downPath = migrationPath.replace('.sql', '.down.sql');
+		if (existsSync(downPath)) {
+			try {
+				const downSql = readFileSync(downPath, 'utf-8');
+				return { sql: downSql, source: 'manual' };
+			} catch (e) {
+				console.warn(`[MigrationManager] Failed to read down migration: ${downPath}`);
+			}
+		}
+	}
+
+	// 2. Auto-generate rollback SQL for simple cases
 	const lines: string[] = [];
+
+	// Extract ALTER TABLE ADD COLUMN statements and generate DROP COLUMN
+	const alterColumnMatches = migrationSql.matchAll(
+		/ALTER\s+TABLE\s+["']?([\w-]+)["']?\s+ADD\s+COLUMN\s+["']?(\w+)["']?\s+(\w+)/gi
+	);
+	const addedColumns = new Set<string>();
+	for (const match of alterColumnMatches) {
+		const tableName = match[1];
+		const columnName = match[2];
+		const key = `${tableName}.${columnName}`;
+		if (!addedColumns.has(key)) {
+			addedColumns.add(key);
+			lines.push(`ALTER TABLE "${tableName}" DROP COLUMN "${columnName}";`);
+		}
+	}
 
 	// Extract CREATE TABLE statements and generate DROP TABLE
 	const createTableMatches = migrationSql.matchAll(
-		/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?["']?(\w+)["']?/gi
+		/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?["`']?([\w-]+)[`"']?/gi
 	);
+	const createdTables = new Set<string>();
 	for (const match of createTableMatches) {
-		lines.push(`DROP TABLE IF EXISTS "${match[1]}";`);
+		const tableName = match[1];
+		if (!createdTables.has(tableName)) {
+			createdTables.add(tableName);
+			lines.push(`DROP TABLE IF EXISTS "${tableName}";`);
+		}
 	}
 
 	// Extract CREATE INDEX statements and generate DROP INDEX
 	const createIndexMatches = migrationSql.matchAll(
-		/CREATE\s+(?:UNIQUE\s+)?INDEX\s+(?:IF\s+NOT\s+EXISTS\s+)?["']?(\w+)["']?/gi
+		/CREATE\s+(?:UNIQUE\s+)?INDEX\s+(?:IF\s+NOT\s+EXISTS\s+)?["`']?([\w-]+)[`"']?/gi
 	);
+	const createdIndexes = new Set<string>();
 	for (const match of createIndexMatches) {
-		lines.push(`DROP INDEX IF EXISTS "${match[1]}";`);
+		const indexName = match[1];
+		if (!createdIndexes.has(indexName)) {
+			createdIndexes.add(indexName);
+			lines.push(`DROP INDEX IF EXISTS "${indexName}";`);
+		}
 	}
 
-	return lines.length > 0 ? lines.join('\n') : null;
+	if (lines.length > 0) {
+		return { sql: lines.join('\n'), source: 'auto' };
+	}
+
+	return { sql: null, source: 'none' };
 }
 
 /**
  * Generate checksum for migration SQL
+ * Uses SHA256 for better collision resistance than MD5
  */
 function generateChecksum(sql: string): string {
-	return crypto.createHash('md5').update(sql).digest('hex');
+	return crypto.createHash('sha256').update(sql).digest('hex');
 }
 
 /**
@@ -78,7 +140,18 @@ export class MigrationManager {
 	async recordMigration(moduleId: string, migrationName: string, sql: string): Promise<void> {
 		const id = `${moduleId}_${migrationName}`.replace(/[^a-zA-Z0-9_-]/g, '_');
 		const checksum = generateChecksum(sql);
-		const rollbackSql = generateRollbackSql(sql);
+		const rollbackResult = generateRollbackSql(sql);
+		const rollbackSql = rollbackResult.sql;
+
+		if (rollbackResult.source === 'none') {
+			console.warn(
+				`[MigrationManager] Warning: No rollback SQL generated for ${migrationName}. Consider adding a .down.sql file.`
+			);
+		} else if (rollbackResult.source === 'manual') {
+			console.log(`[MigrationManager] Using manual rollback for ${migrationName}`);
+		} else {
+			console.log(`[MigrationManager] Auto-generated rollback for ${migrationName}`);
+		}
 
 		try {
 			await db.insert(coreModuleMigrations).values({

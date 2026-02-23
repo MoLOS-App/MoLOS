@@ -180,31 +180,46 @@ import { TaskRepository } from '../../../server/repositories/task-repository.js'
 
 ## Common Commands
 
-| Command               | Description                               |
-| --------------------- | ----------------------------------------- |
-| `bun run dev`         | Start dev server (auto-discovers modules) |
-| `bun run build`       | Build for production                      |
-| `bun run module:sync` | Sync and initialize modules               |
-| `bun run module:link` | Create route symlinks                     |
-| `bun run db:push`     | Push schema changes (dev)                 |
-| `bun run db:migrate`  | Run migrations                            |
-| `bun run db:generate` | Generate migrations                       |
-| `bun run db:studio`   | Open Drizzle Studio                       |
+| Command                                       | Description                               |
+| --------------------------------------------- | ----------------------------------------- |
+| `bun run dev`                                 | Start dev server (auto-discovers modules) |
+| `bun run build`                               | Build for production                      |
+| `bun run module:sync`                         | Sync and initialize modules               |
+| `bun run module:link`                         | Create route symlinks                     |
+| `bun run db:init`                             | Initialize database (first-time setup)    |
+| `bun run db:migrate`                          | Run all pending migrations                |
+| `bun run db:migrate:unified`                  | Unified runner with logging               |
+| `bun run db:generate`                         | Generate migrations from schema           |
+| `bun run db:push`                             | Push schema changes (dev only)            |
+| `bun run db:validate`                         | Validate schema matches migrations        |
+| `bun run db:audit-modules`                    | Audit all module migrations               |
+| `bun run db:studio`                           | Open Drizzle Studio                       |
+| `bun run db:reset`                            | Reset database (destructive)              |
+| `bun run test`                                | Run all tests (via turbo)                 |
+| `bun run test:unit`                           | Run unit tests in watch mode              |
+| `bun run test:unit -- tests/migrations --run` | Run migration tests (26 tests)            |
 
 ---
 
 ## Key File Locations
 
-| What                 | Where                                    |
-| -------------------- | ---------------------------------------- |
-| App entry point      | `src/app.html`                           |
-| Module registry      | `src/lib/config/index.ts`                |
-| Module types         | `src/lib/config/types.ts`                |
-| Database client      | `src/lib/server/db/index.ts`             |
-| Core schema          | `packages/database/src/schema/core/`     |
-| Module schemas       | `packages/database/src/schema/external/` |
-| Shared components    | `packages/ui/src/lib/components/`        |
-| Module linker script | `scripts/link-modules.ts`                |
+| What                     | Where                                       |
+| ------------------------ | ------------------------------------------- |
+| App entry point          | `src/app.html`                              |
+| Module registry          | `src/lib/config/index.ts`                   |
+| Module types             | `src/lib/config/types.ts`                   |
+| Database client          | `src/lib/server/db/index.ts`                |
+| Core schema              | `packages/database/src/schema/core/`        |
+| Module schemas           | `packages/database/src/schema/external/`    |
+| Core migrations          | `drizzle/`                                  |
+| Unified migration runner | `packages/database/src/migrate-unified.ts`  |
+| Schema validator         | `packages/database/src/schema-validator.ts` |
+| Migration logger         | `packages/database/src/migration-logger.ts` |
+| Migration logs           | `logs/migrations.log`                       |
+| Migration tests          | `tests/migrations/`                         |
+| Shared components        | `packages/ui/src/lib/components/`           |
+| Module linker script     | `scripts/link-modules.ts`                   |
+| Migration audit script   | `scripts/audit-module-migrations.ts`        |
 
 ---
 
@@ -256,9 +271,20 @@ DATABASE_URL=./molos.db
 
 ### Database table not found
 
-1. Generate migrations: `cd modules/{name} && npx drizzle-kit generate`
-2. Apply migrations: `npx drizzle-kit migrate`
-3. Check table prefix matches module ID
+1. Run `bun run db:migrate:unified` to apply all migrations
+2. Run `bun run db:validate` to check for missing tables
+3. Check table prefix matches module ID (`MoLOS-{Name}_{table}`)
+
+### Migration fails with "statement-breakpoint" error
+
+1. Add `--> statement-breakpoint` between SQL statements in migration file
+2. Regenerate migration if using drizzle-kit
+
+### Schema validation fails
+
+1. Run `bun run db:audit-modules` to check module migrations
+2. Run `bun run db:validate` to identify missing/extra tables
+3. Check `logs/migrations.log` for errors
 
 ### Import errors ($lib/modules/...)
 
@@ -629,11 +655,18 @@ export default defineConfig({
 
 ## Related Documentation
 
+- [Database Architecture](./architecture/database.md) - Database system design
+- [Database Package](./packages/database.md) - @molos/database usage
 - [Module Standards](./modules/standards.md) - Detailed conventions
 - [Module Development](./modules/development.md) - Creating modules
 - [Architecture Overview](./architecture/overview.md) - System design
+- [Database Architecture](./architecture/database.md) - Database system design
+- [Database Package](./packages/database.md) - @molos/database usage
+- [Testing Guide](./getting-started/testing.md) - Testing documentation
 - [Quick Start](./getting-started/quick-start.md) - Getting started guide
+- [Troubleshooting](./getting-started/troubleshooting.md) - Common issues
+- [ADR-001: Migration Tracking](./adr/001-migration-tracking-strategy.md) - Migration strategy
 
 ---
 
-_Last Updated: 2026-02-17_
+_Last Updated: 2026-02-23_

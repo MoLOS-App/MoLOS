@@ -27,6 +27,24 @@
 			"import": "./dist/utils/index.js",
 			"default": "./dist/utils/index.js",
 			"source": "./src/utils/index.ts"
+		},
+		"./migrate-unified": {
+			"types": "./dist/migrate-unified.d.ts",
+			"import": "./dist/migrate-unified.js",
+			"default": "./dist/migrate-unified.js",
+			"source": "./src/migrate-unified.ts"
+		},
+		"./schema-validator": {
+			"types": "./dist/schema-validator.d.ts",
+			"import": "./dist/schema-validator.js",
+			"default": "./dist/schema-validator.js",
+			"source": "./src/schema-validator.ts"
+		},
+		"./migration-logger": {
+			"types": "./dist/migration-logger.d.ts",
+			"import": "./dist/migration-logger.js",
+			"default": "./dist/migration-logger.js",
+			"source": "./src/migration-logger.ts"
 		}
 	},
 	"files": [

@@ -17,6 +17,8 @@ WHERE id NOT IN (
 AND context_metadata IS NOT NULL
 AND json_extract(context_metadata, '$.segmentId') IS NOT NULL;
 
+--> statement-breakpoint
+
 -- Step 2: Create an index to improve query performance
 -- This doesn't enforce uniqueness but helps with deduplication queries
 CREATE INDEX IF NOT EXISTS idx_ai_messages_session_segment
