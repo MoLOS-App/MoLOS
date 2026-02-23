@@ -135,9 +135,12 @@
 			</div>
 		</div>
 
-		<div class="relative flex max-h-[calc(100vh-12rem)] min-h-0 flex-1 gap-6">
+		<div class="relative flex max-h-[calc(100vh-12rem)] min-h-0 flex-1 gap-6 md:gap-6">
 			<!-- Left Side: Theme Selector -->
-			<div id="left-side-panel" class="max-h-full flex-1 space-y-6 overflow-y-auto pb-10">
+			<div
+				id="left-side-panel"
+				class="max-h-full w-full flex-1 space-y-6 overflow-y-auto pb-10 md:w-auto"
+			>
 				<!-- Typography Section -->
 				<Card class="overflow-hidden">
 					<CardHeader class="pb-3">
@@ -436,10 +439,10 @@
 				</Card>
 			</div>
 
-			<!-- Right Side: Live Preview Components -->
+			<!-- Right Side: Live Preview Components (hidden on mobile) -->
 			<div
 				id="right-side-panel"
-				class="max-h-full flex-1 space-y-6 overflow-y-auto pb-10"
+				class="hidden max-h-full flex-1 space-y-6 overflow-y-auto pb-10 md:block"
 				onscroll={() => handlePanelScroll('right-side-panel')}
 			>
 				<!-- Buttons Showcase -->
