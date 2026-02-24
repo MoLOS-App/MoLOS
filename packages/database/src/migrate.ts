@@ -11,7 +11,7 @@ const DB_PATH =
 	process.env.DATABASE_URL?.replace(/^sqlite:\/\//, '').replace(/^sqlite:|^file:/, '') ||
 	(process.env.NODE_ENV === 'production'
 		? '/data/molos.db'
-		: join(__dirname, '..', '..', '..', 'molos.db'));
+		: join(__dirname, '..', '..', '..', '..', 'data', 'molos.db'));
 const MIGRATIONS_PATH = join(__dirname, '..', 'drizzle');
 
 const sqlite = new Database(DB_PATH);

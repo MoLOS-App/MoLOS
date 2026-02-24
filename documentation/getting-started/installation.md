@@ -68,8 +68,7 @@ services:
     ports:
       - '4173:4173'
     volumes:
-      - ./molos_data:/data
-      - ./molos_data/external_modules:/app/external_modules
+      - ./data:/data
     environment:
       - DATABASE_URL=file:/data/molos.db
       - BETTER_AUTH_SECRET=<Just run "openssl rand -base64 32" to generate one>

@@ -48,7 +48,7 @@ function loadEnv() {
 function getDatabasePath(): string {
 	const rawDbPath =
 		process.env.DATABASE_URL ||
-		(process.env.NODE_ENV === 'production' ? '/data/molos.db' : 'molos.db');
+		(process.env.NODE_ENV === 'production' ? '/data/molos.db' : './data/molos.db');
 	const dbPath = rawDbPath.replace(/^sqlite:\/\//, '').replace(/^sqlite:|^file:/, '');
 	return path.isAbsolute(dbPath) ? dbPath : path.resolve(process.cwd(), dbPath);
 }
@@ -284,6 +284,95 @@ function applyModuleMigrationSql(moduleName: string, moduleDir: string, dbPath: 
 }
 
 /**
+ * Verify that core database migrations have been applied
+ *
+ * Similar to verifyAndApplyMissingMigrations() but for core schema.
+ * This ensures tables like settings_external_modules have the correct schema.
+ */
+function verifyAndApplyMissingCoreMigrations() {
+	const dbPath = getDatabasePath();
+	const db = new Database(dbPath);
+
+	try {
+		// Check if __drizzle_migrations table exists
+		const migrationTableExists = db
+			.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?")
+			.get('__drizzle_migrations');
+
+		if (!migrationTableExists) {
+			console.log('[DB:init] Core migrations not applied, running core migrations...');
+			db.close();
+			runCoreMigrations();
+			return;
+		}
+
+		// Get migration count
+		const result = db.prepare('SELECT COUNT(*) as count FROM __drizzle_migrations').get() as {
+			count: number;
+		};
+
+		// Get expected migration count from meta files
+		const metaDir = path.join(process.cwd(), 'packages', 'database', 'drizzle', 'meta');
+		let expectedMigrations = 0;
+		try {
+			if (existsSync(metaDir)) {
+				const metaFiles = readdirSync(metaDir);
+				expectedMigrations = metaFiles.length;
+			}
+		} catch {
+			// Use fallback count
+			expectedMigrations = 16;
+		}
+
+		const currentMigrations = result?.count || 0;
+
+		// Verify specific columns exist (sanity check)
+		const columns = db.prepare('PRAGMA table_info(settings_external_modules)').all() as Array<{
+			name: string;
+		}>;
+
+		const columnNames = new Set(columns.map((c) => c.name));
+
+		const hasSchema =
+			columnNames.has('git_ref') &&
+			columnNames.has('block_updates') &&
+			columnNames.has('retry_count') &&
+			columnNames.has('last_retry_at');
+
+		if (currentMigrations < expectedMigrations) {
+			if (hasSchema) {
+				// Schema is correct but tracking is incomplete
+				// Don't re-run migrations (they would fail with "already exists")
+				console.log(
+					`[DB:init] Core schema verified but tracking incomplete (${currentMigrations}/${expectedMigrations}). Skipping re-run.`
+				);
+			} else {
+				// Schema is missing, need to run migrations
+				console.log(
+					`[DB:init] Core schema incomplete (columns: git_ref=${columnNames.has('git_ref')}, block_updates=${columnNames.has('block_updates')}), applying migrations...`
+				);
+				db.close();
+				runCoreMigrations();
+				return;
+			}
+		}
+
+		console.log(`[DB:init] Verified ${currentMigrations} core migration(s)`);
+	} catch (error) {
+		console.warn('[DB:init] Error checking core migrations:', error);
+		// On error, try to run migrations to ensure consistency
+		db.close();
+		runCoreMigrations();
+	} finally {
+		try {
+			db.close();
+		} catch {
+			// Already closed
+		}
+	}
+}
+
+/**
  * Main initialization function
  */
 async function main() {
@@ -305,7 +394,10 @@ async function main() {
 	// Check if already initialized
 	if (isDatabaseInitialized(dbPath)) {
 		console.log('[DB:init] Database already exists.');
-		// Still verify module migrations for new modules that may have been added
+		// Verify core migrations (handles schema updates like adding git_ref column)
+		console.log('[DB:init] Checking for missing core migrations...');
+		verifyAndApplyMissingCoreMigrations();
+		// Verify module migrations for new modules that may have been added
 		console.log('[DB:init] Checking for missing module migrations...');
 		verifyAndApplyMissingMigrations();
 		console.log('[DB:init] To re-initialize, delete the database file and run again.');
@@ -315,10 +407,11 @@ async function main() {
 	console.log('[DB:init] Database not found or empty. Initializing...');
 
 	try {
-		// Step 1: Generate migrations
-		generateMigrations();
-
-		// Step 2: Run core migrations
+		// Step 1: Run core migrations
+		// Note: Migration generation (db:generate) is a development task for
+		// creating new migrations when schema changes. It is NOT part of
+		// database initialization, which should only apply existing migrations.
+		// See documentation/getting-started/ for more details.
 		runCoreMigrations();
 
 		// Step 3: Run module migrations

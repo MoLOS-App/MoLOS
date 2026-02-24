@@ -93,21 +93,40 @@ See [ADR-001](../adr/001-migration-tracking-strategy.md) for the tracking strate
 
 ### Commands
 
-| Command                      | Description                             |
-| ---------------------------- | --------------------------------------- |
-| `bun run db:init`            | Initialize database (first-time setup)  |
-| `bun run db:migrate`         | Run all pending migrations              |
-| `bun run db:migrate:unified` | Unified runner with logging             |
-| `bun run db:generate`        | Generate migrations from schema changes |
-| `bun run db:push`            | Push schema directly (dev only)         |
-| `bun run db:validate`        | Validate schema matches migrations      |
-| `bun run db:audit-modules`   | Audit all module migrations             |
-| `bun run db:studio`          | Open Drizzle Studio                     |
-| `bun run db:reset`           | Reset database (destructive)            |
+| Command                      | Description                                                              | Usage Context              |
+| ---------------------------- | ------------------------------------------------------------------------ | -------------------------- |
+| `bun run db:init`            | Initialize database (first-time setup, applies existing migrations only) | New setup, fresh install   |
+| `bun run db:migrate`         | Run all pending migrations                                               | Update existing DB         |
+| `bun run db:migrate:unified` | Unified runner with logging                                              | Debugging migrations       |
+| `bun run db:generate`        | **DEVELOPMENT ONLY**: Generate new migration files from schema changes   | After editing schema files |
+| `bun run db:push`            | Push schema directly (dev only)                                          | Quick iteration in dev     |
+| `bun run db:validate`        | Validate schema matches migrations                                       | Verify migration health    |
+| `bun run db:audit-modules`   | Audit all module migrations                                              | Check module DB setup      |
+| `bun run db:studio`          | Open Drizzle Studio                                                      | Visual DB inspection       |
+| `bun run db:reset`           | Reset database (destructive)                                             | Clean slate                |
+
+**Important:** `db:generate` is only for development when creating new migrations from schema changes. It is NOT part of `db:init` which only applies existing migrations. See [Migration Workflow](#migration-workflow) for details.
 
 ### Migration Workflow
 
-#### Creating a New Migration
+#### Understanding the Two Phases
+
+Database migration has two distinct phases that must be kept separate:
+
+| Phase           | Command               | Purpose                                | Fails If...                           |
+| --------------- | --------------------- | -------------------------------------- | ------------------------------------- |
+| **Generation**  | `bun run db:generate` | CREATE new migration files from schema | ANY module has invalid schema         |
+| **Application** | `bun run db:migrate`  | APPLY existing migrations to database  | Migration SQL has errors or conflicts |
+
+**Why They Must Be Separate:**
+
+- **Generation** scans ALL module schemas - one bad schema blocks everyone
+- **Application** only runs pending migrations - independent of other modules
+- **Generation** is development-time (schema → SQL files)
+- **Application** is runtime/deploy-time (SQL files → database)
+- **Init script** should only APPLY, not GENERATE
+
+#### Creating a New Migration (Development Phase)
 
 ```bash
 # 1. Modify schema in packages/database/src/schema/

@@ -37,7 +37,7 @@ interface MigrationHealth {
 function getDatabasePath(): string {
 	const rawDbPath =
 		process.env.DATABASE_URL?.replace(/^sqlite:\/\//, '').replace(/^sqlite:|^file:/, '') ||
-		(process.env.NODE_ENV === 'production' ? '/data/molos.db' : 'molos.db');
+		(process.env.NODE_ENV === 'production' ? '/data/molos.db' : './data/molos.db');
 	return rawDbPath;
 }
 

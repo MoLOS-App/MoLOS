@@ -48,8 +48,7 @@ You can also keep it small, I won't judge.
 First make the persistence folders:
 
 ```bash
-mkdir -p ./molos_data/db
-mkdir -p ./molos_data/external_modules
+mkdir -p ./data
 ```
 
 Then start MoLOS:
@@ -57,8 +56,7 @@ Then start MoLOS:
 ```bash
 podman run -d \
   -p 4173:4173 \
-  -v ./molos_data/db:/data \
-  -v ./molos_data/external_modules:/app/external_modules \
+  -v ./data:/data \
   -e DATABASE_URL=file:/data/molos.db \
   -e PORT=4173 \
   -e MOLOS_AUTOLOAD_MODULES=true \
@@ -66,7 +64,7 @@ podman run -d \
   ghcr.io/molos-app/molos:latest
 ```
 
-Open `http://localhost:4173`. Your data stays in `./molos_data`.
+Open `http://localhost:4173`. Your data stays in `./data`.
 
 That is the whole setup. You can stop here and explore.
 
@@ -93,7 +91,7 @@ See `documentation/production-build.md` for details on the build system and modu
 MoLOS is local-first. It runs on your machine and stores data locally by default.
 You decide if and how it is exposed to the network.
 
-Backups are simple. Move `./molos_data` to a new machine and you are done.
+Backups are simple. Move `./data` to a new machine and you are done.
 
 ## For developers
 

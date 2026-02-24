@@ -22,7 +22,8 @@ try {
 }
 
 const rawDbPath =
-	env_DATABASE_URL || (process.env.NODE_ENV === 'production' ? '/data/molos.db' : 'molos.db');
+	env_DATABASE_URL ||
+	(process.env.NODE_ENV === 'production' ? '/data/molos.db' : './data/molos.db');
 
 // Handle URL prefixes
 const dbPath = rawDbPath.replace(/^sqlite:\/\//, '').replace(/^sqlite:|^file:/, '');

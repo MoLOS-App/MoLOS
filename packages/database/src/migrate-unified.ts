@@ -33,7 +33,7 @@ function getDatabasePath(): string {
 		process.env.DATABASE_URL?.replace(/^sqlite:\/\//, '').replace(/^sqlite:|^file:/, '') ||
 		(process.env.NODE_ENV === 'production'
 			? '/data/molos.db'
-			: join(__dirname, '..', '..', '..', 'molos.db'));
+			: join(__dirname, '..', '..', '..', '..', 'data', 'molos.db'));
 	return rawDbPath;
 }
 

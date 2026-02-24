@@ -1,14 +1,39 @@
-import { ModuleManager } from '../module-management/server/module-manager';
-import { existsSync, mkdirSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync } from 'fs';
 import path from 'path';
 import { linkAllModules, type ModuleLinkResult } from './link-modules.js';
+
+// Load .env file before any imports that might use DATABASE_URL
+function loadEnv() {
+	const envPath = path.resolve(process.cwd(), '.env');
+	if (existsSync(envPath)) {
+		const envContent = readFileSync(envPath, 'utf-8');
+		envContent.split('\n').forEach((line) => {
+			const [key, ...valueParts] = line.split('=');
+			if (key && valueParts.length > 0) {
+				const value = valueParts
+					.join('=')
+					.trim()
+					.replace(/^["']|["']$/g, '');
+				const trimmedKey = key.trim();
+				if (!process.env[trimmedKey]) {
+					process.env[trimmedKey] = value;
+				}
+			}
+		});
+	}
+}
+
+loadEnv();
+
+// Import after loading env
+import { ModuleManager } from '../module-management/server/module-manager';
 
 /**
  * Initialize the database before module manager runs
  * This is a local import of the init-database functionality
  */
 async function initDatabase() {
-	const dbPath = path.resolve(process.cwd(), 'molos.db');
+	const dbPath = path.resolve(process.cwd(), 'data/molos.db');
 	const dbExists = existsSync(dbPath);
 
 	// Check if database file exists and has content

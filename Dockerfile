@@ -49,8 +49,8 @@ COPY --from=builder /app/package.json ./
 COPY --from=builder /app/bun.lock ./
 COPY --from=builder /app/scripts/entrypoint.sh ./scripts/entrypoint.sh
 
-# Create data directory for SQLite
-RUN mkdir -p /data
+# Create data directory for SQLite and subdirectories
+RUN mkdir -p /data/.db_backups /data/modules
 
 # Set permissions
 RUN chmod +x /app/scripts/entrypoint.sh
@@ -58,6 +58,8 @@ RUN chmod +x /app/scripts/entrypoint.sh
 # Set production environment
 ENV NODE_ENV=production
 ENV DATABASE_URL=/data/molos.db
+ENV BACKUP_DIR=/data/.db_backups
+ENV MOLOS_MODULE_DATA_DIR=/data/modules
 
 # Expose port SvelteKit runs on
 EXPOSE 4173

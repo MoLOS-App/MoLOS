@@ -21,7 +21,7 @@ services:
       - PORT=4173
       - CSRF_TRUSTED_ORIGINS=http://127.0.0.1:4173,http://localhost:4173
     volumes:
-      - ./molos_data:/data:rw
+      - ./data:/data:rw
     healthcheck:
       test:
         [

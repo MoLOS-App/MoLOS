@@ -7,8 +7,9 @@
 	"permission": {
 		"edit": "allow",
 		"write": "allow",
+		"read": "allow",
+		"cat": "allow",
 		"bash(git*)": "deny",
-		"bash": "ask",
 		"rm *": "ask"
 	},
 

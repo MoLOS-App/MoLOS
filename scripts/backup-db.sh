@@ -4,6 +4,7 @@ set -e
 # Creates a timestamped backup of the SQLite database.
 
 DB_URL=${DATABASE_URL:-"/data/molos.db"}
+BACKUP_DIR=${BACKUP_DIR:-"/data/.db_backups"}
 case "$DB_URL" in
   file:*) DB_PATH="${DB_URL#file:}" ;;
   sqlite://*) DB_PATH="${DB_URL#sqlite://}" ;;

@@ -43,7 +43,7 @@ const DEFAULT_IGNORE_TABLES = ['sqlite_', '__drizzle', '__new', 'core_module_mig
 function getDatabasePath(): string {
 	const rawDbPath =
 		process.env.DATABASE_URL?.replace(/^sqlite:\/\//, '').replace(/^sqlite:|^file:/, '') ||
-		(process.env.NODE_ENV === 'production' ? '/data/molos.db' : 'molos.db');
+		(process.env.NODE_ENV === 'production' ? '/data/molos.db' : './data/molos.db');
 	return rawDbPath;
 }
 
