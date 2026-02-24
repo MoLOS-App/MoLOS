@@ -462,8 +462,10 @@ export class MoLOSAgent {
 				// Call progress callback
 				if (onProgress) {
 					await onProgress(event);
-					console.log(`[Agent ${runIdShort}] Progress callback called for message_segment`);
 				}
+
+				// Mark this segment as emitted
+				emittedSegmentIds.add(currentSegmentId);
 
 				// Start new segment if this one is complete
 				if (isComplete) {
