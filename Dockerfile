@@ -1,51 +1,71 @@
 # Multi-stage build for optimized image size and security
-FROM node:20-slim 
+FROM oven/bun:latest AS builder
 
-# Install build dependencies for native modules like better-sqlite3
-RUN apt-get update && apt-get install -y \
+# Install minimal build dependencies for native modules like better-sqlite3
+RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     make \
     g++ \
     ca-certificates \
-    build-essential \
     git \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Copy package files first for better caching
-COPY package.json package-lock.json ./
-
-# Install all dependencies (including devDependencies for build)
-# We do NOT use --ignore-scripts because better-sqlite3 needs to build its native bindings
-RUN npm ci
-
-# Copy the rest of the application
+# Copy source code (modules/ is excluded by .dockerignore)
 COPY . .
-RUN rm -rf external_modules/
 
-# Generate SvelteKit types and build the application
-# Cleanup broken module symlinks to avoid sync failures when modules are not present in build
-RUN npm run module:cleanup && npx svelte-kit sync && npm run build
+# Remove workspace module dependencies from package.json temporarily
+# They will be re-added by module:sync-deps after modules are fetched
+RUN node scripts/clean-workspace-deps.js
+
+# Install root dependencies first
+RUN bun install
+
+# Fetch modules from git based on modules.config.ts (only configured modules)
+RUN ./node_modules/.bin/tsx scripts/fetch-modules.ts
+
+# Sync module dependencies to workspace (updates package.json with workspace:* deps)
+RUN bun run module:sync-deps
+
+# Re-install to include fetched modules as workspace dependencies
+RUN bun install
+
+# Prepare modules for build (cleanup, link routes, generate types)
+RUN bun run build:prepare
+
+# Build application
+RUN bun run build
+
+# Production stage - use minimal runtime image
+FROM oven/bun:latest
 
 WORKDIR /app
+
+# Copy built application from builder
+COPY --from=builder /app/build ./build
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/bun.lock ./
+COPY --from=builder /app/scripts/entrypoint.sh ./scripts/entrypoint.sh
 
 # Create data directory for SQLite
 RUN mkdir -p /data
 
-RUN chmod -R 775 /app/src
-# external_modules is mounted at runtime, so create empty directory
-RUN mkdir -p external_modules
+# Set permissions
+RUN chmod +x /app/scripts/entrypoint.sh
 
 # Set production environment
 ENV NODE_ENV=production
 ENV DATABASE_URL=/data/molos.db
-# Expose the port SvelteKit runs on
+
+# Expose port SvelteKit runs on
 EXPOSE 4173
-RUN mkdir -p /app/external_modules
 
-# Security hardening
-RUN chmod +x /app/scripts/entrypoint.sh
+# Security hardening - run as non-root user
+RUN useradd -m -u 1000 appuser && \
+    chown -R appuser:appuser /app /data
+USER appuser
 
-# Use the entrypoint script to handle migrations and module refresh
+# Use the entrypoint script to handle migrations and start the server
 ENTRYPOINT ["/app/scripts/entrypoint.sh"]

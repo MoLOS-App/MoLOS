@@ -8,7 +8,8 @@
 		"edit": "allow",
 		"write": "allow",
 		"bash(git*)": "deny",
-		"bash": "allow"
+		"bash": "ask",
+		"rm *": "ask"
 	},
 
 	"watcher": {

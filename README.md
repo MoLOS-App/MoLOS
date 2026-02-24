@@ -81,10 +81,12 @@ That is the whole setup. You can stop here and explore.
 MoLOS is built from small modules. Add or remove them without breaking the core app.
 Keep it minimal, or assemble a full workspace over time.
 
-If you are working from source, drop modules into `external_modules/` and run
-`npm run module:sync`.
+To customize which modules are included in production builds, edit `modules.config.ts` in the project root.
+Modules are fetched from git repositories during the build process.
 
 Modules can be shared, versioned, and replaced. Your data stays in one place.
+
+See `documentation/production-build.md` for details on the build system and module configuration.
 
 ## Privacy and control
 
@@ -101,11 +103,25 @@ The codebase is small on purpose. It is easy to read, easy to extend, and easy t
 
 ### Module System
 
+- **[Production Build Guide](documentation/production-build.md)** - Build-time module resolution, Docker/Kubernetes deployment
 - **[Module Improvements Guide](documentation/module-improvements.md)** - Learn about retry logic, change detection, and module linking
 - **[Quick Reference](documentation/module-quick-reference.md)** - Common commands and troubleshooting
 - **[Module System Context](documentation/context/module-system.md)** - Architecture and design decisions
 
 If you want to build a module or know why I made some architectural decisions, start there.
+
+### Module Configuration
+
+Modules are configured in `modules.config.ts` at the project root:
+
+```typescript
+export const modulesConfig: ModuleConfigEntry[] = [
+	{ id: 'MoLOS-Tasks', git: 'https://github.com/molos-org/MoLOS-Tasks.git', tag: 'v1.0.0' },
+	{ id: 'MoLOS-Goals', git: 'https://github.com/molos-org/MoLOS-Goals.git', tag: 'v1.0.0' }
+];
+```
+
+To add or remove modules, edit this file and rebuild the production image.
 
 ## Contributing
 

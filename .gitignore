@@ -3,6 +3,7 @@ node_modules
 .vscode/
 devtools/
 /modules
+modules.config.local.ts
 # Output
 .output
 .vercel

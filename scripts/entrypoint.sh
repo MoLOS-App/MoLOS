@@ -54,28 +54,15 @@ if [ ! -f "$DB_PATH" ]; then
   chmod 666 "$DB_PATH"
 fi
 
-# Migrations
+# Run database migrations
 log "Running database migrations..."
-if npm run db:migrate; then
+if bun run db:migrate; then
   log "Database migrations completed successfully."
 else
   error "Database migrations failed. Cannot proceed without a properly initialized database."
   exit 1
 fi
 
-# External Modules
-log "Refreshing external modules..."
-if [ -d "/app/external_modules" ]; then
-  if command -v npm >/dev/null 2>&1; then
-    npm run module:sync || log "Module sync failed; continuing."
-  else
-    log "npm not available; skipping module sync."
-  fi
-else
-  log "External modules directory not found; skipping refresh."
-fi
-
-
-# Start (supervisor handles builds)
-log "Starting MoLOS server..."
-exec npm run serve
+# Start the built application
+log "Starting MoLOS server on port ${PORT:-4173}..."
+exec node build/index.js

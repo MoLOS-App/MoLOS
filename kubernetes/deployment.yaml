@@ -31,16 +31,8 @@ spec:
                 secretKeyRef:
                   name: molos-secrets
                   key: better-auth-secret
-            # - name: BETTER_AUTH_SECRET_FILE
-            #   value: '/run/secrets/better_auth_secret'
             - name: PORT
               value: '4173'
-            - name: MOLOS_AUTOLOAD_MODULES
-              value: 'true'
-            - name: FORCE_REBUILD
-              value: 'false'
-            - name: MOLOS_ENABLE_PROD_BUILD
-              value: 'true'
             - name: CSRF_TRUSTED_ORIGINS
               value: 'http://localhost:4173,http://127.0.0.1:4173,http://192.168.1.10:30059'
 
@@ -48,9 +40,6 @@ spec:
             - name: molos-data
               mountPath: /data
               subPath: database
-            - name: molos-data
-              mountPath: /app/external_modules
-              subPath: external_modules
           livenessProbe:
             httpGet:
               path: /api/health

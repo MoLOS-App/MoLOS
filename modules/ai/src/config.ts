@@ -3,7 +3,7 @@
  * Defines routes, navigation items, and metadata for the AI module
  */
 
-import { Bot, Send, Server, ToolCase } from 'lucide-svelte';
+import { Bot, Send, Server } from 'lucide-svelte';
 import type { ModuleConfig } from '$lib/config/types';
 
 export const aiConfig: ModuleConfig = {
@@ -27,11 +27,6 @@ export const aiConfig: ModuleConfig = {
 			name: 'MCP',
 			icon: Server,
 			href: '/ui/ai/mcp'
-		},
-		{
-			name: 'AI Tools',
-			icon: ToolCase,
-			href: '/ui/ai/tools'
 		}
 	]
 };
