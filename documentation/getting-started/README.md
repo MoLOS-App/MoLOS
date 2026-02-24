@@ -43,13 +43,12 @@ Open http://localhost:5173 to see MoLOS running.
 
 ## Available Guides
 
-| Guide                                   | Description                        |
-| --------------------------------------- | ---------------------------------- |
-| [Quick Start](./quick-start.md)         | Essential commands and shortcuts   |
-| [Development](./development.md)         | Development environment setup      |
-| [Installation](./installation.md)       | Installing modules from npm/GitHub |
-| [Testing](./testing.md)                 | Running and writing tests          |
-| [Troubleshooting](./troubleshooting.md) | Common issues and solutions        |
+| Guide                                   | Description                      |
+| --------------------------------------- | -------------------------------- |
+| [Quick Start](./quick-start.md)         | Essential commands and shortcuts |
+| [Development](./development.md)         | Development environment setup    |
+| [Testing](./testing.md)                 | Running and writing tests        |
+| [Troubleshooting](./troubleshooting.md) | Common issues and solutions      |
 
 ## Next Steps
 
@@ -64,6 +63,7 @@ After getting started:
 - **Documentation**: Browse the [docs folder](../README.md)
 - **Issues**: [GitHub Issues](https://github.com/MoLOS-org/MoLOS/issues)
 - **AI Context**: See [AI-CONTEXT.md](../AI-CONTEXT.md) for quick reference
+- **AI Documentation Guide**: See [AI-DOCUMENTATION-GUIDE.md](../AI-DOCUMENTATION-GUIDE.md) for documentation practices
 
 ---
 

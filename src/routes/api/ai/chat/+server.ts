@@ -147,6 +147,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			>();
 			// Track which segments have been emitted to client to prevent duplicates
 			const emittedSegmentIds = new Set<string>();
+			// Track which segments have been PROCESSED (both emitted AND saved) to prevent duplicates
+			const processedSegmentIds = new Set<string>();
 			const progressLog: string[] = [];
 
 			const stream = new ReadableStream({
@@ -203,7 +205,16 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 											});
 
 											if (segmentData.isComplete && segmentData.content) {
-												// Check if we've already seen this content at this index
+												// GLOBAL deduplication: skip if this segment ID has been fully processed
+												if (processedSegmentIds.has(segId)) {
+													console.log(
+														'[AI Chat] Segment already processed globally, skipping:',
+														segId
+													);
+													break;
+												}
+
+												// Check if we've already seen this exact content at this index
 												const contentAtThisIndex = Array.from(completedSegmentsMap.values()).find(
 													(seg) => seg.segmentIndex === segmentData.segmentIndex
 												);
@@ -217,6 +228,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 														', skipping segment',
 														segId
 													);
+													// Skip to next case
 													break;
 												}
 
@@ -234,6 +246,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 												} else {
 													console.log('[AI Chat] Segment already tracked, skipping:', segId);
 												}
+
+												// Mark as processed only after all validation passes
+												processedSegmentIds.add(segId);
+
 												// Send it as a full message ONLY if not already emitted
 												if (!emittedSegmentIds.has(segId)) {
 													emittedSegmentIds.add(segId);
@@ -471,18 +487,18 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 					'X-Accel-Buffering': 'no'
 				}
 			});
+		} else {
+			// Non-streaming response
+			const response = await agent.processMessage(
+				content,
+				activeSessionId,
+				activeModuleIds || [],
+				messageAttachments,
+				messageParts,
+				{ mentionedModuleIds: mentionedModuleIds || [] }
+			);
+			return json({ ...response, sessionId: activeSessionId });
 		}
-
-		// Non-streaming response
-		const response = await agent.processMessage(
-			content,
-			activeSessionId,
-			activeModuleIds || [],
-			messageAttachments,
-			messageParts,
-			{ mentionedModuleIds: mentionedModuleIds || [] }
-		);
-		return json({ ...response, sessionId: activeSessionId });
 	} catch (error) {
 		console.error('[AI Chat] Error in AI Chat POST:', error);
 		const errorMessage = (error as any)?.message || 'Internal Server Error';

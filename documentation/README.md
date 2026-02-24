@@ -60,19 +60,22 @@ Welcome to the MoLOS (Modular Life Organization System) documentation. MoLOS is 
 - [Integration PRD](./mcp/integration-prd.md) - MCP server integration requirements
 - [Server Development](./mcp/server-development.md) - Building the MCP server
 
-### Plugins
+### ADR (Architecture Decision Records)
 
-- [Overview](./plugins/README.md) - Plugin documentation
-- [Module Management](./plugins/molos-module-management.md)
-- [Database](./plugins/molos-db.md)
-- [AI Tools](./plugins/molos-ai-tools.md)
+- [ADR Overview](./adr/README.md) - Architecture decision process and index
+- [ADR-001: Migration Tracking Strategy](./adr/001-migration-tracking-strategy.md) - Database migration tracking approach
 
 ### Archive
 
+- [Archive Overview](./archive/README.md) - Archived documentation overview
 - [Consolidated Changelog](./archive/changelogs/) - Historical changelog entries
 - [Monorepo Migration](./archive/monorepo-migration/README.md) - Completed migration tasks
 - [Plugins Documentation](./archive/plugins/) - Archived plugin system documentation
 - [Module Documentation](./archive/module-documentation/) - Archived per-module documentation
+
+### ADR (Architecture Decision Records)
+
+- [ADR Overview](./adr/README.md) - Architecture decision process and index
 
 ## Project Structure
 
@@ -110,6 +113,7 @@ See the [Module Development Guide](./modules/development.md) for information on 
 - **GitHub Issues**: [MoLOS Issues](https://github.com/MoLOS-org/MoLOS/issues)
 - **Documentation**: This folder
 - **AI Context**: [AI-CONTEXT.md](./AI-CONTEXT.md) for quick AI reference
+- **AI Documentation Guide**: [AI-DOCUMENTATION-GUIDE.md](./AI-DOCUMENTATION-GUIDE.md) for documentation practices
 
 ---
 

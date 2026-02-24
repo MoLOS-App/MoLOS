@@ -1,179 +1,328 @@
-# MoLOS Monorepo Architecture Documentation
+# Architecture Overview
 
-## Executive Summary
+> High-level architecture overview of the MoLOS system, including monorepo structure, module system, and design patterns.
 
-This documentation series describes the architectural evolution of MoLOS from a multi-repository structure with symlink-based module integration to a unified monorepo architecture using npm workspaces. The monorepo approach provides better dependency management, simplified development workflows, and more robust module isolation while preserving the flexibility that makes MoLOS powerful.
+## System Architecture
 
-## Why Monorepo?
+MoLOS is a privacy-focused, deeply modular productivity suite built with SvelteKit, using a monorepo architecture with a package-based module system.
 
-### The Current Challenge
+### Core Principles
 
-MoLOS currently uses a **multi-repo + symlink architecture**:
+1. **Privacy-First** - Self-hostable design, data remains on your servers
+2. **Modular** - Install only the modules you need
+3. **Type-Safe** - TypeScript throughout, Drizzle ORM for database
+4. **Fast Development** - Bun runtime, Turborepo build orchestration
 
-```
-MoLOS/                          # Main application
-├── external_modules/           # Git submodules or cloned repos
-│   ├── MoLOS-Product-Owner/   # Separate repository
-│   ├── MoLOS-Tasks/           # Separate repository
-│   └── ...
-└── src/
-    └── (symlinks to external_modules/*)
-```
-
-**Pain Points:**
-
-- Complex symlink management during development
-- Version mismatches between core and modules
-- Difficult to coordinate breaking changes
-- Manual synchronization required
-- Testing across module boundaries is cumbersome
-
-### The Monorepo Solution
-
-A **unified monorepo with npm workspaces**:
+## Monorepo Structure
 
 ```
 MoLOS/
 ├── apps/
-│   └── web/                    # Main SvelteKit application
+│   └── web/                    # Main SvelteKit application (future)
 ├── packages/
-│   ├── core/                   # Shared core utilities
-│   ├── ui/                     # Shared UI components
-│   └── database/               # Database schema and utilities
-└── modules/
-    ├── product-owner/          # Product Owner module
-    ├── tasks/                  # Tasks module
-    └── ...
+│   ├── core/                   # @molos/core - utilities and types
+│   ├── database/               # @molos/database - schema and migrations
+│   └── ui/                     # @molos/ui - shared components
+├── modules/
+│   ├── ai/                     # @molos/module-ai (internal)
+│   └── tasks/                  # @molos/module-tasks
+├── external_modules/           # External modules (migrated)
+│   ├── MoLOS-Goals/
+│   ├── MoLOS-Health/
+│   ├── MoLOS-Finance/
+│   ├── MoLOS-Meals/
+│   ├── MoLOS-Google/
+│   ├── MoLOS-AI-Knowledge/
+│   └── MoLOS-Sample-Module/
+├── src/                        # Main SvelteKit app
+│   ├── lib/
+│   │   ├── components/         # UI components
+│   │   ├── server/             # Server-side code
+│   │   ├── stores/             # Svelte stores
+│   │   ├── models/             # TypeScript types
+│   │   ├── repositories/       # Data access layer
+│   │   └── config/             # App configuration
+│   └── routes/                 # SvelteKit routes
+├── scripts/                    # Build and utility scripts
+├── drizzle/                    # Core database migrations
+└── documentation/              # This documentation
 ```
 
-## Key Benefits
+## Module System Architecture
 
-| Aspect                    | Current (Multi-repo + Symlinks) | Monorepo                       |
-| ------------------------- | ------------------------------- | ------------------------------ |
-| **Dependency Management** | Each module manages own deps    | Shared deps, no duplication    |
-| **Version Control**       | Multiple repos, complex sync    | Single source of truth         |
-| **Breaking Changes**      | Hard to coordinate              | Atomic commits across packages |
-| **CI/CD**                 | Separate pipelines              | Unified pipeline               |
-| **Code Sharing**          | Via symlinks (fragile)          | Via npm packages (robust)      |
-| **Testing**               | Per-module only                 | Cross-module integration tests |
-| **IDE Support**           | Multiple project roots          | Single workspace               |
+### Module Types
 
-## Tradeoffs
+| Type     | ID Format      | Example           | Location                         |
+| -------- | -------------- | ----------------- | -------------------------------- |
+| Internal | lowercase      | `dashboard`, `ai` | `src/lib/config/`, `modules/ai/` |
+| External | `MoLOS-{Name}` | `MoLOS-Tasks`     | `modules/`, `external_modules/`  |
 
-### What We Gain
-
-- **Simplified dependency management** - One `package.json` for shared deps
-- **Atomic changes** - Update core and modules in one commit
-- **Better tooling** - Standard monorepo tools (Turbo, Nx, pnpm workspaces)
-- **Improved DX** - Single clone, single install
-
-### What We Accept
-
-- **Larger repository** - All code in one place
-- **Unified versioning** - Can't independently version modules (unless using independent mode)
-- **Team coordination** - More merge conflicts potential
-- **Build complexity** - Need to manage build order
-
-## High-Level Migration Timeline
+### Module Structure
 
 ```
-Phase 1: Foundation (Week 1-2)
-├── Set up monorepo structure
-├── Configure npm workspaces
-└── Migrate core packages
-
-Phase 2: Module Migration (Week 3-4)
-├── Convert symlink structure to packages
-├── Update import paths
-└── Test module functionality
-
-Phase 3: Database Consolidation (Week 5)
-├── Unified migration system
-├── Schema namespacing
-└── Data migration scripts
-
-Phase 4: CI/CD & Tooling (Week 6)
-├── Update build pipelines
-├── Configure Turborepo/pnpm
-└── Add integration tests
-
-Phase 5: Documentation & Cleanup (Week 7)
-├── Update developer guides
-├── Remove legacy scripts
-└── Archive old repositories
+modules/MoLOS-{Name}/
+├── package.json              # @molos/module-{name}
+├── manifest.yaml             # Module manifest
+├── drizzle.config.ts         # Database config (if has DB)
+├── drizzle/                  # Migrations (if has DB)
+└── src/
+    ├── config.ts             # ModuleConfig (REQUIRED)
+    ├── index.ts              # Package exports
+    ├── models/               # TypeScript types
+    ├── server/
+    │   ├── database/schema.ts
+    │   └── repositories/
+    ├── routes/
+    │   ├── ui/               # SvelteKit UI routes
+    │   └── api/              # API endpoints
+    ├── components/           # Svelte components
+    └── stores/               # Svelte stores
 ```
 
-## Who Should Read What
+### Module Discovery
 
-| Role                         | Recommended Reading                                              |
-| ---------------------------- | ---------------------------------------------------------------- |
-| **Developer (New to MoLOS)** | Start with `01-architecture.md`, then `03-module-development.md` |
-| **Existing Contributor**     | `02-migration-guide.md` is essential, then `01-architecture.md`  |
-| **DevOps/SRE**               | Focus on `06-deployment.md` and `02-migration-guide.md`          |
-| **Product Owner**            | `07-saas-strategy.md` for business implications                  |
-| **Security Engineer**        | `05-module-interaction.md` for security boundaries               |
-| **Module Developer**         | `03-module-development.md` and `04-module-activation.md`         |
+Modules are discovered automatically via `import.meta.glob`:
 
-## Documentation Overview
+- **Internal modules**: Auto-loaded from `src/lib/config/` and `modules/ai/`
+- **Local modules**: Discovered from `modules/*/src/config.ts`
+- **Installed modules**: Discovered from `node_modules/@molos/module-*/src/config.ts`
 
-### 1. [Architecture](./01-architecture.md)
+### Module Integration
 
-Deep dive into the new directory structure, npm workspaces mechanics, module loading, and build system.
+Modules integrate through:
 
-### 2. [Migration Guide](./02-migration-guide.md)
+1. **Route Symlinks** - Module routes are symlinked into `src/routes/`
+2. **Package Imports** - Code imports via `@molos/module-{name}` package
+3. **Database Namespacing** - Tables prefixed with `MoLOS-{Name}_`
+4. **AI Tools** - Optional AI tool integration via MCP
 
-Step-by-step instructions for migrating from the current symlink-based system to the monorepo.
+## Database Architecture
 
-### 3. [Module Development](./03-module-development.md)
+### Database Layers
 
-How to create, structure, and test modules in the new architecture.
+```
+┌─────────────────────────────────────────┐
+│           Application Layer            │
+│   (SvelteKit routes, stores)       │
+└─────────────┬───────────────────────┘
+              │
+┌─────────────▼───────────────────────┐
+│        Repository Layer             │
+│   (Data access, business logic)      │
+└─────────────┬───────────────────────┘
+              │
+┌─────────────▼───────────────────────┐
+│         Database Layer               │
+│   (Drizzle ORM, better-sqlite3)     │
+└─────────────┬───────────────────────┘
+              │
+┌─────────────▼───────────────────────┐
+│        SQLite File                 │
+│   (molos.db)                        │
+└─────────────────────────────────────────┘
+```
 
-### 4. [Module Activation](./04-module-activation.md)
+### Database Tables
 
-Configuration and runtime management of module activation.
+**Core Tables** (no prefix):
 
-### 5. [Module Interaction](./05-module-interaction.md)
+- `user` - User accounts
+- `session` - Authentication sessions
+- `settings` - Application settings
+- `settings_external_modules` - Module activation state
 
-Event bus system, data namespacing, and cross-module communication patterns.
+**Module Tables** (namespaced):
 
-### 6. [Deployment](./06-deployment.md)
+- `MoLOS-{Name}_{table}` - Module-specific tables
 
-Docker/Podman deployment, production configuration, and version management.
+Example:
 
-### 7. [SaaS Strategy](./07-saas-strategy.md)
+- `MoLOS-Tasks_tasks`
+- `MoLOS-Goals_milestones`
+- `MoLOS-Finance_transactions`
 
-Self-hosted vs SaaS offerings, module marketplace, and pricing considerations.
+**See:** [Database Architecture](./database.md) for details
 
-## Quick Start
+## Frontend Architecture
 
-If you're eager to start developing:
+### SvelteKit Structure
+
+```
+src/
+├── routes/
+│   ├── (app)/                # App layout group
+│   │   ├── +layout.svelte    # Main app layout
+│   │   ├── +layout.server.ts # Load user session
+│   │   └── +page.svelte      # Dashboard/home
+│   ├── (modules)/            # Module routes group
+│   │   ├── (internal)/       # Internal modules
+│   │   └── (external_modules)/# External modules
+│   └── api/                  # API endpoints
+├── lib/
+│   ├── components/            # Reusable components
+│   ├── server/              # Server utilities
+│   └── config/              # Module registry
+```
+
+### Component Architecture
+
+- **UI Components** - Reusable UI in `src/lib/components/`
+- **Module Components** - Module-specific in `modules/*/src/components/`
+- **Shadcn-Svelte** - UI component library base
+
+## AI Integration Architecture
+
+### MCP (Model Context Protocol)
+
+```
+┌───────────────────────────────────────────────┐
+│              MoLOS Application             │
+│                                              │
+│   ┌──────────────┐   ┌─────────────────┐   │
+│   │   Modules    │──▶│  MCP Server    │   │
+│   │              │   │                 │   │
+│   │ - AI Tools   │   │  - Tool Reg.   │   │
+│   │ - Resources  │   │  - Protocol     │   │
+│   └──────────────┘   └─────────────────┘   │
+│                        │                   │
+│                        ▼                   │
+│             ┌─────────────────┐              │
+│             │  AI Assistant  │              │
+│             │  (Claude)      │              │
+│             └─────────────────┘              │
+│                                              │
+└───────────────────────────────────────────────┘
+```
+
+**See:** [MCP Documentation](../mcp/) for details
+
+## Build System
+
+### Turborepo Orchestration
+
+Turborepo manages builds across the monorepo:
+
+- **Shared caching** - Build artifacts cached and reused
+- **Parallel execution** - Multiple packages build simultaneously
+- **Task dependency** - Automatic build order
+- **Incremental builds** - Only rebuild changed packages
+
+### Build Pipeline
+
+```
+1. Install Dependencies (bun install)
+   ↓
+2. Discover Modules (module:sync)
+   ↓
+3. Link Routes (module:link)
+   ↓
+4. Generate Types (svelte-kit sync)
+   ↓
+5. Build Application (bun run build)
+   ↓
+6. Package for Deployment (Docker)
+```
+
+**See:** [Turborepo Guide](../modules/turborepo.md) for details
+
+## Security Architecture
+
+### Authentication
+
+- **better-auth** - Session-based authentication
+- **Secure cookies** - HTTP-only, secure flags
+- **Session storage** - SQLite sessions table
+
+### Data Privacy
+
+- **Self-hosted** - No cloud dependencies for core functionality
+- **Local database** - SQLite file on your server
+- **No telemetry** - Optional analytics only
+
+### Module Isolation
+
+- **Namespaced tables** - Database tables per module
+- **Scoped routes** - Module routes in separate directories
+- **Sandboxed AI tools** - Controlled access via MCP
+
+## Performance Considerations
+
+### Optimization Strategies
+
+1. **Lazy Loading** - Modules load only when accessed
+2. **Route Preloading** - SvelteKit prefetches routes
+3. **Database Indexing** - Optimized queries via indexes
+4. **Build Optimization** - Code splitting and minification
+
+### Scalability
+
+- **SQLite limits** - Single file database (suitable for single-server deployments)
+- **Future migration path** - Can migrate to PostgreSQL/MySQL for multi-server
+- **Caching** - Redis caching layer (planned)
+
+## Technology Stack
+
+| Component       | Technology    | Notes                            |
+| --------------- | ------------- | -------------------------------- |
+| Frontend/API    | SvelteKit 2.x | Svelte 5 with runes              |
+| Database        | SQLite        | Via better-sqlite3               |
+| ORM             | Drizzle       | Type-safe queries                |
+| Styling         | Tailwind CSS  | With shadcn-svelte components    |
+| Build           | Turborepo     | Monorepo task orchestration      |
+| Package Manager | Bun           | Fast installs, workspace support |
+| Auth            | better-auth   | Session-based authentication     |
+
+## Development Workflow
+
+### Local Development
 
 ```bash
-# Clone the monorepo
-git clone https://github.com/MoLOS-org/MoLOS.git
-cd MoLOS
+# Install dependencies
+bun install
 
-# Install dependencies (npm workspaces handles everything)
-npm install
+# Start dev server (auto-discovers modules)
+bun run dev
 
-# Run development server
-npm run dev
+# Sync modules manually
+bun run module:sync
 
-# Run tests for all packages
-npm run test
+# Run tests
+bun run test
 
-# Build everything
-npm run build
+# Build for production
+bun run build
 ```
 
-## Getting Help
+### Module Development
 
-- **GitHub Issues**: [MoLOS Issues](https://github.com/MoLOS-org/MoLOS/issues)
-- **Documentation**: This folder (`docs/monorepo/`)
-- **Architecture Questions**: See `01-architecture.md`
-- **Migration Problems**: See `02-migration-guide.md`
+```bash
+# Create module
+cd modules/my-module
+bun init
+
+# Configure module
+# Edit src/config.ts
+
+# Generate migrations
+bun run db:generate
+
+# Run migrations
+bun run db:migrate
+
+# Sync to app
+cd ../..
+bun run module:sync
+```
+
+## Related Documentation
+
+- [Monorepo Structure](./monorepo-structure.md) - Detailed directory structure
+- [Database Architecture](./database.md) - Database system design
+- [Event System](./event-system.md) - Module event bus
+- [Data Namespacing](./data-namespacing.md) - Database table namespacing
+- [Module System](../modules/README.md) - Module development and usage
+- [Getting Started](../getting-started/) - Development setup
 
 ---
 
-_Last Updated: 2025-02-15_
-_Version: 1.0_
+_Last Updated: 2026-02-24_
