@@ -9,6 +9,7 @@ Welcome to the MoLOS (Modular Life Organization System) documentation. MoLOS is 
 | Get started quickly             | [Quick Start](./getting-started/quick-start.md)            |
 | See command reference           | [Quick Reference](./QUICK-REFERENCE.md)                    |
 | AI context loading              | [AI Context](./AI-CONTEXT.md)                              |
+| Learn about docs                | [AI Documentation Guide](./AI-DOCUMENTATION-GUIDE.md)      |
 | Understand the architecture     | [Architecture Overview](./architecture/overview.md)        |
 | Create a module                 | [Module Development](./modules/development.md)             |
 | Deploy MoLOS (Docker)           | [Docker Deployment](./deployment/docker.md)                |
