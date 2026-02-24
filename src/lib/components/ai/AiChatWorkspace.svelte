@@ -216,6 +216,8 @@
 		let currentSegmentId = assistantMessageId;
 		let segmentIndex = 0;
 		// Track which segments have been processed to prevent duplicates
+		// Track by segment ID to handle cases where segments may have same index but different IDs
+		const processedSegmentIds = new Set<string>();
 		const processedSegmentIndices = new Set<number>();
 
 		while (true) {
@@ -313,30 +315,12 @@
 						break;
 
 					case 'tool_start':
-						// Tool call started - finalize current message and start a new one
+						// Tool call started - just finalize current content
+						// Don't create new message - wait for server's message_segment event
 						console.log('[Tool Start]', data.toolName);
 
-						// If we have accumulated content, keep it in the current message
-						// Then create a new empty message for post-tool content
-						if (content.trim()) {
-							// Create a new message for content after this tool call
-							segmentIndex++;
-							const newSegmentId = `seg_${Date.now()}_${segmentIndex}`;
-
-							// Add new empty message for post-tool content
-							messages = [
-								...messages,
-								{
-									id: newSegmentId,
-									role: 'assistant' as const,
-									parts: [{ type: 'text' as const, text: '' }]
-								}
-							];
-
-							currentSegmentId = newSegmentId;
-							content = ''; // Reset content for new segment
-							await scrollToBottom();
-						}
+						// Reset content for next segment
+						content = '';
 						break;
 
 					case 'tool_complete':
@@ -346,13 +330,18 @@
 
 					case 'message_segment':
 						// When a complete segment is received, create/update message for it
+						// Deduplicate by both segment ID and segment index to be safe
 						if (
 							data.isComplete &&
 							data.content &&
-							!processedSegmentIndices.has(data.segmentIndex)
+							data.segmentIndex !== undefined &&
+							data.id !== undefined &&
+							!processedSegmentIndices.has(data.segmentIndex) &&
+							!processedSegmentIds.has(data.id)
 						) {
 							console.log('[Segment Complete]', data.segmentIndex, data.content.length, 'chars');
 							processedSegmentIndices.add(data.segmentIndex);
+							processedSegmentIds.add(data.id);
 
 							// Use the segment ID from the server
 							const segmentId = data.id;
@@ -383,7 +372,22 @@
 							}
 							await scrollToBottom();
 						} else if (data.isComplete && data.content) {
-							console.log('[Segment] Skipping duplicate segment index:', data.segmentIndex);
+							if (data.segmentIndex !== undefined && data.id !== undefined) {
+								if (
+									processedSegmentIndices.has(data.segmentIndex) &&
+									processedSegmentIds.has(data.id)
+								) {
+									console.log(
+										'[Segment] Skipping duplicate segment by ID and index:',
+										data.id,
+										data.segmentIndex
+									);
+								} else if (processedSegmentIndices.has(data.segmentIndex)) {
+									console.log('[Segment] Skipping duplicate segment by index:', data.segmentIndex);
+								} else if (processedSegmentIds.has(data.id)) {
+									console.log('[Segment] Skipping duplicate segment by ID:', data.id);
+								}
+							}
 						}
 						break;
 

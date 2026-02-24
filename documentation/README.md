@@ -4,16 +4,17 @@ Welcome to the MoLOS (Modular Life Organization System) documentation. MoLOS is 
 
 ## Quick Links
 
-| I want to...                | Go to                                                   |
-| --------------------------- | ------------------------------------------------------- |
-| Get started quickly         | [Quick Start](./getting-started/quick-start.md)         |
-| See command reference       | [Quick Reference](./QUICK-REFERENCE.md)                 |
-| AI context loading          | [AI Context](./AI-CONTEXT.md)                           |
-| Understand the architecture | [Architecture Overview](./architecture/overview.md)     |
-| Create a module             | [Module Development](./modules/development.md)          |
-| Deploy MoLOS                | [Deployment Guide](./deployment/docker.md)              |
-| Integrate with AI tools     | [MCP Integration](./mcp/integration-prd.md)             |
-| Troubleshoot issues         | [Troubleshooting](./getting-started/troubleshooting.md) |
+| I want to...                    | Go to                                                      |
+| ------------------------------- | ---------------------------------------------------------- |
+| Get started quickly             | [Quick Start](./getting-started/quick-start.md)            |
+| See command reference           | [Quick Reference](./QUICK-REFERENCE.md)                    |
+| AI context loading              | [AI Context](./AI-CONTEXT.md)                              |
+| Understand the architecture     | [Architecture Overview](./architecture/overview.md)        |
+| Create a module                 | [Module Development](./modules/development.md)             |
+| Deploy MoLOS (Docker)           | [Docker Deployment](./deployment/docker.md)                |
+| Deploy MoLOS (Production Build) | [Production Build Guide](./deployment/production-build.md) |
+| Integrate with AI tools         | [MCP Integration](./mcp/integration-prd.md)                |
+| Troubleshoot issues             | [Troubleshooting](./getting-started/troubleshooting.md)    |
 
 ## Documentation Structure
 
@@ -49,6 +50,8 @@ Welcome to the MoLOS (Modular Life Organization System) documentation. MoLOS is 
 ### Deployment
 
 - [Docker Deployment](./deployment/docker.md) - Docker/Podman deployment guide
+- [Production Build System](./deployment/production-build.md) - Build-time module resolution and production deployment
+- [Production Build Quick Reference](./deployment/production-quick-ref.md) - Quick reference for production builds
 - [SaaS Strategy](./deployment/saas-strategy.md) - Self-hosted vs SaaS considerations
 
 ### MCP (Model Context Protocol)
@@ -65,8 +68,10 @@ Welcome to the MoLOS (Modular Life Organization System) documentation. MoLOS is 
 
 ### Archive
 
+- [Consolidated Changelog](./archive/changelogs/) - Historical changelog entries
 - [Monorepo Migration](./archive/monorepo-migration/README.md) - Completed migration tasks
-- [CHANGELOG](./CHANGELOG.md) - Consolidated changelog
+- [Plugins Documentation](./archive/plugins/) - Archived plugin system documentation
+- [Module Documentation](./archive/module-documentation/) - Archived per-module documentation
 
 ## Project Structure
 
@@ -107,4 +112,4 @@ See the [Module Development Guide](./modules/development.md) for information on 
 
 ---
 
-_Last Updated: 2026-02-17_
+_Last Updated: 2026-02-24_

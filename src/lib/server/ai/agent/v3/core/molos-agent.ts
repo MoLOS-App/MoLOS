@@ -412,12 +412,29 @@ export class MoLOSAgent {
 		let segmentIndex = 0;
 		let chunkCount = 0;
 
+		// Track which segment IDs have been emitted to prevent duplicates
+		const emittedSegmentIds = new Set<string>();
+
 		const runIdShort = runId.slice(-6);
 
 		const emitSegment = async (isComplete: boolean) => {
 			if (currentSegmentContent.trim()) {
+				// Check if this segment has already been emitted
+				if (emittedSegmentIds.has(currentSegmentId)) {
+					console.log(
+						`[Agent ${runIdShort}] Skipping duplicate segment: ${currentSegmentId} (index ${segmentIndex})`
+					);
+					// Still increment to maintain consistency
+					if (isComplete) {
+						segmentIndex++;
+						currentSegmentId = `seg_${runId}_${segmentIndex}`;
+						currentSegmentContent = '';
+					}
+					return;
+				}
+
 				console.log(
-					`[Agent ${runIdShort}] Segment ${segmentIndex}: ${currentSegmentContent.length} chars, isComplete: ${isComplete}`
+					`[Agent ${runIdShort}] Segment ${segmentIndex}: ${currentSegmentContent.length} chars, isComplete: ${isComplete}, content: ${currentSegmentContent.substring(0, 50)}...`
 				);
 
 				const event: ProgressEvent = {

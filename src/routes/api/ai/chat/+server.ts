@@ -145,6 +145,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 					segmentIndex: number;
 				}
 			>();
+			// Track which segments have been emitted to client to prevent duplicates
+			const emittedSegmentIds = new Set<string>();
 			const progressLog: string[] = [];
 
 			const stream = new ReadableStream({
@@ -196,10 +198,28 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 												id: segId,
 												isComplete: segmentData.isComplete,
 												contentLength: segmentData.content?.length || 0,
-												segmentIndex: segmentData.segmentIndex
+												segmentIndex: segmentData.segmentIndex,
+												content: segmentData.content?.substring(0, 50) + '...'
 											});
 
 											if (segmentData.isComplete && segmentData.content) {
+												// Check if we've already seen this content at this index
+												const contentAtThisIndex = Array.from(completedSegmentsMap.values()).find(
+													(seg) => seg.segmentIndex === segmentData.segmentIndex
+												);
+												const isDuplicateContent =
+													contentAtThisIndex && contentAtThisIndex.content === segmentData.content;
+
+												if (isDuplicateContent) {
+													console.log(
+														'[AI Chat] Duplicate content at index',
+														segmentData.segmentIndex,
+														', skipping segment',
+														segId
+													);
+													break;
+												}
+
 												// Only track if not already present (deduplication)
 												if (!completedSegmentsMap.has(segId)) {
 													completedSegmentsMap.set(segId, {
@@ -214,13 +234,18 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 												} else {
 													console.log('[AI Chat] Segment already tracked, skipping:', segId);
 												}
-												// Send it as a full message
-												sendEvent('message_segment', {
-													id: segId,
-													content: segmentData.content,
-													isComplete: true,
-													segmentIndex: segmentData.segmentIndex
-												});
+												// Send it as a full message ONLY if not already emitted
+												if (!emittedSegmentIds.has(segId)) {
+													emittedSegmentIds.add(segId);
+													sendEvent('message_segment', {
+														id: segId,
+														content: segmentData.content,
+														isComplete: true,
+														segmentIndex: segmentData.segmentIndex
+													});
+												} else {
+													console.log('[AI Chat] Segment already emitted, skipping event:', segId);
+												}
 											} else {
 												// Stream partial content
 												sendEvent('text_delta', {
