@@ -137,10 +137,11 @@ function runModuleMigrations() {
 		execSync('turbo run db:migrate --filter="./modules/*"', { stdio: 'inherit' });
 		console.log('[DB:init] Module migrations applied successfully');
 
-		// CRITICAL FIX: Verify and apply missing migrations
+		// CRITICAL FIX: Run unified migration runner to ensure all migrations are applied
 		// The drizzle-kit migrate command may skip migrations if their hash exists
 		// even if the actual SQL wasn't executed. This fallback ensures tables exist.
-		verifyAndApplyMissingMigrations();
+		console.log('[DB:init] Running unified migration runner to verify all migrations...');
+		execSync('tsx packages/database/src/migrate-unified.ts', { stdio: 'inherit' });
 	} catch (error) {
 		console.error('[DB:init] MODULE MIGRATIONS FAILED - Halting initialization.');
 		console.error('[DB:init] Error:', error);
@@ -248,9 +249,9 @@ function applyModuleMigrationSql(moduleName: string, moduleDir: string, dbPath: 
 		return;
 	}
 
-	// Find migration SQL files (starting with 0000_)
+	// Find all migration SQL files
 	const migrationFiles = readdirSync(drizzlePath)
-		.filter((f) => f.endsWith('.sql') && f.startsWith('0000_'))
+		.filter((f) => f.endsWith('.sql'))
 		.sort();
 
 	if (migrationFiles.length === 0) {
@@ -397,9 +398,13 @@ async function main() {
 		// Verify core migrations (handles schema updates like adding git_ref column)
 		console.log('[DB:init] Checking for missing core migrations...');
 		verifyAndApplyMissingCoreMigrations();
-		// Verify module migrations for new modules that may have been added
-		console.log('[DB:init] Checking for missing module migrations...');
-		verifyAndApplyMissingMigrations();
+		// Run unified migration runner to ensure all module migrations are applied
+		console.log('[DB:init] Running unified migration runner to verify all migrations...');
+		try {
+			execSync('tsx packages/database/src/migrate-unified.ts', { stdio: 'inherit' });
+		} catch (error) {
+			console.warn('[DB:init] Unified migration runner had issues:', error);
+		}
 		console.log('[DB:init] To re-initialize, delete the database file and run again.');
 		return;
 	}

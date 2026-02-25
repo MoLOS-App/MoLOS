@@ -57,15 +57,24 @@ get-library-docs("/org/project", topic="relevant-topic")
 - Use `web-search-prime` for searching current information
 - Always include "Sources:" section with markdown hyperlinks when using web search
 
+#### Documentation Practices
+
+For reading, writing, or updating documentation:
+- Use [AI-DOCUMENTATION-GUIDE.md](./documentation/AI-DOCUMENTATION-GUIDE.md) for comprehensive documentation practices
+- Follow [documentation/.template.md](./documentation/.template.md) for new documentation structure
+- Reference [AI-CONTEXT.md](./documentation/AI-CONTEXT.md) for single-file AI reference
+- Use [QUICK-REFERENCE.md](./documentation/QUICK-REFERENCE.md) for quick command/pattern lookups
+
 ---
 
 ## Project Structure & Module Organization
 
 - `src/` is the core SvelteKit app: routes in `src/routes/`, shared logic in `src/lib/`, server DB code in `src/lib/server/db/`.
 - `static/` holds static assets served by the app.
-- `external_modules/` contains optional modules (folders named `MoLOS-*`).
+- `modules/` contains all modules (both internal like `ai` and external like `MoLOS-Tasks`).
 - `scripts/` holds module tooling and CLIs used by npm scripts.
 - `drizzle/` stores database migrations and snapshots.
+- `documentation/` contains all documentation, with `AI-CONTEXT.md` as comprehensive reference and `AI-DOCUMENTATION-GUIDE.md` for documentation practices.
 
 ## Build, Test, and Development Commands
 
@@ -76,16 +85,18 @@ get-library-docs("/org/project", topic="relevant-topic")
 - `npm run lint` runs Prettier in check mode; `npm run eslint` runs ESLint.
 - `npm run format` formats the repo with Prettier.
 - `npm run test` runs unit tests once; `npm run test:unit` runs Vitest in watch mode.
-- `npm run module:sync` discovers and wires `external_modules/` into the core app.
-- `npm run module:create|validate|test` manage module scaffolding and checks.
+- `npm run module:sync` discovers and wires modules from `modules/` and `node_modules/@molos/module-*` into the core app.
+- `npm run module:link` creates route symlinks only.
+- `npm run build:prod` fetches modules, syncs them, and builds for production (see deployment/production-build.md).
 - `npm run db:migrate|generate|reset|studio` manage Drizzle schemas and migrations.
 
 ## Coding Style & Naming Conventions
 
 - Formatting is enforced by Prettier: tabs, single quotes, `printWidth` 100.
 - Follow ESLint + Svelte rules; prefer `npm run format` before commit.
-- DB schema lives under `src/lib/server/db/schema/<module>/` with `<object>.ts` files and module-prefixed names.
-- Module UI routes live under `src/routes/(modules)/<module>/`.
+- DB schema for modules lives in each module's `src/server/database/schema.ts` with `MoLOS-{Name}_{table}` naming.
+- Core DB schema lives in `packages/database/src/schema/core/`.
+- Module UI routes live under `src/routes/ui/(modules)/(external_modules)/<module-id>/`.
 - Reusable UI components go in `src/lib/components/ui/` before use in pages.
 - Prefer server-side data loading via `+page.server.ts` or `load` functions.
 
@@ -106,10 +117,18 @@ Always consult the Svelte MCP for:
 3. Follow official patterns from documentation
 4. Run `svelte-autofixer` to validate code
 
+### Documentation Structure
+
+For understanding the documentation structure:
+- See [documentation/README.md](./documentation/README.md) for complete documentation index
+- Use [documentation/AI-CONTEXT.md](./documentation/AI-CONTEXT.md) as primary AI reference
+- Reference [documentation/QUICK-REFERENCE.md](./documentation/QUICK-REFERENCE.md) for quick lookups
+- Follow [documentation/AI-DOCUMENTATION-GUIDE.md](./documentation/AI-DOCUMENTATION-GUIDE.md) for documentation practices
+
 ## Testing Guidelines
 
 - Unit tests use Vitest; files follow `*.spec.ts` and `*.test.ts` patterns.
-- Tests live in `src/` and module folders under `external_modules/`.
+- Tests live in `src/` for core code, and within module folders under `modules/`.
 - Run `npm run test` before opening a PR when possible.
 
 ## Commit & Pull Request Guidelines
@@ -122,6 +141,14 @@ Always consult the Svelte MCP for:
 
 - Local data uses SQLite; set `DATABASE_URL` and `BETTER_AUTH_SECRET` for dev or Docker runs.
 - Keep secrets out of the repo; use `.env` or container config.
+
+## Production Build System
+
+MoLOS uses build-time module resolution for production deployments:
+- **Development**: Modules in `modules/` directory, auto-discovered by dev server
+- **Production**: Modules configured in `modules.config.ts`, fetched during Docker build
+- **Key differences**: No runtime module fetching, deterministic builds, smaller images
+- **Documentation**: See [deployment/production-build.md](./deployment/production-build.md) for details
 
 ## Task Tracking with Beads
 

@@ -2,7 +2,11 @@
 	"$schema": "https://opencode.ai/config.json",
 	"model": "glm-4.7",
 
-	"instructions": ["AGENTS.md", "documentation/AI-CONTEXT.md"],
+	"instructions": [
+		"AGENTS.md",
+		"documentation/AI-CONTEXT.md",
+		"documentation/AI-DOCUMENTATION-GUIDE.md"
+	],
 
 	"permission": {
 		"edit": "allow",
@@ -50,8 +54,12 @@
 
 	"command": {
 		"sync": {
-			"template": "Run bun run module:sync to sync all modules, then verify the symlinks are correct.",
+			"template": "Run bun run module:sync to sync all modules, then verify that symlinks are correct.",
 			"description": "Sync modules"
+		},
+		"build:prod": {
+			"template": "Run production build: bun run build:prod (fetches modules, syncs them, and builds)",
+			"description": "Production build with module resolution"
 		},
 		"check": {
 			"template": "Run type checking and linting with bun run check and bun run lint. Fix any issues found.",
