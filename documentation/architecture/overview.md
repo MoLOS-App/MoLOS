@@ -13,6 +13,25 @@ MoLOS is a privacy-focused, deeply modular productivity suite built with SvelteK
 3. **Type-Safe** - TypeScript throughout, Drizzle ORM for database
 4. **Fast Development** - Bun runtime, Turborepo build orchestration
 
+### Distribution Model
+
+MoLOS follows a **verified modules** distribution strategy:
+
+| Image Type   | Contents                                  | Support     | Use Case        |
+| ------------ | ----------------------------------------- | ----------- | --------------- |
+| **Official** | All verified modules at verified versions | Full        | Production      |
+| **Custom**   | User-selected modules                     | At own risk | Experimentation |
+
+**Key Decision:** Module activation is a **runtime concern**, not build-time. The official Docker image includes all verified modules; users choose which to activate via settings.
+
+```bash
+# Official image - all verified modules included
+docker pull ghcr.io/molos-app/molos:latest
+
+# Custom image - user selects modules (at own risk)
+docker build -t my-molos .
+```
+
 ## Monorepo Structure
 
 ```
@@ -325,4 +344,4 @@ bun run module:sync
 
 ---
 
-_Last Updated: 2026-02-24_
+_Last Updated: 2026-02-27_

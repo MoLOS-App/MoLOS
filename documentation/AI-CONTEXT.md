@@ -15,6 +15,12 @@
 - Type-safe throughout (TypeScript + Drizzle ORM)
 - Fast development experience (Bun + Turborepo)
 
+**Distribution Strategy:**
+
+- Official Docker image ships with **all verified modules** at verified versions
+- Users **activate/deactivate** modules at runtime (not build-time)
+- Custom images with user-selected modules are **at own risk**
+
 ---
 
 ## Tech Stack
@@ -214,6 +220,11 @@ import { TaskRepository } from '../../../server/repositories/task-repository.js'
 | `bun run test`                                | Run all tests (via turbo)                 |
 | `bun run test:unit`                           | Run unit tests in watch mode              |
 | `bun run test:unit -- tests/migrations --run` | Run migration tests (26 tests)            |
+| `bun run changeset`                           | Create a new changeset                    |
+| `bun run changeset:version`                   | Apply changesets to bump versions         |
+| `bun run changeset:status`                    | View pending changesets                   |
+| `bun run release [patch\|minor\|major]`       | Manual release CLI                        |
+| `bun run release:modules-config`              | Update modules.config.ts                  |
 
 **See:** [Quick Reference - Commands](./QUICK-REFERENCE.md#commands)
 
@@ -238,6 +249,10 @@ import { TaskRepository } from '../../../server/repositories/task-repository.js'
 | Shared components        | `packages/ui/src/lib/components/`           |
 | Module linker script     | `scripts/link-modules.ts`                   |
 | Migration audit script   | `scripts/audit-module-migrations.ts`        |
+| Release CLI              | `scripts/release-cli.ts`                    |
+| Modules config updater   | `scripts/update-modules-config.ts`          |
+| Changeset config         | `.changeset/config.json`                    |
+| Modules config           | `modules.config.ts`                         |
 
 ---
 
@@ -359,7 +374,8 @@ For comprehensive module development guide, see **[Module Development Guide](./m
 - [Quick Start](./getting-started/quick-start.md) - Getting started guide
 - [Troubleshooting](./getting-started/troubleshooting.md) - Common issues
 - [ADR-001: Migration Tracking](./adr/001-migration-tracking-strategy.md) - Migration strategy
+- [Release System](./deployment/release-system.md) - Automated versioning and releases
 
 ---
 
-_Last Updated: 2026-02-24_
+_Last Updated: 2026-02-25_

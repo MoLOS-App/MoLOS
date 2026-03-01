@@ -24,7 +24,8 @@
 	const sizeStyles = {
 		sm: 'h-8 w-8 text-xs',
 		md: 'h-10 w-10 text-sm',
-		lg: 'h-12 w-12'
+		lg: 'h-12 w-12',
+		full: 'h-full w-full'
 	};
 
 	function handleClick() {
