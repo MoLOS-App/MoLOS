@@ -65,4 +65,4 @@ fi
 
 # Start the built application
 log "Starting MoLOS server on port ${PORT:-4173}..."
-exec node build/index.js
+exec bun build/index.js

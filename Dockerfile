@@ -42,6 +42,10 @@ FROM oven/bun:latest
 
 WORKDIR /app
 
+# Install wget for healthcheck
+RUN apt-get update && apt-get install -y --no-install-recommends wget && \
+    rm -rf /var/lib/apt/lists/*
+
 # Copy built application from builder
 COPY --from=builder /app/build ./build
 COPY --from=builder /app/node_modules ./node_modules

@@ -1,7 +1,7 @@
 services:
   molos:
     build: .
-    image: ghcr.io/${GITHUB_REPOSITORY:-molos/molos}:latest
+    image: ghcr.io/molos-app/molos:latest
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
@@ -23,13 +23,7 @@ services:
     volumes:
       - ./data:/data:rw
     healthcheck:
-      test:
-        [
-          'CMD',
-          'node',
-          '-e',
-          "require('http').get('http://localhost:4173/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))"
-        ]
+      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:4173/api/health']
       interval: 30s
       timeout: 10s
       retries: 3
