@@ -56,7 +56,7 @@ fi
 
 # Run database migrations
 log "Running database migrations..."
-if npx tsx packages/database/src/migrate-unified.ts; then
+if bun /app/packages/database/dist/migrate-unified.js; then
   log "Database migrations completed successfully."
 else
   error "Database migrations failed. Cannot proceed without a properly initialized database."

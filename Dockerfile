@@ -51,7 +51,6 @@ WORKDIR /app
 # and wget for healthcheck
 RUN apt-get update && apt-get install -y --no-install-recommends \
     nodejs \
-    npm \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
@@ -59,8 +58,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=builder /app/build ./build
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./
-COPY --from=builder /app/packages/database ./packages/database
-COPY --from=builder /app/drizzle ./drizzle
+COPY --from=builder /app/packages/database/drizzle ./packages/database/drizzle
+COPY --from=builder /app/packages/database/dist ./packages/database/dist
 COPY --from=builder /app/modules ./modules
 COPY --from=builder /app/scripts/entrypoint.sh ./scripts/entrypoint.sh
 
@@ -79,10 +78,9 @@ ENV MOLOS_MODULE_DATA_DIR=/data/modules
 # Expose port SvelteKit runs on
 EXPOSE 4173
 
-# Security hardening - run as non-root user
-RUN useradd -m -u 1000 appuser && \
-    chown -R appuser:appuser /app /data
-USER appuser
+# Security hardening - run as non-root user (bun user already exists in oven/bun image)
+RUN chown -R bun:bun /app /data
+USER bun
 
 # Use the entrypoint script to handle migrations and start the server
 ENTRYPOINT ["/app/scripts/entrypoint.sh"]

@@ -43,7 +43,6 @@ modules.config.local.ts
 
 # Local dev files
 logs/
-drizzle/
 .npm/
 turbo/
 

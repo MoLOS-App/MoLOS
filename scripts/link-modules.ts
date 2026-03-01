@@ -252,6 +252,7 @@ async function registerModuleIfNeeded(moduleId: string, modulePath: string): Pro
  */
 async function recordLinkResult(moduleId: string, result: ModuleLinkResult): Promise<void> {
 	try {
+		await loadDatabase();
 		if (result.skipped) {
 			// Record validation failures in the database for tracking
 			if (result.validation && !result.validation.canProceed) {
