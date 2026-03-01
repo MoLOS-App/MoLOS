@@ -22,31 +22,31 @@ export interface ModuleConfigEntry {
 }
 
 export const modulesConfig: ModuleConfigEntry[] = [
-	// { id: 'MoLOS-Tasks', git: 'https://github.com/molos-org/MoLOS-Tasks.git', tag: 'v1.0.0' },
-	// { id: 'MoLOS-Goals', git: 'https://github.com/molos-org/MoLOS-Goals.git', tag: 'v1.0.0' },
-	// { id: 'MoLOS-Finance', git: 'https://github.com/molos-org/MoLOS-Finance.git', tag: 'v1.0.0' },
-	// { id: 'MoLOS-Health', git: 'https://github.com/molos-org/MoLOS-Health.git', tag: 'v1.0.0' },
-	// { id: 'MoLOS-Meals', git: 'https://github.com/molos-org/MoLOS-Meals.git', tag: 'v1.0.0' },
-	// { id: 'MoLOS-Google', git: 'https://github.com/molos-org/MoLOS-Google.git', tag: 'v1.0.0' },
+	// { id: 'MoLOS-Tasks', git: 'https://github.com/MoLOS-App/MoLOS-Tasks.git', tag: 'v1.0.0' },
+	// { id: 'MoLOS-Goals', git: 'https://github.com/MoLOS-App/MoLOS-Goals.git', tag: 'v1.0.0' },
+	// { id: 'MoLOS-Finance', git: 'https://github.com/MoLOS-App/MoLOS-Finance.git', tag: 'v1.0.0' },
+	// { id: 'MoLOS-Health', git: 'https://github.com/MoLOS-App/MoLOS-Health.git', tag: 'v1.0.0' },
+	// { id: 'MoLOS-Meals', git: 'https://github.com/MoLOS-App/MoLOS-Meals.git', tag: 'v1.0.0' },
+	// { id: 'MoLOS-Google', git: 'https://github.com/MoLOS-App/MoLOS-Google.git', tag: 'v1.0.0' },
 	// {
 	// 	id: 'MoLOS-AI-Knowledge',
-	// 	git: 'https://github.com/molos-org/MoLOS-AI-Knowledge.git',
+	// 	git: 'https://github.com/MoLOS-App/MoLOS-AI-Knowledge.git',
 	// 	tag: 'v1.0.0'
 	// },
 	{
 		id: 'MoLOS-LLM-Council',
-		git: 'https://github.com/molos-org/MoLOS-LLM-Council.git',
+		git: 'https://github.com/MoLOS-App/MoLOS-LLM-Council.git',
 		tag: 'v1.0.0'
-	},
-	// { id: 'MoLOS-Markdown', git: 'https://github.com/molos-org/MoLOS-Markdown.git', tag: 'v1.0.0' },
+	}
+	// { id: 'MoLOS-Markdown', git: 'https://github.com/MoLOS-App/MoLOS-Markdown.git', tag: 'v1.0.0' },
 	// {
 	// 	id: 'MoLOS-Product-Owner',
-	// 	git: 'https://github.com/molos-org/MoLOS-Product-Owner.git',
+	// 	git: 'https://github.com/MoLOS-App/MoLOS-Product-Owner.git',
 	// 	tag: 'v1.0.0'
 	// },
 	// {
 	// 	id: 'MoLOS-Sample-Module',
-	// 	git: 'https://github.com/molos-org/MoLOS-Sample-Module.git',
+	// 	git: 'https://github.com/MoLOS-App/MoLOS-Sample-Module.git',
 	// 	tag: 'v1.0.0'
 	// }
 ];

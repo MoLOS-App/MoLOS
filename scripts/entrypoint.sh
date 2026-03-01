@@ -56,7 +56,7 @@ fi
 
 # Run database migrations
 log "Running database migrations..."
-if bun run db:migrate; then
+if npx tsx packages/database/src/migrate-unified.ts; then
   log "Database migrations completed successfully."
 else
   error "Database migrations failed. Cannot proceed without a properly initialized database."
@@ -65,4 +65,4 @@ fi
 
 # Start the built application
 log "Starting MoLOS server on port ${PORT:-4173}..."
-exec bun build/index.js
+exec node build/index.js

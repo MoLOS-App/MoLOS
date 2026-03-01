@@ -5,6 +5,7 @@
  * Uses Drizzle's native migration tracking exclusively (per ADR-001).
  */
 
+import 'dotenv/config';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import Database from 'better-sqlite3';

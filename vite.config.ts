@@ -18,6 +18,24 @@ export default defineConfig({
 		}
 	},
 
+	build: {
+		rollupOptions: {
+			output: {
+				manualChunks: {
+					lucide: ['lucide-svelte']
+				}
+			}
+		}
+	},
+
+	optimizeDeps: {
+		include: ['lucide-svelte']
+	},
+
+	ssr: {
+		noExternal: ['lucide-svelte']
+	},
+
 	server: {
 		fs: {
 			allow: [

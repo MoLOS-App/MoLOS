@@ -47,7 +47,7 @@ function runCommand(command: string, cwd: string, silent = false): string {
 	try {
 		const options: any = { cwd, stdio: silent ? 'pipe' : 'inherit' };
 		const output = execSync(command, options);
-		return output.toString();
+		return output?.toString() ?? '';
 	} catch (error) {
 		if (silent && error instanceof Error) {
 			throw error;
@@ -85,24 +85,15 @@ async function fetchModule(moduleEntry: ModuleConfigEntry): Promise<FetchResult>
 	};
 
 	try {
+		// Always remove existing module folder to ensure clean clone
 		if (existsSync(modulePath)) {
-			log(`Module ${id} already exists, updating...`, 'info');
-			try {
-				runCommand('git fetch origin', modulePath, true);
-				runCommand(`git checkout ${tag}`, modulePath, true);
-				runCommand('git pull origin', modulePath, true);
-				result.message = 'Updated existing module';
-			} catch (error) {
-				log(`Failed to update ${id}, will reinstall: ${error}`, 'warn');
-				runCommand(`rm -rf ${modulePath}`, ROOT_DIR);
-			}
+			log(`Removing existing ${id} for clean clone...`, 'info');
+			runCommand(`rm -rf ${modulePath}`, ROOT_DIR);
 		}
 
-		if (!existsSync(modulePath)) {
-			log(`Cloning ${id}...`, 'info');
-			runCommand(`git clone --depth 1 --branch ${tag} ${git} ${id}`, ROOT_DIR);
-			result.message = 'Cloned new module';
-		}
+		log(`Cloning ${id}...`, 'info');
+		runCommand(`git clone --depth 1 --branch ${tag} ${git} ${id}`, MODULES_DIR);
+		result.message = 'Cloned new module';
 
 		const packageJsonPath = path.join(modulePath, 'package.json');
 		if (!existsSync(packageJsonPath)) {

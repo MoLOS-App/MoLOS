@@ -8,6 +8,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     g++ \
     ca-certificates \
     git \
+    nodejs \
+    npm \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -23,16 +25,17 @@ RUN node scripts/clean-workspace-deps.js
 RUN bun install
 
 # Fetch modules from git based on modules.config.ts (only configured modules)
-RUN ./node_modules/.bin/tsx scripts/fetch-modules.ts
+RUN bun scripts/fetch-modules.ts
 
 # Sync module dependencies to workspace (updates package.json with workspace:* deps)
-RUN bun run module:sync-deps
+RUN bun scripts/sync-workspace-modules.ts
 
 # Re-install to include fetched modules as workspace dependencies
 RUN bun install
 
 # Prepare modules for build (cleanup, link routes, generate types)
-RUN bun run build:prepare
+# Uses npx tsx because sync-modules.ts uses better-sqlite3
+RUN npx tsx scripts/build-modules.ts
 
 # Build application
 RUN bun run build
@@ -42,15 +45,20 @@ FROM oven/bun:latest
 
 WORKDIR /app
 
-# Install wget for healthcheck
-RUN apt-get update && apt-get install -y --no-install-recommends wget && \
-    rm -rf /var/lib/apt/lists/*
+# Install nodejs for running the server (better-sqlite3 native module)
+# and wget for healthcheck
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    nodejs \
+    npm \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy built application from builder
 COPY --from=builder /app/build ./build
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./
-COPY --from=builder /app/bun.lock ./
+COPY --from=builder /app/packages/database ./packages/database
+COPY --from=builder /app/drizzle ./drizzle
 COPY --from=builder /app/scripts/entrypoint.sh ./scripts/entrypoint.sh
 
 # Create data directory for SQLite and subdirectories
