@@ -2,6 +2,26 @@
 
 This document covers deployment strategies for MoLOS in production, including Docker/Podman deployment, production configuration, module bundling, and update workflows.
 
+## Distribution Strategy
+
+MoLOS ships with **all verified modules** in the official Docker image. Users activate/deactivate modules at runtime.
+
+| Image Type   | Modules                           | Support     | Use Case        |
+| ------------ | --------------------------------- | ----------- | --------------- |
+| **Official** | All verified at verified versions | Full        | Production      |
+| **Custom**   | User-selected                     | At own risk | Experimentation |
+
+```bash
+# Official image (recommended)
+docker pull ghcr.io/molos-app/molos:latest
+
+# Custom image (at own risk)
+# Edit modules.config.ts, then:
+docker build -t my-molos:custom .
+```
+
+> **See:** [ADR-002: Verified Modules Distribution](../adr/002-verified-modules-distribution.md)
+
 ## Deployment Overview
 
 ```
@@ -800,5 +820,5 @@ sqlite3 /data/molos.db "PRAGMA busy_timeout=5000"
 
 ---
 
-_Last Updated: 2025-02-15_
+_Last Updated: 2026-02-27_
 _Version: 1.0_

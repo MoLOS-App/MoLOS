@@ -14,6 +14,7 @@ Welcome to the MoLOS (Modular Life Organization System) documentation. MoLOS is 
 | Create a module                 | [Module Development](./modules/development.md)             |
 | Deploy MoLOS (Docker)           | [Docker Deployment](./deployment/docker.md)                |
 | Deploy MoLOS (Production Build) | [Production Build Guide](./deployment/production-build.md) |
+| Release a new version           | [Release System](./deployment/release-system.md)           |
 | Integrate with AI tools         | [MCP Integration](./mcp/integration-prd.md)                |
 | Troubleshoot issues             | [Troubleshooting](./getting-started/troubleshooting.md)    |
 
@@ -53,6 +54,7 @@ Welcome to the MoLOS (Modular Life Organization System) documentation. MoLOS is 
 - [Docker Deployment](./deployment/docker.md) - Docker/Podman deployment guide
 - [Production Build System](./deployment/production-build.md) - Build-time module resolution and production deployment
 - [Production Build Quick Reference](./deployment/production-quick-ref.md) - Quick reference for production builds
+- [Release System](./deployment/release-system.md) - Automated versioning and releases with Changesets
 - [SaaS Strategy](./deployment/saas-strategy.md) - Self-hosted vs SaaS considerations
 
 ### MCP (Model Context Protocol)
@@ -117,4 +119,4 @@ See the [Module Development Guide](./modules/development.md) for information on 
 
 ---
 
-_Last Updated: 2026-02-24_
+_Last Updated: 2026-02-25_

@@ -67,9 +67,10 @@ An ADR is a document that describes an important architectural decision, its con
 
 ## ADR Index
 
-| ADR | Title                                                               | Status   | Date       |
-| --- | ------------------------------------------------------------------- | -------- | ---------- |
-| 001 | [Migration Tracking Strategy](./001-migration-tracking-strategy.md) | Accepted | 2026-02-21 |
+| ADR | Title                                                                   | Status   | Date       |
+| --- | ----------------------------------------------------------------------- | -------- | ---------- |
+| 001 | [Migration Tracking Strategy](./001-migration-tracking-strategy.md)     | Accepted | 2026-02-21 |
+| 002 | [Verified Modules Distribution](./002-verified-modules-distribution.md) | Accepted | 2026-02-27 |
 
 ## Guidelines
 
@@ -86,4 +87,4 @@ An ADR is a document that describes an important architectural decision, its con
 
 ---
 
-_Last Updated: 2026-02-24_
+_Last Updated: 2026-02-27_

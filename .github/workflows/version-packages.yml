@@ -1,0 +1,123 @@
+name: Version Packages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'package.json'
+      - 'packages/*/package.json'
+      - 'modules/*/package.json'
+      - 'CHANGELOG.md'
+      - 'packages/*/CHANGELOG.md'
+      - 'modules/*/CHANGELOG.md'
+
+permissions:
+  contents: write
+
+jobs:
+  tag-and-release:
+    # Only run if this is a merge of a Version Packages PR
+    if: |
+      github.event.commits[0].author.name == 'github-actions[bot]' ||
+      contains(github.event.commits[0].message, 'version packages')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Detect version changes
+        id: detect-changes
+        run: |
+          # Get previous versions from git
+          git fetch --tags --quiet || true
+
+          # Check root package version change
+          ROOT_VERSION=$(cat package.json | grep '"version"' | cut -d'"' -f4)
+          PREV_ROOT_VERSION=$(git show HEAD~1:package.json 2>/dev/null | grep '"version"' | cut -d'"' -f4 || echo "0.0.0")
+
+          if [ "$ROOT_VERSION" != "$PREV_ROOT_VERSION" ]; then
+            echo "root_changed=true" >> $GITHUB_OUTPUT
+            echo "root_version=$ROOT_VERSION" >> $GITHUB_OUTPUT
+            echo "prev_root_version=$PREV_ROOT_VERSION" >> $GITHUB_OUTPUT
+          else
+            echo "root_changed=false" >> $GITHUB_OUTPUT
+          fi
+
+          # Check module version changes
+          MODULES_CHANGED=""
+          for mod in modules/MoLOS-*/; do
+            if [ -f "${mod}package.json" ]; then
+              MOD_VERSION=$(cat "${mod}package.json" | grep '"version"' | cut -d'"' -f4)
+              MOD_NAME=$(basename "$mod")
+              PREV_MOD_VERSION=$(git show "HEAD~1:${mod}package.json" 2>/dev/null | grep '"version"' | cut -d'"' -f4 || echo "0.0.0")
+              
+              if [ "$MOD_VERSION" != "$PREV_MOD_VERSION" ]; then
+                MOD_PKG_NAME=$(cat "${mod}package.json" | grep '"name"' | cut -d'"' -f4)
+                MODULES_CHANGED="$MODULES_CHANGED $MOD_PKG_NAME:$MOD_VERSION"
+                echo "module_${MOD_NAME}_changed=true" >> $GITHUB_OUTPUT
+                echo "module_${MOD_NAME}_version=$MOD_VERSION" >> $GITHUB_OUTPUT
+              fi
+            fi
+          done
+
+          echo "modules_changed=$MODULES_CHANGED" >> $GITHUB_OUTPUT
+
+      - name: Create Git tags
+        run: |
+          # Tag root package if changed
+          if [ "${{ steps.detect-changes.outputs.root_changed }}" == "true" ]; then
+            VERSION="${{ steps.detect-changes.outputs.root_version }}"
+            git tag -a "v$VERSION" -m "Release v$VERSION" || echo "Tag v$VERSION may already exist"
+            echo "Created tag: v$VERSION"
+          fi
+
+          # Tag modules if changed
+          for mod in modules/MoLOS-*/; do
+            if [ -f "${mod}package.json" ]; then
+              MOD_VERSION=$(cat "${mod}package.json" | grep '"version"' | cut -d'"' -f4)
+              MOD_NAME=$(basename "$mod")
+              MOD_ID=$(echo "$MOD_NAME" | sed 's/MoLOS-//' | tr '[:upper:]' '[:lower:]')
+              
+              # Check if this module changed
+              if git show "HEAD~1:${mod}package.json" 2>/dev/null | grep -q '"version"'; then
+                PREV_MOD_VERSION=$(git show "HEAD~1:${mod}package.json" | grep '"version"' | cut -d'"' -f4)
+                if [ "$MOD_VERSION" != "$PREV_MOD_VERSION" ]; then
+                  git tag -a "${MOD_ID}-v$MOD_VERSION" -m "Release ${MOD_NAME} v$MOD_VERSION" || echo "Tag may already exist"
+                  echo "Created tag: ${MOD_ID}-v$MOD_VERSION"
+                fi
+              fi
+            fi
+          done
+
+      - name: Push tags
+        run: git push origin --tags
+
+      - name: Create GitHub Release for main app
+        if: steps.detect-changes.outputs.root_changed == 'true'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.detect-changes.outputs.root_version }}
+          name: Release v${{ steps.detect-changes.outputs.root_version }}
+          body_path: CHANGELOG.md
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Trigger Docker build
+        if: steps.detect-changes.outputs.root_changed == 'true'
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          workflow: publish.yml
+          ref: main
+          inputs: |
+            { "version": "${{ steps.detect-changes.outputs.root_version }}" }

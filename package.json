@@ -43,9 +43,17 @@
 		"db:studio": "drizzle-kit studio",
 		"typecheck": "turbo run typecheck",
 		"clean": "turbo run clean",
-		"podman:dev": "podman build -t ghcr.io/molos-app/molos:dev . && podman push ghcr.io/molos-app/molos:dev"
+		"podman:dev": "podman build -t ghcr.io/molos-app/molos:dev . && podman push ghcr.io/molos-app/molos:dev",
+		"changeset": "changeset",
+		"changeset:version": "changeset version",
+		"changeset:status": "changeset status",
+		"changeset:release": "changeset publish",
+		"release": "bun run scripts/release-cli.ts",
+		"release:modules-config": "bun run scripts/update-modules-config.ts"
 	},
 	"devDependencies": {
+		"@changesets/changelog-github": "^0.5.2",
+		"@changesets/cli": "^2.29.8",
 		"@eslint/compat": "^1.4.0",
 		"@eslint/js": "^9.39.1",
 		"@internationalized/date": "^3.10.0",
