@@ -17,6 +17,9 @@ WORKDIR /app
 # Copy source code (modules/ is excluded by .dockerignore)
 COPY . .
 
+# Clean up stale symlinks (they point to modules not yet fetched)
+RUN bun scripts/cleanup-module-symlinks.ts
+
 # Remove workspace module dependencies from package.json temporarily
 # They will be re-added by module:sync-deps after modules are fetched
 RUN node scripts/clean-workspace-deps.js
@@ -33,8 +36,7 @@ RUN bun scripts/sync-workspace-modules.ts
 # Re-install to include fetched modules as workspace dependencies
 RUN bun install
 
-# Prepare modules for build (cleanup, link routes, generate types)
-# Uses npx tsx because sync-modules.ts uses better-sqlite3
+# Prepare modules for build (cleanup, link routes)
 RUN npx tsx scripts/build-modules.ts
 
 # Build application
@@ -59,6 +61,7 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/packages/database ./packages/database
 COPY --from=builder /app/drizzle ./drizzle
+COPY --from=builder /app/modules ./modules
 COPY --from=builder /app/scripts/entrypoint.sh ./scripts/entrypoint.sh
 
 # Create data directory for SQLite and subdirectories

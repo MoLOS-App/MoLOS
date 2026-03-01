@@ -4,6 +4,7 @@ import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import Database from 'better-sqlite3';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { mkdirSync, existsSync } from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -14,6 +15,12 @@ const DB_PATH =
 		? '/data/molos.db'
 		: join(__dirname, '..', '..', '..', '..', 'data', 'molos.db'));
 const MIGRATIONS_PATH = join(__dirname, '..', 'drizzle');
+
+// Ensure database directory exists
+const dbDir = dirname(DB_PATH);
+if (!existsSync(dbDir)) {
+	mkdirSync(dbDir, { recursive: true });
+}
 
 const sqlite = new Database(DB_PATH);
 const db = drizzle(sqlite);

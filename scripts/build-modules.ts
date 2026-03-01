@@ -51,7 +51,7 @@ async function main(): Promise<void> {
 	const steps = [
 		{ name: 'Module dependency sync', command: 'bun run module:sync-deps', required: true },
 		{ name: 'Module symlink cleanup', command: 'bun run module:cleanup', required: true },
-		{ name: 'Module sync', command: 'bun run module:sync', required: true },
+		{ name: 'Module route linking', command: 'bun run module:link', required: true },
 		{ name: 'SvelteKit sync', command: 'npx svelte-kit sync', required: true }
 	];
 

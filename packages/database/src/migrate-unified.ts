@@ -9,7 +9,7 @@ import 'dotenv/config';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import Database from 'better-sqlite3';
-import { readdirSync, existsSync, readFileSync } from 'fs';
+import { readdirSync, existsSync, readFileSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import {
@@ -36,6 +36,13 @@ function getDatabasePath(): string {
 			? '/data/molos.db'
 			: join(__dirname, '..', '..', '..', '..', 'data', 'molos.db'));
 	return rawDbPath;
+}
+
+function ensureDatabaseDir(dbPath: string): void {
+	const dbDir = dirname(dbPath);
+	if (!existsSync(dbDir)) {
+		mkdirSync(dbDir, { recursive: true });
+	}
 }
 
 function getCoreMigrationsPath(): string {
@@ -100,6 +107,7 @@ export async function runAllMigrations(dbPath?: string): Promise<MigrationResult
 	};
 
 	const actualDbPath = dbPath || getDatabasePath();
+	ensureDatabaseDir(actualDbPath);
 	const sqlite = new Database(actualDbPath);
 	const db = drizzle(sqlite);
 
@@ -216,6 +224,7 @@ export async function runCoreMigrationsOnly(dbPath?: string): Promise<MigrationR
 	};
 
 	const actualDbPath = dbPath || getDatabasePath();
+	ensureDatabaseDir(actualDbPath);
 	const sqlite = new Database(actualDbPath);
 	const db = drizzle(sqlite);
 

@@ -8,15 +8,28 @@
  * Supports:
  * - Local modules in modules/ directory
  * - npm-installed @molos/module-* packages
- * - Database-aware linking with status tracking
+ * - Database-aware linking with status tracking (when --with-db flag is used)
  * - Error recording and retry logic
  */
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, symlinkSync } from 'fs';
 import path from 'path';
 import { eq } from 'drizzle-orm';
-import { db } from '@molos/database';
-import { settingsExternalModules, ExternalModuleStatus } from '@molos/database/schema/core';
+
+// Lazy-load database dependencies only when needed
+let db: any = null;
+let settingsExternalModules: any = null;
+let ExternalModuleStatus: any = null;
+
+async function loadDatabase() {
+	if (db) return;
+	const dbModule = await import('@molos/database');
+	const schemaModule = await import('@molos/database/schema/core');
+	db = dbModule.db;
+	settingsExternalModules = schemaModule.settingsExternalModules;
+	ExternalModuleStatus = schemaModule.ExternalModuleStatus;
+}
+
 import {
 	validateModule,
 	formatValidationResult,
@@ -126,6 +139,7 @@ async function shouldLinkModule(
 	moduleId: string
 ): Promise<{ shouldLink: boolean; reason?: string }> {
 	try {
+		await loadDatabase();
 		const result = await db
 			.select()
 			.from(settingsExternalModules)
@@ -201,6 +215,7 @@ function categorizeError(
  */
 async function registerModuleIfNeeded(moduleId: string, modulePath: string): Promise<void> {
 	try {
+		await loadDatabase();
 		const result = await db
 			.select()
 			.from(settingsExternalModules)
