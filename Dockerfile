@@ -49,9 +49,11 @@ WORKDIR /app
 
 # Install nodejs for running the server (better-sqlite3 native module)
 # and wget for healthcheck
+# and ca-certificates for SSL/TLS verification (required for HTTPS requests)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     nodejs \
     wget \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy built application from builder
