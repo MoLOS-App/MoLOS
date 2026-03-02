@@ -202,29 +202,31 @@ import { TaskRepository } from '../../../server/repositories/task-repository.js'
 
 ## Common Commands
 
-| Command                                       | Description                               |
-| --------------------------------------------- | ----------------------------------------- |
-| `bun run dev`                                 | Start dev server (auto-discovers modules) |
-| `bun run build`                               | Build for production                      |
-| `bun run module:sync`                         | Sync and initialize modules               |
-| `bun run module:link`                         | Create route symlinks                     |
-| `bun run db:init`                             | Initialize database (first-time setup)    |
-| `bun run db:migrate`                          | Run all pending migrations                |
-| `bun run db:migrate:unified`                  | Unified runner with logging               |
-| `bun run db:generate`                         | Generate migrations from schema           |
-| `bun run db:push`                             | Push schema changes (dev only)            |
-| `bun run db:validate`                         | Validate schema matches migrations        |
-| `bun run db:audit-modules`                    | Audit all module migrations               |
-| `bun run db:studio`                           | Open Drizzle Studio                       |
-| `bun run db:reset`                            | Reset database (destructive)              |
-| `bun run test`                                | Run all tests (via turbo)                 |
-| `bun run test:unit`                           | Run unit tests in watch mode              |
-| `bun run test:unit -- tests/migrations --run` | Run migration tests (26 tests)            |
-| `bun run changeset`                           | Create a new changeset                    |
-| `bun run changeset:version`                   | Apply changesets to bump versions         |
-| `bun run changeset:status`                    | View pending changesets                   |
-| `bun run release [patch\|minor\|major]`       | Manual release CLI                        |
-| `bun run release:modules-config`              | Update modules.config.ts                  |
+| Command                                       | Description                                      |
+| --------------------------------------------- | ------------------------------------------------ |
+| `bun run dev`                                 | Start dev server (auto-discovers modules)        |
+| `bun run build`                               | Build for production                             |
+| `bun run prod`                                | Build and serve production (migrations run auto) |
+| `bun run serve`                               | Serve production build (migrations run auto)     |
+| `bun run module:sync`                         | Sync and initialize modules                      |
+| `bun run module:link`                         | Create route symlinks                            |
+| `bun run db:init`                             | Initialize database (first-time setup, dev only) |
+| `bun run db:migrate`                          | Run all pending migrations                       |
+| `bun run db:migrate:unified`                  | Unified runner - used by prod and dev            |
+| `bun run db:generate`                         | Generate migrations from schema                  |
+| `bun run db:push`                             | Push schema changes (dev only)                   |
+| `bun run db:validate`                         | Validate schema matches migrations               |
+| `bun run db:audit-modules`                    | Audit all module migrations                      |
+| `bun run db:studio`                           | Open Drizzle Studio                              |
+| `bun run db:reset`                            | Reset database (destructive)                     |
+| `bun run test`                                | Run all tests (via turbo)                        |
+| `bun run test:unit`                           | Run unit tests in watch mode                     |
+| `bun run test:unit -- tests/migrations --run` | Run migration tests (26 tests)                   |
+| `bun run changeset`                           | Create a new changeset                           |
+| `bun run changeset:version`                   | Apply changesets to bump versions                |
+| `bun run changeset:status`                    | View pending changesets                          |
+| `bun run release [patch\|minor\|major]`       | Manual release CLI                               |
+| `bun run release:modules-config`              | Update modules.config.ts                         |
 
 **See:** [Quick Reference - Commands](./QUICK-REFERENCE.md#commands)
 

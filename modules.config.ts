@@ -37,8 +37,8 @@ export const modulesConfig: ModuleConfigEntry[] = [
 		id: 'MoLOS-LLM-Council',
 		git: 'https://github.com/MoLOS-App/MoLOS-LLM-Council.git',
 		tag: 'v1.0.0'
-	}
-	// { id: 'MoLOS-Markdown', git: 'https://github.com/MoLOS-App/MoLOS-Markdown.git', tag: 'v1.0.0' },
+	},
+	{ id: 'MoLOS-Markdown', git: 'https://github.com/MoLOS-App/MoLOS-Markdown.git', tag: 'v1.0.0' }
 	// {
 	// 	id: 'MoLOS-Product-Owner',
 	// 	git: 'https://github.com/MoLOS-App/MoLOS-Product-Owner.git',

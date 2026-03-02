@@ -101,7 +101,23 @@ bun run build:prepare
 # Build the application
 bun run build
 
-# Run production build locally
+# Run production build locally (migrations run automatically)
+NODE_ENV=production PORT=4173 bun run serve
+```
+
+**Note:** The `serve` command automatically runs database migrations before starting the server. This ensures:
+
+- Fresh databases are created with all required tables
+- Existing databases are updated with any pending migrations
+- The server only starts after successful migration
+
+For manual migration control:
+
+```bash
+# Run migrations only
+bun run db:migrate:unified
+
+# Then start server
 NODE_ENV=production PORT=4173 node build/index.js
 ```
 
@@ -365,6 +381,15 @@ DOCKER_BUILDKIT=1 docker build \
 - Check database file permissions: `ls -l /data/molos.db`
 - Ensure `/data` directory exists and is writable
 - Check `node_modules/better-sqlite3` was built correctly
+- Run `bun run db:migrate:unified` manually to see detailed error output
+
+**Note:** Migrations run automatically before every server start via the `serve` script. This ensures the database schema is always up-to-date. The unified migration runner (`packages/database/src/migrate-unified.ts`) handles:
+
+- Creating the database directory if missing
+- Creating the database file if missing
+- Applying core migrations (user, session, settings tables)
+- Applying module migrations
+- Validating required tables exist
 
 ### Module Not in Sidebar
 
