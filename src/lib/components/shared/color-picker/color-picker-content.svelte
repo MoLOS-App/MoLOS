@@ -107,6 +107,12 @@
 		themePalette = getThemePalette();
 	});
 
+	// Deduplicated theme palette values (to avoid duplicate key errors)
+	const themePaletteColors = $derived(() => {
+		const values = Object.values(themePalette);
+		return [...new Set(values)];
+	});
+
 	// Saturation/Lightness box style
 	const slBoxStyle = $derived(
 		`linear-gradient(to right, #fff, hsl(${hue}, 100%, 50%)), linear-gradient(to top, #000, transparent)`
@@ -294,7 +300,7 @@
 				<label class="text-muted-foreground text-xs font-medium">Theme Colors</label>
 				{#if Object.keys(themePalette).length > 0}
 					<ColorPickerPalette
-						colors={Object.values(themePalette)}
+						colors={themePaletteColors}
 						selected={typeof value === 'string' ? value : undefined}
 						columns={6}
 						onSelect={handlePaletteSelect}
