@@ -1,5 +1,5 @@
 /**
- * Icon pack plugin system for the icon picker
+ * Icon pack plugin system for icon picker
  * Allows extensible icon pack registration
  */
 
@@ -28,6 +28,10 @@ export interface IconPack {
  * Registry for all icon packs
  */
 const iconPacks = new Map<string, IconPack>();
+
+// Import and register Lucide icon pack synchronously
+import { lucideIconPack } from './lucide-pack.js';
+registerIconPack(lucideIconPack);
 
 /**
  * Register a new icon pack
@@ -62,8 +66,11 @@ export function getAllIcons(): IconEntry[] {
  */
 export function searchIcons(query: string): IconEntry[] {
 	const lowerQuery = query.toLowerCase();
+	const icons = getAllIcons();
 
-	return getAllIcons().filter((icon) => {
+	console.log('[icon-packs] searchIcons called with query:', query, 'found icons:', icons.length);
+
+	return icons.filter((icon) => {
 		// Search by icon ID
 		if (icon.id.toLowerCase().includes(lowerQuery)) {
 			return true;

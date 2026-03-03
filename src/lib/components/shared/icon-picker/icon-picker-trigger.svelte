@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { cn } from '$lib/utils.js';
-	import { getIconType, parseIconIdentifier, getIconPack } from '../utils/icon-packs.js';
+	import { getIconType, parseIconIdentifier, getIconPack } from './utils/icon-packs.js';
 	import {
 		getIconPack as getIconPackFromUtils,
 		parseIconIdentifier as parseIconIdentifierFromUtils
-	} from '../utils/icon-packs.js';
+	} from './utils/icon-packs.js';
 	import type { Component } from 'svelte';
 
 	interface Props {
@@ -29,13 +29,32 @@
 	let IconComponent: Component<any, any, any> | undefined = $derived.by(() => {
 		if (iconType !== 'icon') return undefined;
 
-		const parsed = parseIconIdentifier(value);
-		if (!parsed) return undefined;
+		// Normalize value to ensure prefix
+		const normalizedValue = !value.includes('-') ? `lucide-${value}` : value;
+
+		const parsed = parseIconIdentifier(normalizedValue);
+		if (!parsed) {
+			console.log('[IconPickerTrigger] Failed to parse:', normalizedValue);
+			return undefined;
+		}
 
 		const pack = getIconPackFromUtils(parsed.packId);
-		if (!pack) return undefined;
+		if (!pack) {
+			console.log('[IconPickerTrigger] Pack not found:', parsed.packId);
+			return undefined;
+		}
 
-		const iconEntry = pack.getIcons().find((icon) => icon.id === parsed.iconName);
+		const icons = pack.getIcons();
+		const iconEntry = icons.find((icon) => icon.id === parsed.iconName);
+		if (!iconEntry) {
+			console.log(
+				'[IconPickerTrigger] Icon not found in pack:',
+				parsed.iconName,
+				'available icons:',
+				icons.map((i) => i.id).slice(0, 10)
+			);
+		}
+
 		return iconEntry?.component;
 	});
 
@@ -44,15 +63,22 @@
 	}
 </script>
 
-<button
-	type="button"
+<div
+	role="button"
+	tabindex="0"
 	class={cn(
-		'inline-flex items-center justify-center rounded-md border border-border bg-background shadow-xs transition-[color,box-shadow] outline-none',
+		'inline-flex cursor-pointer items-center justify-center rounded-md border border-border bg-background shadow-xs transition-[color,box-shadow] outline-none',
 		'focus-visible:border-ring focus-visible:ring-ring/50 hover:border-primary/50 focus-visible:ring-[3px] focus-visible:outline-1',
 		sizeStyles[size],
 		className
 	)}
 	onclick={handleClick}
+	onkeydown={(e) => {
+		if (e.key === 'Enter' || e.key === ' ') {
+			e.preventDefault();
+			handleClick();
+		}
+	}}
 	aria-label="Open icon picker"
 >
 	{#if iconType === 'emoji'}
@@ -62,4 +88,4 @@
 	{:else}
 		<span class="text-muted-foreground text-lg">?</span>
 	{/if}
-</button>
+</div>

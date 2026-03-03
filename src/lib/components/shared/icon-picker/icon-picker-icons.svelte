@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { cn } from '$lib/utils.js';
-	import { searchIcons } from '../utils/icon-packs.js';
+	import { searchIcons } from './utils/icon-packs.js';
 
 	interface Props {
 		selected?: string;
@@ -32,7 +32,7 @@
 		</div>
 	</div>
 {:else}
-	<div class="grid grid-cols-6 gap-1.5 p-1">
+	<div class="grid max-h-[350px] grid-cols-6 gap-1.5 overflow-y-auto p-1">
 		{#each filteredIcons as icon (icon.id)}
 			<button
 				type="button"

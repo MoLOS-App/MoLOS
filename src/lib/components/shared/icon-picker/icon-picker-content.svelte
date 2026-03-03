@@ -17,14 +17,6 @@
 	let searchQuery = $state('');
 	let activeTab = $state<'icons' | 'emojis'>('icons');
 
-	// Handle search
-	let searchInputEl: HTMLInputElement;
-	$effect(() => {
-		if (searchInputEl) {
-			searchInputEl.focus();
-		}
-	});
-
 	// Clear search
 	function clearSearch() {
 		searchQuery = '';
@@ -40,11 +32,15 @@
 		</Tabs.List>
 	{/if}
 
+	<!-- Header -->
+	<div class="mb-3 flex items-center gap-2">
+		<Search class="text-muted-foreground h-4 w-4" />
+		<span class="text-sm font-medium">Choose icon</span>
+	</div>
+
 	<!-- Search Input -->
 	<div class="relative mb-3">
-		<Search class="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
 		<Input
-			bind:this={searchInputEl}
 			type="text"
 			placeholder="Search icons or emojis..."
 			bind:value={searchQuery}

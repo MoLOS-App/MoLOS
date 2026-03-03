@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { cn } from '$lib/utils.js';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
-	import { EMOJI_CATEGORIES, searchEmojis } from '../utils/emoji-data.js';
+	import { EMOJI_CATEGORIES, searchEmojis } from './utils/emoji-data.js';
 
 	interface Props {
 		selected?: string;
@@ -41,7 +41,7 @@
 			</div>
 		</div>
 	{:else}
-		<div class="grid grid-cols-8 gap-1 p-1">
+		<div class="grid max-h-[350px] grid-cols-8 gap-1 overflow-y-auto p-1">
 			{#each searchedEmojis as emoji}
 				<button
 					type="button"
@@ -73,7 +73,7 @@
 
 		{#each EMOJI_CATEGORIES as category (category.id)}
 			<Tabs.Content value={category.id} class="focus-visible:outline-none">
-				<div class="grid grid-cols-8 gap-1 p-1">
+				<div class="grid max-h-[350px] grid-cols-8 gap-1 overflow-y-auto p-1">
 					{#each category.emojis as emoji}
 						<button
 							type="button"

@@ -499,7 +499,7 @@ const LUCIDE_ICONS: {
 ];
 
 /**
- * Create the Lucide icon pack
+ * Create Lucide icon pack
  */
 export const lucideIconPack: IconPack = {
 	id: 'lucide',
@@ -512,13 +512,3 @@ export const lucideIconPack: IconPack = {
 		}));
 	}
 };
-
-/**
- * Auto-register the Lucide pack on import
- */
-if (typeof window !== 'undefined' || typeof globalThis !== 'undefined') {
-	// Import registerIconPack dynamically to avoid circular dependency
-	import('./icon-packs.js').then(({ registerIconPack }) => {
-		registerIconPack(lucideIconPack);
-	});
-}
