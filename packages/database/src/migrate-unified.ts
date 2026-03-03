@@ -174,10 +174,10 @@ function applyMigrationsDirectly(
 				}
 			} catch (sqlError) {
 				const errMsg = sqlError instanceof Error ? sqlError.message : String(sqlError);
-				if (errMsg.includes('already exists')) {
+				if (errMsg.includes('already exists') || errMsg.includes('duplicate column name')) {
 					log('info', `${label}: ${sqlFile} already applied`);
 					result.skipped++;
-					result.applied--; // Don't count skipped as applied
+					result.applied--;
 				} else {
 					log('error', `${label}: Failed to apply ${sqlFile}: ${errMsg}`);
 					result.failed++;
