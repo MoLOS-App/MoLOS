@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { cn } from '$lib/utils.js';
-	import { searchIcons } from './utils/icon-packs.js';
+	import { searchIcons, getAllIcons } from './utils/icon-packs.js';
 
 	interface Props {
 		selected?: string;
@@ -10,17 +10,26 @@
 
 	let { selected, searchQuery = '', onSelect }: Props = $props();
 
-	// Get filtered icons based on search
 	let filteredIcons = $derived.by(() => {
 		if (!searchQuery) {
-			// Show all icons when no search
-			return searchIcons('');
+			return getAllIcons();
 		}
 		return searchIcons(searchQuery);
 	});
 
 	function handleIconSelect(iconId: string, packId: string) {
 		onSelect(`${packId}-${iconId}`);
+	}
+
+	function isSelected(iconId: string, packId: string): boolean {
+		if (!selected) return false;
+
+		let normalizedSelected = selected;
+		if (!selected.includes('-')) {
+			normalizedSelected = `${packId}-${selected}`;
+		}
+
+		return normalizedSelected === `${packId}-${iconId}`;
 	}
 </script>
 
@@ -39,7 +48,7 @@
 				class={cn(
 					'flex aspect-square items-center justify-center rounded-md border transition-colors',
 					'hover:text-accent-foreground focus-visible:ring-ring hover:bg-accent focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
-					selected === `lucide-${icon.id}`
+					isSelected(icon.id, 'lucide')
 						? 'border-primary bg-primary text-primary-foreground'
 						: 'border-border bg-background text-foreground'
 				)}

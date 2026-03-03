@@ -1,10 +1,6 @@
 <script lang="ts">
 	import { cn } from '$lib/utils.js';
 	import { getIconType, parseIconIdentifier, getIconPack } from './utils/icon-packs.js';
-	import {
-		getIconPack as getIconPackFromUtils,
-		parseIconIdentifier as parseIconIdentifierFromUtils
-	} from './utils/icon-packs.js';
 	import type { Component } from 'svelte';
 
 	interface Props {
@@ -22,39 +18,23 @@
 		lg: 'h-12 w-12'
 	};
 
-	// Determine if it's an emoji or icon
 	const iconType = $derived(getIconType(value));
 
-	// Get icon component for lucide icons
 	let IconComponent: Component<any, any, any> | undefined = $derived.by(() => {
 		if (iconType !== 'icon') return undefined;
 
-		// Normalize value to ensure prefix
-		const normalizedValue = !value.includes('-') ? `lucide-${value}` : value;
+		let normalizedValue = value;
+		if (!value.includes('-')) {
+			normalizedValue = `lucide-${value}`;
+		}
 
 		const parsed = parseIconIdentifier(normalizedValue);
-		if (!parsed) {
-			console.log('[IconPickerTrigger] Failed to parse:', normalizedValue);
-			return undefined;
-		}
+		if (!parsed) return undefined;
 
-		const pack = getIconPackFromUtils(parsed.packId);
-		if (!pack) {
-			console.log('[IconPickerTrigger] Pack not found:', parsed.packId);
-			return undefined;
-		}
+		const pack = getIconPack(parsed.packId);
+		if (!pack) return undefined;
 
-		const icons = pack.getIcons();
-		const iconEntry = icons.find((icon) => icon.id === parsed.iconName);
-		if (!iconEntry) {
-			console.log(
-				'[IconPickerTrigger] Icon not found in pack:',
-				parsed.iconName,
-				'available icons:',
-				icons.map((i) => i.id).slice(0, 10)
-			);
-		}
-
+		const iconEntry = pack.getIcons().find((icon) => icon.id === parsed.iconName);
 		return iconEntry?.component;
 	});
 

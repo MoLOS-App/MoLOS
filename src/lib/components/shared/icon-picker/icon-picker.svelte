@@ -25,7 +25,7 @@
 <div class={cn('inline-flex', className)}>
 	<Popover.Root bind:open>
 		<Popover.Trigger>
-			<IconPickerTrigger {selected} {size} />
+			<IconPickerTrigger value={selected} {size} />
 		</Popover.Trigger>
 
 		<Popover.Content class="w-80 p-3">

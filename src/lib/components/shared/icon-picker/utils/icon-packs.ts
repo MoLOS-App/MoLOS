@@ -68,15 +68,11 @@ export function searchIcons(query: string): IconEntry[] {
 	const lowerQuery = query.toLowerCase();
 	const icons = getAllIcons();
 
-	console.log('[icon-packs] searchIcons called with query:', query, 'found icons:', icons.length);
-
 	return icons.filter((icon) => {
-		// Search by icon ID
 		if (icon.id.toLowerCase().includes(lowerQuery)) {
 			return true;
 		}
 
-		// Search by keywords
 		return icon.keywords.some((keyword) => keyword.toLowerCase().includes(lowerQuery));
 	});
 }
