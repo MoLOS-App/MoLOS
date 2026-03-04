@@ -158,14 +158,15 @@ DATABASE_URL=./molos.db
 
 ## Troubleshooting Quick Fixes
 
-| Issue                       | Solution                                         |
-| --------------------------- | ------------------------------------------------ |
-| Module not in sidebar       | `bun run module:sync`                            |
-| 404 on routes               | Check symlinks, run `module:link`                |
-| Table not found             | Generate + run migrations                        |
-| Import errors               | Use `$lib` alias, check symlinks                 |
-| tsconfig errors             | Remove standalone configs from module            |
-| Duplicate column name error | Normal if db created from snapshot - see ADR-002 |
+| Issue                                                     | Solution                                                                         |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Module not in sidebar                                     | `bun run module:sync`                                                            |
+| 404 on routes                                             | Check symlinks, run `module:link`                                                |
+| Table not found                                           | Generate + run migrations                                                        |
+| Import errors                                             | Use `$lib` alias, check symlinks                                                 |
+| tsconfig errors                                           | Remove standalone configs from module                                            |
+| Duplicate column name error                               | Normal if db created from snapshot - see ADR-002                                 |
+| "Cannot read properties of undefined (reading 'headers')" | API needs `request` in params: use `({ locals, params, request })` - see ADR-003 |
 
 ---
 
