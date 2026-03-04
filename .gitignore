@@ -80,3 +80,6 @@ vite.config.ts.timestamp-*
 # ========================================
 .DS_Store
 Thumbs.db
+.opencode
+AGENTS.md
+CLAUDE.md
