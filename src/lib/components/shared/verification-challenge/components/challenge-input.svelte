@@ -27,6 +27,13 @@
 	const inputType = $derived(challenge.type);
 	const hasOptions = $derived(!!challenge.options && challenge.options.length > 0);
 
+	// Ensure sorting challenges have an array value
+	$effect(() => {
+		if (inputType === 'sorting' && hasOptions && !Array.isArray(value)) {
+			handleSortingChange([...challenge.options!]);
+		}
+	});
+
 	// Handle different input types
 	function handleTextInput(event: Event) {
 		const target = event.target as HTMLInputElement;
@@ -138,13 +145,13 @@
 						'flex flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all',
 						'hover:border-primary hover:bg-accent',
 						'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] focus-visible:outline-none',
-						value === iconOption.id && 'border-primary bg-primary/10',
+						value === iconOption.name && 'border-primary bg-primary/10',
 						disabled && 'cursor-not-allowed opacity-50'
 					)}
-					onclick={() => !disabled && handleMultipleChoiceSelect(iconOption.id)}
+					onclick={() => !disabled && handleMultipleChoiceSelect(iconOption.name)}
 					{disabled}
 					aria-label={iconOption.name}
-					aria-pressed={value === iconOption.id}
+					aria-pressed={value === iconOption.name}
 				>
 					<div class="text-4xl">
 						<svelte:component this={iconOption.component} class="h-12 w-12" />
@@ -202,28 +209,32 @@
 							'hover:border-primary'
 						)}
 					>
-						<div class="text-muted-foreground flex items-center gap-1">
+						<div class="flex items-center gap-1">
 							{#if index > 0}
 								<button
 									type="button"
-									class="rounded p-1 transition-colors hover:bg-accent"
+									class="focus-visible:ring-ring rounded p-1 text-lg transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:outline-none"
 									onclick={() => moveSortingItem(index, index - 1)}
 									aria-label="Move up"
 									{disabled}
 								>
 									↑
 								</button>
+							{:else}
+								<span class="w-6"></span>
 							{/if}
 							{#if index < value.length - 1}
 								<button
 									type="button"
-									class="rounded p-1 transition-colors hover:bg-accent"
+									class="focus-visible:ring-ring rounded p-1 text-lg transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:outline-none"
 									onclick={() => moveSortingItem(index, index + 1)}
 									aria-label="Move down"
 									{disabled}
 								>
 									↓
 								</button>
+							{:else}
+								<span class="w-6"></span>
 							{/if}
 						</div>
 						<span class="text-base font-medium">{index + 1}.</span>
@@ -238,28 +249,32 @@
 							'hover:border-primary'
 						)}
 					>
-						<div class="text-muted-foreground flex items-center gap-1">
+						<div class="flex items-center gap-1">
 							{#if index > 0}
 								<button
 									type="button"
-									class="rounded p-1 transition-colors hover:bg-accent"
+									class="focus-visible:ring-ring rounded p-1 text-lg transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:outline-none"
 									onclick={() => moveSortingItem(index, index - 1)}
 									aria-label="Move up"
 									{disabled}
 								>
 									↑
 								</button>
+							{:else}
+								<span class="w-6"></span>
 							{/if}
 							{#if index < challenge.options!.length - 1}
 								<button
 									type="button"
-									class="rounded p-1 transition-colors hover:bg-accent"
+									class="focus-visible:ring-ring rounded p-1 text-lg transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:outline-none"
 									onclick={() => moveSortingItem(index, index + 1)}
 									aria-label="Move down"
 									{disabled}
 								>
 									↓
 								</button>
+							{:else}
+								<span class="w-6"></span>
 							{/if}
 						</div>
 						<span class="text-base font-medium">{index + 1}.</span>

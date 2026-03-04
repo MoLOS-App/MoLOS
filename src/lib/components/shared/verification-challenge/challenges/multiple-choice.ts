@@ -11,7 +11,7 @@ import {
 	generateChallengeId,
 	shuffleArray
 } from '../utils/randomizer.js';
-import { validateSelectionAnswer } from '../utils/validator.js';
+import { normalizeText } from '../utils/validator.js';
 
 /**
  * Generate a multiple choice challenge
@@ -51,18 +51,27 @@ export const generateMultipleChoiceChallenge: ChallengeGenerator = (
 		correctAnswer: correctOption?.value ?? selectedQuestion.options[selectedQuestion.correct],
 		validator: (userAnswer) => {
 			// Accept either the full option text or just the value
-			const normalizedUser = typeof userAnswer === 'string' ? userAnswer.trim() : '';
+			let normalizedUser = typeof userAnswer === 'string' ? userAnswer.trim() : '';
 			const correctValue =
 				correctOption?.value ?? selectedQuestion.options[selectedQuestion.correct];
+			const normalizedCorrect = normalizeText(correctValue);
 
-			// Check if answer matches the value directly
-			if (normalizedUser === correctValue) return true;
+			// Strip label from full option string (e.g., "A. Pacific" -> "Pacific")
+			if (/^[A-Z]\.\s+/.test(normalizedUser)) {
+				normalizedUser = normalizedUser.replace(/^[A-Z]\.\s+/, '');
+			}
+
+			// Normalize after stripping label
+			normalizedUser = normalizeText(normalizedUser);
+
+			// Check if answer matches the value directly (case-insensitive)
+			if (normalizedUser === normalizedCorrect) return true;
 
 			// Check if answer is the label (A, B, C, D)
-			if (normalizedUser.toUpperCase() === correctOption?.label) return true;
+			if (normalizedUser.toUpperCase() === correctOption?.label?.toUpperCase()) return true;
 
-			// Check if answer is the full option string
-			return validateSelectionAnswer(userAnswer, correctValue);
+			// Check if answer is the full option string (after label strip)
+			return normalizedUser === normalizedCorrect;
 		},
 		metadata: {
 			category: 'multiple-choice',
@@ -99,10 +108,26 @@ export function generateCustomMultipleChoice(
 		options: shuffledOptions.map((opt) => `${opt.label}. ${opt.value}`),
 		correctAnswer: correctOption?.value ?? options[correctIndex],
 		validator: (userAnswer) => {
-			const normalizedUser = typeof userAnswer === 'string' ? userAnswer.trim() : '';
-			if (normalizedUser === correctOption?.value) return true;
-			if (normalizedUser.toUpperCase() === correctOption?.label) return true;
-			return validateSelectionAnswer(userAnswer, correctOption?.value ?? options[correctIndex]);
+			let normalizedUser = typeof userAnswer === 'string' ? userAnswer.trim() : '';
+			const correctValue = correctOption?.value ?? options[correctIndex];
+			const normalizedCorrect = normalizeText(correctValue);
+
+			// Strip label from full option string (e.g., "A. Pacific" -> "Pacific")
+			if (/^[A-Z]\.\s+/.test(normalizedUser)) {
+				normalizedUser = normalizedUser.replace(/^[A-Z]\.\s+/, '');
+			}
+
+			// Normalize after stripping label
+			normalizedUser = normalizeText(normalizedUser);
+
+			// Check if answer matches the value directly (case-insensitive)
+			if (normalizedUser === normalizedCorrect) return true;
+
+			// Check if answer is the label (A, B, C, D)
+			if (normalizedUser.toUpperCase() === correctOption?.label?.toUpperCase()) return true;
+
+			// Check if answer is the full option string (after label strip)
+			return normalizedUser === normalizedCorrect;
 		},
 		metadata: {
 			category: 'multiple-choice',

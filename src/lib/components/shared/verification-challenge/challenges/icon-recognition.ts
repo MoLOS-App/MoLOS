@@ -10,7 +10,7 @@ import type {
 	IconChallengeEntry
 } from '../types.js';
 import { getRandomItem, generateChallengeId, shuffleArray } from '../utils/randomizer.js';
-import { validateSelectionAnswer } from '../utils/validator.js';
+import { normalizeText } from '../utils/validator.js';
 import * as LucideIcons from 'lucide-svelte';
 
 /**
@@ -207,7 +207,9 @@ export const generateIconRecognitionChallenge: ChallengeGenerator = (
 		iconOptions: allOptions,
 		correctIconId: correctIcon.id,
 		validator: (userAnswer) => {
-			return validateSelectionAnswer(userAnswer, correctIcon.name);
+			const normalizedUser = typeof userAnswer === 'string' ? normalizeText(userAnswer) : '';
+			const normalizedCorrect = normalizeText(correctIcon.name);
+			return normalizedUser === normalizedCorrect;
 		},
 		metadata: {
 			category: 'icon-recognition',
@@ -237,7 +239,9 @@ export function generateCustomIconChallenge(
 		iconOptions: allOptions,
 		correctIconId: targetIcon.id,
 		validator: (userAnswer) => {
-			return validateSelectionAnswer(userAnswer, targetIcon.name);
+			const normalizedUser = typeof userAnswer === 'string' ? normalizeText(userAnswer) : '';
+			const normalizedCorrect = normalizeText(targetIcon.name);
+			return normalizedUser === normalizedCorrect;
 		},
 		metadata: {
 			category: 'icon-recognition',
