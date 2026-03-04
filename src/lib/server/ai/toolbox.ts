@@ -73,10 +73,13 @@ export class AiToolbox {
 			allModules.map((m) => ({ id: m.id, name: m.name, isExternal: m.isExternal }))
 		);
 
-		// We include all package modules by default (they have AI tools), and external modules only if active
-		const modulesToLoad = allModules.filter(
-			(m) => m.isPackageModule || activeModuleIds.includes(m.id)
-		);
+		// If activeModuleIds is provided, ONLY load those modules
+		// If activeModuleIds is empty, load all package modules
+		const modulesToLoad =
+			activeModuleIds.length > 0
+				? allModules.filter((m) => activeModuleIds.includes(m.id))
+				: allModules.filter((m) => m.isPackageModule);
+
 		console.log('[AiToolbox] activeModuleIds:', activeModuleIds);
 		console.log(
 			'[AiToolbox] Modules to load:',
