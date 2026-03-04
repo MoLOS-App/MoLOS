@@ -37,21 +37,6 @@
 		}
 	},
 
-	"agent": {
-		"module-developer": {
-			"description": "Create, develop, fix, or verify modules in ./modules directory",
-			"prompt": "{file:.opencode/agents/module-developer.md}"
-		},
-		"sveltekit-guardian": {
-			"description": "Review code changes and validate module implementations",
-			"prompt": "{file:.opencode/agents/sveltekit-guardian.md}"
-		},
-		"ui-ux-reviewer": {
-			"description": "Review UI/UX implementations for design consistency and accessibility",
-			"prompt": "{file:.opencode/agents/ui-ux-reviewer.md}"
-		}
-	},
-
 	"command": {
 		"sync": {
 			"template": "Run bun run module:sync to sync all modules, then verify that symlinks are correct.",

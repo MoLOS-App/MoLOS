@@ -122,8 +122,8 @@
 		"@ai-sdk/anthropic": "^3.0.43",
 		"@ai-sdk/openai": "^3.0.28",
 		"@ai-sdk/svelte": "^4.0.85",
-		"@better-auth/core": "^1.5.0",
-		"@better-auth/utils": "^0.3.0",
+		"@better-auth/core": "1.4.21",
+		"@better-auth/utils": "0.3.0",
 		"@better-fetch/fetch": "^1.1.21",
 		"@dagrejs/dagre": "^2.0.4",
 		"@floating-ui/core": "^1.7.4",
@@ -141,8 +141,8 @@
 		"@sinclair/typebox": "^0.34.48",
 		"ai": "^6.0.84",
 		"animejs": "^4.2.2",
-		"better-auth": "1.4.7",
-		"better-call": "^1.3.3",
+		"better-auth": "1.4.21",
+		"better-call": "^1.1.8",
 		"better-sqlite3": "^12.5.0",
 		"blessed": "^0.1.81",
 		"date-fns": "^4.1.0",
@@ -157,6 +157,9 @@
 		"zod": "^4.3.6"
 	},
 	"resolutions": {
-		"better-call": "^1.3.3"
+		"better-call": "1.1.8",
+		"better-auth": "1.4.21",
+		"@better-auth/core": "1.4.21",
+		"@better-auth/utils": "0.3.0"
 	}
 }
