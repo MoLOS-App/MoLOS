@@ -16,12 +16,25 @@ export interface MCPApiKey {
 	keyPrefix: string;
 	keyHash: string;
 	status: ApiKeyStatus;
-	allowedModules: string[];
+	allowedScopes: string[]; // Changed from allowedModules - format: "module", "module:submodule", or "module:submodule:tool"
 	expiresAt: Date | null;
 	lastUsedAt: Date | null;
 	usageCount: number;
 	createdAt: Date;
 	updatedAt: Date;
+}
+
+export interface CreateApiKeyInput {
+	name: string;
+	allowedScopes: string[]; // Changed from allowedModules
+	expiresAt?: Date | null;
+}
+
+export interface UpdateApiKeyInput {
+	name?: string;
+	status?: ApiKeyStatus;
+	allowedScopes?: string[]; // Changed from allowedModules
+	expiresAt?: Date | null;
 }
 
 /**

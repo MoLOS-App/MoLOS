@@ -37,7 +37,10 @@ export const GET: RequestHandler = async ({ locals, params }) => {
 	const stats = await logRepo.getStats(locals.user.id, apiKey.id);
 
 	return json({
-		apiKey,
+		apiKey: {
+			...apiKey,
+			allowedScopes: apiKey.allowedScopes
+		},
 		recentLogs,
 		stats
 	});
@@ -74,21 +77,21 @@ export const PATCH: RequestHandler = async ({ locals, params, request }) => {
 		input.status = body.status;
 	}
 
-	if (body.allowedModules !== undefined) {
-		// Validate module IDs
-		const { valid, invalid } = await validateModuleIds(body.allowedModules);
+	if (body.allowedScopes !== undefined) {
+		// Validate scopes
+		const { valid, invalid } = await validateScopes(body.allowedScopes);
 
 		if (invalid.length > 0) {
 			return json(
 				{
-					error: 'Invalid module IDs',
+					error: 'Invalid scopes',
 					invalid
 				},
 				{ status: 400 }
 			);
 		}
 
-		input.allowedModules = valid;
+		input.allowedScopes = valid;
 	}
 
 	if (body.expiresAt !== undefined) {
@@ -123,9 +126,10 @@ export const DELETE: RequestHandler = async ({ locals, params }) => {
 };
 
 /**
- * Validate module IDs against available external modules
+ * Validate scopes against available modules
+ * Supports hierarchical scopes: "module", "module:submodule", or "module:submodule:tool"
  */
-async function validateModuleIds(moduleIds: string[]): Promise<{
+async function validateScopes(scopes: string[]): Promise<{
 	valid: string[];
 	invalid: string[];
 }> {
@@ -133,12 +137,34 @@ async function validateModuleIds(moduleIds: string[]): Promise<{
 	const valid: string[] = [];
 	const invalid: string[] = [];
 
-	for (const moduleId of moduleIds) {
-		if (available.includes(moduleId)) {
-			valid.push(moduleId);
-		} else {
-			invalid.push(moduleId);
+	for (const scope of scopes) {
+		const parts = scope.split(':');
+
+		// Validate format (1-3 parts)
+		if (parts.length < 1 || parts.length > 3) {
+			invalid.push(scope);
+			continue;
 		}
+
+		// Validate module
+		if (!available.includes(parts[0])) {
+			invalid.push(scope);
+			continue;
+		}
+
+		// Validate submodule (if present)
+		if (parts.length > 1) {
+			// For now, accept any submodule
+			// TODO: Add submodule validation
+		}
+
+		// Validate tool name (if present)
+		if (parts.length > 2) {
+			// For now, accept any tool name
+			// TODO: Add tool validation
+		}
+
+		valid.push(scope);
 	}
 
 	return { valid, invalid };

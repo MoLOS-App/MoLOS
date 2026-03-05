@@ -15,6 +15,8 @@ export interface MCPResource {
 	name: string;
 	uri: string;
 	moduleId: string | null;
+	submoduleId: string | null; // NEW: For submodule-level access control
+	resourceName: string | null; // NEW: For individual resource control
 	description: string;
 	resourceType: MCPResourceType;
 	url?: string | null;
@@ -32,6 +34,8 @@ export interface CreateResourceInput {
 	name: string;
 	uri: string;
 	moduleId?: string | null;
+	submoduleId?: string | null; // NEW
+	resourceName?: string | null; // NEW
 	description: string;
 	resourceType?: MCPResourceType;
 	url?: string | null;
@@ -47,6 +51,8 @@ export interface UpdateResourceInput {
 	name?: string;
 	uri?: string;
 	moduleId?: string | null;
+	submoduleId?: string | null; // NEW
+	resourceName?: string | null; // NEW
 	description?: string;
 	resourceType?: MCPResourceType;
 	url?: string | null;
@@ -60,6 +66,8 @@ export interface UpdateResourceInput {
  */
 export interface ResourceFilters {
 	moduleId?: string;
+	submoduleId?: string; // NEW
+	resourceName?: string; // NEW
 	enabled?: boolean;
 	search?: string; // Search by name or description
 }

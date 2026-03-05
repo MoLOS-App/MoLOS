@@ -208,15 +208,15 @@
 	});
 </script>
 
-<div class="flex w-screen h-screen bg-background text-foreground">
+<div class="flex h-screen w-screen bg-background text-foreground">
 	<Tooltip.Provider>
 		<!-- Left Sidebar: Module Access & User Settings -->
 		{#if !hasSubmenu || isMobileViewport}
 			<aside
-				class="fixed z-50 flex-col items-center hidden w-16 py-5 border shadow-sm top-4 bottom-4 left-4 rounded-3xl border-border/60 bg-background/95 backdrop-blur md:flex"
+				class="fixed top-4 bottom-4 left-4 z-50 hidden w-16 flex-col items-center rounded-3xl border border-border/60 bg-background/95 py-5 shadow-sm backdrop-blur md:flex"
 			>
 				<!-- Module Icons -->
-				<div class="flex flex-col gap-3 mb-auto">
+				<div class="mb-auto flex flex-col gap-3">
 					{#each modules as module}
 						<Tooltip.Root>
 							<Tooltip.Trigger
@@ -232,11 +232,11 @@
 							>
 								{#if module.icon}
 									<module.icon
-										class="w-5 h-5 transition-transform duration-200 group-hover:scale-110"
+										class="h-5 w-5 transition-transform duration-200 group-hover:scale-110"
 									/>
 								{:else}
 									<LayoutGrid
-										class="w-5 h-5 transition-transform duration-200 group-hover:scale-110"
+										class="h-5 w-5 transition-transform duration-200 group-hover:scale-110"
 									/>
 								{/if}
 							</Tooltip.Trigger>
@@ -248,17 +248,17 @@
 				</div>
 
 				<!-- Settings & User at Bottom -->
-				<div class="flex flex-col gap-2 mt-auto">
+				<div class="mt-auto flex flex-col gap-2">
 					<!-- Settings -->
 					<Tooltip.Root>
 						<Tooltip.Trigger>
 							<Button
 								variant="ghost"
 								size="icon"
-								class="w-10 h-10 text-muted-foreground rounded-2xl hover:bg-muted/40"
+								class="text-muted-foreground h-10 w-10 rounded-2xl hover:bg-muted/40"
 								onclick={() => goto('/ui/settings')}
 							>
-								<Settings class="w-5 h-5" />
+								<Settings class="h-5 w-5" />
 							</Button>
 						</Tooltip.Trigger>
 						<Tooltip.Content side="right">Settings</Tooltip.Content>
@@ -270,7 +270,7 @@
 							<Button
 								variant="ghost"
 								size="icon"
-								class="w-10 h-10 text-muted-foreground rounded-2xl hover:bg-muted/40"
+								class="text-muted-foreground h-10 w-10 rounded-2xl hover:bg-muted/40"
 								onclick={async () => {
 									await authClient.signOut({
 										fetchOptions: {
@@ -281,7 +281,7 @@
 									});
 								}}
 							>
-								<LogOut class="w-5 h-5" />
+								<LogOut class="h-5 w-5" />
 							</Button>
 						</Tooltip.Trigger>
 						<Tooltip.Content side="right">Logout</Tooltip.Content>
@@ -293,11 +293,11 @@
 							<Button
 								variant="ghost"
 								size="icon"
-								class="w-10 h-10 text-muted-foreground rounded-2xl hover:bg-muted/40"
+								class="text-muted-foreground h-10 w-10 rounded-2xl hover:bg-muted/40"
 								aria-label="AI Assistant"
 								onclick={() => (isAiOpen = !isAiOpen)}
 							>
-								<Bot class="w-5 h-5" />
+								<Bot class="h-5 w-5" />
 							</Button>
 						</Tooltip.Trigger>
 						<Tooltip.Content side="right">AI Assistant</Tooltip.Content>
@@ -315,7 +315,7 @@
 			<!-- Mobile Bottom Navigation -->
 			<div class="fixed inset-x-0 bottom-0 z-40 md:hidden">
 				<div class="mx-auto w-[min(100%-1.5rem,28rem)] pb-4">
-					<div class="border shadow-xl rounded-3xl border-border/60 bg-background/95 backdrop-blur">
+					<div class="rounded-3xl border border-border/60 bg-background/95 shadow-xl backdrop-blur">
 						<div
 							bind:this={mobileRailEl}
 							class={`overflow-hidden transition-colors`}
@@ -325,7 +325,7 @@
 								{#if mobileRailMode === 'menu'}
 									<nav
 										aria-label="Modules"
-										class="flex items-center gap-2 px-1 py-1 overflow-x-auto"
+										class="flex items-center gap-2 overflow-x-auto px-1 py-1"
 									>
 										{#each modules as module}
 											{@const isActive = path.startsWith(module.href)}
@@ -344,9 +344,9 @@
 												}}
 											>
 												{#if module.icon}
-													<module.icon class="w-4 h-4 text-primary/70" />
+													<module.icon class="h-4 w-4 text-primary/70" />
 												{:else}
-													<LayoutGrid class="w-4 h-4 text-primary/70" />
+													<LayoutGrid class="h-4 w-4 text-primary/70" />
 												{/if}
 												<span class="whitespace-nowrap">{module.name}</span>
 											</button>
@@ -355,7 +355,7 @@
 								{:else if mobileRailMode === 'submenu'}
 									<nav
 										aria-label="Submenu"
-										class="flex items-center gap-2 px-1 py-1 overflow-x-auto"
+										class="flex items-center gap-2 overflow-x-auto px-1 py-1"
 									>
 										{#each filteredNavigation as item}
 											{@const isActive = item.href && path === item.href}
@@ -370,13 +370,13 @@
 													}`}
 													onclick={() => (mobileSubmenuRailOpen = false)}
 												>
-													<item.icon class="w-4 h-4 text-primary/70" />
+													<item.icon class="h-4 w-4 text-primary/70" />
 													<span class="whitespace-nowrap">{item.name}</span>
 												</a>
 											{/if}
 										{/each}
 										{#if filteredNavigation.length === 0}
-											<span class="px-2 py-1 text-xs font-semibold text-muted-foreground">
+											<span class="text-muted-foreground px-2 py-1 text-xs font-semibold">
 												No sections available
 											</span>
 										{/if}
@@ -387,7 +387,7 @@
 
 						<nav
 							aria-label="Primary"
-							class="flex items-center justify-between gap-1 px-3 py-2 rounded-b-3xl"
+							class="flex items-center justify-between gap-1 rounded-b-3xl px-3 py-2"
 						>
 							<button
 								type="button"
@@ -410,7 +410,7 @@
 										: 'text-muted-foreground hover:text-foreground'
 								}`}
 							>
-								<CurrentModuleIcon class="w-5 h-5 text-primary/70" />
+								<CurrentModuleIcon class="h-5 w-5 text-primary/70" />
 							</button>
 
 							<button
@@ -432,7 +432,7 @@
 										: 'text-muted-foreground hover:text-foreground'
 								}`}
 							>
-								<CurrentSubmenuIcon class="w-5 h-5 text-primary/70" />
+								<CurrentSubmenuIcon class="h-5 w-5 text-primary/70" />
 							</button>
 
 							<button
@@ -446,7 +446,7 @@
 										: 'text-muted-foreground hover:text-foreground'
 								}`}
 							>
-								<Home class="w-5 h-5 text-primary" />
+								<Home class="h-5 w-5 text-primary" />
 							</button>
 
 							<button
@@ -460,7 +460,7 @@
 										: 'text-muted-foreground hover:text-foreground'
 								}`}
 							>
-								<Sparkles class="w-5 h-5 text-primary/70" />
+								<Sparkles class="h-5 w-5 text-primary/70" />
 							</button>
 
 							<button
@@ -474,7 +474,7 @@
 										: 'text-muted-foreground hover:text-foreground'
 								}`}
 							>
-								<Settings class="w-5 h-5 text-primary/70" />
+								<Settings class="h-5 w-5 text-primary/70" />
 							</button>
 						</nav>
 					</div>
@@ -482,14 +482,14 @@
 			</div>
 
 			<!-- Content -->
-			<div class="flex flex-1 min-w-0 overflow-hidden">
+			<div class="flex min-w-0 flex-1 overflow-hidden">
 				{#if hasSubmenu && !isMobileViewport}
-					<div class="flex flex-1 min-w-0 gap-0">
+					<div class="flex min-w-0 flex-1 gap-0">
 						<div
-							class="z-10 flex my-4 transition-shadow duration-300 ease-out border shadow-sm hover:shadow-mds shrink-0 rounded-3xl border-border/60 bg-background/95"
+							class="hover:shadow-mds z-10 my-4 flex shrink-0 rounded-3xl border border-border/60 bg-background/95 shadow-sm transition-shadow duration-300 ease-out"
 						>
-							<div class="px-2 py-4 border-r w-14 border-border/60">
-								<div class="flex flex-col items-center h-full gap-3">
+							<div class="w-14 border-r border-border/60 px-2 py-4">
+								<div class="flex h-full flex-col items-center gap-3">
 									{#each modules as module}
 										{@const isActive = path.startsWith(module.href)}
 										<Tooltip.Root>
@@ -520,16 +520,16 @@
 										</Tooltip.Root>
 									{/each}
 
-									<div class="flex flex-col gap-2 mt-auto">
+									<div class="mt-auto flex flex-col gap-2">
 										<Tooltip.Root>
 											<Tooltip.Trigger>
 												<Button
 													variant="ghost"
 													size="icon"
-													class="w-10 h-10 text-muted-foreground rounded-2xl hover:bg-muted/40"
+													class="text-muted-foreground h-10 w-10 rounded-2xl hover:bg-muted/40"
 													onclick={() => goto('/ui/settings')}
 												>
-													<Settings class="w-5 h-5" />
+													<Settings class="h-5 w-5" />
 												</Button>
 											</Tooltip.Trigger>
 											<Tooltip.Content side="right">Settings</Tooltip.Content>
@@ -540,7 +540,7 @@
 												<Button
 													variant="ghost"
 													size="icon"
-													class="w-10 h-10 text-muted-foreground rounded-2xl hover:bg-muted/40"
+													class="text-muted-foreground h-10 w-10 rounded-2xl hover:bg-muted/40"
 													onclick={async () => {
 														await authClient.signOut({
 															fetchOptions: {
@@ -551,7 +551,7 @@
 														});
 													}}
 												>
-													<LogOut class="w-5 h-5" />
+													<LogOut class="h-5 w-5" />
 												</Button>
 											</Tooltip.Trigger>
 											<Tooltip.Content side="right">Logout</Tooltip.Content>
@@ -563,11 +563,11 @@
 													<Button
 														variant="ghost"
 														size="icon"
-														class="w-10 h-10 text-muted-foreground rounded-2xl hover:bg-muted/40"
+														class="text-muted-foreground h-10 w-10 rounded-2xl hover:bg-muted/40"
 														aria-label="AI Assistant"
 														onclick={() => (isAiOpen = !isAiOpen)}
 													>
-														<Bot class="w-5 h-5" />
+														<Bot class="h-5 w-5" />
 													</Button>
 												</Tooltip.Trigger>
 												<Tooltip.Content side="right">AI Assistant</Tooltip.Content>
@@ -588,8 +588,8 @@
 									}`}
 								>
 									<div class="flex items-center gap-3">
-										<div class="flex items-center justify-center w-10 h-10 rounded-2xl bg-muted/60">
-											<LayoutGrid class="w-5 h-5 text-muted-foreground" />
+										<div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-muted/60">
+											<LayoutGrid class="text-muted-foreground h-5 w-5" />
 										</div>
 										<div class="min-w-0">
 											<p class="text-lg font-semibold text-foreground">
@@ -598,7 +598,7 @@
 										</div>
 									</div>
 								</div>
-								<nav aria-label="Submenu sections" class="flex flex-col flex-1 gap-6">
+								<nav aria-label="Submenu sections" class="flex flex-1 flex-col gap-6">
 									{#each submenuSections as section}
 										<SubmenuSection
 											title={section.label}
@@ -618,7 +618,7 @@
 										</div>
 									{/if}
 								</nav>
-								<div class="flex justify-center pt-4 mt-auto">
+								<div class="mt-auto flex justify-center pt-4">
 									<button
 										type="button"
 										aria-label={isSubmenuCompact ? 'Expand submenu' : 'Collapse submenu'}
@@ -630,7 +630,7 @@
 											persistSubmenuCompact(isSubmenuCompact);
 										}}
 									>
-										<Pin class="w-4 h-4 transition-transform duration-300 ease-out" />
+										<Pin class="h-4 w-4 transition-transform duration-300 ease-out" />
 									</button>
 								</div>
 							</aside>
@@ -691,7 +691,7 @@
 				<Button
 					type="submit"
 					size="lg"
-					class="px-6 border-none rounded-full shadow-2xl h-14 animate-bounce bg-primary text-primary-foreground hover:animate-none hover:bg-accent/90"
+					class="h-14 animate-bounce rounded-full border-none bg-primary px-6 text-primary-foreground shadow-2xl hover:animate-none hover:bg-accent/90"
 					disabled={isRestarting}
 				>
 					<RefreshCw class="mr-2 h-5 w-5 {isRestarting ? 'animate-spin' : ''}" />

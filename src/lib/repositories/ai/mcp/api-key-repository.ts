@@ -119,7 +119,7 @@ export class ApiKeyRepository extends BaseRepository {
 			valid: true,
 			apiKey: {
 				...apiKey,
-				allowedModules: (apiKey.allowedModules as unknown as string[]) || []
+				allowedScopes: (apiKey.allowedScopes as unknown as string[]) || []
 			}
 		};
 	}
@@ -143,7 +143,7 @@ export class ApiKeyRepository extends BaseRepository {
 				keyPrefix: generated.prefix,
 				keyHash: generated.hash,
 				status: MCPApiKeyStatus.ACTIVE,
-				allowedModules: input.allowedModules ?? [],
+				allowedScopes: input.allowedScopes ?? [],
 				expiresAt: input.expiresAt || null,
 				lastUsedAt: null,
 				usageCount: 0,
@@ -156,7 +156,7 @@ export class ApiKeyRepository extends BaseRepository {
 		return {
 			apiKey: {
 				...apiKey,
-				allowedModules: (apiKey.allowedModules as unknown as string[]) || []
+				allowedScopes: (apiKey.allowedScopes as unknown as string[]) || []
 			},
 			fullKey: generated.fullKey
 		};
@@ -176,7 +176,7 @@ export class ApiKeyRepository extends BaseRepository {
 
 		return {
 			...result[0],
-			allowedModules: (result[0].allowedModules as unknown as string[]) || []
+			allowedScopes: (result[0].allowedScopes as unknown as string[]) || []
 		};
 	}
 
@@ -194,7 +194,7 @@ export class ApiKeyRepository extends BaseRepository {
 
 		return {
 			...result[0],
-			allowedModules: (result[0].allowedModules as unknown as string[]) || []
+			allowedScopes: (result[0].allowedScopes as unknown as string[]) || []
 		};
 	}
 
@@ -241,7 +241,7 @@ export class ApiKeyRepository extends BaseRepository {
 		return {
 			items: items.map((item) => ({
 				...item,
-				allowedModules: (item.allowedModules as unknown as string[]) || []
+				allowedScopes: (item.allowedScopes as unknown as string[]) || []
 			})),
 			total,
 			page,
@@ -260,7 +260,7 @@ export class ApiKeyRepository extends BaseRepository {
 
 		if (input.name !== undefined) updateData.name = input.name;
 		if (input.status !== undefined) updateData.status = input.status;
-		if (input.allowedModules !== undefined) updateData.allowedModules = input.allowedModules;
+		if (input.allowedScopes !== undefined) updateData.allowedScopes = input.allowedScopes;
 		if (input.expiresAt !== undefined) updateData.expiresAt = input.expiresAt || null;
 
 		const result = await this.db
@@ -273,7 +273,7 @@ export class ApiKeyRepository extends BaseRepository {
 
 		return {
 			...result[0],
-			allowedModules: (result[0].allowedModules as unknown as string[]) || []
+			allowedScopes: (result[0].allowedScopes as unknown as string[]) || []
 		};
 	}
 

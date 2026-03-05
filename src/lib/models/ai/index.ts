@@ -86,6 +86,7 @@ export interface ToolDefinition {
 		tags: string[];
 		priority: number;
 		essential: boolean;
+		submodule?: string; // NEW: Which submodule this tool belongs to (e.g., "my", "projects", "dashboard")
 	};
 }
 

@@ -39,6 +39,51 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 };
 
 /**
+ * Validate scopes against available modules
+ * Supports hierarchical scopes: "module", "module:submodule", or "module:submodule:tool"
+ */
+async function validateScopes(scopes: string[]): Promise<{
+	valid: string[];
+	invalid: string[];
+}> {
+	const available = getAvailableModuleIds();
+	const valid: string[] = [];
+	const invalid: string[] = [];
+
+	for (const scope of scopes) {
+		const parts = scope.split(':');
+
+		// Validate format (1-3 parts)
+		if (parts.length < 1 || parts.length > 3) {
+			invalid.push(scope);
+			continue;
+		}
+
+		// Validate module
+		if (!available.includes(parts[0])) {
+			invalid.push(scope);
+			continue;
+		}
+
+		// Validate submodule (if present)
+		if (parts.length > 1) {
+			// For now, accept any submodule
+			// TODO: Add submodule validation
+		}
+
+		// Validate tool name (if present)
+		if (parts.length > 2) {
+			// For now, accept any tool name
+			// TODO: Add tool validation
+		}
+
+		valid.push(scope);
+	}
+
+	return { valid, invalid };
+}
+
+/**
  * POST - Create a new API key
  */
 export const POST: RequestHandler = async ({ locals, request }) => {
@@ -49,15 +94,15 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 	const body = await request.json();
 
 	// Validate input
-	const allowedModules = body.allowedModules ?? [];
+	const allowedScopes = body.allowedScopes ?? [];
 
-	// Validate module IDs
-	const { valid, invalid } = await validateModuleIds(allowedModules);
+	// Validate scopes
+	const { valid, invalid } = await validateScopes(allowedScopes);
 
 	if (invalid.length > 0) {
 		return json(
 			{
-				error: 'Invalid module IDs',
+				error: 'Invalid scopes',
 				invalid
 			},
 			{ status: 400 }
@@ -66,7 +111,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 
 	const input: CreateApiKeyInput = {
 		name: body.name,
-		allowedModules: valid,
+		allowedScopes: valid,
 		expiresAt: body.expiresAt ? new Date(body.expiresAt) : null
 	};
 

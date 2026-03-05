@@ -24,6 +24,8 @@ export interface MCPPrompt {
 	description: string;
 	arguments: PromptArgument[];
 	moduleId: string | null;
+	submoduleId: string | null; // NEW: For submodule-level access control
+	promptName: string | null; // NEW: For individual prompt control
 	enabled: boolean;
 	createdAt: Date;
 	updatedAt: Date;
@@ -37,6 +39,8 @@ export interface CreatePromptInput {
 	description: string;
 	arguments: PromptArgument[];
 	moduleId?: string | null;
+	submoduleId?: string | null; // NEW
+	promptName?: string | null; // NEW
 	enabled?: boolean;
 }
 
@@ -48,6 +52,8 @@ export interface UpdatePromptInput {
 	description?: string;
 	arguments?: PromptArgument[];
 	moduleId?: string | null;
+	submoduleId?: string | null; // NEW
+	promptName?: string | null; // NEW
 	enabled?: boolean;
 }
 
@@ -56,6 +62,8 @@ export interface UpdatePromptInput {
  */
 export interface PromptFilters {
 	moduleId?: string;
+	submoduleId?: string; // NEW
+	promptName?: string; // NEW
 	enabled?: boolean;
 	search?: string; // Search by name or description
 }

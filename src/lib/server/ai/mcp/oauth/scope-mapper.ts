@@ -1,8 +1,8 @@
 /**
  * OAuth Scope to Module Mapper
  *
- * Maps OAuth scopes to MoLOS module permissions.
- * This allows OAuth clients to request access to specific modules.
+ * Maps OAuth scopes to MoLOS module scope permissions.
+ * Supports hierarchical scopes: "module", "module:submodule", or "module:submodule:tool"
  */
 
 import { getAllModules } from '$lib/config';
@@ -10,85 +10,105 @@ import { getAllModules } from '$lib/config';
 /**
  * OAuth scope definitions
  *
- * Scopes follow the pattern: mcp:{module} for module-specific access
+ * Scopes follow pattern: "mcp:{module}" for module-specific access
  * or "mcp:all" for full access.
+ * Extended scopes: "mcp:{module}:{submodule}" or "mcp:{module}:{submodule}:{tool}"
  */
 export const MCP_OAUTH_SCOPES = {
 	ALL: 'mcp:all',
 	ANALYTICS: 'mcp:analytics',
 	TASKS: 'mcp:tasks',
 	NOTES: 'mcp:notes'
-	// Add more module-specific scopes as needed
 } as const;
 
 /**
- * Get all available modules
+ * Get all available modules (both package modules and legacy external modules)
  */
 function getAvailableModules(): string[] {
 	const allModules = getAllModules();
-	return allModules.filter((m) => m.isExternal).map((m) => m.id);
+	return allModules.filter((m) => m.isPackageModule || m.isExternal).map((m) => m.id);
 }
 
 /**
- * Convert OAuth scopes to allowed module IDs
+ * Convert OAuth scopes to allowed scopes
  *
  * @param scopes - Array of OAuth scopes
- * @returns Array of module IDs the client can access
+ * @returns Array of allowed scopes
  */
-export function scopesToModules(scopes: string[]): string[] {
+export function scopesToAllowedScopes(scopes: string[]): string[] {
 	// If "mcp:all" scope is present, grant access to all modules
 	if (scopes.includes(MCP_OAUTH_SCOPES.ALL)) {
 		return []; // Empty array = no restriction
 	}
 
-	// Map scopes to module IDs
-	const moduleIds: string[] = [];
-	for (const scope of scopes) {
-		// Parse scope format: mcp:{module_id}
-		if (scope.startsWith('mcp:')) {
-			const moduleId = scope.slice(4); // Remove "mcp:" prefix
-			if (moduleId === 'all') {
-				// Already handled above, but skip here
-				continue;
-			}
-			moduleIds.push(moduleId);
-		}
-	}
+	const allowedScopes: string[] = [];
 
-	// If no valid scopes, return empty (no access)
-	if (moduleIds.length === 0) {
-		return []; // No access granted
+	// Map scopes to module/submodule/tool format
+	for (const scope of scopes) {
+		if (scope === MCP_OAUTH_SCOPES.ALL) {
+			// Already handled above
+			continue;
+		}
+
+		// Parse scope format: "mcp:{module}" or "mcp:{module}:{submodule}" or "mcp:{module}:{submodule}:{tool}"
+		if (scope.startsWith('mcp:')) {
+			const scopeValue = scope.slice(4); // Remove "mcp:" prefix
+			allowedScopes.push(scopeValue);
+		}
 	}
 
 	// Validate against available modules
 	const availableModules = getAvailableModules();
-	return moduleIds.filter((id) => availableModules.includes(id));
+	const validScopes = allowedScopes.filter((scope) => {
+		// Check if scope's module part is available
+		const parts = scope.split(':');
+		if (parts.length > 0) {
+			return availableModules.includes(parts[0]);
+		}
+		// No colon = module-level scope
+		return availableModules.includes(scope);
+	});
+
+	return validScopes;
 }
 
 /**
- * Convert module IDs to OAuth scopes
+ * Convert module/submodule/tool scopes to OAuth scopes
  *
- * @param moduleIds - Array of module IDs
+ * @param moduleScopes - Array of module/submodule/tool scopes
  * @returns Array of OAuth scopes
  */
-export function modulesToScopes(moduleIds: string[]): string[] {
+export function scopesToOAuthScopes(moduleScopes: string[]): string[] {
 	// If empty or contains all modules, return "mcp:all"
-	if (moduleIds.length === 0) {
-		return [MCP_OAUTH_SCOPES.ALL];
+	if (moduleScopes.length === 0) {
+		return ['mcp:all'];
 	}
 
 	const availableModules = getAvailableModules();
 
-	// If requesting all available modules, use "mcp:all"
-	if (moduleIds.length === availableModules.length) {
-		const hasAll = moduleIds.every((id) => availableModules.includes(id));
-		if (hasAll) {
-			return [MCP_OAUTH_SCOPES.ALL];
+	// Check if requesting all available modules
+	const hasAll = moduleScopes.every((scope) => {
+		const parts = scope.split(':');
+		if (parts.length === 1) {
+			// Module-level scope
+			return availableModules.includes(scope);
 		}
+		return false;
+	});
+
+	if (hasAll) {
+		return ['mcp:all'];
 	}
 
-	// Map module IDs to scopes
-	return moduleIds.map((id) => `mcp:${id}`);
+	// Map to OAuth scope format
+	return moduleScopes.map((scope) => {
+		// Already has "mcp:" prefix, just return as-is
+		if (scope.includes(':')) {
+			return scope;
+		}
+		// Module-level scope
+		return `mcp:${scope}`;
+	});
 }
 
 /**
@@ -97,23 +117,30 @@ export function modulesToScopes(moduleIds: string[]): string[] {
  * @param scopes - Array of OAuth scopes to validate
  * @returns Array of valid scopes
  */
-export function validateScopes(scopes: string[]): string[] {
+export function validateOAuthScopes(scopes: string[]): string[] {
 	const validScopes: string[] = [];
 	const availableModules = getAvailableModules();
 
 	for (const scope of scopes) {
-		// Check for "mcp:all"
+		// Check for "mcp:all" first
 		if (scope === MCP_OAUTH_SCOPES.ALL) {
 			validScopes.push(scope);
 			continue;
 		}
 
-		// Check for module-specific scopes
+		// Parse scope format
 		if (scope.startsWith('mcp:')) {
-			const moduleId = scope.slice(4);
-			if (availableModules.includes(moduleId)) {
-				validScopes.push(scope);
+			const scopeValue = scope.slice(4);
+			const parts = scopeValue.split(':');
+
+			// Validate module
+			if (!availableModules.includes(parts[0])) {
+				continue;
 			}
+
+			// For extended scopes (with submodule/tool), skip validation for now
+			// TODO: Add validation for submodule/tool format
+			validScopes.push(scope);
 		}
 	}
 
@@ -129,6 +156,7 @@ export function getAvailableScopes(): string[] {
 	const scopes: string[] = [MCP_OAUTH_SCOPES.ALL];
 	const availableModules = getAvailableModules();
 
+	// Add module-level scopes
 	for (const moduleId of availableModules) {
 		scopes.push(`mcp:${moduleId}`);
 	}

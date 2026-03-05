@@ -172,22 +172,51 @@ export class McpPromptRepository extends BaseRepository {
 	}
 
 	/**
-	 * List all enabled prompts for MCP protocol (scoped to user and allowed modules)
+	 * List all enabled prompts for MCP protocol (scoped to user and allowed scopes)
+	 * Supports hierarchical scopes: "module", "module:submodule", or "module:submodule:prompt"
 	 */
 	async listEnabledForMcp(
 		userId: string,
-		allowedModules: string[]
+		allowedScopes: string[]
 	): Promise<Pick<MCPPrompt, 'name' | 'description' | 'arguments'>[]> {
-		// If no module restriction, get all enabled prompts
-		// Otherwise, filter by allowed modules
-		const whereClause =
-			allowedModules.length === 0
-				? and(eq(aiMcpPrompts.userId, userId), eq(aiMcpPrompts.enabled, true))
-				: and(
-						eq(aiMcpPrompts.userId, userId),
-						eq(aiMcpPrompts.enabled, true),
-						sql`(${aiMcpPrompts.moduleId} IS NULL OR ${aiMcpPrompts.moduleId} IN ${allowedModules})`
-					);
+		// Helper function to check if a prompt matches a scope
+		const matchesScope = (prompt: any): boolean => {
+			// If no scopes, allow all
+			if (allowedScopes.length === 0) return true;
+
+			for (const scope of allowedScopes) {
+				const parts = scope.split(':');
+				const scopeModule = parts[0];
+				const scopeSubmodule = parts[1] || null;
+				const scopePrompt = parts[2] || null;
+
+				// Check module match
+				if (prompt.moduleId !== scopeModule) continue;
+
+				// If scope is module-only, allow all prompts in this module
+				if (!scopeSubmodule) return true;
+
+				// Check submodule match
+				if (prompt.submoduleId !== scopeSubmodule) continue;
+
+				// If scope is submodule-only, allow all prompts in this submodule
+				if (!scopePrompt) return true;
+
+				// Check prompt name match
+				if (prompt.name === scopePrompt) return true;
+			}
+
+			return false;
+		};
+
+		// Fetch all enabled prompts
+		const allPrompts = await this.db
+			.select()
+			.from(aiMcpPrompts)
+			.where(and(eq(aiMcpPrompts.userId, userId), eq(aiMcpPrompts.enabled, true)));
+
+		// Filter by scopes
+		const filtered = allPrompts.filter(matchesScope);
 
 		const items = await this.db
 			.select({
@@ -196,7 +225,13 @@ export class McpPromptRepository extends BaseRepository {
 				arguments: aiMcpPrompts.arguments
 			})
 			.from(aiMcpPrompts)
-			.where(whereClause);
+			.where(
+				and(
+					eq(aiMcpPrompts.userId, userId),
+					eq(aiMcpPrompts.enabled, true),
+					sql`id IN (${filtered.map((p) => `'${p.id}'`).join(',')})`
+				)
+			);
 
 		return items.map((item) => ({
 			name: item.name,
