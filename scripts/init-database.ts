@@ -7,7 +7,7 @@
  * 2. Delegates to unified migration runner
  * 3. Provides dev-friendly output
  *
- * For production, use: bun run db:migrate:unified
+ * For production, use: bun run db:migrate
  *
  * Usage:
  *   bun run db:init

@@ -11,7 +11,7 @@
  *
  * Usage:
  *   tsx packages/database/src/migrate-unified.ts
- *   bun run db:migrate:unified
+ *   bun run db:migrate
  */
 
 import { existsSync, mkdirSync, readdirSync, readFileSync } from 'fs';
