@@ -34,6 +34,7 @@ export class McpResourceRepository extends BaseRepository {
 				name: input.name,
 				uri: input.uri,
 				moduleId: input.moduleId ?? null,
+				submoduleId: input.submoduleId ?? 'main',
 				description: input.description,
 				resourceType: input.resourceType ?? 'static',
 				url: input.url ?? null,
@@ -189,7 +190,8 @@ export class McpResourceRepository extends BaseRepository {
 				if (!scopeSubmodule) return true;
 
 				// Check submodule match
-				if (resource.submoduleId !== scopeSubmodule) continue;
+				const resourceSubmoduleId = resource.submoduleId ?? 'main';
+				if (resourceSubmoduleId !== scopeSubmodule) continue;
 
 				// If scope is submodule-only, allow all resources in this submodule
 				if (!scopeResource) return true;

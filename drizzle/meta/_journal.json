@@ -113,6 +113,13 @@
       "when": 1740163200000,
       "tag": "0015_cleanup_duplicate_ai_messages",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1741238400000,
+      "tag": "0016_add_submodule_tool_permissions",
+      "breakpoints": true
     }
   ]
 }

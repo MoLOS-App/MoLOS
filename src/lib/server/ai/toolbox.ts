@@ -4,7 +4,7 @@ import type { ToolDefinition } from '$lib/models/ai';
 import type { ModuleConfig } from '@molos/module-types';
 import { TtlCache } from './agent-utils';
 
-// Lazy load module AI tools - this is the CORRECT path to the modules directory
+// Lazy load module AI tools - use relative path from this file to modules directory
 const moduleAiTools = import.meta.glob('../../../../modules/*/src/server/ai/ai-tools.ts', {
 	eager: false
 }) as Record<string, () => Promise<unknown>>;
@@ -47,18 +47,9 @@ export class AiToolbox {
 		activeModuleIds: string[] = [],
 		mentionedModuleIds: string[] = []
 	): Promise<ToolDefinition[]> {
-		console.log(
-			'[AiToolbox] getTools called with userId:',
-			userId,
-			'activeModuleIds:',
-			activeModuleIds,
-			'mentionedModuleIds:',
-			mentionedModuleIds
-		);
 		const cacheKey = `${userId}:${[...activeModuleIds].sort().join(',') || 'core'}:${[...mentionedModuleIds].sort().join(',') || 'none'}`;
 		const cached = toolCache.get(cacheKey);
 		if (cached) {
-			console.log('[AiToolbox] Returning cached tools, count:', cached.length);
 			return cached;
 		}
 
@@ -92,7 +83,8 @@ export class AiToolbox {
 			);
 			try {
 				// Skip non-package modules (they don't have AI tools in modules/*/src/server/ai/ai-tools.ts)
-				if (!module.isPackageModule) {
+				// Only skip if explicitly false (core modules), null or true means it's a package module
+				if (module.isPackageModule === false) {
 					continue;
 				}
 

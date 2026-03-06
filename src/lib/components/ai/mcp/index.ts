@@ -21,4 +21,14 @@ export { default as McpHelpDialog } from './McpHelpDialog.svelte';
 export { default as McpOAuthAppsTable } from './McpOAuthAppsTable.svelte';
 export { default as McpCreateOAuthAppDialog } from './McpCreateOAuthAppDialog.svelte';
 export { default as McpEditOAuthAppDialog } from './McpEditOAuthAppDialog.svelte';
-export type { HelpTabId } from './McpHelpDialog.svelte';
+export { default as McpDataTable } from './McpDataTable.svelte';
+export { default as McpScopePicker } from './McpScopePicker.svelte';
+export { default as McpModuleSelector } from './McpModuleSelector.svelte';
+export { default as McpApiKeyInfo } from './McpApiKeyInfo.svelte';
+export { default as McpApiKeyStats } from './McpApiKeyStats.svelte';
+export { default as McpApiKeyActivity } from './McpApiKeyActivity.svelte';
+export { default as McpDashboard } from './McpDashboard.svelte';
+export { default as McpKeysManager } from './McpKeysManager.svelte';
+export { default as McpResourcesManager } from './McpResourcesManager.svelte';
+
+export type * from './types';

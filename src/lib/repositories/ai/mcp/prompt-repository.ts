@@ -24,6 +24,8 @@ type PromptDbRow = {
 	description: string;
 	arguments: string; // Stored as JSON string in DB
 	moduleId: string | null;
+	submoduleId: string | null;
+	promptName: string | null;
 	enabled: number;
 	createdAt: Date;
 	updatedAt: Date;
@@ -37,6 +39,8 @@ function mapToMCPPrompt(row: PromptDbRow): MCPPrompt {
 		description: row.description,
 		arguments: JSON.parse(row.arguments),
 		moduleId: row.moduleId ?? null,
+		submoduleId: row.submoduleId ?? 'main',
+		promptName: row.promptName ?? null,
 		enabled: row.enabled === 1,
 		createdAt: row.createdAt,
 		updatedAt: row.updatedAt
@@ -62,6 +66,8 @@ export class McpPromptRepository extends BaseRepository {
 				description: input.description,
 				arguments: JSON.stringify(input.arguments),
 				moduleId: input.moduleId ?? null,
+				submoduleId: input.submoduleId ?? 'main',
+				promptName: input.promptName ?? null,
 				enabled: input.enabled ?? true,
 				createdAt: now,
 				updatedAt: now
@@ -197,7 +203,8 @@ export class McpPromptRepository extends BaseRepository {
 				if (!scopeSubmodule) return true;
 
 				// Check submodule match
-				if (prompt.submoduleId !== scopeSubmodule) continue;
+				const promptSubmoduleId = prompt.submoduleId ?? 'main';
+				if (promptSubmoduleId !== scopeSubmodule) continue;
 
 				// If scope is submodule-only, allow all prompts in this submodule
 				if (!scopePrompt) return true;

@@ -349,6 +349,144 @@ When developing AI tools, test the following scenarios:
 
 ---
 
+## Hierarchical Permissions & Submodule Metadata
+
+MoLOS implements a **3-level hierarchical permission system** for MCP API keys, allowing fine-grained control over tool access:
+
+### Permission Levels
+
+1. **Module Level** - Access all tools in a module
+   - Example scope: `"MoLOS-Tasks"`
+
+2. **Submodule Level** - Access all tools in a submodule
+   - Example scope: `"MoLOS-Tasks:tasks"`
+
+3. **Tool Level** - Access specific tools only
+   - Example scope: `"MoLOS-Tasks:tasks:get_tasks"`
+
+### Adding Submodule Metadata to Tools
+
+When defining AI tools, you MUST include `metadata` with a `submodule` field:
+
+```typescript
+export function getAiTools(userId: string): ToolDefinition[] {
+	return [
+		{
+			name: 'get_tasks',
+			description: 'Retrieve tasks for the current user.',
+			parameters: {
+				type: 'object',
+				properties: {
+					limit: { type: 'number', default: 50 }
+				}
+			},
+			metadata: { submodule: 'tasks' }, // REQUIRED: Submodule identifier
+			execute: async (params) => {
+				return await taskRepo.getByUserId(userId, params.limit);
+			}
+		},
+		{
+			name: 'create_task',
+			description: 'Create a new task.',
+			parameters: {
+				type: 'object',
+				properties: {
+					title: { type: 'string' },
+					projectId: { type: 'string' }
+				},
+				required: ['title']
+			},
+			metadata: { submodule: 'tasks' }, // REQUIRED: Submodule identifier
+			execute: async (params) => {
+				return await taskRepo.create({ userId, ...params });
+			}
+		}
+	];
+}
+```
+
+### ToolDefinition Metadata Interface
+
+For modules using the core `ToolDefinition` interface (from `$lib/models/ai/index.ts`), metadata must include:
+
+```typescript
+metadata: {
+  category: string;      // e.g., 'system', 'tasks', 'mcp'
+  tags: string[];         // e.g., ['read', 'create', 'update']
+  priority: number;       // 1-10 (10 = highest priority)
+  essential: boolean;      // Whether this tool is essential
+  submodule: string;      // REQUIRED: Submodule identifier
+}
+```
+
+For modules using simplified ToolDefinition interfaces, the minimum required is:
+
+```typescript
+metadata?: {
+  submodule: string; // REQUIRED: Submodule identifier
+}
+```
+
+### Submodule Naming Guidelines
+
+**Consistent Naming Within Module:**
+
+- All tools in the same logical group should use the same submodule name
+- Use kebab-case or lowercase names
+- Examples: 'tasks', 'projects', 'expenses', 'subscriptions'
+
+**Module-Specific Submodule Examples:**
+
+| Module             | Submodules                                                                     | Purpose            |
+| ------------------ | ------------------------------------------------------------------------------ | ------------------ |
+| MoLOS-Tasks        | tasks, projects, areas, daily-logs, workflow, dependencies, search, ai-context | Task management    |
+| MoLOS-Meals        | meals, workouts, shopping                                                      | Food & fitness     |
+| MoLOS-Goals        | goals, resources                                                               | OKRs & knowledge   |
+| MoLOS-Finance      | expenses, subscriptions, accounts, budgets                                     | Financial tracking |
+| MoLOS-AI-Knowledge | prompts, llm-files, playground, humanizer                                      | AI utilities       |
+
+**Core System Tools:**
+
+- `system` - get_active_modules, get_user_profile, get_current_time, etc.
+- `resources` - MCP resource management tools
+- `prompts` - MCP prompt management tools
+
+### Permission Validation
+
+The scope middleware automatically validates permissions based on API key scopes:
+
+```typescript
+// In scope-middleware.ts
+isToolAllowed(moduleId: string, toolName: string, allowedScopes: string[]): boolean {
+  // Check tool-level permission
+  if (allowedScopes.includes(`${moduleId}:${submodule}:${toolName}`)) {
+    return true;
+  }
+
+  // Check submodule-level permission
+  if (allowedScopes.includes(`${moduleId}:${submodule}`)) {
+    return true;
+  }
+
+  // Check module-level permission
+  if (allowedScopes.includes(moduleId)) {
+    return true;
+  }
+
+  return false;
+}
+```
+
+### Best Practices
+
+1. **ALWAYS include submodule metadata** - Tools without metadata may not be accessible through API keys
+2. **Group related tools** - Use logical submodule names that reflect functionality
+3. **Use consistent naming** - Follow existing patterns in your module
+4. **Test permissions** - Verify tools work with different scope levels in API key detail page
+5. **Document submodules** - Update module documentation with submodule structure
+
+---
+
 ## Common Enum Values Reference
 
 ### Finance Module Categories

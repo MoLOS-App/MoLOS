@@ -10,9 +10,8 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { ApiKeyRepository } from '$lib/repositories/ai/mcp';
-import type { CreateApiKeyInput, UpdateApiKeyInput, ApiKeyFilters } from '$lib/models/ai/mcp';
-import { getAvailableModuleIds } from '$lib/server/ai/mcp/mcp-utils';
-import { MCPApiKeyStatus } from '$lib/server/db/schema';
+import type { CreateApiKeyInput, ApiKeyFilters } from '$lib/models/ai/mcp';
+import { validateScopes, validateKeyName } from '$lib/server/ai/mcp/validation/scope-validator';
 
 /**
  * GET - List API keys for the authenticated user
@@ -39,51 +38,6 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 };
 
 /**
- * Validate scopes against available modules
- * Supports hierarchical scopes: "module", "module:submodule", or "module:submodule:tool"
- */
-async function validateScopes(scopes: string[]): Promise<{
-	valid: string[];
-	invalid: string[];
-}> {
-	const available = getAvailableModuleIds();
-	const valid: string[] = [];
-	const invalid: string[] = [];
-
-	for (const scope of scopes) {
-		const parts = scope.split(':');
-
-		// Validate format (1-3 parts)
-		if (parts.length < 1 || parts.length > 3) {
-			invalid.push(scope);
-			continue;
-		}
-
-		// Validate module
-		if (!available.includes(parts[0])) {
-			invalid.push(scope);
-			continue;
-		}
-
-		// Validate submodule (if present)
-		if (parts.length > 1) {
-			// For now, accept any submodule
-			// TODO: Add submodule validation
-		}
-
-		// Validate tool name (if present)
-		if (parts.length > 2) {
-			// For now, accept any tool name
-			// TODO: Add tool validation
-		}
-
-		valid.push(scope);
-	}
-
-	return { valid, invalid };
-}
-
-/**
  * POST - Create a new API key
  */
 export const POST: RequestHandler = async ({ locals, request }) => {
@@ -97,7 +51,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 	const allowedScopes = body.allowedScopes ?? [];
 
 	// Validate scopes
-	const { valid, invalid } = await validateScopes(allowedScopes);
+	const { valid, invalid } = validateScopes(allowedScopes);
 
 	if (invalid.length > 0) {
 		return json(
@@ -109,20 +63,17 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 		);
 	}
 
+	// Validate name
+	const nameError = validateKeyName(body.name);
+	if (nameError) {
+		return json({ error: nameError.message }, { status: 400 });
+	}
+
 	const input: CreateApiKeyInput = {
 		name: body.name,
 		allowedScopes: valid,
 		expiresAt: body.expiresAt ? new Date(body.expiresAt) : null
 	};
-
-	// Validate name
-	if (!input.name || input.name.trim().length === 0) {
-		return json({ error: 'Name is required' }, { status: 400 });
-	}
-
-	if (input.name.length > 100) {
-		return json({ error: 'Name must be less than 100 characters' }, { status: 400 });
-	}
 
 	const repo = new ApiKeyRepository();
 	const result = await repo.create(locals.user.id, input);
@@ -132,25 +83,3 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 		fullKey: result.fullKey // Only returned once on creation
 	});
 };
-
-/**
- * Validate module IDs against available external modules
- */
-async function validateModuleIds(moduleIds: string[]): Promise<{
-	valid: string[];
-	invalid: string[];
-}> {
-	const available = getAvailableModuleIds();
-	const valid: string[] = [];
-	const invalid: string[] = [];
-
-	for (const moduleId of moduleIds) {
-		if (available.includes(moduleId)) {
-			valid.push(moduleId);
-		} else {
-			invalid.push(moduleId);
-		}
-	}
-
-	return { valid, invalid };
-}

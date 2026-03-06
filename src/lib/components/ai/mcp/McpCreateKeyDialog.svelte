@@ -28,7 +28,7 @@
 		availableModules: Module[];
 		onCreate: (data: {
 			name: string;
-			allowedModules: string[] | null;
+			allowedScopes: string[] | null;
 			expiresAt: string | null;
 		}) => void | Promise<void>;
 	} = $props();
@@ -62,7 +62,7 @@
 	}
 
 	// Convert to null for "all modules" (empty array means all modules for unrestricted access)
-	function getModulesForSubmit(): string[] | null {
+	function getScopesForSubmit(): string[] | null {
 		// Empty array means all modules (unrestricted access)
 		// Non-empty array means specific modules only
 		return selectedModules.length > 0 ? selectedModules : null;
@@ -73,7 +73,7 @@
 
 		onCreate({
 			name: name.trim(),
-			allowedModules: getModulesForSubmit(),
+			allowedScopes: getScopesForSubmit(),
 			expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null
 		});
 

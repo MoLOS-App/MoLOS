@@ -23,7 +23,7 @@
 | Question | Decision |
 |----------|----------|
 | Active Module Selection | **Option B:** MCP-specific module toggle per API key |
-| Authentication | **Option B:** Scoped API tokens with module-level access control |
+| Authentication | **Option B:** Scoped API tokens with 3-level hierarchical access control (module/submodule/tool) |
 | Resources/Prompts | **Phase 1:** Implement both endpoints now |
 | Tool Naming | **Keep existing prefix:** `MoLOS-Tasks_get_tasks` |
 
@@ -38,7 +38,7 @@
 │                                                                       │
 │  External AI Client (Claude Desktop, etc.)                           │
 │         │                                                             │
-│         │ X-API-Key: mcp_live_xxxxx (scoped to specific modules)     │
+│         │ X-API-Key: mcp_live_xxxxx (3-level scopes: module/submodule/tool) │
 │         ▼                                                             │
 │  ┌─────────────────────────────────────────────────────────────┐    │
 │  │              SSE Endpoint: /api/ai/mcp/transport             │    │
@@ -55,7 +55,7 @@
 │         ▼                                                             │
 │  ┌─────────────────────────────────────────────────────────────┐    │
 │  │                 AiToolbox (existing)                         │    │
-│  │  - Filters tools by API key's allowed modules                │    │
+│  │  - Filters tools by API key's allowed scopes (3-level)                │    │
 │  └─────────────────────────────────────────────────────────────┘    │
 │                                                                       │
 └─────────────────────────────────────────────────────────────────────┘
@@ -88,8 +88,8 @@ export const aiMcpApiKeys = sqliteTable('ai_mcp_api_keys', {
 	keyHash: text('key_hash').notNull().describe('SHA-256 hash of full key'),
 	status: textEnum('status', MCPApiKeyStatus).notNull().default(MCPApiKeyStatus.ACTIVE),
 
-	// Scoping - which modules this key can access
-	allowedModules: text('allowed_modules', { mode: 'json' })
+	// Scoping - which modules/submodules/tools this key can access (3-level hierarchy)
+	allowedScopes: text('allowed_scopes', { mode: 'json' })
 		.notNull()
 		.$type<string[]>()
 
@@ -382,7 +382,7 @@ Examples:
 
 - List of API keys with status
 - Create new key dialog
-- Edit key (name, module scope, expiration)
+- Edit key (name, hierarchical scopes [module/submodule/tool], expiration)
 - Revoke key
 - Show key prefix (last 4 of prefix for identification)
 
