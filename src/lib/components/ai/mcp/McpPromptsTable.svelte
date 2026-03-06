@@ -83,7 +83,7 @@
 		actions.push({
 			icon: Edit,
 			label: 'Edit prompt',
-			onClick: onEditPrompt
+			onClick: (prompt) => onEditPrompt(prompt.id)
 		});
 	}
 	if (onDeletePrompt) {
@@ -91,7 +91,7 @@
 			icon: Trash2,
 			label: 'Delete prompt',
 			variant: 'destructive',
-			onClick: onDeletePrompt
+			onClick: (prompt) => onDeletePrompt(prompt.id)
 		});
 	}
 </script>
@@ -123,7 +123,7 @@
 			}
 		]}
 		createLabel="Create Prompt"
-		{onCreatePrompt}
+		onCreate={onCreatePrompt}
 		emptyIcon={List}
 		emptyTitle="No prompts found"
 	/>

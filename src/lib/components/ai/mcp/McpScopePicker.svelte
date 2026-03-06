@@ -9,17 +9,27 @@
 	import { Tabs, TabsList, TabsTrigger, TabsContent } from '$lib/components/ui/tabs';
 	import type { Tool, ModuleData, SubmoduleData } from './types.js';
 
-	// MCP Scope Picker Component - Handles module/tool selection
-
-	let {
-		modules = [],
-		selectedScopes = [],
-		onChange
-	}: {
+	interface Props {
 		modules: ModuleData[];
 		selectedScopes: string[];
 		onChange?: (scopes: string[]) => void;
-	} = $props();
+		onToggleScope?: (scope: string) => void;
+		onToggleModule?: (moduleId: string) => void;
+		onToggleSubmodule?: (moduleId: string, submodule: string) => void;
+		onToggleTool?: (moduleId: string, submodule: string, tool: string) => void;
+		onCopyScopes?: () => void;
+	}
+
+	let {
+		modules,
+		selectedScopes = [],
+		onChange,
+		onToggleScope,
+		onToggleModule,
+		onToggleSubmodule,
+		onToggleTool,
+		onCopyScopes
+	}: Props = $props();
 
 	// UI state
 	let expandedModules = $state<Set<string>>(new Set());
@@ -41,14 +51,15 @@
 
 	// Accordion behavior: auto-expand selected module when tab changes
 	$effect(() => {
-		// Only act when tab actually changes
+		// Only act When Tab Actually Changes
 		if (previousTab !== selectedModuleTab) {
 			console.log('[McpScopePicker] Tab changed from', previousTab, 'to', selectedModuleTab);
 			// Clear and expand only the new tab
-			expandedModules.clear();
+			const newExpanded = new Set<string>();
 			if (selectedModuleTab) {
-				expandedModules.add(selectedModuleTab);
+				newExpanded.add(selectedModuleTab);
 			}
+			expandedModules = newExpanded;
 			previousTab = selectedModuleTab;
 		}
 	});
@@ -77,135 +88,193 @@
 
 	// Expand/collapse module
 	function toggleModuleExpand(moduleId: string) {
-		if (expandedModules.has(moduleId)) {
-			expandedModules.delete(moduleId);
+		const newExpanded = new Set(expandedModules);
+		if (newExpanded.has(moduleId)) {
+			newExpanded.delete(moduleId);
 		} else {
-			expandedModules.add(moduleId);
+			newExpanded.add(moduleId);
 		}
+		expandedModules = newExpanded;
 	}
 
-	// Check if module has any tools selected
-	function isModuleSelected(moduleId: string): boolean {
-		return selectedScopes.some((scope) => {
-			const parts = scope.split(':');
-			return parts[0] === moduleId;
-		});
-	}
-
-	// Check if submodule has any tools selected
-	function isSubmoduleSelected(moduleId: string, submodule: string): boolean {
-		return selectedScopes.some((scope) => {
-			const parts = scope.split(':');
-			return parts[0] === moduleId && parts[1] === submodule;
-		});
-	}
-
-	// Check if specific tool is selected
-	function isToolSelected(moduleId: string, submodule: string, tool: string): boolean {
-		const scope = `${moduleId}:${submodule}:${tool}`;
+	// Check if scope is selected
+	function isScopeSelected(scope: string): boolean {
 		return selectedScopes.includes(scope);
 	}
 
-	// Toggle module selection (select all tools in module)
-	function toggleModule(moduleId: string, module: ModuleData) {
-		const isSelected = isModuleSelected(moduleId);
-
-		// Remove all scopes for this module
-		selectedScopes = selectedScopes.filter((scope) => {
-			const parts = scope.split(':');
-			return parts[0] !== moduleId;
-		});
-
-		// If was not selected, add all tools from all submodules
-		if (!isSelected) {
-			module.submodules.forEach((submoduleData, submoduleName) => {
-				submoduleData.tools.forEach((tool) => {
-					selectedScopes.push(`${moduleId}:${submoduleName}:${tool.name}`);
-				});
-			});
-		}
-
+	// Helper to update scopes using onChange callback
+	function updateScopes(newScopes: string[]) {
 		if (onChange) {
-			onChange(selectedScopes);
+			onChange(newScopes);
+		} else if (onToggleScope) {
+			// Fallback: toggle each scope individually
+			// This is less efficient but maintains backward compatibility
+			const added = newScopes.filter((s) => !selectedScopes.includes(s));
+			const removed = selectedScopes.filter((s) => !newScopes.includes(s));
+			added.forEach((s) => onToggleScope?.(s));
+			removed.forEach((s) => onToggleScope?.(s));
 		}
 	}
 
-	// Toggle submodule selection
-	function toggleSubmodule(moduleId: string, submodule: string, submoduleData: SubmoduleData) {
-		const isSelected = isSubmoduleSelected(moduleId, submodule);
+	// Toggle a single scope
+	function toggleScope(scope: string) {
+		const newScopes = isScopeSelected(scope)
+			? selectedScopes.filter((s) => s !== scope)
+			: [...selectedScopes, scope];
+		updateScopes(newScopes);
+	}
 
-		// Remove all scopes for this submodule
-		selectedScopes = selectedScopes.filter((scope) => {
-			const parts = scope.split(':');
-			return parts[0] !== moduleId || parts[1] !== submodule;
+	// Check if all scopes in a submodule are selected
+	function isSubmoduleFullySelected(module: ModuleData, submodule: string): boolean {
+		const submoduleData = module.submodules.get(submodule);
+		if (!submoduleData) return false;
+
+		return submoduleData.tools.every((tool) => {
+			const scope = `${module.id}:${submodule}:${tool.name}`;
+			return isScopeSelected(scope);
 		});
+	}
 
-		// If was not selected, add all tools
-		if (!isSelected && submoduleData?.tools) {
-			submoduleData.tools.forEach((tool) => {
-				selectedScopes.push(`${moduleId}:${submodule}:${tool.name}`);
-			});
+	// Check if any scope in a submodule is selected
+	function isSubmodulePartiallySelected(module: ModuleData, submodule: string): boolean {
+		const submoduleData = module.submodules.get(submodule);
+		if (!submoduleData) return false;
+
+		return submoduleData.tools.some((tool) => {
+			const scope = `${module.id}:${submodule}:${tool.name}`;
+			return isScopeSelected(scope);
+		});
+	}
+
+	// Check if all scopes in a module are selected
+	function isModuleFullySelected(module: ModuleData): boolean {
+		for (const [submodule, submoduleData] of module.submodules.entries()) {
+			for (const tool of submoduleData.tools) {
+				const scope = `${module.id}:${submodule}:${tool.name}`;
+				if (!isScopeSelected(scope)) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
+	// Check if any scope in a module is selected
+	function isModulePartiallySelected(module: ModuleData): boolean {
+		for (const [submodule, submoduleData] of module.submodules.entries()) {
+			for (const tool of submoduleData.tools) {
+				const scope = `${module.id}:${submodule}:${tool.name}`;
+				if (isScopeSelected(scope)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	// Toggle all scopes in a module
+	function toggleModule(module: ModuleData) {
+		const allSelected = isModuleFullySelected(module);
+		const newScopes = new Set(selectedScopes);
+
+		for (const [submodule, submoduleData] of module.submodules.entries()) {
+			for (const tool of submoduleData.tools) {
+				const scope = `${module.id}:${submodule}:${tool.name}`;
+				if (allSelected) {
+					// Deselect all
+					newScopes.delete(scope);
+				} else {
+					// Select all
+					newScopes.add(scope);
+				}
+			}
 		}
 
-		if (onChange) {
-			onChange(selectedScopes);
+		updateScopes(Array.from(newScopes));
+
+		if (onToggleModule) {
+			onToggleModule(module.id);
 		}
 	}
 
-	// Toggle individual tool selection
-	function toggleTool(moduleId: string, submodule: string, toolName: string) {
-		const scope = `${moduleId}:${submodule}:${toolName}`;
+	// Toggle all scopes in a submodule
+	function toggleSubmodule(module: ModuleData, submodule: string) {
+		const submoduleData = module.submodules.get(submodule);
+		if (!submoduleData) return;
 
-		if (selectedScopes.includes(scope)) {
-			selectedScopes = selectedScopes.filter((s) => s !== scope);
-		} else {
-			selectedScopes = [...selectedScopes, scope];
+		const allSelected = isSubmoduleFullySelected(module, submodule);
+		const newScopes = new Set(selectedScopes);
+
+		for (const tool of submoduleData.tools) {
+			const scope = `${module.id}:${submodule}:${tool.name}`;
+			if (allSelected) {
+				// Deselect all
+				newScopes.delete(scope);
+			} else {
+				// Select all
+				newScopes.add(scope);
+			}
 		}
 
-		if (onChange) {
-			onChange(selectedScopes);
+		updateScopes(Array.from(newScopes));
+
+		if (onToggleSubmodule) {
+			onToggleSubmodule(module.id, submodule);
+		}
+	}
+
+	// Toggle single tool
+	function toggleTool(module: ModuleData, submodule: string, tool: Tool) {
+		const scope = `${module.id}:${submodule}:${tool.name}`;
+		toggleScope(scope);
+		if (onToggleTool) {
+			onToggleTool(module.id, submodule, tool.name);
 		}
 	}
 
 	// Copy scopes to clipboard
-	async function copyScopes() {
+	async function copyScopesToClipboard() {
 		try {
-			await navigator.clipboard.writeText(selectedScopes.join('\n'));
+			await navigator.clipboard.writeText(JSON.stringify(selectedScopes, null, 2));
 			copiedToClipboard = true;
 			toast.success('Scopes copied to clipboard');
 			setTimeout(() => {
 				copiedToClipboard = false;
 			}, 2000);
 		} catch (error) {
-			toast.error('Failed to copy scopes');
+			toast.error('Failed to copy to clipboard');
 		}
-	}
 
-	// Get selection summary
-	function getSelectionSummary(): string {
-		if (selectedToolCount === 0) {
-			return 'No tools selected';
+		if (onCopyScopes) {
+			onCopyScopes();
 		}
-		if (selectedToolCount === totalTools) {
-			return 'All tools selected';
-		}
-		return `${selectedToolCount} of ${totalTools} tools selected`;
 	}
 </script>
 
 <div class="space-y-4">
-	<!-- Selection Summary -->
-	<div class="flex items-center justify-between rounded-lg bg-muted/50 px-4 py-3">
-		<span class="text-sm font-medium">{getSelectionSummary()}</span>
-		<Button variant="outline" size="sm" onclick={copyScopes} class="gap-2">
-			{#if copiedToClipboard}
-				<Check class="text-success h-4 w-4" />
-				Copied!
-			{:else}
-				<Copy class="h-4 w-4" />
-				Copy Scopes
+	<!-- Header -->
+	<div class="flex items-center justify-between">
+		<div>
+			<h2 class="text-lg font-semibold">Scope Selection</h2>
+			<p class="text-muted-foreground text-sm">
+				Select tools and resources this API key can access
+			</p>
+		</div>
+		<div class="flex items-center gap-2">
+			<Badge variant="secondary">
+				{selectedToolCount} / {totalTools} selected
+			</Badge>
+			{#if onCopyScopes}
+				<Button variant="outline" size="sm" onclick={copyScopesToClipboard}>
+					{#if copiedToClipboard}
+						<Check class="mr-2 h-4 w-4" />
+					{:else}
+						<Copy class="mr-2 h-4 w-4" />
+					{/if}
+					{copiedToClipboard ? 'Copied!' : 'Copy Scopes'}
+				</Button>
 			{/if}
-		</Button>
+		</div>
 	</div>
 
 	<!-- Tabs for Module Selection -->
@@ -227,115 +296,121 @@
 			</div>
 
 			{#each modules as module (module.id)}
-				<TabsContent value={module.id} class="mt-4">
+				<TabsContent value={module.id}>
 					<Card>
-						<CardHeader>
-							<div class="flex items-start justify-between">
-								<div>
-									<CardTitle class="text-base">{module.name}</CardTitle>
-									<p class="text-muted-foreground text-sm">{module.description}</p>
-								</div>
+						<CardHeader class="cursor-pointer" onclick={() => toggleModuleExpand(module.id)}>
+							<div class="flex items-center justify-between">
+								<CardTitle class="flex items-center gap-2">
+									{module.name}
+									<Badge variant="outline">{module.submodules.size} submodules</Badge>
+								</CardTitle>
 								<div class="flex items-center gap-2">
-									<Checkbox
-										id="module-{module.id}"
-										checked={isModuleSelected(module.id)}
-										onCheckedChange={() => toggleModule(module.id, module)}
-									/>
-									<Label for="module-{module.id}" class="cursor-pointer text-sm font-medium">
-										Select All
-									</Label>
+									{#if expandedModules.has(module.id)}
+										<Button
+											variant="outline"
+											size="sm"
+											onclick={(e) => {
+												e.stopPropagation();
+												toggleModule(module);
+											}}
+										>
+											{#if isModuleFullySelected(module)}
+												Deselect All
+											{:else if isModulePartiallySelected(module)}
+												Select All
+											{:else}
+												Select All
+											{/if}
+										</Button>
+									{/if}
+									<Button variant="ghost" size="sm">
+										{#if expandedModules.has(module.id)}
+											<ChevronUp class="h-4 w-4" />
+										{:else}
+											<ChevronDown class="h-4 w-4" />
+										{/if}
+									</Button>
 								</div>
 							</div>
 						</CardHeader>
-						<CardContent class="space-y-3">
-							{#each Array.from(module.submodules.entries()) as [submoduleName, submoduleData]}
-								{@const tools = (submoduleData?.tools as Tool[]) || []}
-								<div class="rounded-lg border bg-card">
-									<!-- Submodule Header -->
-									<div class="flex items-center justify-between border-b bg-muted/30 px-4 py-3">
-										<div class="flex items-center gap-2">
-											<Checkbox
-												id="submodule-{module.id}-{submoduleName}"
-												checked={isSubmoduleSelected(module.id, submoduleName)}
-												onCheckedChange={() =>
-													toggleSubmodule(module.id, submoduleName, {
-														tools,
-														submoduleCount: tools.length
-													})}
-											/>
-											<Label
-												for="submodule-{module.id}-{submoduleName}"
-												class="cursor-pointer text-sm font-medium"
-											>
-												{submoduleName === 'main' ? 'Default' : submoduleName}
-											</Label>
-											<Badge variant="secondary" class="text-xs">
-												{tools.length} tools
-											</Badge>
-										</div>
-										<Button
-											variant="ghost"
-											size="sm"
-											class="h-6 w-6 p-0"
-											onclick={() => toggleModuleExpand(module.id)}
-										>
-											{#if expandedModules.has(module.id)}
-												<ChevronUp class="text-muted-foreground h-4 w-4" />
-											{:else}
-												<ChevronDown class="text-muted-foreground h-4 w-4" />
-											{/if}
-										</Button>
-									</div>
 
-									<!-- Tools List (Collapsible) -->
-									{#if expandedModules.has(module.id)}
-										<div class="p-4">
-											{#each tools as tool}
-												<div class="flex items-start gap-3 rounded px-2 py-2 hover:bg-accent/10">
-													<Checkbox
-														id="tool-{module.id}-{submoduleName}-{tool.name}"
-														checked={isToolSelected(module.id, submoduleName, tool.name)}
-														onCheckedChange={() => toggleTool(module.id, submoduleName, tool.name)}
-													/>
-													<div class="flex-1">
-														<Label
-															for="tool-{module.id}-{submoduleName}-{tool.name}"
-															class="cursor-pointer text-sm font-medium"
-														>
-															{tool.name}
-														</Label>
-														<p class="text-muted-foreground text-xs">
-															{tool.description}
-														</p>
+						{#if expandedModules.has(module.id)}
+							<CardContent class="space-y-4">
+								<p class="text-muted-foreground text-sm">
+									{module.description || 'No description available'}
+								</p>
+
+								{#if module.submodules.size > 0}
+									<div class="space-y-4">
+										{#each Array.from(module.submodules.entries()) as [submodule, submoduleData] (submodule)}
+											<div class="rounded-lg border p-4">
+												<div class="mb-3 flex items-center justify-between">
+													<div class="flex items-center gap-2">
+														<h4 class="font-medium">{submodule}</h4>
+														<Badge variant="secondary">
+															{submoduleData.tools.length} tools
+														</Badge>
 													</div>
+													<Button
+														variant="outline"
+														size="sm"
+														onclick={() => toggleSubmodule(module, submodule)}
+													>
+														{#if isSubmoduleFullySelected(module, submodule)}
+															Deselect All
+														{:else if isSubmodulePartiallySelected(module, submodule)}
+															Select All
+														{:else}
+															Select All
+														{/if}
+													</Button>
 												</div>
-											{/each}
-										</div>
-									{/if}
-								</div>
-							{/each}
 
-							<!-- Info Note -->
-							{#if module.submodules.size === 0}
-								<div class="flex items-start gap-2 rounded-lg bg-muted/50 p-3">
-									<Info class="text-muted-foreground mt-0.5 h-4 w-4 flex-shrink-0" />
-									<p class="text-muted-foreground text-sm">No tools available for this module.</p>
-								</div>
-							{/if}
-						</CardContent>
+												<div class="space-y-2">
+													{#each submoduleData.tools as tool (tool.name)}
+														<div class="flex items-start space-x-2">
+															<Checkbox
+																id="{module.id}-{submodule}-{tool.name}"
+																checked={isScopeSelected(`${module.id}:${submodule}:${tool.name}`)}
+																onCheckedChange={() => toggleTool(module, submodule, tool)}
+															/>
+															<div class="flex-1">
+																<Label
+																	for="{module.id}-{submodule}-{tool.name}"
+																	class="cursor-pointer"
+																>
+																	{tool.name}
+																</Label>
+																{#if tool.description}
+																	<p class="text-muted-foreground mt-1 text-xs">
+																		{tool.description}
+																	</p>
+																{/if}
+															</div>
+														</div>
+													{/each}
+												</div>
+											</div>
+										{/each}
+									</div>
+								{:else}
+									<div class="text-muted-foreground py-8 text-center">
+										<Info class="mx-auto mb-2 h-8 w-8 opacity-50" />
+										<p>No tools available for this module.</p>
+									</div>
+								{/if}
+							</CardContent>
+						{/if}
 					</Card>
 				</TabsContent>
 			{/each}
 		</Tabs>
 	{:else}
-		<div class="flex items-start gap-2 rounded-lg bg-muted/50 p-4">
-			<Info class="text-muted-foreground mt-0.5 h-5 w-5 flex-shrink-0" />
-			<div class="text-sm">
-				<p class="font-medium text-foreground">No modules available</p>
-				<p class="text-muted-foreground">
-					There are no modules with tools configured. Please add modules to access their tools.
-				</p>
-			</div>
-		</div>
+		<Card>
+			<CardContent class="py-8 text-center">
+				<Info class="mx-auto mb-2 h-8 w-8 opacity-50" />
+				<p class="text-muted-foreground">No modules available</p>
+			</CardContent>
+		</Card>
 	{/if}
 </div>

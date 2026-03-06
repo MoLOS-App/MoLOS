@@ -185,7 +185,7 @@
 								<tr class="hover:bg-accent/50">
 									{#each columns as column}
 										<td class="px-6 py-4">
-											<div class="text-sm text-foreground">{getCellValue(row, column)}</div>
+											<div class="text-sm text-foreground">{@html getCellValue(row, column)}</div>
 										</td>
 									{/each}
 									{#if actions && actions.length > 0}

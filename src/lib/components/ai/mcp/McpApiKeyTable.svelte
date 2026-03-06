@@ -104,14 +104,14 @@
 		actions.push({
 			icon: Key,
 			label: 'View details',
-			onClick: onViewDetails
+			onClick: (key) => onViewDetails(key.id)
 		});
 	}
 	if (onEditKey) {
 		actions.push({
 			icon: Edit,
 			label: 'Edit key',
-			onClick: onEditKey
+			onClick: (key) => onEditKey(key.id)
 		});
 	}
 	if (onRevokeKey) {
@@ -119,7 +119,7 @@
 			icon: Trash2,
 			label: 'Revoke key',
 			variant: 'destructive',
-			onClick: onRevokeKey
+			onClick: (key) => onRevokeKey(key.id)
 		});
 	}
 </script>
@@ -144,18 +144,10 @@
 			}
 		]}
 		createLabel="Create API Key"
-		{onCreateKey}
+		onCreate={onCreateKey}
 		emptyIcon={Key}
 		emptyTitle="No API keys found"
-	>
-		<EmptyContent>
-			{#if onCreateKey}
-				<button onclick={onCreateKey} class="mt-2 text-primary hover:underline">
-					Create your first API key
-				</button>
-			{/if}
-		</EmptyContent>
-	</McpDataTable>
+	/>
 
 	{#if onShowHelp}
 		<button

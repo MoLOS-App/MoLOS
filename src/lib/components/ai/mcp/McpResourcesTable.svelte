@@ -73,7 +73,7 @@
 		actions.push({
 			icon: Edit,
 			label: 'Edit resource',
-			onClick: onEditResource
+			onClick: (resource) => onEditResource(resource.id)
 		});
 	}
 	if (onDeleteResource) {
@@ -81,7 +81,7 @@
 			icon: Trash2,
 			label: 'Delete resource',
 			variant: 'destructive',
-			onClick: onDeleteResource
+			onClick: (resource) => onDeleteResource(resource.id)
 		});
 	}
 </script>
@@ -113,7 +113,7 @@
 			}
 		]}
 		createLabel="Create Resource"
-		{onCreateResource}
+		onCreate={onCreateResource}
 		emptyIcon={ScrollText}
 		emptyTitle="No resources found"
 	/>
