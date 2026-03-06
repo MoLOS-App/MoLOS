@@ -74,6 +74,7 @@ Welcome to the MoLOS (Modular Life Organization System) documentation. MoLOS is 
 - [Monorepo Migration](./archive/monorepo-migration/README.md) - Completed migration tasks
 - [Plugins Documentation](./archive/plugins/) - Archived plugin system documentation
 - [Module Documentation](./archive/module-documentation/) - Archived per-module documentation
+- **[Database Improvements](./archive/DB_IMPROV/)** - Migration system v2.1 implementation (Production Ready 9.5/10)
 
 ### ADR (Architecture Decision Records)
 

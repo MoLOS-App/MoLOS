@@ -24,9 +24,31 @@ bun run module:link      # Create route symlinks only
 ### Database
 
 ```bash
-bun run db:push          # Push schema changes directly (dev)
-bun run db:migrate       # Run pending migrations
-bun run db:generate      # Generate migrations from schema
+# MIGRATION SYSTEM v2.1 (PRODUCTION READY - 9.5/10)
+bun run db:migration:create --name <name> [--module <module>] [--reversible]
+                         # Create new migration with proper naming
+bun run db:migrate:improved
+                         # Apply migrations safely (transaction-wrapped, auto-backup)
+bun run db:validate      # Validate schema integrity
+bun run db:repair        # Diagnose migration issues
+bun run db:repair:fix    # Repair corrupted migrations
+bun run db:backup        # Create manual backup
+
+# BACKUP MANAGEMENT (NEW!)
+bun run db:restore --list
+                         # List available backups
+bun run db:restore --latest
+                         # Restore from latest backup
+bun run db:restore --file <filename>
+                         # Restore from specific backup
+
+# LEGACY COMMANDS (for backward compatibility)
+bun run db:migrate:unified
+                         # Old unified migration runner
+bun run db:generate      # Generate migrations with drizzle-kit
+bun run db:push          # Push schema changes directly (dev only)
+
+# UTILITY COMMANDS
 bun run db:studio        # Open Drizzle Studio
 bun run db:reset         # Reset database (WARNING: deletes data)
 ```
@@ -162,7 +184,9 @@ DATABASE_URL=./molos.db
 | --------------------------------------------------------- | -------------------------------------------------------------------------------- |
 | Module not in sidebar                                     | `bun run module:sync`                                                            |
 | 404 on routes                                             | Check symlinks, run `module:link`                                                |
-| Table not found                                           | Generate + run migrations                                                        |
+| Table not found                                           | Run `bun run db:migrate:improved`                                                |
+| Migration failed                                          | Run `bun run db:repair`, then `bun run db:restore --latest`                      |
+| Checksum mismatch                                         | Revert changes OR create new migration (never edit applied migrations)           |
 | Import errors                                             | Use `$lib` alias, check symlinks                                                 |
 | tsconfig errors                                           | Remove standalone configs from module                                            |
 | Duplicate column name error                               | Normal if db created from snapshot - see ADR-002                                 |

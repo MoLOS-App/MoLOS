@@ -156,7 +156,7 @@ export async function validateToolScope(
 	context: MCPContext,
 	toolName: string
 ): Promise<ScopeValidation> {
-	const allowed = await isToolAllowed(toolName, context.allowedScopes);
+	const allowed = await isToolAllowed(toolName, context.allowedModules);
 
 	if (!allowed) {
 		const moduleId = extractModuleIdFromToolName(toolName);
@@ -177,7 +177,7 @@ export function validateResourceScope(
 	moduleId: string,
 	submoduleId: string | null
 ): ScopeValidation {
-	const allowed = isResourceAllowed(moduleId, submoduleId, null, context.allowedScopes);
+	const allowed = isResourceAllowed(moduleId, submoduleId, null, context.allowedModules);
 
 	if (!allowed) {
 		return {
@@ -197,7 +197,7 @@ export function validatePromptScope(
 	promptModuleId: string | null,
 	promptSubmoduleId: string | null
 ): ScopeValidation {
-	const allowed = isPromptAllowed(promptModuleId, promptSubmoduleId, null, context.allowedScopes);
+	const allowed = isPromptAllowed(promptModuleId, promptSubmoduleId, null, context.allowedModules);
 
 	if (!allowed) {
 		return {

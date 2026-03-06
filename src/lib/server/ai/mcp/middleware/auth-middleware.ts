@@ -9,7 +9,7 @@ import { ApiKeyRepository } from '$lib/repositories/ai/mcp';
 import { parseApiKeyFromHeader } from '../mcp-utils';
 import { mcpOAuthProvider } from '../oauth';
 import type { MCPContext, ApiKeyValidation, MCPAuthMethod } from '$lib/models/ai/mcp';
-import { scopesToModules } from '../oauth/scope-mapper';
+import { scopesToAllowedScopes } from '../oauth/scope-mapper';
 import { getAllModules } from '$lib/config';
 
 /**
@@ -86,16 +86,16 @@ async function authenticateWithApiKey(
 		};
 	}
 
-	// Determine allowed scopes - if not set or empty, allow all external modules
-	let allowedScopes = validation.apiKey.allowedScopes ?? [];
-	console.log('[MCP Auth] Original allowedScopes:', allowedScopes);
+	// Determine allowed modules - if not set or empty, allow all external modules
+	let allowedModules = validation.apiKey.allowedScopes ?? [];
+	console.log('[MCP Auth] Original allowedScopes:', allowedModules);
 
-	if (allowedScopes.length === 0) {
+	if (allowedModules.length === 0) {
 		// No restriction = allow all external modules (both package and legacy)
-		allowedScopes = getAllModules()
+		allowedModules = getAllModules()
 			.filter((m) => m.isPackageModule || m.isExternal)
 			.map((m) => m.id);
-		console.log('[MCP Auth] Expanded allowedScopes to all external modules:', allowedScopes);
+		console.log('[MCP Auth] Expanded allowedModules to all external modules:', allowedModules);
 	}
 
 	// Create context
@@ -106,10 +106,10 @@ async function authenticateWithApiKey(
 		oauthClientId: null,
 		sessionId,
 		scopes: [], // API keys don't use OAuth scopes
-		allowedScopes
+		allowedModules
 	};
 
-	console.log('[MCP Auth] Created context with allowedScopes:', context.allowedScopes);
+	console.log('[MCP Auth] Created context with allowedModules:', context.allowedModules);
 
 	// Record usage
 	await apiKeyRepo.recordUsage(validation.apiKey.id);
@@ -144,16 +144,16 @@ async function authenticateWithOAuth(
 		const authInfo = await mcpOAuthProvider.verifyAccessToken(token);
 
 		// Map OAuth scopes to allowed modules
-		let allowedScopes = scopesToModules(authInfo.scopes ?? []);
+		let allowedModules = scopesToAllowedScopes(authInfo.scopes ?? []);
 
 		// If no scopes specified, allow all external modules (full access)
-		if (allowedScopes.length === 0) {
-			allowedScopes = getAllModules()
+		if (allowedModules.length === 0) {
+			allowedModules = getAllModules()
 				.filter((m) => m.isPackageModule || m.isExternal)
 				.map((m) => m.id);
 		}
 
-		// Get user ID from token - we need to look up token to get userId
+		// Get user ID from token- we need to look up token to get userId
 		const { oauthTokenService } = await import('../oauth');
 		const tokenInfo = await oauthTokenService.verifyAccessToken(token);
 
@@ -174,7 +174,7 @@ async function authenticateWithOAuth(
 			oauthClientId: authInfo.clientId,
 			sessionId,
 			scopes: authInfo.scopes ?? [],
-			allowedScopes
+			allowedModules
 		};
 
 		return {

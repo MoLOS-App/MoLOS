@@ -275,7 +275,7 @@ export interface MCPContext {
 	oauthClientId: string | null;
 	sessionId: string;
 	scopes: string[];
-	allowedScopes: string[]; // Changed from allowedModules - format: "module", "module:submodule", or "module:submodule:tool"
+	allowedModules: string[]; // Array of allowed module IDs
 }
 
 /**

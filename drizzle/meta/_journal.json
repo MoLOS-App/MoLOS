@@ -120,6 +120,13 @@
       "when": 1741238400000,
       "tag": "0016_add_submodule_tool_permissions",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1741324800000,
+      "tag": "0017_add_migration_tracking",
+      "breakpoints": true
     }
   ]
 }
