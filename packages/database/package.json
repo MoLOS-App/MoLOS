@@ -45,6 +45,12 @@
 			"import": "./dist/migration-logger.js",
 			"default": "./dist/migration-logger.js",
 			"source": "./src/migration-logger.ts"
+		},
+		"./migration-utils": {
+			"types": "./dist/migration-utils.d.ts",
+			"import": "./dist/migration-utils.js",
+			"default": "./dist/migration-utils.js",
+			"source": "./src/migration-utils.ts"
 		}
 	},
 	"files": [

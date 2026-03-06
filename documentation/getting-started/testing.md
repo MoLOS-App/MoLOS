@@ -2,6 +2,16 @@
 
 MoLOS uses Vitest for unit testing with separate configurations for client and server tests.
 
+## Quick Links
+
+| I want to...                | Go to                                                      |
+| --------------------------- | ---------------------------------------------------------- |
+| See basic commands          | [Commands](#commands)                                      |
+| Write repository tests      | [Repository Tests](#writing-tests)                         |
+| Test migrations             | [Migration Tests](#migration-tests)                        |
+| Use test utilities          | [Test Utilities](#test-utilities)                          |
+| **See comprehensive guide** | **[Comprehensive Test Suite](./testing-comprehensive.md)** |
+
 ## Commands
 
 | Command                                       | Description                  |

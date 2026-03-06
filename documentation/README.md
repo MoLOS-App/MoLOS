@@ -4,19 +4,20 @@ Welcome to the MoLOS (Modular Life Organization System) documentation. MoLOS is 
 
 ## Quick Links
 
-| I want to...                    | Go to                                                      |
-| ------------------------------- | ---------------------------------------------------------- |
-| Get started quickly             | [Quick Start](./getting-started/quick-start.md)            |
-| See command reference           | [Quick Reference](./QUICK-REFERENCE.md)                    |
-| AI context loading              | [AI Context](./AI-CONTEXT.md)                              |
-| Learn about docs                | [AI Documentation Guide](./AI-DOCUMENTATION-GUIDE.md)      |
-| Understand the architecture     | [Architecture Overview](./architecture/overview.md)        |
-| Create a module                 | [Module Development](./modules/development.md)             |
-| Deploy MoLOS (Docker)           | [Docker Deployment](./deployment/docker.md)                |
-| Deploy MoLOS (Production Build) | [Production Build Guide](./deployment/production-build.md) |
-| Release a new version           | [Release System](./deployment/release-system.md)           |
-| Integrate with AI tools         | [MCP Integration](./mcp/integration-prd.md)                |
-| Troubleshoot issues             | [Troubleshooting](./getting-started/troubleshooting.md)    |
+| I want to...                    | Go to                                                       |
+| ------------------------------- | ----------------------------------------------------------- |
+| Get started quickly             | [Quick Start](./getting-started/quick-start.md)             |
+| See command reference           | [Quick Reference](./QUICK-REFERENCE.md)                     |
+| AI context loading              | [AI Context](./AI-CONTEXT.md)                               |
+| Learn about docs                | [AI Documentation Guide](./AI-DOCUMENTATION-GUIDE.md)       |
+| Understand the architecture     | [Architecture Overview](./architecture/overview.md)         |
+| Create a module                 | [Module Development](./modules/development.md)              |
+| Write tests                     | [Testing Guide](./getting-started/testing-comprehensive.md) |
+| Deploy MoLOS (Docker)           | [Docker Deployment](./deployment/docker.md)                 |
+| Deploy MoLOS (Production Build) | [Production Build Guide](./deployment/production-build.md)  |
+| Release a new version           | [Release System](./deployment/release-system.md)            |
+| Integrate with AI tools         | [MCP Integration](./mcp/integration-prd.md)                 |
+| Troubleshoot issues             | [Troubleshooting](./getting-started/troubleshooting.md)     |
 
 ## Documentation Structure
 

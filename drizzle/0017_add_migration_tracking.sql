@@ -35,6 +35,8 @@ CREATE INDEX IF NOT EXISTS idx_migrations_module ON molos_migrations(module);
 
 -- Migrate existing data from __drizzle_migrations
 -- Note: We can't calculate checksums retroactively, so we'll mark them as 'unknown'
+-- Note: We keep __drizzle_migrations for backward compatibility during transition
+-- It will be deprecated in a future version
 INSERT INTO molos_migrations (migration_name, module, version, checksum, applied_at, execution_time_ms, success, rollback_available)
 SELECT 
   'migrated_from_drizzle' as migration_name,
@@ -49,8 +51,3 @@ FROM __drizzle_migrations
 WHERE NOT EXISTS (
   SELECT 1 FROM molos_migrations WHERE module = 'core'
 );
-
---> statement-breakpoint
-
--- Note: We keep __drizzle_migrations for backward compatibility during transition
--- It will be deprecated in a future version

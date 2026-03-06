@@ -25,8 +25,6 @@ ALTER TABLE ai_mcp_prompts ADD COLUMN submodule_id TEXT;
 -- Step 5: Add promptName column to ai_mcp_prompts
 ALTER TABLE ai_mcp_prompts ADD COLUMN prompt_name TEXT;
 
---> statement-breakpoint
-
 -- Note: This is a breaking change. Old API keys with module-level
 -- permissions will need to be updated to use the new scope format.
 -- New format: "module", "module:submodule", or "module:submodule:tool"
