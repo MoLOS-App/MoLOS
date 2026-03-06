@@ -119,7 +119,7 @@ export class ApiKeyRepository extends BaseRepository {
 			valid: true,
 			apiKey: {
 				...apiKey,
-				allowedScopes: (apiKey.allowed_scopes as unknown as string[]) || []
+				allowedScopes: (apiKey.allowedScopes as unknown as string[]) || []
 			}
 		};
 	}
