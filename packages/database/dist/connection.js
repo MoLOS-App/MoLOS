@@ -19,7 +19,8 @@ catch {
     env_DATABASE_URL = process.env.DATABASE_URL;
     isBuilding = process.env.BUILDING === 'true';
 }
-const rawDbPath = env_DATABASE_URL || (process.env.NODE_ENV === 'production' ? '/data/molos.db' : 'molos.db');
+const rawDbPath = env_DATABASE_URL ||
+    (process.env.NODE_ENV === 'production' ? '/data/molos.db' : './data/molos.db');
 // Handle URL prefixes
 const dbPath = rawDbPath.replace(/^sqlite:\/\//, '').replace(/^sqlite:|^file:/, '');
 // Create database client with fallback to in-memory if file DB fails

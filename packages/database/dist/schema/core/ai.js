@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm';
 import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core';
-import { user } from './auth.js';
-import { textEnum } from '../../utils/index.js';
+import { user } from './auth';
+import { textEnum } from '../../utils/index';
 export const AIProvider = {
     OPENAI: 'openai',
     ANTHROPIC: 'anthropic',

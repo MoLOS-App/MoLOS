@@ -11,7 +11,7 @@ import type { RequestHandler } from './$types';
 import { ApiKeyRepository } from '$lib/repositories/ai/mcp';
 import { McpLogRepository } from '$lib/repositories/ai/mcp';
 import type { UpdateApiKeyInput } from '$lib/models/ai/mcp';
-import { getAvailableModuleIds } from '$lib/server/ai/mcp/mcp-utils';
+import { validateScopes, validateKeyName } from '$lib/server/ai/mcp/validation/scope-validator';
 import { MCPApiKeyStatus } from '$lib/server/db/schema';
 
 /**
@@ -37,7 +37,10 @@ export const GET: RequestHandler = async ({ locals, params }) => {
 	const stats = await logRepo.getStats(locals.user.id, apiKey.id);
 
 	return json({
-		apiKey,
+		apiKey: {
+			...apiKey,
+			allowedScopes: apiKey.allowedScopes
+		},
 		recentLogs,
 		stats
 	});
@@ -74,21 +77,21 @@ export const PATCH: RequestHandler = async ({ locals, params, request }) => {
 		input.status = body.status;
 	}
 
-	if (body.allowedModules !== undefined) {
-		// Validate module IDs
-		const { valid, invalid } = await validateModuleIds(body.allowedModules);
+	if (body.allowedScopes !== undefined) {
+		// Validate scopes
+		const { valid, invalid } = validateScopes(body.allowedScopes);
 
 		if (invalid.length > 0) {
 			return json(
 				{
-					error: 'Invalid module IDs',
+					error: 'Invalid scopes',
 					invalid
 				},
 				{ status: 400 }
 			);
 		}
 
-		input.allowedModules = valid;
+		input.allowedScopes = valid;
 	}
 
 	if (body.expiresAt !== undefined) {
@@ -121,25 +124,3 @@ export const DELETE: RequestHandler = async ({ locals, params }) => {
 
 	return json({ success: true });
 };
-
-/**
- * Validate module IDs against available external modules
- */
-async function validateModuleIds(moduleIds: string[]): Promise<{
-	valid: string[];
-	invalid: string[];
-}> {
-	const available = getAvailableModuleIds();
-	const valid: string[] = [];
-	const invalid: string[] = [];
-
-	for (const moduleId of moduleIds) {
-		if (available.includes(moduleId)) {
-			valid.push(moduleId);
-		} else {
-			invalid.push(moduleId);
-		}
-	}
-
-	return { valid, invalid };
-}

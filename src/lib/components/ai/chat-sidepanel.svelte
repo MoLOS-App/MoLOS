@@ -97,7 +97,9 @@
 	// Track progress log for current assistant message
 	let progressLog = $state<string[]>([]);
 	// Track message segments for multi-message streaming
-	let segmentMessages = $state<Map<string, { id: string; content: string; isComplete: boolean }>>(new Map());
+	let segmentMessages = $state<Map<string, { id: string; content: string; isComplete: boolean }>>(
+		new Map()
+	);
 
 	async function handleStreamResponse(res: Response, assistantMessageId: string) {
 		const reader = res.body?.getReader();
@@ -194,7 +196,7 @@
 
 		// Convert segments to message format
 		const segmentMsgs = Array.from(segmentMessages.values())
-			.filter(s => s.content.trim())
+			.filter((s) => s.content.trim())
 			.sort((a, b) => {
 				// Sort by segment ID which contains index
 				const aIdx = parseInt(a.id.split('_').pop() || '0');
@@ -205,7 +207,7 @@
 		// If we have multiple segments, render them as separate messages
 		if (segmentMsgs.length > 1 || (segmentMsgs.length === 1 && segmentMsgs[0].isComplete)) {
 			// Remove old segment messages and add new ones
-			messages = messages.filter(m => !m.id.startsWith(`seg_${baseMessageId}`));
+			messages = messages.filter((m) => !m.id.startsWith(`seg_${baseMessageId}`));
 
 			// Add segment messages
 			for (let i = 0; i < segmentMsgs.length; i++) {

@@ -1,464 +1,682 @@
 #!/usr/bin/env tsx
 /**
- * Module Linker Script
+ * Module Route Linker Script
  *
- * This script creates symlinks for external modules into the core application.
- * It can be run independently (via npm run module:link) or is called automatically
- * during the sync process.
+ * Creates symlinks for module routes into the main application routes.
+ * SvelteKit requires routes to be in src/routes/, so module routes are symlinked.
  *
- * The module linking state is cached in .molo-module-links.json to avoid
- * unnecessary re-linking during development.
+ * Supports:
+ * - Local modules in modules/ directory
+ * - npm-installed @molos/module-* packages
+ * - Database-aware linking with status tracking (when --with-db flag is used)
+ * - Error recording and retry logic
  */
+
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, symlinkSync } from 'fs';
+import path from 'path';
+import { eq } from 'drizzle-orm';
+
+// Lazy-load database dependencies only when needed
+let db: any = null;
+let settingsExternalModules: any = null;
+let ExternalModuleStatus: any = null;
+
+async function loadDatabase() {
+	if (db) return;
+	const dbModule = await import('@molos/database');
+	const schemaModule = await import('@molos/database/schema/core');
+	db = dbModule.db;
+	settingsExternalModules = schemaModule.settingsExternalModules;
+	ExternalModuleStatus = schemaModule.ExternalModuleStatus;
+}
 
 import {
-	existsSync,
-	lstatSync,
-	mkdirSync,
-	readdirSync,
-	realpathSync,
-	rmSync,
-	symlinkSync,
-	writeFileSync,
-	readFileSync
-} from 'fs';
-import path from 'path';
-import { createRequire } from 'module';
-import { SYMLINK_CONFIG } from '../module-management/config/symlink-config.js';
+	validateModule,
+	formatValidationResult,
+	type ModuleValidationResult
+} from '../module-management/server/validation';
+
+const MODULES_DIR = path.resolve('modules');
+const NODE_MODULES_MOLOS_DIR = path.resolve('node_modules/@molos');
+const UI_ROUTES_DIR = path.resolve('src/routes/ui/(modules)/(external_modules)');
+const API_ROUTES_DIR = path.resolve('src/routes/api/(external_modules)');
+const LIB_MODULES_DIR = path.resolve('src/lib/modules');
+
+// Lib subdirectories that need external_modules symlinks
+const LIB_SUBDIRS = ['models', 'repositories', 'server', 'stores', 'components', 'utils'];
 
 /**
- * Module link state file
+ * Result of linking a single module
  */
-const STATE_FILE = path.resolve(process.cwd(), '.molo-module-links.json');
-
-interface ModuleLinkState {
-	linkedModules: string[];
-	computedAt: string;
+export interface ModuleLinkResult {
+	moduleId: string;
+	success: boolean;
+	error?: Error;
+	errorType?: string;
+	linkedPaths: string[];
+	skipped: boolean;
+	skipReason?: string;
+	/**
+	 * Validation result if validation was performed
+	 */
+	validation?: ModuleValidationResult;
 }
 
 /**
- * Load the previous link state
+ * Module discovery info
  */
-function loadLinkState(): ModuleLinkState | null {
+interface DiscoveredModule {
+	moduleId: string;
+	modulePath: string;
+}
+
+/**
+ * Extract module ID from config file
+ * Returns the module ID or falls back to folder name
+ */
+function extractModuleIdFromConfig(configPath: string, fallbackId: string): string {
 	try {
-		if (existsSync(STATE_FILE)) {
-			const content = readFileSync(STATE_FILE, 'utf-8');
-			return JSON.parse(content) as ModuleLinkState;
+		if (!existsSync(configPath)) {
+			return fallbackId;
 		}
-	} catch (error) {
-		console.warn('[ModuleLinker] Failed to load link state:', error);
+		const content = readFileSync(configPath, 'utf-8');
+		// Match id: "MoLOS-Tasks" or id: 'MoLOS-Tasks'
+		const match = content.match(/id:\s*["']([^"']+)["']/);
+		return match ? match[1] : fallbackId;
+	} catch {
+		return fallbackId;
 	}
-	return null;
 }
 
 /**
- * Save the current link state
+ * Discover all available modules
+ * Returns array of { moduleId, modulePath }
  */
-function saveLinkState(modules: string[]): void {
+function discoverModules(): DiscoveredModule[] {
+	const modules: DiscoveredModule[] = [];
+
+	// Discover local modules
+	if (existsSync(MODULES_DIR)) {
+		const localModules = readdirSync(MODULES_DIR, { withFileTypes: true })
+			.filter((dirent) => dirent.isDirectory())
+			.map((dirent) => {
+				const folderName = dirent.name;
+				const modulePath = path.join(MODULES_DIR, folderName);
+				const configPath = path.join(modulePath, 'src/config.ts');
+				const moduleId = extractModuleIdFromConfig(configPath, folderName);
+				return { moduleId, modulePath };
+			});
+		modules.push(...localModules);
+	}
+
+	// Discover npm-installed @molos/module-* packages
+	if (existsSync(NODE_MODULES_MOLOS_DIR)) {
+		const npmModules = readdirSync(NODE_MODULES_MOLOS_DIR, { withFileTypes: true })
+			.filter((dirent) => dirent.isDirectory() && dirent.name.startsWith('module-'))
+			.map((dirent) => {
+				const folderName = dirent.name.replace(/^module-/, '');
+				const modulePath = path.join(NODE_MODULES_MOLOS_DIR, dirent.name);
+				const configPath = path.join(modulePath, 'src/config.ts');
+				const moduleId = extractModuleIdFromConfig(configPath, folderName);
+				return { moduleId, modulePath };
+			});
+
+		// Only add npm modules that aren't already found locally
+		for (const npmModule of npmModules) {
+			if (!modules.find((m) => m.moduleId === npmModule.moduleId)) {
+				modules.push(npmModule);
+			}
+		}
+	}
+
+	return modules;
+}
+
+/**
+ * Check if module should be linked based on database status
+ */
+async function shouldLinkModule(
+	moduleId: string
+): Promise<{ shouldLink: boolean; reason?: string }> {
 	try {
-		const state: ModuleLinkState = {
-			linkedModules: modules,
-			computedAt: new Date().toISOString()
+		await loadDatabase();
+		const result = await db
+			.select()
+			.from(settingsExternalModules)
+			.where(eq(settingsExternalModules.id, moduleId))
+			.limit(1);
+
+		const module = result[0];
+
+		if (!module) {
+			// New module, should attempt linking
+			return { shouldLink: true };
+		}
+
+		// Skip explicitly disabled modules
+		if (module.status === ExternalModuleStatus.DISABLED) {
+			return { shouldLink: false, reason: 'Module is disabled' };
+		}
+
+		// Skip modules with error status (don't auto-retry)
+		if (module.status.startsWith('error_')) {
+			return { shouldLink: false, reason: `Module has error status: ${module.status}` };
+		}
+
+		// Active modules can be re-linked (idempotent)
+		return { shouldLink: true };
+	} catch (error) {
+		// If database query fails, log but allow linking attempt
+		console.warn(
+			`[ModuleLinker] Database query failed for ${moduleId}, allowing link attempt:`,
+			error
+		);
+		return { shouldLink: true };
+	}
+}
+
+/**
+ * Categorize error based on context
+ */
+function categorizeError(
+	error: Error,
+	context: {
+		hasSource: boolean;
+		hasConfig: boolean;
+		hasRoutes: boolean;
+	}
+): { errorType: string; errorDetails: Record<string, unknown> } {
+	if (!context.hasSource) {
+		return {
+			errorType: ExternalModuleStatus.ERROR_MANIFEST,
+			errorDetails: { issue: 'missing_source_directory', originalError: error.message }
 		};
-
-		writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
-	} catch (error) {
-		console.warn('[ModuleLinker] Failed to save link state:', error);
 	}
+	if (!context.hasConfig) {
+		return {
+			errorType: ExternalModuleStatus.ERROR_CONFIG,
+			errorDetails: { issue: 'missing_config_file', originalError: error.message }
+		};
+	}
+	if (error.message.includes('symlink') || error.message.includes('EACCES')) {
+		return {
+			errorType: ExternalModuleStatus.ERROR_CONFIG,
+			errorDetails: { issue: 'symlink_creation_failed', originalError: error.message }
+		};
+	}
+	return {
+		errorType: ExternalModuleStatus.ERROR_CONFIG,
+		errorDetails: { issue: 'unknown', originalError: error.message }
+	};
 }
 
 /**
- * Clear the link state (forces re-link)
+ * Register module in database if not exists
  */
-function clearLinkState(): void {
+async function registerModuleIfNeeded(moduleId: string, modulePath: string): Promise<void> {
 	try {
-		if (existsSync(STATE_FILE)) {
-			rmSync(STATE_FILE, { force: true });
-			console.log('[ModuleLinker] Link state cleared');
+		await loadDatabase();
+		const result = await db
+			.select()
+			.from(settingsExternalModules)
+			.where(eq(settingsExternalModules.id, moduleId))
+			.limit(1);
+
+		if (!result[0]) {
+			// Determine repo URL from path
+			let repoUrl = 'local';
+			if (modulePath.includes('node_modules/@molos/')) {
+				repoUrl = `npm:@molos/module-${moduleId}`;
+			} else if (existsSync(path.join(modulePath, '.git'))) {
+				// It's a git repo
+				repoUrl = `git:${moduleId}`;
+			}
+
+			await db.insert(settingsExternalModules).values({
+				id: moduleId,
+				repoUrl,
+				status: ExternalModuleStatus.PENDING,
+				gitRef: 'main'
+			});
+
+			console.log(`[ModuleLinker] Registered new module: ${moduleId}`);
 		}
 	} catch (error) {
-		console.warn('[ModuleLinker] Failed to clear link state:', error);
+		console.warn(`[ModuleLinker] Failed to register module ${moduleId}:`, error);
+		// Non-fatal, continue with linking
 	}
 }
 
 /**
- * Normalize database path
+ * Update database with link result
  */
-function normalizeDbPath(raw: string): string {
-	if (raw.startsWith('file:')) return raw.replace(/^file:/, '');
-	if (raw.startsWith('sqlite://')) return raw.replace(/^sqlite:\/\//, '');
-	if (raw.startsWith('sqlite:')) return raw.replace(/^sqlite:/, '');
-	return raw;
-}
-
-/**
- * Quick validation for modules during linking
- */
-function quickValidateModule(moduleId: string, modulePath: string): {
-	valid: boolean;
-	error?: string
-} {
-	// 1. Check manifest exists
-	const manifestPath = path.join(modulePath, 'manifest.yaml');
-	if (!existsSync(manifestPath)) {
-		return { valid: false, error: 'Missing manifest.yaml' };
-	}
-
-	// 2. Check config exists
-	const configPath = path.join(modulePath, 'config.ts');
-	if (!existsSync(configPath)) {
-		return { valid: false, error: 'Missing config.ts' };
-	}
-
-	// 3. Check for broken symlinks
+async function recordLinkResult(moduleId: string, result: ModuleLinkResult): Promise<void> {
 	try {
-		const stats = lstatSync(modulePath);
-		if (stats.isSymbolicLink() && !existsSync(modulePath)) {
-			return { valid: false, error: 'Broken symlink' };
-		}
-	} catch {
-		return { valid: false, error: 'Cannot access module directory' };
-	}
+		await loadDatabase();
+		if (result.skipped) {
+			// Record validation failures in the database for tracking
+			if (result.validation && !result.validation.canProceed) {
+				const errorDetails = result.validation.errors.map((e) => ({
+					code: e.code,
+					message: e.message,
+					file: e.file,
+					fixSuggestion: e.fixSuggestion
+				}));
 
-	return { valid: true };
-}
-
-/**
- * Get active modules from database (excluding disabled)
- */
-function getActiveModulesFromDb(): Set<string> | null {
-	const dbUrl = process.env.DATABASE_URL;
-	if (!dbUrl) {
-		console.warn('[ModuleLinker] DATABASE_URL not set, will link all modules');
-		return null;
-	}
-
-	const dbPath = normalizeDbPath(dbUrl);
-
-	// Check if database exists
-	if (!existsSync(dbPath)) {
-		console.warn('[ModuleLinker] Database does not exist yet, will link all modules');
-		return null;
-	}
-
-	try {
-		const require = createRequire(import.meta.url);
-		const Database = require('better-sqlite3');
-		const db = new Database(dbPath, { readonly: true, fileMustExist: true });
-		const rows = db.prepare('select id, status from settings_external_modules').all();
-		db.close();
-
-		// Filter out disabled modules
-		const activeModules = rows
-			.filter((row: { status: string }) => row.status === 'active')
-			.map((row: { id: string }) => row.id);
-
-		// Log disabled modules being skipped
-		const disabledModules = rows
-			.filter((row: { status: string }) => row.status === 'disabled')
-			.map((row: { id: string }) => row.id);
-
-		if (disabledModules.length > 0) {
-			console.log(`[ModuleLinker] Skipping ${disabledModules.length} disabled modules: ${disabledModules.join(', ')}`);
+				await db
+					.update(settingsExternalModules)
+					.set({
+						status: ExternalModuleStatus.ERROR_MANIFEST,
+						lastError: result.skipReason || 'Validation failed',
+						errorType: 'validation_failed',
+						errorDetails: JSON.stringify(errorDetails),
+						recoverySteps: JSON.stringify(
+							result.validation.errors.filter((e) => e.fixSuggestion).map((e) => e.fixSuggestion)
+						),
+						retryCount: 0,
+						updatedAt: new Date()
+					})
+					.where(eq(settingsExternalModules.id, moduleId));
+			}
+			// Don't update database for other skipped modules (disabled, error status)
+			return;
 		}
 
-		return new Set(activeModules);
-	} catch (e) {
-		console.warn('[ModuleLinker] Unable to read external module status from DB:', e);
-		return null;
-	}
-}
+		if (result.success) {
+			await db
+				.update(settingsExternalModules)
+				.set({
+					status: ExternalModuleStatus.ACTIVE,
+					lastError: null,
+					errorDetails: null,
+					errorType: null,
+					recoverySteps: null,
+					retryCount: 0,
+					updatedAt: new Date()
+				})
+				.where(eq(settingsExternalModules.id, moduleId));
+		} else if (result.errorType) {
+			const { errorType, errorDetails } = categorizeError(result.error!, {
+				hasSource: existsSync(path.join(MODULES_DIR, moduleId, 'src')),
+				hasConfig: existsSync(path.join(MODULES_DIR, moduleId, 'src/config.ts')),
+				hasRoutes: existsSync(path.join(MODULES_DIR, moduleId, 'src/routes'))
+			});
 
-/**
- * Mark a module as disabled in the database
- */
-function markModuleDisabled(moduleId: string, error: string): void {
-	const dbUrl = process.env.DATABASE_URL;
-	if (!dbUrl) return;
-
-	const dbPath = normalizeDbPath(dbUrl);
-
-	if (!existsSync(dbPath)) {
-		return;
-	}
-
-	try {
-		const require = createRequire(import.meta.url);
-		const Database = require('better-sqlite3');
-		const db = new Database(dbPath);
-
-		db.prepare(`
-			UPDATE settings_external_modules
-			SET status = 'disabled',
-			    last_error = ?
-			WHERE id = ?
-		`).run(error, moduleId);
-
-		db.close();
-		console.warn(`[ModuleLinker] Module ${moduleId} marked as disabled: ${error}`);
-	} catch (e) {
-		console.warn(`[ModuleLinker] Could not mark module ${moduleId} as disabled:`, e);
-	}
-}
-
-/**
- * Check if a path is within allowed roots
- */
-function isPathWithinRoots(targetPath: string, roots: string[]): boolean {
-	let realTarget: string;
-	try {
-		realTarget = realpathSync(targetPath);
-	} catch {
-		return false;
-	}
-
-	return roots.some((root) => {
-		let realRoot: string;
-		try {
-			realRoot = realpathSync(root);
-		} catch {
-			realRoot = path.resolve(root);
+			await db
+				.update(settingsExternalModules)
+				.set({
+					status: errorType,
+					lastError: result.error?.message || 'Unknown error',
+					errorType,
+					errorDetails: JSON.stringify(errorDetails),
+					recoverySteps: JSON.stringify([
+						'Check module structure is complete',
+						'Ensure source directories exist',
+						'Verify file permissions',
+						'Re-run module sync after fixing issues'
+					]),
+					retryCount: 1,
+					lastRetryAt: new Date(),
+					updatedAt: new Date()
+				})
+				.where(eq(settingsExternalModules.id, moduleId));
 		}
-		const relative = path.relative(realRoot, realTarget);
-		return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
-	});
+	} catch (error) {
+		console.error(`[ModuleLinker] Critical: Failed to update database for ${moduleId}:`, error);
+		// Database update failure is critical
+		throw new Error(`Database update failed for module ${moduleId}: ${error}`);
+	}
 }
 
 /**
- * Main module linking function
+ * Link a single module with tracking
  */
-export async function linkExternalModules(
-	options: { force?: boolean; verbose?: boolean } = {}
-): Promise<void> {
-	const { force = false, verbose = false } = options;
-	const EXTERNAL_DIR = path.resolve('external_modules');
-	const allowParentModules =
-		process.env.MOLOS_ALLOW_PARENT_MODULES === 'true' || process.env.NODE_ENV !== 'production';
-	const allowedRoots = [EXTERNAL_DIR];
-	if (allowParentModules) {
-		allowedRoots.push(path.resolve('..'));
-	}
-
-	const INTERNAL_CONFIG_DIR = path.resolve('src/lib/config/external_modules');
-	const LEGACY_CONFIG_DIR = path.resolve('src/lib/config/modules');
-	const UI_ROUTES_DIR = path.resolve('src/routes/ui/(modules)/(external_modules)');
-	const API_ROUTES_DIR = path.resolve('src/routes/api/(external_modules)');
-	const LIB_SYMLINK_DIRS = [
-		SYMLINK_CONFIG.componentsDir,
-		SYMLINK_CONFIG.modelsDir,
-		SYMLINK_CONFIG.repositoriesDir,
-		SYMLINK_CONFIG.storesDir,
-		SYMLINK_CONFIG.utilsDir,
-		SYMLINK_CONFIG.serverAiDir,
-		SYMLINK_CONFIG.dbSchemaDir
-	];
-
-	// Helper to safely remove a path (including broken symlinks)
-	const safeRemove = (p: string) => {
-		try {
-			rmSync(p, { recursive: true, force: true });
-		} catch (e) {
-			if (verbose) console.error(`[ModuleLinker] Failed to remove path ${p}:`, e);
-		}
+async function linkSingleModule(moduleId: string, modulePath: string): Promise<ModuleLinkResult> {
+	const result: ModuleLinkResult = {
+		moduleId,
+		success: false,
+		skipped: false,
+		linkedPaths: []
 	};
 
-	// 0. Cleanup broken or stale symlinks in the target directories first
-	// This prevents ENOENT errors when Vite tries to stat broken links
-	[
-		INTERNAL_CONFIG_DIR,
-		UI_ROUTES_DIR,
-		API_ROUTES_DIR,
-		LEGACY_CONFIG_DIR,
-		...LIB_SYMLINK_DIRS
-	].forEach((dir) => {
+	try {
+		// Register module in database if needed
+		await registerModuleIfNeeded(moduleId, modulePath);
+
+		// Check if we should link this module
+		const shouldLink = await shouldLinkModule(moduleId);
+		if (!shouldLink.shouldLink) {
+			result.skipped = true;
+			result.skipReason = shouldLink.reason;
+			console.log(`[ModuleLinker] Skipping ${moduleId}: ${shouldLink.reason}`);
+			return result;
+		}
+
+		// NEW: Validate module before attempting to link
+		const validation = await validateModule(modulePath, moduleId);
+		result.validation = validation;
+
+		if (!validation.canProceed) {
+			result.skipped = true;
+			result.skipReason = `Validation failed: ${validation.errors.map((e) => e.message).join('; ')}`;
+			console.log(`[ModuleLinker] Skipping ${moduleId}: Validation failed`);
+			console.log(formatValidationResult(validation));
+			return result;
+		}
+
+		if (validation.warnings.length > 0) {
+			console.warn(`[ModuleLinker] Warnings for ${moduleId}:`);
+			for (const warning of validation.warnings) {
+				console.warn(`  - [${warning.code}] ${warning.message}`);
+			}
+		}
+
+		const moduleSrcPath = path.join(modulePath, 'src');
+
+		// Check if source directory exists
+		if (!existsSync(moduleSrcPath)) {
+			throw new Error(`Source directory not found: ${moduleSrcPath}`);
+		}
+
+		// Link UI routes
+		const uiSource = path.join(moduleSrcPath, 'routes/ui');
+		if (existsSync(uiSource)) {
+			const uiDest = path.join(UI_ROUTES_DIR, moduleId);
+			rmSync(uiDest, { recursive: true, force: true });
+			if (!existsSync(path.dirname(uiDest))) {
+				mkdirSync(path.dirname(uiDest), { recursive: true });
+			}
+			symlinkSync(uiSource, uiDest, 'dir');
+			result.linkedPaths.push(uiDest);
+		}
+
+		// Link API routes
+		const apiSource = path.join(moduleSrcPath, 'routes/api');
+		if (existsSync(apiSource)) {
+			const apiDest = path.join(API_ROUTES_DIR, moduleId);
+			rmSync(apiDest, { recursive: true, force: true });
+			if (!existsSync(path.dirname(apiDest))) {
+				mkdirSync(path.dirname(apiDest), { recursive: true });
+			}
+			symlinkSync(apiSource, apiDest, 'dir');
+			result.linkedPaths.push(apiDest);
+		}
+
+		// Link lib directory for $lib/modules/{moduleId} imports
+		const libSource = path.join(moduleSrcPath, 'lib');
+		if (existsSync(libSource)) {
+			const libDest = path.join(LIB_MODULES_DIR, moduleId);
+			rmSync(libDest, { recursive: true, force: true });
+			if (!existsSync(path.dirname(libDest))) {
+				mkdirSync(path.dirname(libDest), { recursive: true });
+			}
+			symlinkSync(libSource, libDest, 'dir');
+			result.linkedPaths.push(libDest);
+
+			// Link lib subdirectories for $lib/{subdir}/external_modules/{moduleId} imports
+			for (const subdir of LIB_SUBDIRS) {
+				const subSource = path.join(libSource, subdir);
+				if (existsSync(subSource)) {
+					const subDestDir = path.resolve(`src/lib/${subdir}/external_modules`);
+					const subDest = path.join(subDestDir, moduleId);
+					rmSync(subDest, { recursive: true, force: true });
+					if (!existsSync(subDestDir)) {
+						mkdirSync(subDestDir, { recursive: true });
+					}
+					symlinkSync(subSource, subDest, 'dir');
+					result.linkedPaths.push(subDest);
+				}
+			}
+		}
+
+		// Link server directory for module server code (repositories, etc.)
+		const serverSource = path.join(moduleSrcPath, 'server');
+		if (existsSync(serverSource)) {
+			const serverDestDir = path.resolve('src/lib/server/external_modules');
+			const serverDest = path.join(serverDestDir, moduleId);
+			rmSync(serverDest, { recursive: true, force: true });
+			if (!existsSync(serverDestDir)) {
+				mkdirSync(serverDestDir, { recursive: true });
+			}
+			symlinkSync(serverSource, serverDest, 'dir');
+			result.linkedPaths.push(serverDest);
+		}
+
+		// Link models directory for module types/interfaces
+		const modelsSource = path.join(moduleSrcPath, 'models');
+		if (existsSync(modelsSource)) {
+			const modelsDestDir = path.resolve('src/lib/models/external_modules');
+			const modelsDest = path.join(modelsDestDir, moduleId);
+			rmSync(modelsDest, { recursive: true, force: true });
+			if (!existsSync(modelsDestDir)) {
+				mkdirSync(modelsDestDir, { recursive: true });
+			}
+			symlinkSync(modelsSource, modelsDest, 'dir');
+			result.linkedPaths.push(modelsDest);
+		}
+
+		result.success = true;
+		console.log(
+			`[ModuleLinker] Successfully linked ${moduleId} (${result.linkedPaths.length} paths)`
+		);
+	} catch (error) {
+		result.success = false;
+		result.error = error as Error;
+		console.error(`[ModuleLinker] Failed to link ${moduleId}:`, error);
+	}
+
+	return result;
+}
+
+/**
+ * Cleanup broken symlinks in route and lib directories
+ */
+function cleanupBrokenSymlinks(): void {
+	const dirsToClean = [UI_ROUTES_DIR, API_ROUTES_DIR, LIB_MODULES_DIR];
+
+	// Also clean external_modules subdirs
+	for (const subdir of LIB_SUBDIRS) {
+		dirsToClean.push(path.resolve(`src/lib/${subdir}/external_modules`));
+	}
+
+	dirsToClean.forEach((dir) => {
 		if (existsSync(dir)) {
 			const entries = readdirSync(dir, { withFileTypes: true });
 			for (const entry of entries) {
 				const fullPath = path.join(dir, entry.name);
 				try {
-					// Check if it's a symlink and if it's broken
-					const stats = lstatSync(fullPath);
-					if (stats.isSymbolicLink()) {
-						if (!existsSync(fullPath)) {
-							if (verbose) console.log(`[ModuleLinker] Removing broken symlink: ${fullPath}`);
-							safeRemove(fullPath);
-						} else if (dir === LEGACY_CONFIG_DIR) {
-							if (verbose)
-								console.log(`[ModuleLinker] Removing legacy module config symlink: ${fullPath}`);
-							safeRemove(fullPath);
-						}
+					if (entry.isSymbolicLink() && !existsSync(fullPath)) {
+						rmSync(fullPath, { recursive: true, force: true });
 					}
-				} catch (e) {
-					if (verbose) console.log(`[ModuleLinker] Error while removing path ${fullPath}:`, e);
-					safeRemove(fullPath);
+				} catch {
+					rmSync(fullPath, { recursive: true, force: true });
 				}
 			}
 		}
 	});
-
-	if (!existsSync(EXTERNAL_DIR)) {
-		console.log('[ModuleLinker] No external_modules directory found');
-		saveLinkState([]);
-		return;
-	}
-
-	let modules: string[] = [];
-	try {
-		modules = readdirSync(EXTERNAL_DIR, { withFileTypes: true })
-			.filter((dirent) => dirent.isDirectory() || dirent.isSymbolicLink())
-			.map((dirent) => dirent.name);
-	} catch (e) {
-		console.error('[ModuleLinker] Failed to read external modules directory:', e);
-		return;
-	}
-
-	const activeModuleIds = getActiveModulesFromDb();
-	if (activeModuleIds) {
-		const pruneSymlinks = (dir: string, toModuleId: (name: string) => string) => {
-			if (!existsSync(dir)) return;
-			const entries = readdirSync(dir, { withFileTypes: true });
-			for (const entry of entries) {
-				if (!entry.isSymbolicLink()) continue;
-				const moduleId = toModuleId(entry.name);
-				if (!activeModuleIds.has(moduleId)) {
-					safeRemove(path.join(dir, entry.name));
-				}
-			}
-		};
-
-		pruneSymlinks(INTERNAL_CONFIG_DIR, (name) => name.replace(/\.ts$/, ''));
-		pruneSymlinks(LEGACY_CONFIG_DIR, (name) => name.replace(/\.ts$/, ''));
-		pruneSymlinks(UI_ROUTES_DIR, (name) => name);
-		pruneSymlinks(API_ROUTES_DIR, (name) => name);
-		LIB_SYMLINK_DIRS.forEach((dir) => pruneSymlinks(dir, (name) => name));
-
-		modules = modules.filter((moduleId) => activeModuleIds.has(moduleId));
-	}
-
-	console.log(`[ModuleLinker] Linking ${modules.length} external modules...`);
-
-	const linkedModules: string[] = [];
-
-	for (const moduleId of modules) {
-		if (!/^[a-zA-Z0-9_-]+$/.test(moduleId)) {
-			console.warn(`[ModuleLinker] Skipping module with invalid ID: ${moduleId}`);
-			continue;
-		}
-
-		const modulePath = path.join(EXTERNAL_DIR, moduleId);
-		if (!isPathWithinRoots(modulePath, allowedRoots)) {
-			console.warn(`[ModuleLinker] Skipping module outside allowed roots: ${moduleId}`);
-			continue;
-		}
-
-		// Quick validation before linking
-		const validation = quickValidateModule(moduleId, modulePath);
-		if (!validation.valid) {
-			console.warn(`[ModuleLinker] Skipping invalid module ${moduleId}: ${validation.error}`);
-			markModuleDisabled(moduleId, validation.error || 'Validation failed');
-			continue;
-		}
-
-		try {
-			// 1. Link to config registry
-			const configSource = path.join(modulePath, 'config.ts');
-			if (existsSync(configSource)) {
-				const configDest = path.join(INTERNAL_CONFIG_DIR, `${moduleId}.ts`);
-				safeRemove(configDest);
-				if (!existsSync(path.dirname(configDest)))
-					mkdirSync(path.dirname(configDest), { recursive: true });
-				symlinkSync(configSource, configDest, 'file');
-			}
-
-			// 2. Link UI routes
-			const uiSource = path.join(modulePath, 'routes/ui');
-			if (existsSync(uiSource)) {
-				const uiDest = path.join(UI_ROUTES_DIR, moduleId);
-				safeRemove(uiDest);
-				if (!existsSync(path.dirname(uiDest))) mkdirSync(path.dirname(uiDest), { recursive: true });
-				symlinkSync(uiSource, uiDest, 'dir');
-			}
-
-			// 3. Link API routes
-			const apiSource = path.join(modulePath, 'routes/api');
-			if (existsSync(apiSource)) {
-				const apiDest = path.join(API_ROUTES_DIR, moduleId);
-				safeRemove(apiDest);
-				if (!existsSync(path.dirname(apiDest)))
-					mkdirSync(path.dirname(apiDest), { recursive: true });
-				symlinkSync(apiSource, apiDest, 'dir');
-			}
-
-			// 4. Link lib directories (stores, components, models, repositories, utils, server/ai, server/db/schema)
-			const libMappings: Array<{ source: string; dest: string }> = [
-				{
-					source: path.join(modulePath, 'lib/stores'),
-					dest: path.join(SYMLINK_CONFIG.storesDir, moduleId)
-				},
-				{
-					source: path.join(modulePath, 'lib/components'),
-					dest: path.join(SYMLINK_CONFIG.componentsDir, moduleId)
-				},
-				{
-					source: path.join(modulePath, 'lib/models'),
-					dest: path.join(SYMLINK_CONFIG.modelsDir, moduleId)
-				},
-				{
-					source: path.join(modulePath, 'lib/repositories'),
-					dest: path.join(SYMLINK_CONFIG.repositoriesDir, moduleId)
-				},
-				{
-					source: path.join(modulePath, 'lib/utils'),
-					dest: path.join(SYMLINK_CONFIG.utilsDir, moduleId)
-				},
-				{
-					source: path.join(modulePath, 'lib/server/ai'),
-					dest: path.join(SYMLINK_CONFIG.serverAiDir, moduleId)
-				},
-				{
-					source: path.join(modulePath, 'lib/server/db/schema'),
-					dest: path.join(SYMLINK_CONFIG.dbSchemaDir, moduleId)
-				}
-			];
-
-			for (const { source, dest } of libMappings) {
-				if (existsSync(source)) {
-					safeRemove(dest);
-					if (!existsSync(path.dirname(dest))) mkdirSync(path.dirname(dest), { recursive: true });
-					symlinkSync(source, dest, 'dir');
-				}
-			}
-
-			linkedModules.push(moduleId);
-			if (verbose) console.log(`[ModuleLinker] ✓ Linked ${moduleId}`);
-		} catch (e) {
-			console.error(`[ModuleLinker] Failed to link module ${moduleId}:`, e);
-		}
-	}
-
-	// Save link state
-	saveLinkState(linkedModules);
-	console.log(`[ModuleLinker] Successfully linked ${linkedModules.length} modules`);
 }
 
 /**
- * CLI entrypoint
+ * Link all modules with database tracking
+ *
+ * This is the new main entry point that integrates with the database
+ * to track module linking status and errors.
  */
-async function main() {
-	const args = process.argv.slice(2);
-	const force = args.includes('--force');
-	const verbose = args.includes('--verbose') || args.includes('-v');
+export async function linkAllModules(): Promise<ModuleLinkResult[]> {
+	console.log('[ModuleLinker] Starting database-aware module linking...');
 
-	if (force) {
-		clearLinkState();
+	// Cleanup broken symlinks first
+	cleanupBrokenSymlinks();
+
+	// Discover all modules
+	const modules = discoverModules();
+
+	if (modules.length === 0) {
+		console.log('[ModuleLinker] No modules found');
+		return [];
 	}
 
-	await linkExternalModules({ force, verbose });
+	console.log(`[ModuleLinker] Processing ${modules.length} modules...`);
+
+	const results: ModuleLinkResult[] = [];
+
+	// Process each module independently
+	for (const { moduleId, modulePath } of modules) {
+		const result = await linkSingleModule(moduleId, modulePath);
+		results.push(result);
+
+		// Record result in database
+		await recordLinkResult(moduleId, result);
+	}
+
+	// Print summary
+	const successful = results.filter((r) => r.success && !r.skipped);
+	const failed = results.filter((r) => !r.success && !r.skipped);
+	const skipped = results.filter((r) => r.skipped);
+
+	console.log(`[ModuleLinker] Linking complete:`);
+	console.log(`  - Successfully linked: ${successful.length}`);
+	console.log(`  - Failed: ${failed.length}`);
+	console.log(`  - Skipped: ${skipped.length}`);
+
+	if (failed.length > 0) {
+		console.warn('[ModuleLinker] Failed modules:');
+		failed.forEach((r) => {
+			console.warn(`  - ${r.moduleId}: ${r.error?.message}`);
+		});
+	}
+
+	return results;
+}
+
+/**
+ * Legacy function for backward compatibility
+ *
+ * @deprecated Use linkAllModules() instead for database-aware linking
+ */
+export async function linkModuleRoutes(): Promise<void> {
+	// Cleanup broken symlinks
+	cleanupBrokenSymlinks();
+
+	const modules = discoverModules();
+
+	if (modules.length === 0) {
+		console.log('[ModuleLinker] No modules found');
+		return;
+	}
+
+	console.log(`[ModuleLinker] Linking routes for ${modules.length} modules...`);
+
+	let linked = 0;
+
+	for (const { moduleId, modulePath } of modules) {
+		const moduleSrcPath = path.join(modulePath, 'src');
+
+		if (!existsSync(moduleSrcPath)) {
+			continue;
+		}
+
+		// Link UI routes
+		const uiSource = path.join(moduleSrcPath, 'routes/ui');
+		if (existsSync(uiSource)) {
+			const uiDest = path.join(UI_ROUTES_DIR, moduleId);
+			rmSync(uiDest, { recursive: true, force: true });
+			if (!existsSync(path.dirname(uiDest))) {
+				mkdirSync(path.dirname(uiDest), { recursive: true });
+			}
+			symlinkSync(uiSource, uiDest, 'dir');
+			linked++;
+		}
+
+		// Link API routes
+		const apiSource = path.join(moduleSrcPath, 'routes/api');
+		if (existsSync(apiSource)) {
+			const apiDest = path.join(API_ROUTES_DIR, moduleId);
+			rmSync(apiDest, { recursive: true, force: true });
+			if (!existsSync(path.dirname(apiDest))) {
+				mkdirSync(path.dirname(apiDest), { recursive: true });
+			}
+			symlinkSync(apiSource, apiDest, 'dir');
+			linked++;
+		}
+
+		// Link lib directory for $lib/modules/{moduleId} imports
+		const libSource = path.join(moduleSrcPath, 'lib');
+		if (existsSync(libSource)) {
+			const libDest = path.join(LIB_MODULES_DIR, moduleId);
+			rmSync(libDest, { recursive: true, force: true });
+			if (!existsSync(path.dirname(libDest))) {
+				mkdirSync(path.dirname(libDest), { recursive: true });
+			}
+			symlinkSync(libSource, libDest, 'dir');
+			linked++;
+
+			// Link lib subdirectories for $lib/{subdir}/external_modules/{moduleId} imports
+			for (const subdir of LIB_SUBDIRS) {
+				const subSource = path.join(libSource, subdir);
+				if (existsSync(subSource)) {
+					const subDestDir = path.resolve(`src/lib/${subdir}/external_modules`);
+					const subDest = path.join(subDestDir, moduleId);
+					rmSync(subDest, { recursive: true, force: true });
+					if (!existsSync(subDestDir)) {
+						mkdirSync(subDestDir, { recursive: true });
+					}
+					symlinkSync(subSource, subDest, 'dir');
+					linked++;
+				}
+			}
+		}
+
+		// Link server directory for module server code (repositories, etc.)
+		const serverSource = path.join(moduleSrcPath, 'server');
+		if (existsSync(serverSource)) {
+			const serverDestDir = path.resolve('src/lib/server/external_modules');
+			const serverDest = path.join(serverDestDir, moduleId);
+			rmSync(serverDest, { recursive: true, force: true });
+			if (!existsSync(serverDestDir)) {
+				mkdirSync(serverDestDir, { recursive: true });
+			}
+			symlinkSync(serverSource, serverDest, 'dir');
+			linked++;
+		}
+
+		// Link models directory for module types/interfaces
+		const modelsSource = path.join(moduleSrcPath, 'models');
+		if (existsSync(modelsSource)) {
+			const modelsDestDir = path.resolve('src/lib/models/external_modules');
+			const modelsDest = path.join(modelsDestDir, moduleId);
+			rmSync(modelsDest, { recursive: true, force: true });
+			if (!existsSync(modelsDestDir)) {
+				mkdirSync(modelsDestDir, { recursive: true });
+			}
+			symlinkSync(modelsSource, modelsDest, 'dir');
+			linked++;
+		}
+	}
+
+	console.log(`[ModuleLinker] Linked ${linked} route directories`);
 }
 
 // Run if called directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-	main().catch((err) => {
-		console.error('[ModuleLinker] Fatal error:', err);
-		process.exit(1);
-	});
+	const useNewLinking = process.argv.includes('--with-db');
+
+	if (useNewLinking) {
+		linkAllModules()
+			.then((results) => {
+				const failed = results.filter((r) => !r.success && !r.skipped);
+				if (failed.length > 0) {
+					process.exit(1);
+				}
+			})
+			.catch((err) => {
+				console.error('[ModuleLinker] Fatal error:', err);
+				process.exit(1);
+			});
+	} else {
+		linkModuleRoutes().catch((err) => {
+			console.error('[ModuleLinker] Fatal error:', err);
+			process.exit(1);
+		});
+	}
 }

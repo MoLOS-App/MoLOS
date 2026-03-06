@@ -157,9 +157,7 @@
 	// Update assistant message content (for streaming)
 	function updateAssistantMessage(messageId: string, content: string) {
 		messages = messages.map((msg) =>
-			msg.id === messageId
-				? { ...msg, parts: [{ type: 'text' as const, text: content }] }
-				: msg
+			msg.id === messageId ? { ...msg, parts: [{ type: 'text' as const, text: content }] } : msg
 		);
 	}
 
@@ -313,9 +311,9 @@
 						? {
 								...msg,
 								// Store progress log in a custom property for display
-								...(msg as any).metadata?.progressLog !== undefined
+								...((msg as any).metadata?.progressLog !== undefined
 									? { metadata: { ...(msg as any).metadata, progressLog } }
-									: {}
+									: {})
 							}
 						: msg
 				);
@@ -341,7 +339,8 @@
 				currentProgress.status = 'thinking';
 				currentProgress.currentAction = {
 					type: 'thought',
-					message: eventData.reasoning || `Iteration ${eventData.iteration}: ${eventData.nextAction}`,
+					message:
+						eventData.reasoning || `Iteration ${eventData.iteration}: ${eventData.nextAction}`,
 					step: eventData.iteration,
 					total: eventData.totalSteps,
 					timestamp: now,
@@ -367,7 +366,9 @@
 					timestamp: now,
 					toolName: eventData.toolName
 				};
-				addProgressLine(`👁 ${obsMessage}${eventData.durationMs ? ` (${eventData.durationMs}ms)` : ''}`);
+				addProgressLine(
+					`👁 ${obsMessage}${eventData.durationMs ? ` (${eventData.durationMs}ms)` : ''}`
+				);
 				break;
 
 			case 'step_start':
@@ -517,7 +518,7 @@
 		try {
 			// Build request body in AI SDK format (messages array with parts)
 			const requestBody = {
-				messages: messages.slice(0, -1).map(m => ({
+				messages: messages.slice(0, -1).map((m) => ({
 					id: m.id,
 					role: m.role,
 					parts: m.parts
@@ -742,9 +743,12 @@
 							<!-- Message List -->
 							<div class="flex flex-col gap-6">
 								{#each messages as msg (msg.id)}
-									{@const textPart = msg.parts?.find((p: any) => p.type === 'text') as { type: 'text'; text: string } | undefined}
+									{@const textPart = msg.parts?.find((p: any) => p.type === 'text') as
+										| { type: 'text'; text: string }
+										| undefined}
 									{@const textContent = textPart?.text || ''}
-									{@const hasContent = textContent.trim() !== '' || (msg as any).metadata?.progressLog}
+									{@const hasContent =
+										textContent.trim() !== '' || (msg as any).metadata?.progressLog}
 									{#if msg.role === 'user' || hasContent}
 										<ChatMessage
 											message={{
@@ -764,9 +768,9 @@
 
 								<!-- Progress Display -->
 								<ProgressDisplay
-									isLoading={isLoading}
-									isStreaming={isStreaming}
-									isCancelling={isCancelling}
+									{isLoading}
+									{isStreaming}
+									{isCancelling}
 									progress={currentProgress}
 									onCancel={cancelExecution}
 								/>

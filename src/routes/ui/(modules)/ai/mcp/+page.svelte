@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
 	import type { PageData } from './$types';
 	import {
 		Key,
@@ -270,10 +271,14 @@
 		}
 	}
 
+	function viewKeyDetails(keyId: string) {
+		goto(`/ui/ai/mcp/keys/${keyId}`);
+	}
+
 	async function closeKeySecret() {
 		showKeySecret = false;
 		createdKeySecret = '';
-		// Refresh data after closing the secret modal
+		// Refresh data after closing of secret modal
 		await refreshData();
 	}
 
@@ -727,11 +732,13 @@
 				keys={localKeys.map((k) => ({
 					...k,
 					// Map to expected format
-					status: k.status as 'active' | 'disabled' | 'revoked'
+					status: k.status as 'active' | 'disabled' | 'revoked',
+					allowedScopes: k.allowedScopes ?? null
 				}))}
 				availableModules={data.availableModules}
 				onCreateKey={() => (showCreateKeyDialog = true)}
 				onEditKey={openEditKey}
+				onViewDetails={viewKeyDetails}
 				onRevokeKey={confirmRevokeKey}
 				onShowHelp={() => (showHelpDialog = true)}
 			/>

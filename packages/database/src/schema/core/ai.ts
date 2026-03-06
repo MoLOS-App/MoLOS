@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm';
 import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core';
-import { user } from './auth.js';
-import { textEnum } from '../../utils/index.js';
+import { user } from './auth';
+import { textEnum } from '../../utils/index';
 
 export const AIProvider = {
 	OPENAI: 'openai',
@@ -215,11 +215,9 @@ export const aiMcpApiKeys = sqliteTable('ai_mcp_api_keys', {
 	keyPrefix: text('key_prefix').notNull(),
 	keyHash: text('key_hash').notNull(),
 	status: textEnum('status', MCPApiKeyStatus).notNull().default(MCPApiKeyStatus.ACTIVE),
-	// Scoping - which modules this key can access
-	allowedModules: text('allowed_modules', { mode: 'json' })
-		.notNull()
-		.default('[]')
-		.$type<string[]>(),
+	// Scoping - which modules/submodules/tools this key can access
+	// Format: "module", "module:submodule", or "module:submodule:tool"
+	allowedScopes: text('allowed_scopes', { mode: 'json' }).notNull().default('[]').$type<string[]>(),
 	// Optional expiration
 	expiresAt: integer('expires_at', { mode: 'timestamp_ms' }),
 	// Last used tracking
@@ -272,6 +270,8 @@ export const aiMcpResources = sqliteTable('ai_mcp_resources', {
 	name: text('name').notNull(),
 	uri: text('uri').notNull(),
 	moduleId: text('module_id'),
+	submoduleId: text('submodule_id'), // For submodule-level access control
+	resourceName: text('resource_name'), // For individual resource control
 	description: text('description').notNull(),
 	resourceType: textEnum('resource_type', MCPResourceType)
 		.notNull()
@@ -303,6 +303,8 @@ export const aiMcpPrompts = sqliteTable('ai_mcp_prompts', {
 		.notNull()
 		.$type<Array<{ name: string; description: string; required?: boolean }>>(),
 	moduleId: text('module_id'),
+	submoduleId: text('submodule_id'), // For submodule-level access control
+	promptName: text('prompt_name'), // For individual prompt control
 	enabled: integer('enabled', { mode: 'boolean' }).notNull().default(true),
 	createdAt: integer('created_at', { mode: 'timestamp_ms' })
 		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)

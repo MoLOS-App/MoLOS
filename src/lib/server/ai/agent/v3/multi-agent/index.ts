@@ -6,18 +6,14 @@ export {
 	createDelegationTool,
 	createModuleDelegationTools,
 	createLocalModuleTool,
-	generateModuleDescriptions,
+	generateModuleDescriptions
 } from './delegation-tools';
 
-export {
-	ModuleRegistry,
-	getModuleRegistry,
-	resetModuleRegistry,
-} from './module-registry';
+export { ModuleRegistry, getModuleRegistry, resetModuleRegistry } from './module-registry';
 
 export type {
 	ModuleHealthResponse,
 	DelegationRequest,
 	DelegationResponse,
-	ModuleCapabilitiesResponse,
+	ModuleCapabilitiesResponse
 } from './module-spec';

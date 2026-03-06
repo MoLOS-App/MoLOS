@@ -1,5 +1,4 @@
 import { sequence } from '@sveltejs/kit/hooks';
-import { execSync } from 'child_process';
 import { existsSync, readFileSync } from 'fs';
 import path from 'path';
 import { env } from '$env/dynamic/private';
@@ -12,7 +11,6 @@ import { redirect, type Handle } from '@sveltejs/kit';
 import { SettingsRepository } from '$lib/repositories/settings/settings-repository';
 import { getThemeClasses, type Theme, type Font, FONTS } from '$lib/theme';
 
-import { ModuleManager } from '../module-management/server/module-manager';
 import { failedModulesQueue } from '$lib/config';
 import { markModuleForDisable } from '../module-management/server/module-auto-disable';
 
@@ -37,78 +35,44 @@ function loadEnv() {
 	}
 }
 
-async function setupDatabase() {
-	const rawDbPath =
-		env.DATABASE_URL ||
-		process.env.DATABASE_URL ||
-		(process.env.NODE_ENV === 'production' ? '/data/molos.db' : 'molos.db');
-	const dbPath = rawDbPath.replace(/^sqlite:\/\//, '').replace(/^sqlite:|^file:/, '');
-	const resolvedDbPath = path.isAbsolute(dbPath) ? dbPath : path.resolve(process.cwd(), dbPath);
-
-	// Check if database file exists
-	const dbExists = existsSync(resolvedDbPath);
-
-	if (!dbExists) {
-		console.log('Database does not exist, running drizzle-kit push...');
-		try {
-			execSync('npm run db:generate', { stdio: 'inherit' });
-			execSync('npm run db:migrate', { stdio: 'inherit' });
-			console.log('Database schema pushed successfully');
-		} catch (error) {
-			console.error('Failed to push database schema:', error);
-			process.exit(1);
-		}
-	} else {
-		console.log('Database already exists');
-	}
-
-	// Check if migrations folder exists and run migrate if it does (only in development)
-	const migrationsFolder = './drizzle';
-	const migrationsExist = existsSync(migrationsFolder);
-	const isDevelopment = dev;
-
-	if (migrationsExist && isDevelopment && !building) {
-		console.log('Running database migrations in development mode...');
-		try {
-			execSync('npm run db:migrate', { stdio: 'inherit' });
-			console.log('Migrations applied successfully');
-		} catch (error) {
-			console.error('Failed to apply migrations:', error);
-			// Don't exit in dev mode, let the app continue
-			console.warn('Continuing without migrations applied');
-		}
-	} else if (migrationsExist && !isDevelopment) {
-		console.log('Skipping automatic migrations in production (run manually during deployment)');
-	} else if (!migrationsExist) {
-		console.log('No migrations folder found, skipping migration check');
-	}
-}
-
 // Run database setup on server start
-if (!building) {
-	loadEnv();
-	await setupDatabase();
-	// Initialize external modules
-	try {
-		await ModuleManager.init();
-	} catch (error) {
-		console.error('[Hooks] Failed to initialize ModuleManager:', error);
-	}
+(async () => {
+	if (!building) {
+		loadEnv();
 
-	// Process any failed modules from config loading
-	if (failedModulesQueue.length > 0) {
-		console.log(`[Hooks] Processing ${failedModulesQueue.length} failed modules...`);
-		for (const { moduleId, error } of failedModulesQueue) {
-			try {
-				await markModuleForDisable(moduleId, error);
-			} catch (err) {
-				console.warn(`[Hooks] Failed to auto-disable module ${moduleId}:`, err);
-			}
+		// Database is now initialized earlier in the startup sequence (by db:init)
+		// Only run development migration checks here
+		const migrationsFolder = './drizzle';
+		const migrationsExist = existsSync(migrationsFolder);
+
+		if (migrationsExist && dev) {
+			console.log('[Hooks] Development mode: checking for new migrations...');
+			// In dev, just log that migrations would be checked
+			// The actual migrations were already run by db:init
+			console.log('[Hooks] Migrations already applied by db:init, skipping redundant checks.');
+		} else if (!migrationsExist) {
+			console.log('[Hooks] No migrations folder found');
 		}
-		// Clear the queue after processing
-		failedModulesQueue.length = 0;
+
+		// Module manager already ran in sync-modules script, skip here
+		// This prevents redundant initialization
+		console.log('[Hooks] Module manager already initialized, skipping redundant init.');
+
+		// Process any failed modules from config loading
+		if (failedModulesQueue.length > 0) {
+			console.log(`[Hooks] Processing ${failedModulesQueue.length} failed modules...`);
+			for (const { moduleId, error } of failedModulesQueue) {
+				try {
+					await markModuleForDisable(moduleId, error);
+				} catch (err) {
+					console.warn(`[Hooks] Failed to auto-disable module ${moduleId}:`, err);
+				}
+			}
+			// Clear the queue after processing
+			failedModulesQueue.length = 0;
+		}
 	}
-}
+})();
 
 const authHandler: Handle = async ({ event, resolve }) => {
 	const { pathname } = event.url;
@@ -195,3 +159,86 @@ const themeHandler: Handle = async ({ event, resolve }) => {
 };
 
 export const handle = sequence(authHandler, moduleAccessHandler, themeHandler);
+
+/**
+ * Handle unexpected errors gracefully
+ * This prevents the dev server from crashing on unhandled exceptions
+ */
+export const handleError = async ({
+	error,
+	event,
+	status,
+	message
+}: {
+	error: unknown;
+	event: {
+		url: URL;
+		request: Request;
+		locals: App.Locals;
+	};
+	status: number;
+	message: string;
+}) => {
+	// Log the error for debugging
+	console.error('[Server Error Handler]', {
+		status,
+		message,
+		url: event.url.pathname,
+		error:
+			error instanceof Error
+				? {
+						name: error.name,
+						message: error.message,
+						stack: error.stack?.split('\n').slice(0, 3).join('\n')
+					}
+				: error
+	});
+
+	// Check if this is an API request (MCP or other)
+	const isApiRequest = event.url.pathname.startsWith('/api/');
+	const isMcpRequest = event.url.pathname.startsWith('/api/ai/mcp/');
+
+	// For MCP requests, return a proper JSON-RPC error
+	if (isMcpRequest) {
+		return {
+			message: 'Internal server error',
+			code: -32603,
+			data: {
+				type: 'server_error',
+				recoverable: true,
+				hint: 'Please try again. If the error persists, check the server logs.'
+			}
+		};
+	}
+
+	// For other API requests, return JSON error
+	if (isApiRequest) {
+		return {
+			message: error instanceof Error ? error.message : 'Internal server error',
+			code: status
+		};
+	}
+
+	// For UI requests, return a generic error message
+	return {
+		message: 'An unexpected error occurred. Please try again.',
+		code: status
+	};
+};
+
+// Handle unhandled promise rejections to prevent server crashes
+process.on('unhandledRejection', (reason, promise) => {
+	console.error('[Unhandled Rejection] Reason:', reason);
+	// Don't exit the process, just log the error
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+	console.error('[Uncaught Exception]', error);
+	// Don't exit the process for recoverable errors
+	// Only exit for critical errors like memory issues
+	if (error.message?.includes('ENOMEM') || error.message?.includes('out of memory')) {
+		console.error('[Critical] Out of memory, exiting...');
+		process.exit(1);
+	}
+});

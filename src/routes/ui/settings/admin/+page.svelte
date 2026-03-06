@@ -871,7 +871,8 @@
 								</Button>
 							</div>
 
-							{@const allowInstall = systemSettings.find(
+							<!-- DISABLED: Plugin install functionality temporarily disabled -->
+							<!-- {@const allowInstall = systemSettings.find(
 								(s) => s.key === 'ALLOW_USER_INSTALL_PLUGINS'
 							)}
 							<div
@@ -901,7 +902,7 @@
 								>
 									{allowInstall?.value === 'true' ? 'Enabled' : 'Disabled'}
 								</Button>
-							</div>
+							</div> -->
 						</CardContent>
 					</Card>
 				</div>

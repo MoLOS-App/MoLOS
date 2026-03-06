@@ -11,9 +11,10 @@
 import {
 	streamText,
 	stepCountIs,
+	APICallError,
 	type ModelMessage,
 	type ToolSet,
-	type StreamTextResult,
+	type StreamTextResult
 } from 'ai';
 import type {
 	MoLOSAgentConfig,
@@ -24,17 +25,14 @@ import type {
 	AgentTelemetry,
 	ToolDefinition,
 	ProcessOptions,
-	ThinkingLevel,
+	ThinkingLevel
 } from '../types';
 import { toModelMessages } from '../types';
 import { convertToolsToAiSdk, type ToolWrapperOptions } from '../tools';
 import { getProviderOptions } from '../providers';
 import { EventBus, getGlobalEventBus } from '../events/event-bus';
 import { createHookManager, type HookManager } from '../hooks/hook-manager';
-import {
-	ModuleRegistry,
-	getModuleRegistry,
-} from '../multi-agent';
+import { ModuleRegistry, getModuleRegistry } from '../multi-agent';
 import type { ModuleAgentConfig } from '../types';
 
 /**
@@ -80,7 +78,7 @@ function buildTelemetry(
 		llmCalls: steps.length,
 		cacheHits: 0,
 		cacheMisses: 0,
-		errors: 0,
+		errors: 0
 	};
 }
 
@@ -88,7 +86,10 @@ function buildTelemetry(
  * Extract actions from steps
  */
 function extractActions(
-	steps: Array<{ toolCalls: Array<{ toolCallId: string; toolName: string; input: unknown }>; toolResults?: Array<{ toolName: string; result: unknown; isError?: boolean }> }>
+	steps: Array<{
+		toolCalls: Array<{ toolCallId: string; toolName: string; input: unknown }>;
+		toolResults?: Array<{ toolName: string; result: unknown; isError?: boolean }>;
+	}>
 ): AgentAction[] {
 	const actions: AgentAction[] = [];
 
@@ -103,8 +104,8 @@ function extractActions(
 				status: result?.isError ? 'failed' : 'executed',
 				data: {
 					input: toolCall.input,
-					result: result?.result,
-				},
+					result: result?.result
+				}
 			});
 		}
 	}
@@ -164,20 +165,20 @@ export class MoLOSAgent {
 			hookManager: this.hookManager,
 			eventBus: this.eventBus,
 			enableCache: this.config.toolWrapperOptions?.enableCache ?? true,
-			cacheTtlMs: this.config.toolWrapperOptions?.cacheTtlMs ?? 60000,
+			cacheTtlMs: this.config.toolWrapperOptions?.cacheTtlMs ?? 60000
 		};
 
 		// Convert v2 tools to AI SDK format
 		this.tools = {
 			...this.tools,
-			...convertToolsToAiSdk(tools, wrapperOptions),
+			...convertToolsToAiSdk(tools, wrapperOptions)
 		};
 
 		// Add module delegation tools
 		if (this.moduleRegistry.size > 0) {
 			this.tools = {
 				...this.tools,
-				...this.moduleRegistry.getDelegationTools(),
+				...this.moduleRegistry.getDelegationTools()
 			};
 		}
 	}
@@ -197,16 +198,13 @@ export class MoLOSAgent {
 		const systemPrompt = options.systemPrompt ?? this.buildSystemPrompt();
 
 		// Convert messages to AI SDK format
-		const modelMessages: ModelMessage[] = [
-			...toModelMessages(messages),
-			{ role: 'user', content },
-		];
+		const modelMessages: ModelMessage[] = [...toModelMessages(messages), { role: 'user', content }];
 
 		// Get provider-specific options
 		const providerOptions = getProviderOptions(
 			'anthropic', // Default, should be passed in config
 			{
-				thinkingLevel: this.config.thinkingLevel as ThinkingLevel | undefined,
+				thinkingLevel: this.config.thinkingLevel as ThinkingLevel | undefined
 			}
 		);
 
@@ -215,7 +213,9 @@ export class MoLOSAgent {
 		let stepCounter = 0;
 		const maxSteps = options.maxSteps ?? this.config.maxSteps ?? 20;
 
-		console.log(`[MoLOSAgent ${runId}] Starting processMessage with streaming: ${options.streamEnabled ?? this.config.streamEnabled}`);
+		console.log(
+			`[Agent ${runId.slice(-6)}] Starting (stream: ${options.streamEnabled ?? this.config.streamEnabled})`
+		);
 
 		try {
 			// Create the stream
@@ -230,10 +230,9 @@ export class MoLOSAgent {
 					stepCounter++;
 					const toolNames = step.toolCalls?.map((tc: any) => tc.toolName) || [];
 
-					console.log(`[MoLOSAgent ${runId}] Step ${stepCounter} finished:`, {
-						toolCalls: toolNames,
-						textLength: step.text?.length
-					});
+					console.log(
+						`[Agent ${runId.slice(-6)}] Step ${stepCounter}/${maxSteps}: ${toolNames.length ? toolNames.join('+') : 'text'}`
+					);
 
 					// Determine step description based on what happened
 					let description = 'Processing';
@@ -250,21 +249,21 @@ export class MoLOSAgent {
 						text: step.text,
 						stepNumber: stepCounter,
 						totalSteps: maxSteps,
-						description,
+						description
 					};
 
 					// Track for telemetry
 					events.push({
 						type: 'step_complete',
 						timestamp: Date.now(),
-						data: eventData,
+						data: eventData
 					});
 
 					// Emit to event bus
 					this.eventBus.emitSync({
 						type: 'step_complete',
 						timestamp: Date.now(),
-						data: eventData,
+						data: eventData
 					} as any);
 
 					// Call progress callback if provided
@@ -272,15 +271,14 @@ export class MoLOSAgent {
 						await options.onProgress({
 							type: 'step_complete',
 							timestamp: Date.now(),
-							data: eventData,
+							data: eventData
 						});
 					}
-				},
+				}
 			});
 
 			// Handle streaming if enabled - AWAIT the streaming to ensure events are sent
 			if (options.streamEnabled ?? this.config.streamEnabled) {
-				console.log(`[MoLOSAgent ${runId}] Starting streamToEventBus`);
 				// Stream to event bus - this iterates through the full stream
 				// We need to do this in parallel with getting the response
 				const streamingPromise = this.streamToEventBus(result, runId, options.onProgress);
@@ -293,7 +291,7 @@ export class MoLOSAgent {
 				// Wait for streaming to complete
 				await streamingPromise;
 
-				console.log(`[MoLOSAgent ${runId}] Streaming complete, text length: ${text?.length}`);
+				console.log(`[Agent ${runId.slice(-6)}] Done (${text?.length} chars)`);
 
 				// Build telemetry
 				const telemetry = buildTelemetry(runId, startTime, steps as any);
@@ -309,8 +307,8 @@ export class MoLOSAgent {
 					events: events.map((e) => ({
 						type: e.type,
 						timestamp: e.timestamp,
-						data: e.data,
-					})),
+						data: e.data
+					}))
 				};
 			}
 
@@ -333,11 +331,39 @@ export class MoLOSAgent {
 				events: events.map((e) => ({
 					type: e.type,
 					timestamp: e.timestamp,
-					data: e.data,
-				})),
+					data: e.data
+				}))
 			};
 		} catch (error) {
-			const errorMessage = error instanceof Error ? error.message : String(error);
+			// Check if it's an API call error with more details
+			let errorMessage: string;
+			let errorDetails: Record<string, unknown> = { error: String(error) };
+
+			if (error instanceof APICallError) {
+				const isAuthError = error.statusCode === 401;
+				const isRateLimit = error.statusCode === 429;
+				const isServerError = (error.statusCode || 0) >= 500;
+
+				if (isAuthError) {
+					errorMessage = 'Authentication failed. Please check your API key in settings.';
+				} else if (isRateLimit) {
+					errorMessage = 'Rate limit exceeded. Please try again later.';
+				} else if (isServerError) {
+					errorMessage = `Server error (${error.statusCode}): ${error.message}`;
+				} else {
+					errorMessage = `API Error (${error.statusCode}): ${error.message}`;
+				}
+
+				errorDetails = {
+					type: 'APICallError',
+					statusCode: error.statusCode,
+					message: error.message,
+					body: error.responseBody,
+					cause: error.cause
+				};
+			} else {
+				errorMessage = error instanceof Error ? error.message : String(error);
+			}
 
 			return {
 				success: false,
@@ -356,15 +382,15 @@ export class MoLOSAgent {
 					llmCalls: 0,
 					cacheHits: 0,
 					cacheMisses: 0,
-					errors: 1,
+					errors: 1
 				},
 				events: [
 					{
 						type: 'error',
 						timestamp: Date.now(),
-						data: { error: errorMessage },
-					},
-				],
+						data: errorDetails
+					}
+				]
 			};
 		}
 	}
@@ -386,11 +412,30 @@ export class MoLOSAgent {
 		let segmentIndex = 0;
 		let chunkCount = 0;
 
-		console.log(`[MoLOSAgent ${runId}] streamToEventBus started`);
+		// Track which segment IDs have been emitted to prevent duplicates
+		const emittedSegmentIds = new Set<string>();
+
+		const runIdShort = runId.slice(-6);
 
 		const emitSegment = async (isComplete: boolean) => {
 			if (currentSegmentContent.trim()) {
-				console.log(`[MoLOSAgent ${runId}] Emitting segment ${segmentIndex}: ${currentSegmentContent.length} chars`);
+				// Check if this segment has already been emitted
+				if (emittedSegmentIds.has(currentSegmentId)) {
+					console.log(
+						`[Agent ${runIdShort}] Skipping duplicate segment: ${currentSegmentId} (index ${segmentIndex})`
+					);
+					// Still increment to maintain consistency
+					if (isComplete) {
+						segmentIndex++;
+						currentSegmentId = `seg_${runId}_${segmentIndex}`;
+						currentSegmentContent = '';
+					}
+					return;
+				}
+
+				console.log(
+					`[Agent ${runIdShort}] Segment ${segmentIndex}: ${currentSegmentContent.length} chars, isComplete: ${isComplete}, content: ${currentSegmentContent.substring(0, 50)}...`
+				);
 
 				const event: ProgressEvent = {
 					type: 'message_segment',
@@ -399,15 +444,19 @@ export class MoLOSAgent {
 						id: currentSegmentId,
 						content: currentSegmentContent,
 						isComplete,
-						segmentIndex,
-					},
+						segmentIndex
+					}
 				};
+
+				console.log(
+					`[Agent ${runIdShort}] Emitting message_segment event, has onProgress: ${!!onProgress}`
+				);
 
 				// Emit to event bus
 				this.eventBus.emitSync({
 					type: event.type as any,
 					timestamp: event.timestamp,
-					data: event.data,
+					data: event.data
 				} as any);
 
 				// Call progress callback
@@ -415,12 +464,19 @@ export class MoLOSAgent {
 					await onProgress(event);
 				}
 
+				// Mark this segment as emitted
+				emittedSegmentIds.add(currentSegmentId);
+
 				// Start new segment if this one is complete
 				if (isComplete) {
 					segmentIndex++;
 					currentSegmentId = `seg_${runId}_${segmentIndex}`;
 					currentSegmentContent = '';
 				}
+			} else {
+				console.log(
+					`[Agent ${runIdShort}] Skipping empty segment emission, isComplete: ${isComplete}`
+				);
 			}
 		};
 
@@ -430,7 +486,7 @@ export class MoLOSAgent {
 				const event: ProgressEvent = {
 					type: 'text',
 					timestamp: Date.now(),
-					data: {},
+					data: {}
 				};
 
 				switch (chunk.type) {
@@ -441,7 +497,7 @@ export class MoLOSAgent {
 						event.data = {
 							delta: chunk.text,
 							segmentId: currentSegmentId,
-							segmentIndex,
+							segmentIndex
 						};
 
 						// Emit text delta immediately for real-time streaming
@@ -451,7 +507,7 @@ export class MoLOSAgent {
 						break;
 
 					case 'tool-call':
-						console.log(`[MoLOSAgent ${runId}] Tool call: ${chunk.toolName}`);
+						console.log(`[Agent ${runIdShort}] Tool: ${chunk.toolName}`);
 						// Before tool call, finalize current segment if has content
 						await emitSegment(true);
 
@@ -460,7 +516,7 @@ export class MoLOSAgent {
 							toolName: chunk.toolName,
 							toolCallId: chunk.toolCallId,
 							input: chunk.input,
-							segmentIndex,
+							segmentIndex
 						};
 
 						// Call progress callback
@@ -470,13 +526,12 @@ export class MoLOSAgent {
 						break;
 
 					case 'tool-result':
-						console.log(`[MoLOSAgent ${runId}] Tool result: ${chunk.toolName}`);
 						event.type = 'tool_complete';
 						event.data = {
 							toolName: chunk.toolName,
 							toolCallId: chunk.toolCallId,
 							result: chunk.output,
-							segmentIndex,
+							segmentIndex
 						};
 
 						// Call progress callback
@@ -486,7 +541,7 @@ export class MoLOSAgent {
 						break;
 
 					case 'error':
-						console.error(`[MoLOSAgent ${runId}] Stream error:`, chunk.error);
+						console.error(`[Agent ${runIdShort}] Error:`, chunk.error);
 						event.type = 'error';
 						event.data = { error: chunk.error };
 
@@ -497,7 +552,6 @@ export class MoLOSAgent {
 						break;
 
 					case 'finish':
-						console.log(`[MoLOSAgent ${runId}] Stream finish, total chunks: ${chunkCount}`);
 						// Finalize any remaining content
 						await emitSegment(true);
 
@@ -505,7 +559,7 @@ export class MoLOSAgent {
 						event.data = {
 							finishReason: chunk.finishReason,
 							usage: chunk.totalUsage,
-							totalSegments: segmentIndex,
+							totalSegments: segmentIndex
 						};
 
 						// Call progress callback
@@ -516,14 +570,14 @@ export class MoLOSAgent {
 
 					default:
 						// Log unknown chunk types for debugging
-						console.log(`[MoLOSAgent ${runId}] Unknown chunk type: ${chunk.type}`);
+						console.log(`[Agent ${runIdShort}] Unknown chunk: ${chunk.type}`);
 						continue;
 				}
 			}
 
-			console.log(`[MoLOSAgent ${runId}] streamToEventBus complete, processed ${chunkCount} chunks`);
+			console.log(`[Agent ${runIdShort}] Streamed ${chunkCount} chunks`);
 		} catch (error) {
-			console.error(`[MoLOSAgent ${runId}] Stream iteration error:`, error);
+			console.error(`[Agent ${runIdShort}] Stream error:`, error);
 		}
 	}
 

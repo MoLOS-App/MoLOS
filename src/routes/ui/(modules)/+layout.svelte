@@ -486,7 +486,7 @@
 				{#if hasSubmenu && !isMobileViewport}
 					<div class="flex min-w-0 flex-1 gap-0">
 						<div
-							class="hover:shadow-mds my-4 flex shrink-0 rounded-3xl border border-border/60 bg-background/95 shadow-sm transition-shadow duration-300 ease-out"
+							class="hover:shadow-mds z-10 my-4 flex shrink-0 rounded-3xl border border-border/60 bg-background/95 shadow-sm transition-shadow duration-300 ease-out"
 						>
 							<div class="w-14 border-r border-border/60 px-2 py-4">
 								<div class="flex h-full flex-col items-center gap-3">
@@ -671,7 +671,7 @@
 	<ChatSidepanel bind:isOpen={isAiOpen} />
 
 	{#if data.hasPendingRestart}
-		<div class="fixed right-6 bottom-6 z-[200]">
+		<div class="fixed right-6 bottom-6 z-200">
 			<form
 				method="POST"
 				action="/ui/settings/modules?/restart"

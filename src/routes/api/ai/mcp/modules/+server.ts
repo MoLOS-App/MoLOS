@@ -29,8 +29,9 @@ export const GET = async ({ locals }: RequestEvent) => {
 	// Get all module IDs for proper prefix detection
 	const moduleIds = new Set(allModules.map((m) => m.id));
 
-	// Group tools by module
-	const moduleTools = new Map<string, any[]>();
+	// Group tools by module and submodule
+	const moduleSubmoduleTools = new Map<string, Map<string, any[]>>();
+
 	for (const tool of tools) {
 		// Check if tool name starts with a known module ID (external modules have `{moduleId}_{toolName}`)
 		let isModuleTool = false;
@@ -38,14 +39,22 @@ export const GET = async ({ locals }: RequestEvent) => {
 			const prefix = `${moduleId}_`;
 			if (tool.name.startsWith(prefix)) {
 				const toolName = tool.name.slice(prefix.length);
-				if (!moduleTools.has(moduleId)) {
-					moduleTools.set(moduleId, []);
+				const submodule = tool.metadata?.submodule || 'main'; // Get submodule from tool metadata
+
+				if (!moduleSubmoduleTools.has(moduleId)) {
+					moduleSubmoduleTools.set(moduleId, new Map());
 				}
-				moduleTools.get(moduleId)!.push({
+
+				if (!moduleSubmoduleTools.get(moduleId)!.has(submodule)) {
+					moduleSubmoduleTools.get(moduleId)!.set(submodule, []);
+				}
+
+				moduleSubmoduleTools.get(moduleId)!.get(submodule)!.push({
 					name: toolName,
 					fullName: tool.name,
 					description: tool.description,
-					parameters: tool.parameters
+					parameters: tool.parameters,
+					submodule
 				});
 				isModuleTool = true;
 				break;
@@ -54,35 +63,53 @@ export const GET = async ({ locals }: RequestEvent) => {
 
 		// If not a module tool, it's a core tool
 		if (!isModuleTool) {
-			if (!moduleTools.has('core')) {
-				moduleTools.set('core', []);
+			const submodule = tool.metadata?.submodule || 'main';
+
+			if (!moduleSubmoduleTools.has('core')) {
+				moduleSubmoduleTools.set('core', new Map());
 			}
-			moduleTools.get('core')!.push({
+
+			if (!moduleSubmoduleTools.get('core')!.has(submodule)) {
+				moduleSubmoduleTools.get('core')!.set(submodule, []);
+			}
+
+			moduleSubmoduleTools.get('core')!.get(submodule)!.push({
 				name: tool.name,
 				fullName: tool.name,
 				description: tool.description,
-				parameters: tool.parameters
+				parameters: tool.parameters,
+				submodule
 			});
 		}
 	}
 
-	// Build response
-	const modules = allModules.map((module) => ({
-		id: module.id,
-		name: module.name,
-		description: module.description,
-		isExternal: module.isExternal,
-		tools: moduleTools.get(module.id) || []
-	}));
+	// Build response with submodule hierarchy
+
+	// Build response with submodule hierarchy
+	const modules = allModules.map((module) => {
+		const submodulesMap = moduleSubmoduleTools.get(module.id);
+		return {
+			id: module.id,
+			name: module.name,
+			description: module.description,
+			isExternal: module.isExternal,
+			submodules: submodulesMap
+				? Object.fromEntries(Array.from(submodulesMap.entries()).map(([k, v]) => [k, v]))
+				: {}
+		};
+	});
 
 	// Add core tools if any exist
-	if (moduleTools.has('core')) {
+	if (moduleSubmoduleTools.has('core')) {
+		const coreSubmodulesMap = moduleSubmoduleTools.get('core')!;
 		modules.unshift({
 			id: 'core',
 			name: 'Core',
 			description: 'System-level tools and utilities',
 			isExternal: false,
-			tools: moduleTools.get('core') || []
+			submodules: Object.fromEntries(
+				Array.from(coreSubmodulesMap.entries()).map(([k, v]) => [k, v])
+			)
 		});
 	}
 

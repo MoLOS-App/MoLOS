@@ -25,6 +25,13 @@ export function getCoreAiTools(userId: string): ToolDefinition[] {
 				type: 'object',
 				properties: {}
 			},
+			metadata: {
+				category: 'system',
+				tags: ['system', 'modules'],
+				priority: 10,
+				essential: true,
+				submodule: 'system'
+			},
 			execute: async () => {
 				const allModules = getAllModules();
 				return allModules.map((m) => ({ id: m.id, name: m.name, description: m.description }));
@@ -38,6 +45,13 @@ export function getCoreAiTools(userId: string): ToolDefinition[] {
 				type: 'object',
 				properties: {}
 			},
+			metadata: {
+				category: 'system',
+				tags: ['system', 'user'],
+				priority: 10,
+				essential: true,
+				submodule: 'system'
+			},
 			execute: async () => {
 				return { userId };
 			}
@@ -49,6 +63,13 @@ export function getCoreAiTools(userId: string): ToolDefinition[] {
 			parameters: {
 				type: 'object',
 				properties: {}
+			},
+			metadata: {
+				category: 'system',
+				tags: ['system', 'time'],
+				priority: 9,
+				essential: true,
+				submodule: 'system'
 			},
 			execute: async () => {
 				return { iso: new Date().toISOString(), timestamp: Math.floor(Date.now() / 1000) };
@@ -66,6 +87,13 @@ export function getCoreAiTools(userId: string): ToolDefinition[] {
 				},
 				required: ['query']
 			},
+			metadata: {
+				category: 'system',
+				tags: ['system', 'search'],
+				priority: 7,
+				essential: false,
+				submodule: 'system'
+			},
 			execute: async () => {
 				return { message: 'Codebase search is handled by the system.' };
 			}
@@ -80,6 +108,13 @@ export function getCoreAiTools(userId: string): ToolDefinition[] {
 					recursive: { type: 'boolean', description: 'Whether to list files recursively.' }
 				},
 				required: ['path']
+			},
+			metadata: {
+				category: 'system',
+				tags: ['system', 'files'],
+				priority: 7,
+				essential: false,
+				submodule: 'system'
 			},
 			execute: async () => {
 				return { message: 'File listing is handled by the system.' };
@@ -101,6 +136,13 @@ export function getCoreAiTools(userId: string): ToolDefinition[] {
 					}
 				},
 				required: ['content']
+			},
+			metadata: {
+				category: 'system',
+				tags: ['system', 'memory'],
+				priority: 8,
+				essential: false,
+				submodule: 'system'
 			},
 			execute: async () => {
 				// The actual implementation is handled in AiAgent.executeAction to avoid circular dependencies
@@ -147,6 +189,13 @@ export function getCoreAiTools(userId: string): ToolDefinition[] {
 					}
 				},
 				required: ['name', 'uri', 'description']
+			},
+			metadata: {
+				category: 'mcp',
+				tags: ['mcp', 'resources', 'create'],
+				priority: 6,
+				essential: false,
+				submodule: 'resources'
 			},
 			execute: async (params) => {
 				const input: CreateResourceInput = {
@@ -195,6 +244,13 @@ export function getCoreAiTools(userId: string): ToolDefinition[] {
 					}
 				}
 			},
+			metadata: {
+				category: 'mcp',
+				tags: ['mcp', 'resources', 'list'],
+				priority: 6,
+				essential: false,
+				submodule: 'resources'
+			},
 			execute: async (params) => {
 				const filters: any = {};
 				if (params.moduleId) filters.moduleId = params.moduleId;
@@ -233,6 +289,13 @@ export function getCoreAiTools(userId: string): ToolDefinition[] {
 					}
 				},
 				required: ['id']
+			},
+			metadata: {
+				category: 'mcp',
+				tags: ['mcp', 'resources', 'read'],
+				priority: 6,
+				essential: false,
+				submodule: 'resources'
 			},
 			execute: async (params) => {
 				const resource = await resourceRepo.getByUserIdAndId(userId, params.id as string);
@@ -303,6 +366,13 @@ export function getCoreAiTools(userId: string): ToolDefinition[] {
 				},
 				required: ['id']
 			},
+			metadata: {
+				category: 'mcp',
+				tags: ['mcp', 'resources', 'update'],
+				priority: 6,
+				essential: false,
+				submodule: 'resources'
+			},
 			execute: async (params) => {
 				const input: UpdateResourceInput = {};
 				if (params.name !== undefined) input.name = params.name as string;
@@ -348,6 +418,13 @@ export function getCoreAiTools(userId: string): ToolDefinition[] {
 					}
 				},
 				required: ['id']
+			},
+			metadata: {
+				category: 'mcp',
+				tags: ['mcp', 'resources', 'delete'],
+				priority: 6,
+				essential: false,
+				submodule: 'resources'
 			},
 			execute: async (params) => {
 				const success = await resourceRepo.delete(params.id as string, userId);
@@ -406,6 +483,13 @@ export function getCoreAiTools(userId: string): ToolDefinition[] {
 				},
 				required: ['name', 'description', 'arguments']
 			},
+			metadata: {
+				category: 'mcp',
+				tags: ['mcp', 'prompts', 'create'],
+				priority: 6,
+				essential: false,
+				submodule: 'prompts'
+			},
 			execute: async (params) => {
 				const input: CreatePromptInput = {
 					name: params.name as string,
@@ -454,6 +538,13 @@ export function getCoreAiTools(userId: string): ToolDefinition[] {
 					}
 				}
 			},
+			metadata: {
+				category: 'mcp',
+				tags: ['mcp', 'prompts', 'list'],
+				priority: 6,
+				essential: false,
+				submodule: 'prompts'
+			},
 			execute: async (params) => {
 				const filters: any = {};
 				if (params.moduleId) filters.moduleId = params.moduleId;
@@ -490,6 +581,13 @@ export function getCoreAiTools(userId: string): ToolDefinition[] {
 					}
 				},
 				required: ['id']
+			},
+			metadata: {
+				category: 'mcp',
+				tags: ['mcp', 'prompts', 'read'],
+				priority: 6,
+				essential: false,
+				submodule: 'prompts'
 			},
 			execute: async (params) => {
 				const prompt = await promptRepo.getByUserIdAndId(userId, params.id as string);
@@ -559,6 +657,13 @@ export function getCoreAiTools(userId: string): ToolDefinition[] {
 				},
 				required: ['id']
 			},
+			metadata: {
+				category: 'mcp',
+				tags: ['mcp', 'prompts', 'update'],
+				priority: 6,
+				essential: false,
+				submodule: 'prompts'
+			},
 			execute: async (params) => {
 				const input: UpdatePromptInput = {};
 				if (params.name !== undefined) input.name = params.name as string;
@@ -606,6 +711,13 @@ export function getCoreAiTools(userId: string): ToolDefinition[] {
 					}
 				},
 				required: ['id']
+			},
+			metadata: {
+				category: 'mcp',
+				tags: ['mcp', 'prompts', 'delete'],
+				priority: 6,
+				essential: false,
+				submodule: 'prompts'
 			},
 			execute: async (params) => {
 				const success = await promptRepo.delete(params.id as string, userId);

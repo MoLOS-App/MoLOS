@@ -63,7 +63,7 @@ export class MCPCache {
 	 * Generate a cache key from parts
 	 */
 	private generateKey(prefix: string, parts: CacheKeyParts): string {
-		const modulesHash = parts.allowedModules.sort().join(',');
+		const modulesHash = (parts.allowedModules || []).sort().join(',');
 		return `${prefix}:${parts.userId}:${modulesHash}`;
 	}
 

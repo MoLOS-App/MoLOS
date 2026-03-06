@@ -34,6 +34,7 @@ export class McpResourceRepository extends BaseRepository {
 				name: input.name,
 				uri: input.uri,
 				moduleId: input.moduleId ?? null,
+				submoduleId: input.submoduleId ?? 'main',
 				description: input.description,
 				resourceType: input.resourceType ?? 'static',
 				url: input.url ?? null,
@@ -164,22 +165,52 @@ export class McpResourceRepository extends BaseRepository {
 	}
 
 	/**
-	 * List all enabled resources for MCP protocol (scoped to user and allowed modules)
+	 * List all enabled resources for MCP protocol (scoped to user and allowed scopes)
+	 * Supports hierarchical scopes: "module", "module:submodule", or "module:submodule:resource"
 	 */
 	async listEnabledForMcp(
 		userId: string,
-		allowedModules: string[]
+		allowedScopes: string[]
 	): Promise<Pick<MCPResource, 'id' | 'name' | 'uri' | 'description' | 'mimeType'>[]> {
-		// If no module restriction, get all enabled resources
-		// Otherwise, filter by allowed modules
-		const whereClause =
-			allowedModules.length === 0
-				? and(eq(aiMcpResources.userId, userId), eq(aiMcpResources.enabled, true))
-				: and(
-						eq(aiMcpResources.userId, userId),
-						eq(aiMcpResources.enabled, true),
-						sql`${aiMcpResources.moduleId} IN ${allowedModules}`
-					);
+		// Helper function to check if a resource matches a scope
+		const matchesScope = (resource: any): boolean => {
+			// If no scopes, allow all
+			if (allowedScopes.length === 0) return true;
+
+			for (const scope of allowedScopes) {
+				const parts = scope.split(':');
+				const scopeModule = parts[0];
+				const scopeSubmodule = parts[1] || null;
+				const scopeResource = parts[2] || null;
+
+				// Check module match
+				if (resource.moduleId !== scopeModule) continue;
+
+				// If scope is module-only, allow all resources in this module
+				if (!scopeSubmodule) return true;
+
+				// Check submodule match
+				const resourceSubmoduleId = resource.submoduleId ?? 'main';
+				if (resourceSubmoduleId !== scopeSubmodule) continue;
+
+				// If scope is submodule-only, allow all resources in this submodule
+				if (!scopeResource) return true;
+
+				// Check resource name match
+				if (resource.name === scopeResource) return true;
+			}
+
+			return false;
+		};
+
+		// Fetch all enabled resources
+		const allResources = await this.db
+			.select()
+			.from(aiMcpResources)
+			.where(and(eq(aiMcpResources.userId, userId), eq(aiMcpResources.enabled, true)));
+
+		// Filter by scopes
+		const filtered = allResources.filter(matchesScope);
 
 		const items = await this.db
 			.select({
@@ -190,7 +221,13 @@ export class McpResourceRepository extends BaseRepository {
 				mimeType: aiMcpResources.mimeType
 			})
 			.from(aiMcpResources)
-			.where(whereClause);
+			.where(
+				and(
+					eq(aiMcpResources.userId, userId),
+					eq(aiMcpResources.enabled, true),
+					sql`id IN (${filtered.map((r) => `'${r.id}'`).join(',')})`
+				)
+			);
 
 		return items.map((item) => ({
 			...item,

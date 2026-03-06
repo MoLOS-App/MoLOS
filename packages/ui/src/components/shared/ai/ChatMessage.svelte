@@ -76,7 +76,12 @@ ${steps
 		}
 
 		// Handle parts from UIMessage format
-		const parts = (msg.parts || []) as Array<{ type: string; text?: string; toolName?: string; state?: string }>;
+		const parts = (msg.parts || []) as Array<{
+			type: string;
+			text?: string;
+			toolName?: string;
+			state?: string;
+		}>;
 		const textParts = parts.filter((p) => p.type === 'text');
 		const toolParts = parts.filter((p) => p.type?.startsWith('tool-') || p.type === 'dynamic-tool');
 
@@ -191,7 +196,7 @@ ${steps
 				{#if processed.toolParts.length > 0}
 					<div class="mt-3 space-y-2 border-t border-border/40 pt-3">
 						{#each processed.toolParts as toolPart, i (i)}
-							<div class="flex items-center gap-2 text-xs text-muted-foreground">
+							<div class="text-muted-foreground flex items-center gap-2 text-xs">
 								<span class="h-1.5 w-1.5 rounded-full bg-blue-500"></span>
 								<span>Tool: {(toolPart as any).toolName || toolPart.type}</span>
 								{#if (toolPart as any).state === 'calling' || (toolPart as any).state === 'input-available'}
@@ -258,7 +263,11 @@ ${steps
 
 				<!-- Progress Log Accordion (shown independently for messages with progress log) -->
 				{#if hasProgressLog}
-					<div class="space-y-2 {processed.content.trim() !== '' || processed.thought || processed.plan ? 'mt-4 border-t border-border/40 pt-3' : ''}">
+					<div
+						class="space-y-2 {processed.content.trim() !== '' || processed.thought || processed.plan
+							? 'mt-4 border-t border-border/40 pt-3'
+							: ''}"
+					>
 						<button
 							class="text-muted-foreground/70 flex items-center gap-2 text-[11px] font-medium transition-colors hover:text-foreground"
 							onclick={() => toggleProgressLog(message.id)}

@@ -1,11 +1,9 @@
 <script lang="ts">
-	import { Card, CardContent } from '$lib/components/ui/card';
-	import { Button } from '$lib/components/ui/button';
-	import { Input } from '$lib/components/ui/input';
+	import McpDataTable from './McpDataTable.svelte';
+	import type { DataTableAction } from './types.js';
 	import { Badge } from '$lib/components/ui/badge';
-	import { Select, SelectTrigger, SelectContent, SelectItem } from '$lib/components/ui/select';
-	import { List, Search, Plus, Edit, Trash2, HelpCircle } from 'lucide-svelte';
-	import { Empty, EmptyMedia, EmptyTitle, EmptyContent } from '$lib/components/ui/empty';
+	import { List, Edit, Trash2, HelpCircle } from 'lucide-svelte';
+	import { EmptyMedia, EmptyTitle } from '$lib/components/ui/empty';
 
 	export interface PromptArgument {
 		name: string;
@@ -39,206 +37,104 @@
 		onShowHelp?: () => void;
 	} = $props();
 
-	let searchQuery = $state('');
-	let moduleFilter = $state('');
-	let enabledFilter = $state('');
+	const columns = [
+		{
+			key: 'name',
+			label: 'Name',
+			render: (prompt: McpPrompt) =>
+				`<div class="text-sm font-medium text-foreground">${prompt.name}</div>`
+		},
+		{
+			key: 'description',
+			label: 'Description',
+			render: (prompt: McpPrompt) =>
+				`<div class="text-muted-foreground max-w-md truncate text-sm">${prompt.description}</div>`
+		},
+		{
+			key: 'arguments',
+			label: 'Arguments',
+			render: (prompt: McpPrompt) =>
+				`<span class="text-muted-foreground text-sm">${prompt.arguments.length} argument${prompt.arguments.length !== 1 ? 's' : ''}</span>`
+		},
+		{
+			key: 'moduleId',
+			label: 'Module',
+			render: (prompt: McpPrompt) => {
+				if (prompt.moduleId) {
+					return `<Badge variant="secondary" class="text-xs">${prompt.moduleId}</Badge>`;
+				}
+				return `<span class="text-muted-foreground text-sm">Global</span>`;
+			}
+		},
+		{
+			key: 'enabled',
+			label: 'Status',
+			render: (prompt: McpPrompt) => {
+				if (prompt.enabled) {
+					return `<Badge class="bg-success/10 text-success">Enabled</Badge>`;
+				}
+				return `<Badge variant="secondary" class="text-muted-foreground bg-muted">Disabled</Badge>`;
+			}
+		}
+	];
 
-	const filteredPrompts = $derived(
-		prompts.filter((prompt) => {
-			const matchesSearch =
-				!searchQuery ||
-				prompt.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-				prompt.description.toLowerCase().includes(searchQuery.toLowerCase());
-			const matchesModule = !moduleFilter || prompt.moduleId === moduleFilter;
-			const matchesEnabled = enabledFilter === '' || prompt.enabled === (enabledFilter === 'true');
-			return matchesSearch && matchesModule && matchesEnabled;
-		})
-	);
+	const actions: DataTableAction<McpPrompt>[] = [];
+	if (onEditPrompt) {
+		actions.push({
+			icon: Edit,
+			label: 'Edit prompt',
+			onClick: (prompt) => onEditPrompt(prompt.id)
+		});
+	}
+	if (onDeletePrompt) {
+		actions.push({
+			icon: Trash2,
+			label: 'Delete prompt',
+			variant: 'destructive',
+			onClick: (prompt) => onDeletePrompt(prompt.id)
+		});
+	}
 </script>
 
 <div class="space-y-6">
-	<!-- Header -->
-	<div class="flex items-center justify-between">
-		<div class="flex items-center gap-4">
-			<div class="relative">
-				<Search class="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-				<Input bind:value={searchQuery} placeholder="Search prompts..." class="h-9 w-64 pl-9" />
-			</div>
-			<Select bind:value={moduleFilter}>
-				<SelectTrigger class="h-9 w-40">
-					{#if moduleFilter === ''}
-						All Modules
-					{:else}
-						{availableModules.find((m) => m.id === moduleFilter)?.name || 'All Modules'}
-					{/if}
-				</SelectTrigger>
-				<SelectContent>
-					<SelectItem value="">All Modules</SelectItem>
-					{#each availableModules as module}
-						<SelectItem value={module.id}>{module.name}</SelectItem>
-					{/each}
-				</SelectContent>
-			</Select>
-			<Select bind:value={enabledFilter}>
-				<SelectTrigger class="h-9 w-32">
-					{#if enabledFilter === ''}
-						All Status
-					{:else if enabledFilter === 'true'}
-						Enabled
-					{:else if enabledFilter === 'false'}
-						Disabled
-					{/if}
-				</SelectTrigger>
-				<SelectContent>
-					<SelectItem value="">All Status</SelectItem>
-					<SelectItem value="true">Enabled</SelectItem>
-					<SelectItem value="false">Disabled</SelectItem>
-				</SelectContent>
-			</Select>
-		</div>
-		<div class="flex items-center gap-2">
-			{#if onCreatePrompt}
-				<Button onclick={onCreatePrompt} class="gap-2">
-					<Plus class="h-4 w-4" />
-					Create Prompt
-				</Button>
-			{/if}
-			{#if onShowHelp}
-				<Button
-					variant="ghost"
-					size="icon"
-					onclick={onShowHelp}
-					class="text-muted-foreground flex-shrink-0 hover:text-foreground"
-					title="Show help"
-				>
-					<HelpCircle class="h-5 w-5" />
-				</Button>
-			{/if}
-		</div>
-	</div>
+	<McpDataTable
+		data={prompts}
+		{columns}
+		{actions}
+		searchPlaceholder="Search prompts..."
+		searchKey="name"
+		filters={[
+			{
+				key: 'moduleId',
+				label: 'All Modules',
+				options: [
+					{ value: '', label: 'All Modules' },
+					...availableModules.map((m) => ({ value: m.id, label: m.name }))
+				]
+			},
+			{
+				key: 'enabled',
+				label: 'All Status',
+				options: [
+					{ value: '', label: 'All Status' },
+					{ value: 'true', label: 'Enabled' },
+					{ value: 'false', label: 'Disabled' }
+				]
+			}
+		]}
+		createLabel="Create Prompt"
+		onCreate={onCreatePrompt}
+		emptyIcon={List}
+		emptyTitle="No prompts found"
+	/>
 
-	<!-- Table -->
-	<Card class="p-0">
-		<CardContent class="p-0">
-			{#if filteredPrompts.length === 0}
-				<div class="p-12">
-					<Empty>
-						<EmptyMedia>
-							<List class="text-muted-foreground h-16 w-16" />
-						</EmptyMedia>
-						<EmptyTitle>
-							{#if searchQuery || moduleFilter || enabledFilter}
-								No prompts found
-							{:else}
-								No prompts yet
-							{/if}
-						</EmptyTitle>
-						<EmptyContent>
-							{#if onCreatePrompt && !searchQuery && !moduleFilter && !enabledFilter}
-								<Button variant="link" onclick={onCreatePrompt} class="mt-2">
-									Create your first prompt
-								</Button>
-							{/if}
-						</EmptyContent>
-					</Empty>
-				</div>
-			{:else}
-				<div class="overflow-x-auto">
-					<table class="w-full">
-						<thead class="border-b border-border bg-muted/50">
-							<tr>
-								<th
-									class="text-muted-foreground px-6 py-3 text-left text-xs font-bold tracking-wider uppercase"
-								>
-									Name
-								</th>
-								<th
-									class="text-muted-foreground px-6 py-3 text-left text-xs font-bold tracking-wider uppercase"
-								>
-									Description
-								</th>
-								<th
-									class="text-muted-foreground px-6 py-3 text-left text-xs font-bold tracking-wider uppercase"
-								>
-									Arguments
-								</th>
-								<th
-									class="text-muted-foreground px-6 py-3 text-left text-xs font-bold tracking-wider uppercase"
-								>
-									Module
-								</th>
-								<th
-									class="text-muted-foreground px-6 py-3 text-left text-xs font-bold tracking-wider uppercase"
-								>
-									Status
-								</th>
-								<th
-									class="text-muted-foreground px-6 py-3 text-right text-xs font-bold tracking-wider uppercase"
-								>
-									Actions
-								</th>
-							</tr>
-						</thead>
-						<tbody class="divide-y divide-border">
-							{#each filteredPrompts as prompt}
-								<tr class="hover:bg-accent/50">
-									<td class="px-6 py-4">
-										<div class="text-sm font-medium text-foreground">{prompt.name}</div>
-									</td>
-									<td class="px-6 py-4">
-										<div class="text-muted-foreground max-w-md truncate text-sm">
-											{prompt.description}
-										</div>
-									</td>
-									<td class="px-6 py-4">
-										<span class="text-muted-foreground text-sm">
-											{prompt.arguments.length} argument{prompt.arguments.length !== 1 ? 's' : ''}
-										</span>
-									</td>
-									<td class="px-6 py-4">
-										{#if prompt.moduleId}
-											<Badge variant="secondary" class="text-xs">
-												{prompt.moduleId}
-											</Badge>
-										{:else}
-											<span class="text-muted-foreground text-sm">Global</span>
-										{/if}
-									</td>
-									<td class="px-6 py-4">
-										{#if prompt.enabled}
-											<Badge class="bg-success/10 text-success">Enabled</Badge>
-										{:else}
-											<Badge variant="secondary" class="text-muted-foreground bg-muted">
-												Disabled
-											</Badge>
-										{/if}
-									</td>
-									<td class="px-6 py-4 text-right">
-										<div class="flex items-center justify-end gap-1">
-											{#if onEditPrompt}
-												<Button variant="ghost" size="sm" onclick={() => onEditPrompt(prompt.id)}>
-													<Edit class="h-4 w-4" />
-												</Button>
-											{/if}
-											{#if onDeletePrompt}
-												<Button
-													variant="ghost"
-													size="sm"
-													onclick={() => onDeletePrompt(prompt.id)}
-													class="text-destructive hover:text-destructive"
-													title="Delete prompt"
-												>
-													<Trash2 class="h-4 w-4" />
-												</Button>
-											{/if}
-										</div>
-									</td>
-								</tr>
-							{/each}
-						</tbody>
-					</table>
-				</div>
-			{/if}
-		</CardContent>
-	</Card>
+	{#if onShowHelp}
+		<button
+			onclick={onShowHelp}
+			class="text-muted-foreground ml-auto flex items-center gap-2 hover:text-foreground"
+		>
+			<HelpCircle class="h-5 w-5" />
+			Help
+		</button>
+	{/if}
 </div>

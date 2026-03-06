@@ -65,7 +65,7 @@ class ToolResultCache {
 		const key = this.generateKey(toolName, params);
 		this.cache.set(key, {
 			result,
-			expires: Date.now() + ttlMs,
+			expires: Date.now() + ttlMs
 		});
 	}
 
@@ -87,9 +87,7 @@ export function wrapToolWithHooks(
 	const { hookManager, eventBus, enableCache = false, cacheTtlMs = 60000 } = options;
 
 	// Convert parameters schema to Zod
-	const zodSchema = toolDef.parameters
-		? convertTypeBoxToZod(toolDef.parameters)
-		: z.object({});
+	const zodSchema = toolDef.parameters ? convertTypeBoxToZod(toolDef.parameters) : z.object({});
 
 	return tool({
 		description: toolDef.description,
@@ -109,13 +107,13 @@ export function wrapToolWithHooks(
 							toolName: toolDef.name,
 							toolCallId,
 							cached: true,
-							durationMs: 0,
-						},
+							durationMs: 0
+						}
 					} as any);
 
 					return {
 						...cached,
-						_cached: true,
+						_cached: true
 					};
 				}
 			}
@@ -127,8 +125,8 @@ export function wrapToolWithHooks(
 				data: {
 					toolName: toolDef.name,
 					toolCallId,
-					parameters: input,
-				},
+					parameters: input
+				}
 			} as any);
 
 			let result: ToolExecutionResult;
@@ -140,14 +138,14 @@ export function wrapToolWithHooks(
 					result = {
 						success: true,
 						result: rawResult,
-						durationMs: Date.now() - startTime,
+						durationMs: Date.now() - startTime
 					};
 				} else {
 					result = {
 						success: false,
 						result: null,
 						error: 'Tool has no execute function',
-						durationMs: Date.now() - startTime,
+						durationMs: Date.now() - startTime
 					};
 				}
 
@@ -157,11 +155,31 @@ export function wrapToolWithHooks(
 					result.cached = false;
 				}
 			} catch (error) {
+				// Enhanced error handling with categorization
+				let errorMessage = error instanceof Error ? error.message : String(error);
+				let errorType = 'unknown';
+
+				// Categorize errors for better handling
+				if (errorMessage.includes('Invalid value') || errorMessage.includes('Expected:')) {
+					errorType = 'validation';
+				} else if (errorMessage.includes('database') || errorMessage.includes('SQL')) {
+					errorType = 'database';
+				} else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+					errorType = 'network';
+				} else if (errorMessage.includes('not found')) {
+					errorType = 'not_found';
+				} else if (errorMessage.includes('permission') || errorMessage.includes('denied')) {
+					errorType = 'permission';
+				}
+
+				console.error(`[ToolWrapper] Tool "${toolDef.name}" failed [${errorType}]:`, errorMessage);
+
 				result = {
 					success: false,
 					result: null,
-					error: error instanceof Error ? error.message : String(error),
-					durationMs: Date.now() - startTime,
+					error: errorMessage,
+					errorType,
+					durationMs: Date.now() - startTime
 				};
 			}
 
@@ -175,12 +193,12 @@ export function wrapToolWithHooks(
 					result: result.result,
 					error: result.error,
 					durationMs: result.durationMs,
-					cached: result.cached,
-				},
+					cached: result.cached
+				}
 			} as any);
 
 			return result;
-		},
+		}
 	});
 }
 

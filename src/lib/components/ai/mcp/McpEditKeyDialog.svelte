@@ -24,7 +24,7 @@
 		name: string;
 		keyPrefix: string;
 		status: 'active' | 'disabled' | 'revoked';
-		allowedModules: string[] | null;
+		allowedScopes: string[] | null;
 		lastUsedAt: string | null;
 		expiresAt: string | null;
 		createdAt: string;
@@ -46,7 +46,7 @@
 			keyId: string,
 			data: {
 				name: string;
-				allowedModules: string[] | null;
+				allowedScopes: string[] | null;
 				expiresAt: string | null;
 			}
 		) => void | Promise<void>;
@@ -54,7 +54,7 @@
 	} = $props();
 
 	let name = $state('');
-	let selectedModules = $state<string[]>([]);
+	let selectedScopes = $state<string[]>([]);
 	let expiresAt = $state('');
 	let showModuleList = $state(false);
 
@@ -62,37 +62,37 @@
 	$effect(() => {
 		if (apiKey) {
 			name = apiKey.name;
-			selectedModules = apiKey.allowedModules ?? [];
+			selectedScopes = apiKey.allowedScopes ?? [];
 			expiresAt = apiKey.expiresAt ? apiKey.expiresAt.split('T')[0] : '';
 		}
 	});
 
 	// Computed value for select all - not reactive
 	const selectAll = $derived(
-		selectedModules.length === availableModules.length && availableModules.length > 0
+		selectedScopes.length === availableModules.length && availableModules.length > 0
 	);
 
 	// Handle select all toggle
 	function toggleSelectAll() {
 		if (selectAll) {
-			selectedModules = [];
+			selectedScopes = [];
 		} else {
-			selectedModules = availableModules.map((m) => m.id);
+			selectedScopes = availableModules.map((m) => m.id);
 		}
 	}
 
 	// Toggle individual module selection
 	function toggleModule(moduleId: string) {
-		if (selectedModules.includes(moduleId)) {
-			selectedModules = selectedModules.filter((id) => id !== moduleId);
+		if (selectedScopes.includes(moduleId)) {
+			selectedScopes = selectedScopes.filter((id) => id !== moduleId);
 		} else {
-			selectedModules = [...selectedModules, moduleId];
+			selectedScopes = [...selectedScopes, moduleId];
 		}
 	}
 
 	// Convert to null for "all modules"
-	function getModulesForSubmit(): string[] | null {
-		return selectedModules.length > 0 ? selectedModules : null;
+	function getScopesForSubmit(): string[] | null {
+		return selectedScopes.length > 0 ? selectedScopes : null;
 	}
 
 	async function handleSubmit() {
@@ -100,7 +100,7 @@
 
 		await onUpdate(apiKey.id, {
 			name: name.trim(),
-			allowedModules: getModulesForSubmit(),
+			allowedScopes: getScopesForSubmit(),
 			expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null
 		});
 
@@ -115,9 +115,9 @@
 	}
 
 	function getSelectionSummary(): string {
-		if (selectedModules.length === 0) return 'All modules';
-		if (selectedModules.length === availableModules.length) return 'All modules';
-		return `${selectedModules.length} module${selectedModules.length > 1 ? 's' : ''} selected`;
+		if (selectedScopes.length === 0) return 'All modules';
+		if (selectedScopes.length === availableModules.length) return 'All modules';
+		return `${selectedScopes.length} module${selectedScopes.length > 1 ? 's' : ''} selected`;
 	}
 
 	function getStatusBadge() {
@@ -250,7 +250,7 @@
 											<div class="flex items-center gap-2">
 												<Checkbox
 													id="edit-module-{module.id}"
-													checked={selectedModules.includes(module.id)}
+													checked={selectedScopes.includes(module.id)}
 													onCheckedChange={() => toggleModule(module.id)}
 												/>
 												<Label for="edit-module-{module.id}" class="flex-1 cursor-pointer text-sm">

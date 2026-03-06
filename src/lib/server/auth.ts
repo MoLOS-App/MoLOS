@@ -5,7 +5,7 @@ import { getRequestEvent } from '$app/server';
 import { db } from '$lib/server/db'; // your drizzle instance
 import * as schema from '$lib/server/db/schema';
 import { env } from '$env/dynamic/private';
-import { admin, apiKey } from 'better-auth/plugins';
+import { admin } from 'better-auth/plugins';
 import { sql } from 'drizzle-orm';
 import { existsSync, readFileSync } from 'fs';
 import { building, dev } from '$app/environment';
@@ -63,10 +63,9 @@ export const auth = betterAuth({
 	},
 	plugins: [
 		sveltekitCookies(getRequestEvent),
-		admin(),
-		apiKey({
-			enableSessionForAPIKeys: true
-		})
+		admin()
+		// apiKey plugin removed for compatibility with better-auth 1.4.21
+		// Re-enable when upgrading to better-auth 1.5.0+ with @better-auth/api-key package
 	],
 	databaseHooks: {
 		user: {

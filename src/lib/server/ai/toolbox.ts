@@ -1,9 +1,14 @@
 import { getCoreAiTools } from './core-tools';
-import { getAllModules } from '$lib/config';
+import { getAllModules, getModuleById } from '$lib/config';
 import type { ToolDefinition } from '$lib/models/ai';
+import type { ModuleConfig } from '@molos/module-types';
 import { TtlCache } from './agent-utils';
 
-const externalToolLoaders = import.meta.glob('./external_modules/*/ai-tools.ts');
+// Lazy load module AI tools - use relative path from this file to modules directory
+const moduleAiTools = import.meta.glob('../../../../modules/*/src/server/ai/ai-tools.ts', {
+	eager: false
+}) as Record<string, () => Promise<unknown>>;
+
 const TOOLBOX_CACHE_TTL_MS = Number(process.env.AI_AGENT_TOOLBOX_CACHE_TTL_MS || 10_000);
 const TOOLBOX_CACHE_SIZE = Number(process.env.AI_AGENT_TOOLBOX_CACHE_SIZE || 64);
 const toolCache = new TtlCache<ToolDefinition[]>(TOOLBOX_CACHE_SIZE);
@@ -16,22 +21,35 @@ function logDebug(message: string, ...args: unknown[]) {
 	console.log(message, ...args);
 }
 
+/**
+ * Extract module name from path like '../../../../modules/MoLOS-Tasks/src/server/ai/ai-tools.ts'
+ */
+function extractModuleNameFromPath(path: string): string | null {
+	const match = path.match(/modules\/([^/]+)\/src\/server\/ai\/ai-tools\.ts$/);
+	return match ? match[1] : null;
+}
+
+/**
+ * Extract category from module ID (e.g., "MoLOS-Tasks" -> "tasks")
+ */
+function extractCategoryFromModuleId(moduleId: string): string {
+	return moduleId.toLowerCase().replace(/^molos-/, '');
+}
+
 export class AiToolbox {
 	/**
 	 * Dynamically discover and return all available tools for the user.
 	 * This includes core tools and tools from active external modules.
+	 * Tools from mentioned modules are prioritized (appear first in the list).
 	 */
-	async getTools(userId: string, activeModuleIds: string[] = []): Promise<ToolDefinition[]> {
-		console.log(
-			'[AiToolbox] getTools called with userId:',
-			userId,
-			'activeModuleIds:',
-			activeModuleIds
-		);
-		const cacheKey = `${userId}:${[...activeModuleIds].sort().join(',') || 'core'}`;
+	async getTools(
+		userId: string,
+		activeModuleIds: string[] = [],
+		mentionedModuleIds: string[] = []
+	): Promise<ToolDefinition[]> {
+		const cacheKey = `${userId}:${[...activeModuleIds].sort().join(',') || 'core'}:${[...mentionedModuleIds].sort().join(',') || 'none'}`;
 		const cached = toolCache.get(cacheKey);
 		if (cached) {
-			console.log('[AiToolbox] Returning cached tools, count:', cached.length);
 			return cached;
 		}
 
@@ -46,8 +64,13 @@ export class AiToolbox {
 			allModules.map((m) => ({ id: m.id, name: m.name, isExternal: m.isExternal }))
 		);
 
-		// We include all core modules by default, and external modules only if active
-		const modulesToLoad = allModules.filter((m) => !m.isExternal || activeModuleIds.includes(m.id));
+		// If activeModuleIds is provided, ONLY load those modules
+		// If activeModuleIds is empty, load all package modules
+		const modulesToLoad =
+			activeModuleIds.length > 0
+				? allModules.filter((m) => activeModuleIds.includes(m.id))
+				: allModules.filter((m) => m.isPackageModule);
+
 		console.log('[AiToolbox] activeModuleIds:', activeModuleIds);
 		console.log(
 			'[AiToolbox] Modules to load:',
@@ -55,55 +78,123 @@ export class AiToolbox {
 		);
 
 		for (const module of modulesToLoad) {
-			logDebug(`[AiToolbox] Processing module: ${module.id} (external: ${module.isExternal})`);
+			logDebug(
+				`[AiToolbox] Processing module: ${module.id} (packageModule: ${module.isPackageModule}, external: ${module.isExternal})`
+			);
 			try {
-				// Try to load AI tools from module
-				try {
-					if (!module.isExternal) {
-						continue;
-					}
-
-					logDebug(`[AiToolbox] Importing tools for module: ${module.id}`);
-					const loaderPath = `./external_modules/${module.id}/ai-tools.ts`;
-					const loader = externalToolLoaders[loaderPath];
-
-					if (!loader) {
-						logDebug(`[AiToolbox] No AI tools found at ${loaderPath}`);
-						continue;
-					}
-
-					const aiToolsModule = (await loader()) as {
-						getAiTools?: (userId: string) => Promise<ToolDefinition[]> | ToolDefinition[];
-					};
-					logDebug(
-						`[AiToolbox] Import successful for ${module.id}, has getAiTools:`,
-						!!aiToolsModule.getAiTools
-					);
-					if (aiToolsModule.getAiTools) {
-						logDebug(`[AiToolbox] Loading AI tools for module: ${module.name}`);
-						const moduleTools = await aiToolsModule.getAiTools(userId);
-						// Prefix tool names with module ID to avoid duplicates
-						const prefixedTools = moduleTools.map((tool) => ({
-							...tool,
-							name: `${module.id}_${tool.name}`
-						}));
-						logDebug(`[AiToolbox] Module ${module.id} provided ${prefixedTools.length} tools`);
-						tools = [...tools, ...prefixedTools];
-					} else {
-						logDebug(`[AiToolbox] Module ${module.id} has no getAiTools function`);
-					}
-				} catch (importError) {
-					logDebug(`[AiToolbox] Import failed for module ${module.id}:`, importError);
-					// No AI tools for this module
+				// Skip non-package modules (they don't have AI tools in modules/*/src/server/ai/ai-tools.ts)
+				// Only skip if explicitly false (core modules), null or true means it's a package module
+				if (module.isPackageModule === false) {
+					continue;
 				}
-			} catch (e) {
-				console.warn(`[AiToolbox] Failed to load AI tools for module ${module.id}:`, e);
+
+				logDebug(`[AiToolbox] Looking for tools for module: ${module.id}`);
+
+				// Find the AI tools module by matching the module ID
+				const modulePath = Object.keys(moduleAiTools).find((p) => {
+					const moduleName = extractModuleNameFromPath(p);
+					return (
+						moduleName === module.id ||
+						// Handle legacy module IDs that may differ from directory names
+						module.id.toLowerCase().includes(moduleName?.toLowerCase() || '') ||
+						moduleName?.toLowerCase().includes(module.id.toLowerCase())
+					);
+				});
+
+				if (!modulePath) {
+					logDebug(`[AiToolbox] No AI tools found for module: ${module.id}`);
+					continue;
+				}
+
+				logDebug(`[AiToolbox] Found AI tools at path: ${modulePath}`);
+
+				// Lazy import with error handling for broken modules
+				const aiToolsModule = await moduleAiTools[modulePath]().catch((err) => {
+					console.warn(`[AiToolbox] Failed to import module ${module.id}:`, err.message);
+					return null;
+				});
+
+				if (!aiToolsModule || !aiToolsModule.getAiTools) {
+					logDebug(`[AiToolbox] Module ${module.id} has no getAiTools function`);
+					continue;
+				}
+
+				logDebug(
+					`[AiToolbox] Module found for ${module.id}, has getAiTools:`,
+					!!aiToolsModule.getAiTools
+				);
+
+				logDebug(`[AiToolbox] Loading AI tools for module: ${module.name}`);
+				const moduleTools = await aiToolsModule.getAiTools(userId);
+
+				// Add metadata to tools that don't have it (backward compatibility)
+				const category = extractCategoryFromModuleId(module.id);
+				const toolsWithMetadata = moduleTools.map((tool: ToolDefinition) => ({
+					...tool,
+					metadata: tool.metadata || {
+						category,
+						tags: [],
+						priority: 60,
+						essential: false
+					}
+				}));
+
+				// Prefix tool names with module ID to avoid duplicates
+				const prefixedTools = toolsWithMetadata.map((tool: ToolDefinition) => ({
+					...tool,
+					name: `${module.id}_${tool.name}`
+				}));
+				logDebug(`[AiToolbox] Module ${module.id} provided ${prefixedTools.length} tools`);
+				tools = [...tools, ...prefixedTools];
+			} catch (importError) {
+				logDebug(`[AiToolbox] Failed to load tools for module ${module.id}:`, importError);
 			}
+		}
+
+		// Sort tools: mentioned module tools first, then other tools
+		if (mentionedModuleIds.length > 0) {
+			tools = this.prioritizeToolsByMentionedModules(tools, mentionedModuleIds);
+			logDebug('[AiToolbox] Tools reordered with mentioned module tools first');
 		}
 
 		toolCache.set(cacheKey, tools, TOOLBOX_CACHE_TTL_MS);
 		logDebug('[AiToolbox] Total tools returned:', tools.length);
 		return tools;
+	}
+
+	/**
+	 * Sort tools so that tools from mentioned modules appear first.
+	 */
+	private prioritizeToolsByMentionedModules(
+		tools: ToolDefinition[],
+		mentionedModuleIds: string[]
+	): ToolDefinition[] {
+		const mentionedSet = new Set(mentionedModuleIds);
+
+		const mentionedTools: ToolDefinition[] = [];
+		const otherTools: ToolDefinition[] = [];
+
+		for (const tool of tools) {
+			// Check if tool belongs to a mentioned module (tool name is prefixed with module ID)
+			const toolModuleId = this.extractModuleIdFromToolName(tool.name);
+			if (toolModuleId && mentionedSet.has(toolModuleId)) {
+				mentionedTools.push(tool);
+			} else {
+				otherTools.push(tool);
+			}
+		}
+
+		logDebug(`[AiToolbox] Prioritized ${mentionedTools.length} mentioned module tools`);
+		return [...mentionedTools, ...otherTools];
+	}
+
+	/**
+	 * Extract module ID from prefixed tool name (e.g., "MoLOS-Tasks_get_tasks" -> "MoLOS-Tasks")
+	 */
+	private extractModuleIdFromToolName(toolName: string): string | null {
+		const underscoreIndex = toolName.indexOf('_');
+		if (underscoreIndex === -1) return null;
+		return toolName.substring(0, underscoreIndex);
 	}
 
 	/**
@@ -115,7 +206,9 @@ export class AiToolbox {
 		if (cached) return cached;
 
 		const allModules = getAllModules();
-		const activeModules = allModules.filter((m) => activeModuleIds.includes(m.id) || !m.isExternal);
+		const activeModules = allModules.filter(
+			(m) => activeModuleIds.includes(m.id) || m.isPackageModule
+		);
 
 		const prompt = `You are the MoLOS Architect Agent, an advanced in-app developer assistant integrated into the Modular Life Organization System (MoLOS).
 Your mission is to provide proactive, intelligent, and context-aware management of the user's digital life.
@@ -208,6 +301,39 @@ Use the provided tools to interact with the database. Your goal is to make the u
 
 		promptCache.set(cacheKey, prompt, TOOLBOX_CACHE_TTL_MS);
 		return prompt;
+	}
+
+	/**
+	 * Generate a prompt section for priority modules that were @mentioned by the user.
+	 */
+	getPriorityModulesPrompt(mentionedModuleIds: string[]): string {
+		const mentionedModules: Array<{ id: string; name: string; description: string }> = [];
+
+		for (const moduleId of mentionedModuleIds) {
+			const module = getModuleById(moduleId);
+			if (module) {
+				mentionedModules.push({
+					id: module.id,
+					name: module.name,
+					description: module.description || 'No description available'
+				});
+			}
+		}
+
+		if (mentionedModules.length === 0) {
+			return '';
+		}
+
+		const moduleList = mentionedModules
+			.map((m) => `- **${m.name}** (${m.id}): ${m.description}`)
+			.join('\n');
+
+		return `# PRIORITY MODULES
+The user has specifically mentioned these modules. **Prioritize using tools from these modules first**:
+
+${moduleList}
+
+These modules' tools should be your primary tools for this request. Only use tools from other modules if the mentioned modules cannot accomplish the task.`;
 	}
 }
 

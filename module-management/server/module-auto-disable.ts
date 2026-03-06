@@ -57,9 +57,14 @@ function formatError(error: unknown): string {
  * Categorize the error for better diagnostics
  */
 function categorizeError(error: unknown): string {
-	const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+	const message =
+		error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
 
-	if (message.includes('export') || message.includes('undefined') || message.includes('not found')) {
+	if (
+		message.includes('export') ||
+		message.includes('undefined') ||
+		message.includes('not found')
+	) {
 		return 'export_error';
 	}
 	if (message.includes('yaml') || message.includes('syntax')) {
@@ -84,10 +89,7 @@ function categorizeError(error: unknown): string {
  * @param error - The error that caused the failure
  * @returns Promise that resolves when the database is updated
  */
-export async function markModuleForDisable(
-	moduleId: string,
-	error: unknown
-): Promise<void> {
+export async function markModuleForDisable(moduleId: string, error: unknown): Promise<void> {
 	const dbPath = getDatabasePath();
 
 	// Check if database exists
@@ -121,14 +123,16 @@ export async function markModuleForDisable(
 		}
 
 		// Update status to disabled with error information
-		db.prepare(`
+		db.prepare(
+			`
 			UPDATE settings_external_modules
 			SET status = 'disabled',
 			    last_error = ?,
 			    error_type = ?,
 			    updated_at = ?
 			WHERE id = ?
-		`).run(errorMessage, errorCategory, now, moduleId);
+		`
+		).run(errorMessage, errorCategory, now, moduleId);
 
 		db.close();
 
@@ -137,10 +141,7 @@ export async function markModuleForDisable(
 		console.warn(`  Category: ${errorCategory}`);
 		console.warn(`  To re-enable, fix the issue and manually update status to 'active'`);
 	} catch (dbError) {
-		console.error(
-			`[ModuleAutoDisable] Failed to mark module ${moduleId} as disabled:`,
-			dbError
-		);
+		console.error(`[ModuleAutoDisable] Failed to mark module ${moduleId} as disabled:`, dbError);
 	}
 }
 
@@ -221,14 +222,16 @@ export async function reenableModule(moduleId: string): Promise<void> {
 		const Database = require('better-sqlite3');
 		const db = new Database(dbPath);
 
-		db.prepare(`
+		db.prepare(
+			`
 			UPDATE settings_external_modules
 			SET status = 'pending',
 			    last_error = NULL,
 			    error_type = NULL,
 			    updated_at = ?
 			WHERE id = ?
-		`).run(new Date().toISOString(), moduleId);
+		`
+		).run(new Date().toISOString(), moduleId);
 
 		db.close();
 
@@ -256,20 +259,22 @@ export async function clearDisabledErrors(): Promise<void> {
 		const Database = require('better-sqlite3');
 		const db = new Database(dbPath);
 
-		const result = db.prepare(`
+		const result = db
+			.prepare(
+				`
 			UPDATE settings_external_modules
 			SET status = 'pending',
 			    last_error = NULL,
 			    error_type = NULL,
 			    updated_at = ?
 			WHERE status = 'disabled'
-		`).run(new Date().toISOString());
+		`
+			)
+			.run(new Date().toISOString());
 
 		db.close();
 
-		console.log(
-			`[ModuleAutoDisable] Cleared errors for ${result.changes} disabled modules`
-		);
+		console.log(`[ModuleAutoDisable] Cleared errors for ${result.changes} disabled modules`);
 	} catch (dbError) {
 		console.error('[ModuleAutoDisable] Failed to clear disabled errors:', dbError);
 		throw dbError;

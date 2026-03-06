@@ -60,11 +60,11 @@ export function filterToolsByModules(tools: MCPTool[], allowedModules: string[])
 }
 
 /**
- * Get available module IDs for scoping
+ * Get available module IDs for scoping (both package modules and legacy external modules)
  */
 export function getAvailableModuleIds(): string[] {
 	const modules = getAllModules();
-	return modules.filter((m) => m.isExternal).map((m) => m.id);
+	return modules.filter((m) => m.isPackageModule || m.isExternal).map((m) => m.id);
 }
 
 /**

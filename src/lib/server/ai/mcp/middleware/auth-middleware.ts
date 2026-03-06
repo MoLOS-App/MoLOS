@@ -9,7 +9,7 @@ import { ApiKeyRepository } from '$lib/repositories/ai/mcp';
 import { parseApiKeyFromHeader } from '../mcp-utils';
 import { mcpOAuthProvider } from '../oauth';
 import type { MCPContext, ApiKeyValidation, MCPAuthMethod } from '$lib/models/ai/mcp';
-import { scopesToModules } from '../oauth/scope-mapper';
+import { scopesToAllowedScopes } from '../oauth/scope-mapper';
 import { getAllModules } from '$lib/config';
 
 /**
@@ -87,13 +87,13 @@ async function authenticateWithApiKey(
 	}
 
 	// Determine allowed modules - if not set or empty, allow all external modules
-	let allowedModules = validation.apiKey.allowedModules ?? [];
-	console.log('[MCP Auth] Original allowedModules:', allowedModules);
+	let allowedModules = validation.apiKey.allowedScopes ?? [];
+	console.log('[MCP Auth] Original allowedScopes:', allowedModules);
 
 	if (allowedModules.length === 0) {
-		// No restriction = allow all external modules
+		// No restriction = allow all external modules (both package and legacy)
 		allowedModules = getAllModules()
-			.filter((m) => m.isExternal)
+			.filter((m) => m.isPackageModule || m.isExternal)
 			.map((m) => m.id);
 		console.log('[MCP Auth] Expanded allowedModules to all external modules:', allowedModules);
 	}
@@ -144,16 +144,16 @@ async function authenticateWithOAuth(
 		const authInfo = await mcpOAuthProvider.verifyAccessToken(token);
 
 		// Map OAuth scopes to allowed modules
-		let allowedModules = scopesToModules(authInfo.scopes ?? []);
+		let allowedModules = scopesToAllowedScopes(authInfo.scopes ?? []);
 
 		// If no scopes specified, allow all external modules (full access)
 		if (allowedModules.length === 0) {
 			allowedModules = getAllModules()
-				.filter((m) => m.isExternal)
+				.filter((m) => m.isPackageModule || m.isExternal)
 				.map((m) => m.id);
 		}
 
-		// Get user ID from token - we need to look up the token to get the userId
+		// Get user ID from token- we need to look up token to get userId
 		const { oauthTokenService } = await import('../oauth');
 		const tokenInfo = await oauthTokenService.verifyAccessToken(token);
 

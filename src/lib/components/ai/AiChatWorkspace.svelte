@@ -13,6 +13,8 @@
 	import type { ProgressState } from './progress-types';
 	import { INITIAL_PROGRESS_STATE } from './progress-types';
 	import type { UIMessage } from 'ai';
+	import type { ModuleConfig } from '@molos/module-types';
+	import { getAllModules } from '$lib/config';
 
 	let { userName } = $props<{ userName?: string }>();
 
@@ -53,6 +55,12 @@
 	// Active modules from page data
 	let activeModuleIds = $derived($page.data.activeExternalIds || []);
 
+	// Mentioned modules (user @mentioned for prioritization)
+	let mentionedModules = $state<ModuleConfig[]>([]);
+
+	// Available modules for mention picker
+	let availableModules = $state<ModuleConfig[]>([]);
+
 	// Greeting based on time
 	const now = new Date();
 	const greeting =
@@ -84,7 +92,29 @@
 		const res = await fetch(`/api/ai/chat?sessionId=${sessionId}`);
 		if (res.ok) {
 			const data = await res.json();
-			messages = data.messages || [];
+			const rawMessages = data.messages || [];
+
+			// Deduplicate messages by segmentId (if present in contextMetadata)
+			const seen = new Set<string>();
+			messages = rawMessages.filter((msg: any) => {
+				const segmentId = msg.contextMetadata ? JSON.parse(msg.contextMetadata)?.segmentId : null;
+				// Use segmentId as key if available, otherwise use message id
+				const key = segmentId || msg.id;
+				if (seen.has(key)) {
+					console.log('[AiChatWorkspace] Filtering duplicate message:', key);
+					return false;
+				}
+				seen.add(key);
+				return true;
+			});
+
+			console.log(
+				'[AiChatWorkspace] Loaded',
+				messages.length,
+				'messages (deduplicated from',
+				rawMessages.length,
+				')'
+			);
 			currentSessionId = sessionId;
 			await scrollToBottom();
 		}
@@ -100,6 +130,8 @@
 		isStreaming = false;
 		isCancelling = false;
 		isSidebarOpen = false;
+		// Clear mentioned modules
+		mentionedModules = [];
 		// Cancel any ongoing request
 		if (abortController) {
 			abortController.abort();
@@ -157,9 +189,7 @@
 	// Update assistant message content (for streaming)
 	function updateAssistantMessage(messageId: string, content: string) {
 		messages = messages.map((msg) =>
-			msg.id === messageId
-				? { ...msg, parts: [{ type: 'text' as const, text: content }] }
-				: msg
+			msg.id === messageId ? { ...msg, parts: [{ type: 'text' as const, text: content }] } : msg
 		);
 	}
 
@@ -185,6 +215,10 @@
 		let content = '';
 		let currentSegmentId = assistantMessageId;
 		let segmentIndex = 0;
+		// Track which segments have been processed to prevent duplicates
+		// Track by segment ID to handle cases where segments may have same index but different IDs
+		const processedSegmentIds = new Set<string>();
+		const processedSegmentIndices = new Set<number>();
 
 		while (true) {
 			const { value, done } = await reader.read();
@@ -231,46 +265,62 @@
 
 				switch (data.type) {
 					case 'chunk':
-						// Legacy chunk event - accumulate and update
-						content += data.content || '';
-						updateAssistantMessage(currentSegmentId, content);
-						await scrollToBottom();
-						break;
-
-					case 'text_delta':
-						// Real-time text streaming - accumulate and update
-						if (data.delta) {
-							content += data.delta;
+						// Legacy chunk event - only process if we haven't received segments
+						// Skip if we've already processed message segments to avoid duplication
+						if (processedSegmentIndices.size === 0) {
+							content += data.content || '';
 							updateAssistantMessage(currentSegmentId, content);
 							await scrollToBottom();
 						}
 						break;
 
-					case 'tool_start':
-						// Tool call started - finalize current message and start a new one
-						console.log('[Tool Start]', data.toolName);
-
-						// If we have accumulated content, keep it in the current message
-						// Then create a new empty message for post-tool content
-						if (content.trim()) {
-							// Create a new message for content after this tool call
-							segmentIndex++;
-							const newSegmentId = `seg_${Date.now()}_${segmentIndex}`;
-
-							// Add new empty message for post-tool content
-							messages = [
-								...messages,
-								{
-									id: newSegmentId,
-									role: 'assistant' as const,
-									parts: [{ type: 'text' as const, text: '' }]
+					case 'text_delta':
+						// Real-time text streaming - accumulate and update
+						if (data.delta) {
+							// Check if this delta belongs to a specific segment
+							if (data.segmentId && data.segmentId !== currentSegmentId) {
+								// This delta belongs to a different segment
+								// Check if message for this segment exists
+								const segmentMsg = messages.find((m) => m.id === data.segmentId);
+								if (segmentMsg) {
+									// Update existing segment message
+									const currentContent =
+										segmentMsg.parts?.find((p: any) => p.type === 'text')?.text || '';
+									messages = messages.map((m) =>
+										m.id === data.segmentId
+											? {
+													...m,
+													parts: [{ type: 'text' as const, text: currentContent + data.delta }]
+												}
+											: m
+									);
+								} else {
+									// Create new segment message
+									messages = [
+										...messages,
+										{
+											id: data.segmentId,
+											role: 'assistant' as const,
+											parts: [{ type: 'text' as const, text: data.delta }]
+										}
+									];
 								}
-							];
-
-							currentSegmentId = newSegmentId;
-							content = ''; // Reset content for new segment
+							} else {
+								// Accumulate in current segment
+								content += data.delta;
+								updateAssistantMessage(currentSegmentId, content);
+							}
 							await scrollToBottom();
 						}
+						break;
+
+					case 'tool_start':
+						// Tool call started - just finalize current content
+						// Don't create new message - wait for server's message_segment event
+						console.log('[Tool Start]', data.toolName);
+
+						// Reset content for next segment
+						content = '';
 						break;
 
 					case 'tool_complete':
@@ -279,9 +329,65 @@
 						break;
 
 					case 'message_segment':
-						// Log segment completion
-						if (data.isComplete && data.content) {
+						// When a complete segment is received, create/update message for it
+						// Deduplicate by both segment ID and segment index to be safe
+						if (
+							data.isComplete &&
+							data.content &&
+							data.segmentIndex !== undefined &&
+							data.id !== undefined &&
+							!processedSegmentIndices.has(data.segmentIndex) &&
+							!processedSegmentIds.has(data.id)
+						) {
 							console.log('[Segment Complete]', data.segmentIndex, data.content.length, 'chars');
+							processedSegmentIndices.add(data.segmentIndex);
+							processedSegmentIds.add(data.id);
+
+							// Use the segment ID from the server
+							const segmentId = data.id;
+
+							// For the first segment (index 0), update the initial assistant message
+							// For subsequent segments, create new messages
+							if (data.segmentIndex === 0) {
+								// Update the initial assistant message placeholder
+								messages = messages.map((m) =>
+									m.id === currentSegmentId
+										? { ...m, parts: [{ type: 'text' as const, text: data.content }] }
+										: m
+								);
+							} else {
+								// Check if message already exists for this segment
+								const existingMsg = messages.find((m) => m.id === segmentId);
+								if (!existingMsg) {
+									// Create new message for this segment
+									messages = [
+										...messages,
+										{
+											id: segmentId,
+											role: 'assistant' as const,
+											parts: [{ type: 'text' as const, text: data.content }]
+										}
+									];
+								}
+							}
+							await scrollToBottom();
+						} else if (data.isComplete && data.content) {
+							if (data.segmentIndex !== undefined && data.id !== undefined) {
+								if (
+									processedSegmentIndices.has(data.segmentIndex) &&
+									processedSegmentIds.has(data.id)
+								) {
+									console.log(
+										'[Segment] Skipping duplicate segment by ID and index:',
+										data.id,
+										data.segmentIndex
+									);
+								} else if (processedSegmentIndices.has(data.segmentIndex)) {
+									console.log('[Segment] Skipping duplicate segment by index:', data.segmentIndex);
+								} else if (processedSegmentIds.has(data.id)) {
+									console.log('[Segment] Skipping duplicate segment by ID:', data.id);
+								}
+							}
 						}
 						break;
 
@@ -313,9 +419,9 @@
 						? {
 								...msg,
 								// Store progress log in a custom property for display
-								...(msg as any).metadata?.progressLog !== undefined
+								...((msg as any).metadata?.progressLog !== undefined
 									? { metadata: { ...(msg as any).metadata, progressLog } }
-									: {}
+									: {})
 							}
 						: msg
 				);
@@ -341,7 +447,8 @@
 				currentProgress.status = 'thinking';
 				currentProgress.currentAction = {
 					type: 'thought',
-					message: eventData.reasoning || `Iteration ${eventData.iteration}: ${eventData.nextAction}`,
+					message:
+						eventData.reasoning || `Iteration ${eventData.iteration}: ${eventData.nextAction}`,
 					step: eventData.iteration,
 					total: eventData.totalSteps,
 					timestamp: now,
@@ -367,7 +474,9 @@
 					timestamp: now,
 					toolName: eventData.toolName
 				};
-				addProgressLine(`👁 ${obsMessage}${eventData.durationMs ? ` (${eventData.durationMs}ms)` : ''}`);
+				addProgressLine(
+					`👁 ${obsMessage}${eventData.durationMs ? ` (${eventData.durationMs}ms)` : ''}`
+				);
 				break;
 
 			case 'step_start':
@@ -478,6 +587,8 @@
 		if (!input.trim() || isLoading) return;
 
 		const userContent = input;
+		// Capture mentioned module IDs before clearing
+		const mentionedModuleIds = mentionedModules.map((m) => m.id);
 		input = '';
 		isLoading = true;
 		isStreaming = false;
@@ -488,6 +599,8 @@
 		progressLog = [];
 		// Reset current assistant message ID
 		currentAssistantMessageId = null;
+		// Clear mentioned modules after capturing
+		mentionedModules = [];
 
 		// Create AbortController for this request
 		abortController = new AbortController();
@@ -517,13 +630,14 @@
 		try {
 			// Build request body in AI SDK format (messages array with parts)
 			const requestBody = {
-				messages: messages.slice(0, -1).map(m => ({
+				messages: messages.slice(0, -1).map((m) => ({
 					id: m.id,
 					role: m.role,
 					parts: m.parts
 				})),
 				sessionId: currentSessionId,
 				activeModuleIds,
+				mentionedModuleIds,
 				stream: streamEnabled
 			};
 
@@ -639,7 +753,26 @@
 	onMount(() => {
 		loadSessions();
 		loadSettings();
+		// Load available modules for mention picker (all modules with AI tools)
+		const allModules = getAllModules();
+		console.log(
+			'[AiChatWorkspace] All modules:',
+			allModules.map((m) => ({ id: m.id, name: m.name, isPackageModule: m.isPackageModule }))
+		);
+		// Include all modules that could have AI tools (package modules or explicitly marked)
+		availableModules = allModules;
 	});
+
+	// Mention handlers
+	function handleMentionModule(module: ModuleConfig) {
+		if (!mentionedModules.some((m) => m.id === module.id)) {
+			mentionedModules = [...mentionedModules, module];
+		}
+	}
+
+	function handleRemoveMention(moduleId: string) {
+		mentionedModules = mentionedModules.filter((m) => m.id !== moduleId);
+	}
 </script>
 
 <div class="flex h-full flex-col overflow-hidden">
@@ -742,9 +875,12 @@
 							<!-- Message List -->
 							<div class="flex flex-col gap-6">
 								{#each messages as msg (msg.id)}
-									{@const textPart = msg.parts?.find((p: any) => p.type === 'text') as { type: 'text'; text: string } | undefined}
+									{@const textPart = msg.parts?.find((p: any) => p.type === 'text') as
+										| { type: 'text'; text: string }
+										| undefined}
 									{@const textContent = textPart?.text || ''}
-									{@const hasContent = textContent.trim() !== '' || (msg as any).metadata?.progressLog}
+									{@const hasContent =
+										textContent.trim() !== '' || (msg as any).metadata?.progressLog}
 									{#if msg.role === 'user' || hasContent}
 										<ChatMessage
 											message={{
@@ -764,9 +900,9 @@
 
 								<!-- Progress Display -->
 								<ProgressDisplay
-									isLoading={isLoading}
-									isStreaming={isStreaming}
-									isCancelling={isCancelling}
+									{isLoading}
+									{isStreaming}
+									{isCancelling}
 									progress={currentProgress}
 									onCancel={cancelExecution}
 								/>
@@ -793,9 +929,13 @@
 							bind:input
 							isLoading={isProcessing}
 							{pendingAction}
+							{mentionedModules}
+							modules={availableModules}
 							onSendMessage={sendMessage}
 							onInput={(value: string) => (input = value)}
 							onKeydown={handleKeydown}
+							onMentionModule={handleMentionModule}
+							onRemoveMention={handleRemoveMention}
 						/>
 					</div>
 				</div>

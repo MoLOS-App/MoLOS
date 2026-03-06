@@ -2,19 +2,24 @@
  * Module Configuration Registry
  * Central point for importing and managing all module configurations
  *
- * Includes safe import handling to gracefully skip modules with errors
- * and mark them for auto-disable to prevent build failures.
+ * Modules can be loaded from:
+ * - Core configs: ./dashboard/config.ts, ./settings/config.ts, etc.
+ * - Package modules: from modules/ directory (local development)
+ * - npm modules: from node_modules/@molos/module-{name}/src/config.ts
+ *
+ * Configs are loaded eagerly to prevent SSR reloads during navigation.
+ *
+ * Error handling: Failed modules are caught and logged, preventing
+ * one bad module from breaking the entire application.
  */
 
 import type { ModuleConfig } from './types';
 
 /**
- * Dynamic Module Discovery
- * Automatically imports all module configurations from subdirectories
+ * Modules that must always be loaded (cannot be filtered out by env variable)
+ * These are essential for core functionality
  */
-const coreConfigs = import.meta.glob('./**/config.ts', {
-	eager: true
-}) as Record<string, any>;
+const MANDATORY_MODULES = ['dashboard', 'ai'] as const;
 
 /**
  * Queue for modules that failed to load (processed by server hooks)
@@ -22,131 +27,148 @@ const coreConfigs = import.meta.glob('./**/config.ts', {
 export const failedModulesQueue: Array<{ moduleId: string; error: Error }> = [];
 
 /**
- * Safe external module loading with error handling
- * When a module fails to load, it's skipped and queued for auto-disable
+ * Parse MOLOS_AUTOLOAD_MODULES environment variable
+ * Returns array of module IDs to load, or null if all modules should be loaded
+ *
+ * For client-side exposure in Vite, use VITE_MOLOS_AUTOLOAD_MODULES
+ * For server-side only, use MOLOS_AUTOLOAD_MODULES
  */
-async function loadExternalConfigs(): Promise<Record<string, any>> {
-	const results: Record<string, any> = {};
-
-	// Get all external module config files
-	const externalModulePaths = import.meta.glob('./external_modules/*.ts', {
-		eager: false
-	});
-
-	// Load each module config with error handling
-	for (const [path, importer] of Object.entries(externalModulePaths)) {
-		try {
-			const module = await importer();
-			results[path] = module;
-		} catch (error) {
-			const moduleId = extractModuleIdFromPath(path);
-			console.warn(`[ModuleRegistry] Failed to load module ${moduleId}:`, error);
-
-			// Queue for auto-disable (will be processed by server hooks)
-			const errorObj = error instanceof Error ? error : new Error(String(error));
-			failedModulesQueue.push({ moduleId, error: errorObj });
-		}
+function getAutoloadModulesFilter(): string[] | null {
+	// Check VITE_ prefixed version (exposed to client) first, then non-prefixed (server only)
+	const env = import.meta.env.VITE_MOLOS_AUTOLOAD_MODULES || import.meta.env.MOLOS_AUTOLOAD_MODULES;
+	if (!env || typeof env !== 'string') {
+		return null;
 	}
-
-	return results;
+	return env
+		.split(',')
+		.map((id: string) => id.trim())
+		.filter(Boolean);
 }
 
 /**
- * Load configs from @molos/module-* packages
- * These are installed via npm workspaces and don't use symlinks
+ * All module configs loaded eagerly via import.meta.glob
+ * This includes:
+ * - Core configs: ./dashboard/config.ts, ./settings/config.ts, etc.
+ * - Package module configs: from modules/ directory
+ * - npm-installed modules: from node_modules/@molos/module-XXX
+ *
+ * Eager loading prevents Vite from detecting "new" SSR dependencies during navigation.
  */
-async function loadPackageConfigs(): Promise<Record<string, any>> {
-	const results: Record<string, any> = {};
-
-	// Only run on server side
-	if (typeof window !== 'undefined') {
-		return results; // Skip on client
-	}
-
-	try {
-		// Read root package.json to find module packages
-		const { readFile } = await import('fs/promises');
-		const packageJsonPath = new URL('../../../package.json', import.meta.url).pathname;
-		const packageJsonContent = await readFile(packageJsonPath, 'utf-8');
-		const packageJson = JSON.parse(packageJsonContent);
-
-		const packageModules = Object.keys(packageJson.dependencies || {})
-			.filter(d => d.startsWith('@molos/module-'));
-
-		console.log('[ModuleRegistry] Loading package module configs:', packageModules);
-
-		// Load config from each package
-		for (const packageName of packageModules) {
-			try {
-				const config = await import(`${packageName}/config`);
-				const moduleId = packageName.replace('@molos/module-', '');
-				results[`package:${moduleId}`] = config;
-				console.log(`[ModuleRegistry] Loaded config for package module: ${moduleId}`);
-			} catch (e) {
-				console.warn(`[ModuleRegistry] Failed to load config for ${packageName}:`, e);
-			}
-		}
-	} catch (e) {
-		console.warn('[ModuleRegistry] Could not load package configs:', e);
-	}
-
-	return results;
-}
+const allModuleConfigs = import.meta.glob(
+	[
+		'./**/config.ts',
+		'/modules/*/src/config.ts',
+		'../../node_modules/@molos/module-*/src/config.ts'
+	],
+	{ eager: true }
+) as Record<string, any>;
 
 /**
  * Extract module ID from import path
- * './external_modules/MoLOS-Tasks.ts' -> 'MoLOS-Tasks'
+ * './dashboard/config.ts' -> 'dashboard'
+ * '/modules/ai-knowledge/src/config.ts' -> 'ai-knowledge'
+ * '/node_modules/@molos/module-finance/src/config.ts' -> 'finance'
  */
 function extractModuleIdFromPath(importPath: string): string {
+	// Handle npm module paths (node_modules/@molos/module-*)
+	const npmModuleMatch = importPath.match(
+		/\/node_modules\/@molos\/module-([^/]+)\/src\/config\.ts$/
+	);
+	if (npmModuleMatch) {
+		return npmModuleMatch[1];
+	}
+
+	// Handle package module paths
+	const moduleMatch = importPath.match(/\/modules\/([^/]+)\/src\/config\.ts$/);
+	if (moduleMatch) {
+		return moduleMatch[1];
+	}
+
+	// Handle core module paths
 	const parts = importPath.split('/');
 	const lastPart = parts[parts.length - 1];
+	if (lastPart === 'config.ts') {
+		return parts[parts.length - 2];
+	}
 	return lastPart.replace(/\.ts$/, '');
 }
 
-// Load external configs with error handling
-const externalConfigs = await loadExternalConfigs();
-const packageConfigs = await loadPackageConfigs();
-const allConfigs = { ...coreConfigs, ...externalConfigs, ...packageConfigs };
+/**
+ * Check if a path is from a package module (modules/ directory)
+ */
+function isPackageModulePath(importPath: string): boolean {
+	return importPath.includes('/modules/') && importPath.includes('/src/config.ts');
+}
+
+/**
+ * Check if a path is from an npm-installed module
+ */
+function isNpmModulePath(importPath: string): boolean {
+	return importPath.includes('/node_modules/@molos/module-');
+}
+
+/**
+ * Build the module registry with optional filtering
+ * Includes error handling to prevent one bad module from breaking the entire registry
+ */
+function buildModuleRegistry(): Record<string, ModuleConfig> {
+	const autoloadFilter = getAutoloadModulesFilter();
+
+	return Object.entries(allModuleConfigs).reduce(
+		(acc, [path, module]) => {
+			const moduleId = extractModuleIdFromPath(path);
+
+			try {
+				if (!module) {
+					console.warn(`[ModuleRegistry] Module ${moduleId} loaded as null/undefined`);
+					failedModulesQueue.push({ moduleId, error: new Error('Module loaded as null') });
+					return acc;
+				}
+
+				// Find the config object in the module exports (either default or named like 'xxxConfig')
+				const config =
+					module.default ||
+					Object.values(module).find(
+						(val: any) => val && typeof val === 'object' && val.id && val.name && val.href
+					);
+
+				if (moduleId && config && config.id) {
+					// Mark as package module if it's from the modules/ directory
+					if (isPackageModulePath(path)) {
+						config.isPackageModule = true;
+					}
+
+					// Skip filter for mandatory modules (always load regardless of env filter)
+					const isMandatory = MANDATORY_MODULES.includes(
+						config.id as (typeof MANDATORY_MODULES)[number]
+					);
+
+					// Apply autoload filter if set (but not for mandatory modules)
+					if (!isMandatory && autoloadFilter && !autoloadFilter.includes(config.id)) {
+						return acc;
+					}
+
+					acc[config.id] = config;
+				}
+			} catch (error) {
+				// Catch errors during config processing to isolate bad modules
+				console.error(`[ModuleRegistry] Error processing module ${moduleId}:`, error);
+				failedModulesQueue.push({
+					moduleId,
+					error: error instanceof Error ? error : new Error(String(error))
+				});
+			}
+			return acc;
+		},
+		{} as Record<string, ModuleConfig>
+	);
+}
 
 /**
  * Registry of all available modules
+ * Built from eagerly-loaded configs to prevent SSR reloads
  */
-export const MODULE_REGISTRY: Record<string, ModuleConfig> = Object.entries(allConfigs).reduce(
-	(acc, [path, module]) => {
-		// Extract module ID from path
-		// './dashboard/config.ts' -> 'dashboard'
-		// './external_modules/MoLOS-Tasks' -> 'MoLOS-Tasks'
-		// 'package:tasks' -> 'tasks'
-		let moduleId: string;
-
-		if (path.startsWith('package:')) {
-			moduleId = path.replace('package:', '');
-		} else {
-			const parts = path.split('/');
-			const lastPart = parts[parts.length - 1];
-			moduleId =
-				lastPart === 'config.ts' ? parts[parts.length - 2] : lastPart.replace(/\.ts$/, '');
-		}
-
-		// Find the config object in the module exports (either default or named like 'xxxConfig')
-		const config =
-			module.default ||
-			Object.values(module).find(
-				(val: any) => val && typeof val === 'object' && val.id && val.name && val.href
-			);
-
-		if (moduleId && config && config.id) {
-			// Mark as external if it's in the external_modules directory
-			if (path.includes('external_modules') || path.startsWith('package:')) {
-				config.isExternal = true;
-				config.isPackage = path.startsWith('package:');
-			}
-			acc[config.id] = config;
-		}
-		return acc;
-	},
-	{} as Record<string, ModuleConfig>
-);
+export const MODULE_REGISTRY: Record<string, ModuleConfig> = buildModuleRegistry();
 
 /**
  * Get module config by ID

@@ -10,9 +10,8 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { ApiKeyRepository } from '$lib/repositories/ai/mcp';
-import type { CreateApiKeyInput, UpdateApiKeyInput, ApiKeyFilters } from '$lib/models/ai/mcp';
-import { getAvailableModuleIds } from '$lib/server/ai/mcp/mcp-utils';
-import { MCPApiKeyStatus } from '$lib/server/db/schema';
+import type { CreateApiKeyInput, ApiKeyFilters } from '$lib/models/ai/mcp';
+import { validateScopes, validateKeyName } from '$lib/server/ai/mcp/validation/scope-validator';
 
 /**
  * GET - List API keys for the authenticated user
@@ -49,35 +48,32 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 	const body = await request.json();
 
 	// Validate input
-	const allowedModules = body.allowedModules ?? [];
+	const allowedScopes = body.allowedScopes ?? [];
 
-	// Validate module IDs
-	const { valid, invalid } = await validateModuleIds(allowedModules);
+	// Validate scopes
+	const { valid, invalid } = validateScopes(allowedScopes);
 
 	if (invalid.length > 0) {
 		return json(
 			{
-				error: 'Invalid module IDs',
+				error: 'Invalid scopes',
 				invalid
 			},
 			{ status: 400 }
 		);
 	}
 
+	// Validate name
+	const nameError = validateKeyName(body.name);
+	if (nameError) {
+		return json({ error: nameError.message }, { status: 400 });
+	}
+
 	const input: CreateApiKeyInput = {
 		name: body.name,
-		allowedModules: valid,
+		allowedScopes: valid,
 		expiresAt: body.expiresAt ? new Date(body.expiresAt) : null
 	};
-
-	// Validate name
-	if (!input.name || input.name.trim().length === 0) {
-		return json({ error: 'Name is required' }, { status: 400 });
-	}
-
-	if (input.name.length > 100) {
-		return json({ error: 'Name must be less than 100 characters' }, { status: 400 });
-	}
 
 	const repo = new ApiKeyRepository();
 	const result = await repo.create(locals.user.id, input);
@@ -87,25 +83,3 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 		fullKey: result.fullKey // Only returned once on creation
 	});
 };
-
-/**
- * Validate module IDs against available external modules
- */
-async function validateModuleIds(moduleIds: string[]): Promise<{
-	valid: string[];
-	invalid: string[];
-}> {
-	const available = getAvailableModuleIds();
-	const valid: string[] = [];
-	const invalid: string[] = [];
-
-	for (const moduleId of moduleIds) {
-		if (available.includes(moduleId)) {
-			valid.push(moduleId);
-		} else {
-			invalid.push(moduleId);
-		}
-	}
-
-	return { valid, invalid };
-}

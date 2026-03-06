@@ -26,3 +26,47 @@ jobs:
 
       - name: Run unit tests
         run: bun run test
+
+  migration-validation:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Audit module migrations
+        run: bun run db:audit-modules
+
+      - name: Test fresh database initialization
+        run: |
+          rm -f molos.db *.db
+          bun run db:init
+
+      - name: Validate database schema
+        run: bun run db:validate
+
+      - name: Test migration idempotency
+        run: |
+          bun run db:migrate:unified
+          bun run db:migrate:unified
+
+      - name: Run migration tests
+        run: bun run test:unit -- tests/migrations --run
+
+      - name: Upload database artifact (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failed-migration-db
+          path: |
+            *.db
+            logs/
+          retention-days: 7

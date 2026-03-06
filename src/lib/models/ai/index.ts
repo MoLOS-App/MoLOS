@@ -81,6 +81,13 @@ export interface ToolDefinition {
 	};
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	execute: (params: any) => Promise<any>;
+	metadata?: {
+		category: string;
+		tags: string[];
+		priority: number;
+		essential: boolean;
+		submodule?: string; // NEW: Which submodule this tool belongs to (e.g., "my", "projects", "dashboard")
+	};
 }
 
 export interface AiAction {

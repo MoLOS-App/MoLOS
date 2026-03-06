@@ -1,48 +1,85 @@
-node_modules
-.kilocode/
-.vscode/
-internal_documentation/
-devtools/
+# ========================================
+# Dependencies
+# ========================================
+node_modules/
 
-# Output
-.output
-.vercel
-.netlify
-.wrangler
-/.svelte-kit
-/build
+# ========================================
+# Build outputs
+# ========================================
+.output/
+.vercel/
+.netlify/
+.wrangler/
+.svelte-kit/
+/build/
+dist/
+packages/*/dist/
+.turbo/
 
-# OS
-.DS_Store
-Thumbs.db
-
-# Env
+# ========================================
+# Environment & secrets
+# ========================================
 .env
 .env.*
-!.env.example
-!.env.test
 
-# Vite
-vite.config.js.timestamp-*
-vite.config.ts.timestamp-*
+# ========================================
+# Development tools & IDEs
+# ========================================
+.vscode/
+.kilocode/
+.claude/
+.codex/
+.opencode/
+devtools/
+.changeset/
 
-# Module state files
-.molo-sync-state.json
-.molo-module-links.json
 
-# SQLite
+# ========================================
+# Databases
+# ========================================
 *.db
 *.db-shm
 *.db-wal
-documentation/
+db.sqlite
+data/
+
+# ========================================
+# Module system
+# ========================================
+/external_modules/
 external_modules/
+/modules/
+modules.config.local.ts
+.molo-sync-state.json
+.molo-module-links.json
 src/routes/api/(external_modules)/
 src/routes/ui/(modules)/(external_modules)/
-.claude/
+src/lib/modules/
+documentation/plugins/molos-module-management.md
+
+# ========================================
+# Task tracking & AI
+# ========================================
 .beads/
+AGENTS.md
 .mcp.json
 
-# Package dist directories
-dist/
-packages/*/dist/
-.svelte-kit/
+# ========================================
+# Vite
+# ========================================
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# ========================================
+# Logs & temporary files
+# ========================================
+*.log
+
+# ========================================
+# OS-specific files
+# ========================================
+.DS_Store
+Thumbs.db
+.opencode
+AGENTS.md
+CLAUDE.md

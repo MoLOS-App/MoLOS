@@ -113,9 +113,9 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 			: 0;
 	const stats = await logRepo.getStats(locals.user.id);
 
-	// Get available modules
+	// Get available modules (both package modules and legacy external modules)
 	const allModules = getAllModules();
-	const availableModules = allModules.filter((m) => m.isExternal);
+	const availableModules = allModules.filter((m) => m.isPackageModule || m.isExternal);
 
 	// Get API keys for logs filtering
 	const apiKeysForFilter = await apiKeyRepo.listByUserId(locals.user.id, {}, { limit: 100 });

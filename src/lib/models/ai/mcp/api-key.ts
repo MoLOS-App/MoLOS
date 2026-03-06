@@ -16,9 +16,10 @@ export interface MCPApiKey {
 	keyPrefix: string;
 	keyHash: string;
 	status: ApiKeyStatus;
-	allowedModules: string[];
-	expiresAt: Date | null;
+	allowedScopes: string[] | null; // Matches Drizzle ORM mapping (DB column: allowed_scopes)
+	allowed_scopes?: string[]; // Legacy DB column name for backward compatibility
 	lastUsedAt: Date | null;
+	expiresAt: Date | null;
 	usageCount: number;
 	createdAt: Date;
 	updatedAt: Date;
@@ -29,7 +30,7 @@ export interface MCPApiKey {
  */
 export interface CreateApiKeyInput {
 	name: string;
-	allowedModules: string[];
+	allowedScopes: string[] | null; // Matches Drizzle ORM mapping
 	expiresAt?: Date | null;
 }
 
@@ -39,7 +40,7 @@ export interface CreateApiKeyInput {
 export interface UpdateApiKeyInput {
 	name?: string;
 	status?: ApiKeyStatus;
-	allowedModules?: string[];
+	allowedScopes?: string[] | null; // Matches Drizzle ORM mapping
 	expiresAt?: Date | null;
 }
 

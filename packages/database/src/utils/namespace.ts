@@ -1,26 +1,18 @@
 /**
  * Utility for namespacing module tables to avoid conflicts
  * when multiple modules might use similar table names.
+ *
+ * Table naming convention: MoLOS-{ModuleName}_{table_name}
+ * Example: MoLOS-Finance_expenses, MoLOS-Tasks_tasks
  */
 
 /**
- * Converts a module name to a table prefix
- * Example: "MoLOS-Product-Owner" -> "product_owner_"
- */
-export function getTablePrefix(moduleName: string): string {
-	return moduleName
-		.replace(/^MoLOS-/, '') // Remove MoLOS- prefix
-		.replace(/-/g, '_') // Convert hyphens to underscores
-		.toLowerCase() // Lowercase
-		+ '_'; // Add trailing underscore
-}
-
-/**
- * Creates a namespaced table name
- * Example: namespaceTableName("MoLOS-Product-Owner", "projects") -> "product_owner_projects"
+ * Creates a namespaced table name following MoLOS convention
+ * Example: namespaceTableName("MoLOS-Finance", "expenses") -> "MoLOS-Finance_expenses"
+ * Example: namespaceTableName("MoLOS-Tasks", "tasks") -> "MoLOS-Tasks_tasks"
  */
 export function namespaceTableName(moduleName: string, tableName: string): string {
-	return getTablePrefix(moduleName) + tableName;
+	return `${moduleName}_${tableName}`;
 }
 
 /**
@@ -71,5 +63,5 @@ export const RESERVED_TABLE_NAMES = [
  * Check if a table name should be namespaced
  */
 export function shouldNamespace(tableName: string): boolean {
-	return !RESERVED_TABLE_NAMES.includes(tableName as typeof RESERVED_TABLE_NAMES[number]);
+	return !RESERVED_TABLE_NAMES.includes(tableName as (typeof RESERVED_TABLE_NAMES)[number]);
 }

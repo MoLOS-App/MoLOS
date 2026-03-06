@@ -2,10 +2,8 @@ import { defineConfig } from 'drizzle-kit';
 
 const rawDbPath =
 	process.env.DATABASE_URL ||
-	(process.env.NODE_ENV === 'production' ? '/data/molos.db' : '../../molos.db');
-const normalizedDbPath = rawDbPath
-	.replace(/^sqlite:\/\//, '')
-	.replace(/^sqlite:|^file:/, '');
+	(process.env.NODE_ENV === 'production' ? '/data/molos.db' : '../../data/molos.db');
+const normalizedDbPath = rawDbPath.replace(/^sqlite:\/\//, '').replace(/^sqlite:|^file:/, '');
 
 export default defineConfig({
 	schema: './src/schema/index.ts',

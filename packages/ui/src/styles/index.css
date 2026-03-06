@@ -1,12 +1,12 @@
 /* MoLOS UI - Main Stylesheet */
 
 /* Import Tailwind CSS base */
-@import "tailwindcss/base";
-@import "tailwindcss/components";
-@import "tailwindcss/utilities";
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
 
 /* Import base theme CSS variables */
-@import "./themes/base.css";
+@import './themes/base.css';
 
 /* Additional component-specific styles */
 @layer components {
@@ -99,7 +99,7 @@
 
 /* Focus-visible utilities */
 .focus-ring {
-	@apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+	@apply focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none;
 }
 
 /* Markdown content styles are included in base.css */

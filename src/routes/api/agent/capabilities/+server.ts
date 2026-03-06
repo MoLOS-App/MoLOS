@@ -20,7 +20,7 @@ export const GET: RequestHandler = async () => {
 		name: m.name,
 		description: m.description,
 		capabilities: m.capabilities,
-		baseUrl: m.baseUrl,
+		baseUrl: m.baseUrl
 	}));
 
 	// Get core modules from MoLOS
@@ -29,7 +29,7 @@ export const GET: RequestHandler = async () => {
 		.map((m) => ({
 			id: m.id,
 			name: m.name,
-			description: m.description,
+			description: m.description
 		}));
 
 	return json({
@@ -44,22 +44,22 @@ export const GET: RequestHandler = async () => {
 			'tool_execution',
 			'module_delegation',
 			'context_management',
-			'streaming_responses',
+			'streaming_responses'
 		],
 		modules: {
 			core: coreModules,
-			external: moduleCapabilities,
+			external: moduleCapabilities
 		},
 		endpoints: {
 			chat: '/api/chat',
-			capabilities: '/api/agent/capabilities',
+			capabilities: '/api/agent/capabilities'
 		},
 		features: {
 			streaming: true,
 			multiStepTools: true,
 			hooks: true,
 			telemetry: true,
-			multiAgent: moduleCapabilities.length > 0,
-		},
+			multiAgent: moduleCapabilities.length > 0
+		}
 	});
 };

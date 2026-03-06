@@ -1,3 +1,3 @@
-export * from './namespace.js';
-export * from './text-enum.js';
+export * from './namespace';
+export * from './text-enum';
 //# sourceMappingURL=index.d.ts.map

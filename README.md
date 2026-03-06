@@ -48,8 +48,7 @@ You can also keep it small, I won't judge.
 First make the persistence folders:
 
 ```bash
-mkdir -p ./molos_data/db
-mkdir -p ./molos_data/external_modules
+mkdir -p ./data
 ```
 
 Then start MoLOS:
@@ -57,8 +56,7 @@ Then start MoLOS:
 ```bash
 podman run -d \
   -p 4173:4173 \
-  -v ./molos_data/db:/data \
-  -v ./molos_data/external_modules:/app/external_modules \
+  -v ./data:/data \
   -e DATABASE_URL=file:/data/molos.db \
   -e PORT=4173 \
   -e MOLOS_AUTOLOAD_MODULES=true \
@@ -66,7 +64,7 @@ podman run -d \
   ghcr.io/molos-app/molos:latest
 ```
 
-Open `http://localhost:4173`. Your data stays in `./molos_data`.
+Open `http://localhost:4173`. Your data stays in `./data`.
 
 That is the whole setup. You can stop here and explore.
 
@@ -81,17 +79,19 @@ That is the whole setup. You can stop here and explore.
 MoLOS is built from small modules. Add or remove them without breaking the core app.
 Keep it minimal, or assemble a full workspace over time.
 
-If you are working from source, drop modules into `external_modules/` and run
-`npm run module:sync`.
+To customize which modules are included in production builds, edit `modules.config.ts` in the project root.
+Modules are fetched from git repositories during the build process.
 
 Modules can be shared, versioned, and replaced. Your data stays in one place.
+
+See `documentation/production-build.md` for details on the build system and module configuration.
 
 ## Privacy and control
 
 MoLOS is local-first. It runs on your machine and stores data locally by default.
 You decide if and how it is exposed to the network.
 
-Backups are simple. Move `./molos_data` to a new machine and you are done.
+Backups are simple. Move `./data` to a new machine and you are done.
 
 ## For developers
 
@@ -101,11 +101,25 @@ The codebase is small on purpose. It is easy to read, easy to extend, and easy t
 
 ### Module System
 
+- **[Production Build Guide](documentation/production-build.md)** - Build-time module resolution, Docker/Kubernetes deployment
 - **[Module Improvements Guide](documentation/module-improvements.md)** - Learn about retry logic, change detection, and module linking
 - **[Quick Reference](documentation/module-quick-reference.md)** - Common commands and troubleshooting
 - **[Module System Context](documentation/context/module-system.md)** - Architecture and design decisions
 
 If you want to build a module or know why I made some architectural decisions, start there.
+
+### Module Configuration
+
+Modules are configured in `modules.config.ts` at the project root:
+
+```typescript
+export const modulesConfig: ModuleConfigEntry[] = [
+	{ id: 'MoLOS-Tasks', git: 'https://github.com/molos-org/MoLOS-Tasks.git', tag: 'v1.0.0' },
+	{ id: 'MoLOS-Goals', git: 'https://github.com/molos-org/MoLOS-Goals.git', tag: 'v1.0.0' }
+];
+```
+
+To add or remove modules, edit this file and rebuild the production image.
 
 ## Contributing
 

@@ -12,7 +12,8 @@ const config = {
 	kit: {
 		adapter: adapter(),
 		alias: {
-			'@molos/core': path.resolve('packages/core/src')
+			'@molos/core': path.resolve('packages/core/src'),
+			'@molos/module-types': path.resolve('packages/module-types/src')
 		},
 		csrf: {
 			trustedOrigins: (() => {

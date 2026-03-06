@@ -81,7 +81,9 @@ describe('Schema Converter', () => {
 			const zodSchema = convertTypeBoxToZod(schema);
 
 			expect(zodSchema.safeParse({ required_field: 'test' }).success).toBe(true);
-			expect(zodSchema.safeParse({ required_field: 'test', optional_field: 'extra' }).success).toBe(true);
+			expect(zodSchema.safeParse({ required_field: 'test', optional_field: 'extra' }).success).toBe(
+				true
+			);
 			expect(zodSchema.safeParse({}).success).toBe(false);
 		});
 
@@ -166,10 +168,7 @@ describe('Schema Converter', () => {
 				type: 'object',
 				properties: {
 					value: {
-						anyOf: [
-							{ type: 'string' },
-							{ type: 'number' }
-						]
+						anyOf: [{ type: 'string' }, { type: 'number' }]
 					}
 				},
 				required: ['value']
@@ -187,10 +186,7 @@ describe('Schema Converter', () => {
 				type: 'object',
 				properties: {
 					config: {
-						oneOf: [
-							{ type: 'boolean' },
-							{ type: 'string' }
-						]
+						oneOf: [{ type: 'boolean' }, { type: 'string' }]
 					}
 				},
 				required: ['config']
@@ -273,22 +269,26 @@ describe('Schema Converter', () => {
 
 			const zodSchema = convertTypeBoxToZod(schema);
 
-			expect(zodSchema.safeParse({
-				settings: {
-					notifications: {
-						enabled: true,
-						channels: ['email', 'sms']
+			expect(
+				zodSchema.safeParse({
+					settings: {
+						notifications: {
+							enabled: true,
+							channels: ['email', 'sms']
+						}
 					}
-				}
-			}).success).toBe(true);
+				}).success
+			).toBe(true);
 
-			expect(zodSchema.safeParse({
-				settings: {
-					notifications: {
-						enabled: false
+			expect(
+				zodSchema.safeParse({
+					settings: {
+						notifications: {
+							enabled: false
+						}
 					}
-				}
-			}).success).toBe(true);
+				}).success
+			).toBe(true);
 		});
 	});
 
@@ -318,14 +318,16 @@ describe('Schema Converter', () => {
 
 			const zodSchema = createZodSchemaFromParams(params);
 
-			expect(zodSchema.safeParse({
-				str: 'text',
-				num: 42,
-				bool: true,
-				arr: [1, 2, 3],
-				obj: { key: 'value' },
-				int: 10
-			}).success).toBe(true);
+			expect(
+				zodSchema.safeParse({
+					str: 'text',
+					num: 42,
+					bool: true,
+					arr: [1, 2, 3],
+					obj: { key: 'value' },
+					int: 10
+				}).success
+			).toBe(true);
 		});
 	});
 

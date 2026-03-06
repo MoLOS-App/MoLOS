@@ -46,8 +46,7 @@ export const load: PageServerLoad = async ({ url, fetch, locals }) => {
 
 	const typesByModule: Record<string, string[]> = {
 		ai: ['session', 'memory'],
-		'MoLOS-Tasks': ['task', 'project', 'area', 'daily_log'],
-		'MoLOS-AI-Knowledge': ['prompt', 'prompt_chain']
+		tasks: ['task', 'project', 'area', 'daily_log']
 	};
 
 	const availableTypes = Array.from(

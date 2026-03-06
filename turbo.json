@@ -1,5 +1,6 @@
 {
 	"$schema": "https://turbo.build/schema.json",
+	"globalDependencies": ["**/.env.*local"],
 	"tasks": {
 		"build": {
 			"dependsOn": ["^build"],
@@ -11,14 +12,27 @@
 			"persistent": true
 		},
 		"lint": {
-			"dependsOn": ["^lint"]
+			"dependsOn": ["^build"]
 		},
 		"test": {
-			"dependsOn": ["^test"],
-			"inputs": ["src/**/*.test.ts", "src/**/*.test.js"]
+			"dependsOn": ["^build"],
+			"inputs": ["src/**/*.test.ts", "src/**/*.test.js", "**/*.spec.ts"]
+		},
+		"db:generate": {
+			"cache": false
+		},
+		"db:migrate": {
+			"cache": false
+		},
+		"module:sync": {
+			"cache": false
 		},
 		"clean": {
 			"cache": false
+		},
+		"typecheck": {
+			"dependsOn": ["^build"],
+			"inputs": ["**/*.ts", "**/*.svelte"]
 		}
 	}
 }

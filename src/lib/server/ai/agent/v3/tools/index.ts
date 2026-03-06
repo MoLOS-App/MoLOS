@@ -5,12 +5,12 @@
 export {
 	convertTypeBoxToZod,
 	createZodSchemaFromParams,
-	inferZodTypeFromJsonSchema,
+	inferZodTypeFromJsonSchema
 } from './schema-converter';
 
 export {
 	wrapToolWithHooks,
 	convertToolsToAiSdk,
 	clearToolCache,
-	type ToolWrapperOptions,
+	type ToolWrapperOptions
 } from './tool-wrapper';
