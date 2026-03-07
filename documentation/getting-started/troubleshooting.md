@@ -63,7 +63,7 @@ Module migration wasn't run or failed silently.
 
 ```bash
 # Run unified migration
-bun run db:migrate:unified
+bun run db:migrate
 
 # Check for errors in logs
 cat logs/migrations.log | tail -20
@@ -261,7 +261,7 @@ bun run db:init
 
 # OR apply pending migrations directly
 bun run db:migrate
-bun run db:migrate:unified
+bun run db:migrate
 ```
 
 **Key Difference:**

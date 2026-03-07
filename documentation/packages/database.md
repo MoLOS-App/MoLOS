@@ -97,7 +97,7 @@ See [ADR-001](../adr/001-migration-tracking-strategy.md) for the tracking strate
 | ---------------------------- | ------------------------------------------------------------------------ | -------------------------- |
 | `bun run db:init`            | Initialize database (first-time setup, applies existing migrations only) | New setup, fresh install   |
 | `bun run db:migrate`         | Run all pending migrations                                               | Update existing DB         |
-| `bun run db:migrate:unified` | Unified runner with logging                                              | Debugging migrations       |
+| `bun run db:migrate` | Unified runner with logging                                              | Debugging migrations       |
 | `bun run db:generate`        | **DEVELOPMENT ONLY**: Generate new migration files from schema changes   | After editing schema files |
 | `bun run db:push`            | Push schema directly (dev only)                                          | Quick iteration in dev     |
 | `bun run db:validate`        | Validate schema matches migrations                                       | Verify migration health    |

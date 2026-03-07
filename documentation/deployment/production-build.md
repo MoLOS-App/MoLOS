@@ -115,7 +115,7 @@ For manual migration control:
 
 ```bash
 # Run migrations only
-bun run db:migrate:unified
+bun run db:migrate
 
 # Then start server
 NODE_ENV=production PORT=4173 node build/index.js
@@ -381,7 +381,7 @@ DOCKER_BUILDKIT=1 docker build \
 - Check database file permissions: `ls -l /data/molos.db`
 - Ensure `/data` directory exists and is writable
 - Check `node_modules/better-sqlite3` was built correctly
-- Run `bun run db:migrate:unified` manually to see detailed error output
+- Run `bun run db:migrate` manually to see detailed error output
 
 **Note:** Migrations run automatically before every server start via the `serve` script. This ensures the database schema is always up-to-date. The unified migration runner (`packages/database/src/migrate-unified.ts`) handles:
 

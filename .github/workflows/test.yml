@@ -55,8 +55,8 @@ jobs:
 
       - name: Test migration idempotency
         run: |
-          bun run db:migrate:unified
-          bun run db:migrate:unified
+          bun run db:migrate
+          bun run db:migrate
 
       - name: Run migration tests
         run: bun run test:unit -- tests/migrations --run

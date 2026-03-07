@@ -43,7 +43,7 @@ bun run db:restore --file <filename>
                          # Restore from specific backup
 
 # LEGACY COMMANDS (for backward compatibility)
-bun run db:migrate:unified
+bun run db:migrate
                          # Old unified migration runner
 bun run db:generate      # Generate migrations with drizzle-kit
 bun run db:push          # Push schema changes directly (dev only)

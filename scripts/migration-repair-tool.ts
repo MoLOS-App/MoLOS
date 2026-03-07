@@ -69,7 +69,7 @@ class MigrationRepairTool {
 		if (!hasDrizzleMigrations && !hasMolosMigrations) {
 			report.errors.push('No migration tracking tables found');
 			report.recommendations.push(
-				'Run migrations from scratch: rm data/molos.db && bun run db:migrate:unified'
+				'Run migrations from scratch: rm data/molos.db && bun run db:migrate'
 			);
 			report.status = 'corrupted';
 			this.db.close();
