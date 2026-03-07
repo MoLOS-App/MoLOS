@@ -14,7 +14,7 @@
 		"build:prod": "bun run fetch:modules && bun run build:prepare && bun run build",
 		"prod": "bun run build:prod && bun run serve",
 		"preview": "vite preview --host --port 4173",
-		"serve": "bun run db:migrate:unified && node --env-file=.env build/index.js",
+		"serve": "bun run db:migrate && node --env-file=.env build/index.js",
 		"fetch:modules": "bun scripts/fetch-modules.ts",
 		"fetch:module": "bun scripts/fetch-modules.ts --single",
 		"build:prepare": "tsx scripts/build-modules.ts",
