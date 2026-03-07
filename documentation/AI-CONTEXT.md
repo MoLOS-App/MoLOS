@@ -262,7 +262,7 @@ import { TaskRepository } from '../../../server/repositories/task-repository.js'
 | `bun run module:link`                         | Create route symlinks                            |
 | `bun run db:init`                             | Initialize database (first-time setup, dev only) |
 | `bun run db:migrate`                          | Run all pending migrations                       |
-| `bun run db:migrate:unified`                  | Unified runner - used by prod and dev            |
+| `bun run db:migrate`                          | Unified runner - used by prod and dev            |
 | `bun run db:generate`                         | Generate migrations from schema                  |
 | `bun run db:push`                             | Push schema changes (dev only)                   |
 | `bun run db:validate`                         | Validate schema matches migrations               |
@@ -360,7 +360,7 @@ DATABASE_URL=./molos.db
 
 ### Database table not found
 
-1. Run `bun run db:migrate:unified` to apply all migrations
+1. Run `bun run db:migrate` to apply all migrations
 2. Run `bun run db:validate` to check for missing tables
 3. Check table prefix matches module ID (`MoLOS-{Name}_{table}`)
 
