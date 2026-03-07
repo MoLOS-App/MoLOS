@@ -127,6 +127,13 @@
       "when": 1741324800000,
       "tag": "0017_add_migration_tracking",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1741411200000,
+      "tag": "0018_rename_allowed_modules_to_scopes",
+      "breakpoints": true
     }
   ]
 }
