@@ -229,18 +229,21 @@ import { MyStatus } from '../../models/index.js';
 import { myModuleItems } from '../server/db/schema.js';
 ```
 
-## Generate Migrations
+## Create Migrations
+
+**Important:** Migrations must be created manually and included in the module's `drizzle/` directory.
 
 ```bash
-# From module directory
-cd modules/my-module
+# From the MoLOS root directory
+bun run db:migration:create --name add_my_table --module MoLOS-MyModule
 
-# Generate migration
-npx drizzle-kit generate
-
-# Apply migration
-npx drizzle-kit migrate
+# For reversible migrations (with rollback support)
+bun run db:migration:create --name add_my_table --module MoLOS-MyModule --reversible
 ```
+
+Then edit the generated SQL file in `modules/MoLOS-MyModule/drizzle/0001_add_my_table.sql`.
+
+**Never run `drizzle-kit generate` or `bun run db:generate` directly.** These commands are not safe for the MoLOS migration system.
 
 ## Test in Main App
 
@@ -283,3 +286,5 @@ git push -u origin main
 - [ ] API routes under `/api/{ModuleID}/`
 - [ ] All imports use `$lib` alias (not relative paths to main app)
 - [ ] TypeScript imports use `.js` extension
+- [ ] Migrations created with `bun run db:migration:create` (not auto-generated)
+- [ ] Migrations included in `drizzle/` directory

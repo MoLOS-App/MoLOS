@@ -130,11 +130,13 @@ When a module is released, `modules.config.ts` is automatically updated with the
 
 ```typescript
 // Before
-{ repo: 'github.com/molos-org/MoLOS-Tasks', tag: 'v1.0.0' }
+{ id: 'MoLOS-Tasks', git: 'https://github.com/molos-org/MoLOS-Tasks.git', tag: 'v1.0.0' }
 
 // After release (minor bump)
-{ repo: 'github.com/molos-org/MoLOS-Tasks', tag: 'v1.1.0' }
+{ id: 'MoLOS-Tasks', git: 'https://github.com/molos-org/MoLOS-Tasks.git', tag: 'v1.1.0' }
 ```
+
+**Note:** Either `tag` or `branch` can be specified, but not both. Tags are recommended for production.
 
 ## GitHub Actions Workflows
 

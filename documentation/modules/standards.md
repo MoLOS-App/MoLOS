@@ -332,13 +332,15 @@ bun run module:link    # Link routes only
 
 ## Commands Reference
 
-| Command                    | Description                                   |
-| -------------------------- | --------------------------------------------- |
-| `bun run module:sync`      | Sync and initialize modules                   |
-| `bun run module:link`      | Create route symlinks                         |
-| `npx drizzle-kit generate` | Generate migrations (run in module directory) |
-| `npx drizzle-kit migrate`  | Apply migrations (run in module directory)    |
-| `bun run dev`              | Start development server                      |
+| Command                       | Description                            |
+| ----------------------------- | -------------------------------------- |
+| `bun run module:sync`         | Sync and initialize modules            |
+| `bun run module:link`         | Create route symlinks                  |
+| `bun run db:migration:create` | Create new migration (from MoLOS root) |
+| `bun run db:migrate`          | Apply all pending migrations           |
+| `bun run dev`                 | Start development server               |
+
+**Important:** Migrations are NOT auto-generated. Use `bun run db:migration:create --name <name> --module <ModuleName>` to create new migrations. Never run `drizzle-kit generate` directly.
 
 ## Error Checklist
 
@@ -356,9 +358,10 @@ bun run module:link    # Link routes only
 
 ### Database table not found
 
-1. Generate migrations: `cd modules/tasks && npx drizzle-kit generate`
-2. Apply migrations: `npx drizzle-kit migrate`
-3. Check table prefix matches module ID
+1. Create migration: `bun run db:migration:create --name add_table --module MoLOS-Tasks`
+2. Edit the generated SQL file in `modules/MoLOS-Tasks/drizzle/`
+3. Apply migrations: `bun run db:migrate`
+4. Check table prefix matches module ID
 
 ### Import errors (Cannot find module '$lib/modules/...')
 

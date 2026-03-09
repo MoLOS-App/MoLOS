@@ -24,18 +24,20 @@ bun run module:link         # Link routes only
 ## Database Operations
 
 ```bash
-# Navigate to module directory first
-cd modules/tasks
+# Create new migration (from MoLOS root)
+bun run db:migration:create --name add_feature --module MoLOS-Tasks
 
-# Generate migration for schema changes
-npx drizzle-kit generate
+# Create reversible migration (with rollback)
+bun run db:migration:create --name add_feature --module MoLOS-Tasks --reversible
 
-# Apply migrations
-npx drizzle-kit migrate
+# Apply all pending migrations
+bun run db:migrate
 
 # View database
-npx drizzle-kit studio
+bun run db:studio
 ```
+
+**Important:** Migrations are NOT auto-generated. Use `bun run db:migration:create` to create new migrations manually. Never run `drizzle-kit generate` directly.
 
 ## Module ID Convention
 
@@ -109,9 +111,8 @@ bun install
 # 3. Sync routes
 bun run module:sync
 
-# 4. Run migrations (if needed)
-cd node_modules/@molos/module-name
-npx drizzle-kit migrate
+# 4. Apply migrations (if needed)
+bun run db:migrate
 ```
 
 ### Updating a Module
@@ -123,19 +124,18 @@ bun update @molos/module-tasks
 # 2. Re-sync
 bun run module:sync
 
-# 3. Run new migrations if any
-cd node_modules/@molos/module-tasks
-npx drizzle-kit migrate
+# 3. Apply new migrations if any
+bun run db:migrate
 ```
 
 ### Troubleshooting
 
-| Issue                 | Solution                                            |
-| --------------------- | --------------------------------------------------- |
-| Module not in sidebar | Check `config.ts` exists, run `bun run module:sync` |
-| 404 on routes         | Check symlink exists, run `bun run module:link`     |
-| Table not found       | Generate and run migrations                         |
-| Import errors         | Use `$lib` alias instead of relative paths          |
+| Issue                 | Solution                                                       |
+| --------------------- | -------------------------------------------------------------- |
+| Module not in sidebar | Check `config.ts` exists, run `bun run module:sync`            |
+| 404 on routes         | Check symlink exists, run `bun run module:link`                |
+| Table not found       | Create migration with `db:migration:create`, then `db:migrate` |
+| Import errors         | Use `$lib` alias instead of relative paths                     |
 
 ## SQL Queries
 

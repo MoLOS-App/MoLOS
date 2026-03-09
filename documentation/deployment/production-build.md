@@ -28,7 +28,8 @@ This approach provides:
 export interface ModuleConfigEntry {
 	id: string; // Module identifier (folder name)
 	git: string; // Git repository URL
-	tag: string; // Tag or branch to checkout
+	tag?: string; // Git tag to checkout (mutually exclusive with branch)
+	branch?: string; // Git branch to checkout (mutually exclusive with tag)
 	required?: boolean; // If true, build fails if module cannot be cloned
 }
 
@@ -37,10 +38,17 @@ export const modulesConfig: ModuleConfigEntry[] = [
 		id: 'MoLOS-Tasks',
 		git: 'https://github.com/molos-org/MoLOS-Tasks.git',
 		tag: 'v1.0.0'
+	},
+	{
+		id: 'MoLOS-MyDevModule',
+		git: 'https://github.com/user/MoLOS-MyDevModule.git',
+		branch: 'develop' // Use branch instead of tag for development
 	}
 	// ... more modules
 ];
 ```
+
+**Note:** Either `tag` or `branch` must be specified, but not both.
 
 ### Adding a Module
 
@@ -66,10 +74,14 @@ docker build -t molos:latest .
 ### Updating a Module
 
 1. Open `modules.config.ts`
-2. Change the `tag` value for the module:
+2. Change the `tag` or `branch` value for the module:
 
 ```typescript
+// Using a tag
 { id: 'MoLOS-Tasks', git: 'https://github.com/molos-org/MoLOS-Tasks.git', tag: 'v2.0.0' }
+
+// Or using a branch
+{ id: 'MoLOS-Tasks', git: 'https://github.com/molos-org/MoLOS-Tasks.git', branch: 'main' }
 ```
 
 3. Rebuild the image
@@ -80,7 +92,7 @@ For local development, create `modules.config.local.ts` to override `modules.con
 
 ```typescript
 // modules.config.local.ts
-export const modulesConfig = [{ id: 'MoLOS-Tasks', git: '../MoLOS-Tasks', tag: 'main' }];
+export const modulesConfig = [{ id: 'MoLOS-Tasks', git: '../MoLOS-Tasks', branch: 'main' }];
 ```
 
 This file is git-ignored and won't be committed or built in production images.
@@ -188,12 +200,14 @@ Clones all modules defined in `modules.config.ts` into the `modules/` directory.
 **Process:**
 
 1. Reads `modules.config.ts`
-2. For each module:
+2. Validates each module entry (tag or branch, not both)
+3. For each module:
    - Clones to `modules/{id}/` if it doesn't exist
-   - Fetches and checks out specified tag
-   - Runs `npm install` in module directory
-   - Runs `drizzle-kit generate` if module has drizzle config
-3. Validates required files exist (`package.json`, `src/config.ts`)
+   - Fetches and checks out specified tag or branch
+   - Runs `bun install` in module directory
+4. Validates required files exist (`package.json`, `src/config.ts`)
+
+**Note:** Migrations are NOT auto-generated during fetch. Modules must include their migrations in the `drizzle/` directory. Use `bun run db:migration:create` to create new migrations manually.
 
 **Options:**
 

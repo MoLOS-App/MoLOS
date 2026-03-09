@@ -198,45 +198,9 @@ cp molos.db "molos.db.backup-$(date +%Y-%m-%dT%H-%M-%S)"
 
 ## Database Initialization Issues
 
-### `db:init` fails with "db:generate" error
+### Migration creation vs application
 
-**Error:**
-
-```
-@molos/module-xxx:db:generate: No valid statements remain after normalization.
-ERROR: command finished with error: db:generate exited with code 1
-```
-
-**Cause:**
-The `db:init` script incorrectly tried to run `db:generate` as part of initialization. However, `db:generate` is a **development-only** operation that generates new migration files from schema changes. It depends on all modules having valid schema definitions, and will fail if any module has issues.
-
-**Solution:**
-Use a pre-existing database backup, or manually run migrations:
-
-```bash
-# Option 1: Restore from a previous backup (if one exists)
-ls -la data/molos.db.backup-* | tail -1 | xargs -I {} cp {} data/molos.db
-
-# Option 2: Run migrations directly without generation
-bunx drizzle-kit migrate --config=drizzle.config.ts
-bun run db:migrate
-```
-
-**Note:** This issue was fixed in the init script. `db:init` now only applies existing migrations and does not attempt to generate new ones.
-
----
-
-### `db:init` runs migration generation unnecessarily
-
-**Issue:**
-`db:init` is running `turbo run db:generate` which attempts to generate migrations for all modules, even when you just want to initialize the database from existing migration files.
-
-**Why This Is Wrong:**
-
-- Migration **generation** (`db:generate`) is a DEVELOPMENT task for creating new migrations when schema changes
-- Migration **application** (`db:migrate`) is for initializing/updating the database from existing migrations
-- These are separate operations with different purposes and failure modes
-- Generation can fail if ANY module has schema issues, blocking the entire init
+**Important:** Migrations are NOT auto-generated. Use `bun run db:migration:create` to create new migrations manually.
 
 **Correct Workflow:**
 
@@ -244,11 +208,10 @@ bun run db:migrate
 
 ```bash
 # 1. Modify schema in modules/{ModuleName}/src/server/database/schema.ts
-# 2. Generate NEW migration from schema changes
-cd modules/{ModuleName}
-bun run db:generate
+# 2. Create NEW migration manually
+bun run db:migration:create --name add_feature --module MoLOS-Tasks
 
-# 3. Review and test migration
+# 3. Edit the generated SQL file
 # 4. Apply migration
 bun run db:migrate
 ```
@@ -261,15 +224,14 @@ bun run db:init
 
 # OR apply pending migrations directly
 bun run db:migrate
-bun run db:migrate
 ```
 
-**Key Difference:**
+**Key Commands:**
 | Operation | Command | Purpose | When to Use |
-| ----------------- | ------------------------- | ------------------------------------ | -------------------------- |
-| **Generate** | `bun run db:generate` | Create new migration from schema | After editing schema files |
-| **Apply** | `bun run db:migrate` | Run existing migrations against database | Initialize or update DB |
-| **Initialize** | `bun run db:init` | First-time DB setup with verification | New setup or fresh install |
+| ---------------- | ---------------------------------- | ----------------------------- | ------------------------- |
+| **Create** | `bun run db:migration:create` | Create new migration manually | After editing schema |
+| **Apply** | `bun run db:migrate` | Run existing migrations | Initialize or update DB |
+| **Initialize** | `bun run db:init` | First-time DB setup | New setup or fresh install |
 
 ---
 

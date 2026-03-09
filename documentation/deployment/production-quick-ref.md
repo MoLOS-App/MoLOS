@@ -82,10 +82,25 @@ export const modulesConfig: ModuleConfigEntry[] = [
 	{
 		id: 'MoLOS-MyModule',
 		git: 'https://github.com/user/MoLOS-MyModule.git',
-		tag: 'v1.0.0',
+		tag: 'v1.0.0', // Use tag for production
 		required: false
 	}
 ];
+```
+
+**Note:** Either `tag` or `branch` must be specified, but not both.
+
+### Use Branch Instead of Tag
+
+For development or testing:
+
+```typescript
+{
+	id: 'MoLOS-MyModule',
+	git: 'https://github.com/user/MoLOS-MyModule.git',
+	branch: 'develop',        // Use branch for development
+	required: false
+}
 ```
 
 Rebuild: `docker build -t molos:latest .`
@@ -98,10 +113,14 @@ Rebuild: `docker build -t molos:latest .`
 
 ### Update Module Version
 
-Edit `modules.config.ts` and change the `tag`:
+Edit `modules.config.ts` and change the `tag` or `branch`:
 
 ```typescript
+// Using a tag (recommended for production)
 { id: 'MoLOS-Tasks', git: '...', tag: 'v2.0.0' }
+
+// Or using a branch (for development/testing)
+{ id: 'MoLOS-Tasks', git: '...', branch: 'main' }
 ```
 
 Rebuild: `docker build -t molos:latest .`

@@ -221,16 +221,16 @@ export default defineConfig({
 ### Module Migration Commands
 
 ```bash
-# From module directory
-cd modules/MoLOS-Tasks
+# From MoLOS root directory
 
-# Generate migration
-bun run db:generate
+# Create new migration
+bun run db:migration:create --name add_feature --module MoLOS-Tasks
 
-# Apply migrations (from root)
-cd ../..
+# Apply migrations
 bun run db:migrate
 ```
+
+**Note:** Migrations are NOT auto-generated. Use `db:migration:create` to create new migrations manually.
 
 ---
 

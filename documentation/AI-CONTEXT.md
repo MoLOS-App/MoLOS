@@ -261,9 +261,9 @@ import { TaskRepository } from '../../../server/repositories/task-repository.js'
 | `bun run module:sync`                         | Sync and initialize modules                      |
 | `bun run module:link`                         | Create route symlinks                            |
 | `bun run db:init`                             | Initialize database (first-time setup, dev only) |
+| `bun run db:migration:create --name <name>    | Create new migration                             |
 | `bun run db:migrate`                          | Run all pending migrations                       |
 | `bun run db:migrate`                          | Unified runner - used by prod and dev            |
-| `bun run db:generate`                         | Generate migrations from schema                  |
 | `bun run db:push`                             | Push schema changes (dev only)                   |
 | `bun run db:validate`                         | Validate schema matches migrations               |
 | `bun run db:audit-modules`                    | Audit all module migrations                      |
@@ -405,9 +405,11 @@ For comprehensive module development guide, see **[Module Development Guide](./m
 - [ ] `src/server/repositories/` extending `BaseRepository`
 - [ ] `src/routes/api/+server.ts` with CRUD endpoints
 - [ ] `src/routes/ui/` with SvelteKit pages
+- [ ] `drizzle/` directory with migrations (migrations are NOT auto-generated)
 - [ ] `drizzle.config.ts` pointing to root DB
-- [ ] Run `cd modules/{name} && npx drizzle-kit generate`
 - [ ] Run `bun run module:sync` from root
+
+**Important:** Migrations must be manually created using `bun run db:migration:create --name <name> --module {module}` and included in the module's `drizzle/` directory. Migrations are NOT auto-generated during module fetch or dev startup.
 
 **Reference Implementation:** `modules/MoLOS-Tasks/` is the reference module implementation.
 

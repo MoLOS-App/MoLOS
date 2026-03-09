@@ -45,13 +45,18 @@ bun run db:restore --file <filename>
 # LEGACY COMMANDS (for backward compatibility)
 bun run db:migrate
                          # Old unified migration runner
-bun run db:generate      # Generate migrations with drizzle-kit
 bun run db:push          # Push schema changes directly (dev only)
 
 # UTILITY COMMANDS
 bun run db:studio        # Open Drizzle Studio
 bun run db:reset         # Reset database (WARNING: deletes data)
 ```
+
+**Important:** Migrations are NOT auto-generated during module fetch or dev startup.
+
+- Modules must include their migrations in the `drizzle/` directory
+- Use `bun run db:migration:create` to create new migrations
+- Never run `drizzle-kit generate` or `bun run db:generate` directly (removed for safety)
 
 ---
 

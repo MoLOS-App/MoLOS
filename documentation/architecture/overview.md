@@ -322,14 +322,14 @@ bun init
 # Configure module
 # Edit src/config.ts
 
-# Generate migrations
-bun run db:generate
+# Create migrations (from MoLOS root)
+cd ../..
+bun run db:migration:create --name initial --module MoLOS-MyModule
 
 # Run migrations
 bun run db:migrate
 
 # Sync to app
-cd ../..
 bun run module:sync
 ```
 

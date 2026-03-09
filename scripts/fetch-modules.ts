@@ -12,16 +12,25 @@
  * Process:
  *   1. Read modules.config.ts
  *   2. Clone each module to modules/{id}/ if it doesn't exist
- *   3. Fetch and checkout specified tag
+ *   3. Fetch and checkout specified tag or branch
  *   4. Run bun install in module directory
- *   5. Run drizzle-kit generate if module has drizzle config
- *   6. Validate required files exist
+ *   5. Validate required files exist
+ *
+ * Note: Modules must include their migrations in the drizzle/ directory.
+ * Migrations are NOT auto-generated during fetch. Use `bun run db:migration:create`
+ * to create new migrations manually.
  */
 
 import { execSync } from 'child_process';
 import { existsSync, mkdirSync, readFileSync } from 'fs';
 import path from 'path';
-import { modulesConfig, type ModuleConfigEntry } from '../modules.config';
+import {
+	modulesConfig,
+	type ModuleConfigEntry,
+	validateModuleConfigEntry,
+	getModuleRef,
+	getModuleRefType
+} from '../modules.config';
 
 const ROOT_DIR = path.resolve(import.meta.dirname, '..');
 const MODULES_DIR = path.resolve(ROOT_DIR, 'modules');
@@ -72,10 +81,24 @@ function commandExists(command: string): boolean {
  * Clone or update a module from git
  */
 async function fetchModule(moduleEntry: ModuleConfigEntry): Promise<FetchResult> {
-	const { id, git, tag, required } = moduleEntry;
+	const { id, git, required } = moduleEntry;
 	const modulePath = path.join(MODULES_DIR, id);
+	const ref = getModuleRef(moduleEntry);
+	const refType = getModuleRefType(moduleEntry);
 
-	log(`Processing module: ${id} from ${git}#${tag}`);
+	// Validate config entry
+	const validationError = validateModuleConfigEntry(moduleEntry);
+	if (validationError) {
+		return {
+			moduleId: id,
+			success: false,
+			skipped: false,
+			error: validationError,
+			message: `Configuration error: ${validationError}`
+		};
+	}
+
+	log(`Processing module: ${id} from ${git} (${refType}: ${ref})`);
 
 	const result: FetchResult = {
 		moduleId: id,
@@ -92,7 +115,7 @@ async function fetchModule(moduleEntry: ModuleConfigEntry): Promise<FetchResult>
 		}
 
 		log(`Cloning ${id}...`, 'info');
-		runCommand(`git clone --depth 1 --branch ${tag} ${git} ${id}`, MODULES_DIR);
+		runCommand(`git clone --depth 1 --branch ${ref} ${git} ${id}`, MODULES_DIR);
 		result.message = 'Cloned new module';
 
 		const packageJsonPath = path.join(modulePath, 'package.json');
@@ -107,15 +130,9 @@ async function fetchModule(moduleEntry: ModuleConfigEntry): Promise<FetchResult>
 			log(`Warning: bun install failed for ${id}: ${error}`, 'warn');
 		}
 
-		const drizzleConfigPath = path.join(modulePath, 'drizzle.config.ts');
-		if (existsSync(drizzleConfigPath)) {
-			log(`Generating migrations for ${id}...`, 'info');
-			try {
-				runCommand('npx drizzle-kit generate', modulePath, true);
-			} catch (error) {
-				log(`Warning: drizzle-kit generate failed for ${id}: ${error}`, 'warn');
-			}
-		}
+		// Note: Migrations are NOT auto-generated. Modules must include their
+		// migrations in the drizzle/ directory. Use `bun run db:migration:create`
+		// to create new migrations manually.
 
 		const configPath = path.join(modulePath, 'src/config.ts');
 		if (!existsSync(configPath)) {
@@ -163,6 +180,21 @@ async function main(): Promise<void> {
 
 	try {
 		validateEnvironment();
+
+		// Validate all module config entries first
+		const configErrors: string[] = [];
+		for (const entry of modulesConfig) {
+			const error = validateModuleConfigEntry(entry);
+			if (error) {
+				configErrors.push(error);
+			}
+		}
+
+		if (configErrors.length > 0) {
+			log('Configuration errors found:', 'error');
+			configErrors.forEach((err) => log(`  - ${err}`, 'error'));
+			process.exit(1);
+		}
 
 		if (!existsSync(MODULES_DIR)) {
 			mkdirSync(MODULES_DIR, { recursive: true });

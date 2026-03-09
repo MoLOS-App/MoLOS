@@ -218,9 +218,9 @@ WHERE type='table' AND name LIKE 'MoLOS-%';
 
 ### Database Table Not Found
 
-1. Navigate to module: `cd node_modules/@molos/module-name`
-2. Generate migration: `npx drizzle-kit generate`
-3. Apply migration: `npx drizzle-kit migrate`
+1. Create migration: `bun run db:migration:create --name add_table --module MoLOS-Name`
+2. Edit the generated SQL file
+3. Apply migration: `bun run db:migrate`
 
 ### Import Errors
 
