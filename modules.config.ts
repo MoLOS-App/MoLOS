@@ -54,16 +54,16 @@ export function getModuleRefType(entry: ModuleConfigEntry): 'tag' | 'branch' {
 
 export const modulesConfig: ModuleConfigEntry[] = [
 	{ id: 'MoLOS-Tasks', git: 'https://github.com/MoLOS-App/MoLOS-Tasks.git', branch: 'develop' },
-	{ id: 'MoLOS-Goals', git: 'https://github.com/MoLOS-App/MoLOS-Goals.git', branch: 'develop' },
-	{ id: 'MoLOS-Finance', git: 'https://github.com/MoLOS-App/MoLOS-Finance.git', branch: 'develop' },
-	{ id: 'MoLOS-Health', git: 'https://github.com/MoLOS-App/MoLOS-Health.git', branch: 'develop' },
-	{ id: 'MoLOS-Meals', git: 'https://github.com/MoLOS-App/MoLOS-Meals.git', branch: 'develop' },
-	{ id: 'MoLOS-Google', git: 'https://github.com/MoLOS-App/MoLOS-Google.git', branch: 'develop' },
-	{
-		id: 'MoLOS-AI-Knowledge',
-		git: 'https://github.com/MoLOS-App/MoLOS-AI-Knowledge.git',
-		branch: 'develop'
-	},
+	// { id: 'MoLOS-Goals', git: 'https://github.com/MoLOS-App/MoLOS-Goals.git', branch: 'develop' },
+	// { id: 'MoLOS-Finance', git: 'https://github.com/MoLOS-App/MoLOS-Finance.git', branch: 'develop' },
+	// { id: 'MoLOS-Health', git: 'https://github.com/MoLOS-App/MoLOS-Health.git', branch: 'develop' },
+	// { id: 'MoLOS-Meals', git: 'https://github.com/MoLOS-App/MoLOS-Meals.git', branch: 'develop' },
+	// { id: 'MoLOS-Google', git: 'https://github.com/MoLOS-App/MoLOS-Google.git', branch: 'develop' },
+	// {
+	// 	id: 'MoLOS-AI-Knowledge',
+	// 	git: 'https://github.com/MoLOS-App/MoLOS-AI-Knowledge.git',
+	// 	branch: 'develop'
+	// },
 	{
 		id: 'MoLOS-LLM-Council',
 		git: 'https://github.com/MoLOS-App/MoLOS-LLM-Council.git',

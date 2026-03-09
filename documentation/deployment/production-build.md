@@ -234,9 +234,8 @@ Prepares modules for production build.
 **Process:**
 
 1. Runs `module:sync-deps` to update workspace dependencies
-2. Runs `module:cleanup` to remove broken symlinks
-3. Runs `module:sync` to link module routes
-4. Runs `svelte-kit sync` to generate types
+2. Runs `module:link` to link module routes (includes symlink cleanup)
+3. Runs `svelte-kit sync` to generate types
 
 ### `bun run build:prod`
 
