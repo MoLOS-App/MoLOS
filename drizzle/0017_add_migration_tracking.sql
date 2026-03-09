@@ -1,9 +1,5 @@
--- Migration: 0017_add_migration_tracking
--- Module: core
--- Created: 2026-03-06
--- Purpose: Add unified migration tracking table
-
 -- Create unified migration tracking table
+-- Migration: 0017_add_migration_tracking | Module: core | Created: 2026-03-06
 CREATE TABLE IF NOT EXISTS molos_migrations (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   migration_name TEXT NOT NULL,
@@ -34,16 +30,6 @@ CREATE INDEX IF NOT EXISTS idx_migrations_module ON molos_migrations(module);
 --> statement-breakpoint
 
 -- Migrate existing data from __drizzle_migrations if it exists
--- Note: We keep __drizzle_migrations for backward compatibility during transition
--- It will be deprecated in a future version
-INSERT OR IGNORE INTO molos_migrations (migration_name, module, version, checksum, applied_at, execution_time_ms, success, rollback_available)
-SELECT 
-  'migrated_from_drizzle' as migration_name,
-  'core' as module,
-  0 as version,
-  'unknown' as checksum,
-  created_at as applied_at,
-  0 as execution_time_ms,
-  1 as success,
-  0 as rollback_available
-FROM __drizzle_migrations;
+-- Note: The __drizzle_migrations table migration is handled separately to avoid
+-- errors on fresh installs where the table doesn't exist.
+-- This migration creates the new tracking table; legacy data migration is optional.

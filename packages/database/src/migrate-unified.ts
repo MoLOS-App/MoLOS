@@ -162,9 +162,21 @@ function applyMigrationsDirectly(
 					let appliedCount = 0;
 					for (const statement of statements) {
 						const trimmed = statement.trim();
-						if (trimmed && !trimmed.startsWith('--')) {
+						// Strip leading single-line comments (lines starting with --)
+						// SQLite handles comments fine, but we need to check if there's actual SQL after
+						const lines = trimmed.split('\n');
+						const sqlLines: string[] = [];
+						for (const line of lines) {
+							const lineTrimmed = line.trim();
+							// Keep the line if it's not a comment or if it has non-comment content
+							if (lineTrimmed && !lineTrimmed.startsWith('--')) {
+								sqlLines.push(line);
+							}
+						}
+						const sqlToExecute = sqlLines.join('\n').trim();
+						if (sqlToExecute) {
 							try {
-								db.exec(trimmed);
+								db.exec(sqlToExecute);
 								appliedCount++;
 							} catch (stmtError) {
 								const stmtErrMsg =

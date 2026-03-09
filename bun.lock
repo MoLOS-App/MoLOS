@@ -26,7 +26,6 @@
         "@molos/module-llm-council": "workspace:*",
         "@molos/module-markdown": "workspace:*",
         "@molos/module-meals": "workspace:*",
-        "@molos/module-sample": "workspace:*",
         "@molos/module-tasks": "workspace:*",
         "@noble/hashes": "^2.0.1",
         "@sinclair/typebox": "^0.34.48",
@@ -187,18 +186,6 @@
       "name": "@molos/module-meals",
       "version": "1.0.0",
       "peerDependencies": {
-        "svelte": "^5.45.0",
-      },
-    },
-    "modules/MoLOS-Sample-Module": {
-      "name": "@molos/module-sample",
-      "version": "1.0.0",
-      "devDependencies": {
-        "drizzle-kit": "^0.31.8",
-        "prettier": "^3.7.4",
-      },
-      "peerDependencies": {
-        "lucide-svelte": "^0.561.0",
         "svelte": "^5.45.0",
       },
     },
@@ -543,8 +530,6 @@
     "@molos/module-markdown": ["@molos/module-markdown@workspace:modules/MoLOS-Markdown"],
 
     "@molos/module-meals": ["@molos/module-meals@workspace:modules/MoLOS-Meals"],
-
-    "@molos/module-sample": ["@molos/module-sample@workspace:modules/MoLOS-Sample-Module"],
 
     "@molos/module-tasks": ["@molos/module-tasks@workspace:modules/MoLOS-Tasks"],
 
