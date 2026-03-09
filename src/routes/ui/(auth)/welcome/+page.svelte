@@ -4,8 +4,10 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Alert, AlertDescription } from '$lib/components/ui/alert';
+	import { ModuleGrid } from '$lib/components/ui/module-grid';
 	import { goto } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
+	import { MODULE_REGISTRY } from '$lib/config';
 	import {
 		ShieldCheck,
 		ArrowRight,
@@ -25,11 +27,33 @@
 	let error = $state('');
 	let step = $state(1);
 
+	// Module selection state
+	let selectedModules = $state(new Set(['dashboard', 'ai', 'MoLOS-Tasks', 'MoLOS-Markdown']));
+	let mandatoryModules = $state(new Set(['dashboard', 'ai']));
+
+	function nextStep() {
+		if (step === 1 && name) step = 2;
+		else if (step === 2) step = 3;
+	}
+
+	function handleModuleToggle(moduleId: string) {
+		// Prevent toggling mandatory modules
+		if (mandatoryModules.has(moduleId)) return;
+
+		if (selectedModules.has(moduleId)) {
+			selectedModules.delete(moduleId);
+		} else {
+			selectedModules.add(moduleId);
+		}
+		selectedModules = new Set(selectedModules); // Trigger reactivity
+	}
+
 	async function handleSetup(event: Event) {
 		event.preventDefault();
 		loading = true;
 		error = '';
 		try {
+			// Step 1: Create the account
 			const { data, error: authError } = await authClient.signUp.email({
 				email,
 				password,
@@ -40,21 +64,40 @@
 			if (authError) {
 				error = authError.message || 'An error occurred';
 				loading = false;
-			} else {
-				step = 3;
-				toast.success('Admin account created successfully!');
-				setTimeout(() => {
-					goto('/ui/dashboard');
-				}, 2000);
+				return;
 			}
+
+			// Step 2: Activate modules via API
+			const response = await fetch('/api/settings/external-modules/activate-bulk', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					modules: Array.from(selectedModules)
+				})
+			});
+
+			const result = await response.json();
+
+			if (!response.ok || !result.success) {
+				// Account created but module activation failed
+				// Still proceed but show a warning
+				console.error('Module activation failed:', result);
+				toast.warning('Account created, but some modules could not be activated.');
+			} else {
+				toast.success('Admin account created successfully!');
+			}
+
+			// Step 3: Show success and redirect
+			step = 4;
+			setTimeout(() => {
+				goto('/ui/dashboard');
+			}, 2000);
 		} catch (err) {
 			error = 'An error occurred during setup';
 			loading = false;
 		}
-	}
-
-	function nextStep() {
-		if (step === 1 && name) step = 2;
 	}
 </script>
 
@@ -75,7 +118,7 @@
 			<div
 				class="inline-flex h-16 w-16 items-center justify-center overflow-hidden rounded-3xl border border-border bg-card text-card-foreground shadow-xl"
 			>
-				<img src="/favicon.svg" alt="MoLOS Logo" class="h-10 w-10" />
+				<img src="/favicon.ico" alt="MoLOS Logo" class="h-10 w-10" />
 			</div>
 			<div class="space-y-4">
 				<h1 class="text-6xl leading-[1.1] font-bold tracking-tight">
@@ -171,6 +214,42 @@
 							<ArrowRight class="h-3 w-3 rotate-180" />
 							Back
 						</button>
+						<h2 class="text-3xl font-bold tracking-tight">Customize your workspace.</h2>
+						<p class="text-muted-foreground mt-2 font-medium">
+							Select the modules you want to start with.
+						</p>
+
+						<p class="text-muted-foreground mt-2 text-sm font-medium">
+							Hover the modules for more info
+						</p>
+
+						<!-- Module Selection Grid -->
+						<div class="mt-8">
+							<ModuleGrid
+								modules={Object.values(MODULE_REGISTRY)}
+								selectedIds={selectedModules}
+								disabledIds={mandatoryModules}
+								onToggle={handleModuleToggle}
+							/>
+						</div>
+
+						<Button
+							onclick={nextStep}
+							class="mt-8 h-14 w-full rounded-2xl text-lg font-bold shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+						>
+							Continue
+							<ChevronRight class="ml-2 h-5 w-5" />
+						</Button>
+					</div>
+				{:else if step === 3}
+					<div in:fade={{ duration: 400 }}>
+						<button
+							onclick={() => (step = 2)}
+							class="mb-4 inline-flex items-center gap-1 text-sm font-bold text-primary hover:underline"
+						>
+							<ArrowRight class="h-3 w-3 rotate-180" />
+							Back
+						</button>
 						<h2 class="text-3xl font-bold tracking-tight">Create your account.</h2>
 						<p class="text-muted-foreground mt-2 font-medium">
 							Hi {name}, set up your admin credentials.
@@ -247,7 +326,7 @@
 							</Button>
 						</form>
 					</div>
-				{:else if step === 3}
+				{:else if step === 4}
 					<div
 						class="flex flex-col items-center justify-center py-12 text-center"
 						in:scale={{ duration: 600, easing: cubicOut }}
