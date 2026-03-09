@@ -13,12 +13,13 @@
  *   1. Read modules.config.ts
  *   2. Clone each module to modules/{id}/ if it doesn't exist
  *   3. Fetch and checkout specified tag or branch
- *   4. Run bun install in module directory
- *   5. Validate required files exist
+ *   4. Validate required files exist
  *
  * Note: Modules must include their migrations in the drizzle/ directory.
  * Migrations are NOT auto-generated during fetch. Use `bun run db:migration:create`
  * to create new migrations manually.
+ *
+ * Dependencies are resolved at the monorepo root level via workspace:* protocol.
  */
 
 import { execSync } from 'child_process';
@@ -108,9 +109,21 @@ async function fetchModule(moduleEntry: ModuleConfigEntry): Promise<FetchResult>
 	};
 
 	try {
-		// Always remove existing module folder to ensure clean clone
+		// For branch-based modules, skip if already exists (preserve local changes)
+		// For tag-based modules, always re-clone (ensure exact version)
 		if (existsSync(modulePath)) {
-			log(`Removing existing ${id} for clean clone...`, 'info');
+			if (refType === 'branch') {
+				log(
+					`Module ${id} already exists (branch: ${ref}), skipping clone to preserve local changes`,
+					'info'
+				);
+				result.success = true;
+				result.skipped = true;
+				result.message = `Skipped (already exists, branch: ${ref})`;
+				return result;
+			}
+			// Tag-based: remove for clean clone
+			log(`Removing existing ${id} for clean clone (tag: ${ref})...`, 'info');
 			runCommand(`rm -rf ${modulePath}`, ROOT_DIR);
 		}
 
@@ -123,12 +136,9 @@ async function fetchModule(moduleEntry: ModuleConfigEntry): Promise<FetchResult>
 			throw new Error('package.json not found');
 		}
 
-		log(`Installing dependencies for ${id}...`, 'info');
-		try {
-			runCommand('bun install', modulePath, true);
-		} catch (error) {
-			log(`Warning: bun install failed for ${id}: ${error}`, 'warn');
-		}
+		// Note: We don't run `bun install` here because modules may have
+		// workspace:* dependencies that can only be resolved from the monorepo root.
+		// The root-level `bun install` (after module:sync-deps) handles all dependencies.
 
 		// Note: Migrations are NOT auto-generated. Modules must include their
 		// migrations in the drizzle/ directory. Use `bun run db:migration:create`
@@ -168,7 +178,7 @@ function validateEnvironment(): void {
 	}
 
 	if (!commandExists('bun')) {
-		throw new Error('bun is not installed. Please install bun to install module dependencies.');
+		throw new Error('bun is not installed.');
 	}
 }
 

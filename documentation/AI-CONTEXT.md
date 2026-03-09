@@ -308,6 +308,31 @@ import { TaskRepository } from '../../../server/repositories/task-repository.js'
 
 ---
 
+## modules.config.ts
+
+Module configuration for production builds:
+
+```typescript
+export interface ModuleConfigEntry {
+	id: string; // Module identifier (folder name)
+	git: string; // Git repository URL
+	tag?: string; // Git tag (mutually exclusive with branch)
+	branch?: string; // Git branch (mutually exclusive with tag)
+	required?: boolean; // Build fails if required module can't be fetched
+}
+```
+
+**Tag vs Branch Behavior:**
+
+| Ref Type            | If Exists | Behavior                                |
+| ------------------- | --------- | --------------------------------------- |
+| `tag: 'v1.0.0'`     | Re-clones | Ensures exact version, no local changes |
+| `branch: 'develop'` | Skips     | Preserves local changes for development |
+
+**Use `tag` for production, `branch` for development.**
+
+---
+
 ## Symlink Structure
 
 Modules are linked to these locations:

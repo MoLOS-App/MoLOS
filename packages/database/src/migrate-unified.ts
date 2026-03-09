@@ -62,7 +62,7 @@ function ensureDatabaseDir(dbPath: string): boolean {
 }
 
 function getCoreMigrationsPath(): string {
-	return join(__dirname, '..', 'drizzle');
+	return join(__dirname, '..', '..', '..', 'drizzle');
 }
 
 function getModuleMigrationsPaths(): Map<string, string> {
@@ -159,10 +159,26 @@ function applyMigrationsDirectly(
 				// Check if this migration already tracked (has statement-breakpoint marker)
 				if (sql.includes('--> statement-breakpoint')) {
 					const statements = sql.split('--> statement-breakpoint');
+					let appliedCount = 0;
 					for (const statement of statements) {
 						const trimmed = statement.trim();
 						if (trimmed && !trimmed.startsWith('--')) {
-							db.exec(trimmed);
+							try {
+								db.exec(trimmed);
+								appliedCount++;
+							} catch (stmtError) {
+								const stmtErrMsg =
+									stmtError instanceof Error ? stmtError.message : String(stmtError);
+								// Handle common non-errors (table/column already exists)
+								if (
+									stmtErrMsg.includes('already exists') ||
+									stmtErrMsg.includes('duplicate column name')
+								) {
+									appliedCount++;
+								} else {
+									throw stmtError; // Re-throw to be caught by outer handler
+								}
+							}
 						}
 					}
 					result.applied++;

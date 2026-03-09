@@ -69,6 +69,17 @@ bun run db:reset         # Reset database (WARNING: deletes data)
 
 ---
 
+## modules.config.ts: Tag vs Branch
+
+| Ref Type            | If Exists | Behavior                                |
+| ------------------- | --------- | --------------------------------------- |
+| `tag: 'v1.0.0'`     | Re-clones | Ensures exact version, no local changes |
+| `branch: 'develop'` | Skips     | Preserves local changes for development |
+
+**Use `tag` for production, `branch` for development.**
+
+---
+
 ## Database Table Naming
 
 **External modules:** `MoLOS-{ModuleName}_{table_name}`

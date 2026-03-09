@@ -132,6 +132,27 @@ Rebuild: `docker build -t molos:latest .`
 bun run fetch:modules --single MoLOS-Tasks
 ```
 
+### Fetch Behavior: Tag vs Branch
+
+| Ref Type            | If Exists | Behavior                                |
+| ------------------- | --------- | --------------------------------------- |
+| `tag: 'v1.0.0'`     | Re-clones | Ensures exact version, no local changes |
+| `branch: 'develop'` | Skips     | Preserves local changes for development |
+
+**Recommendations:**
+
+- Use `tag` for production builds (deterministic, reproducible)
+- Use `branch` for development (allows local modifications)
+
+**Note:** To force re-fetch a branch-based module, delete it first:
+
+```bash
+rm -rf modules/MoLOS-MyModule
+bun run fetch:modules --single MoLOS-MyModule
+```
+
+**Note:** Branch-based modules are skipped if they already exist (preserves local changes). Tag-based modules are always re-cloned.
+
 ## Environment Variables
 
 ### Required

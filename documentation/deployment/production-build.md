@@ -202,10 +202,21 @@ Clones all modules defined in `modules.config.ts` into the `modules/` directory.
 1. Reads `modules.config.ts`
 2. Validates each module entry (tag or branch, not both)
 3. For each module:
-   - Clones to `modules/{id}/` if it doesn't exist
-   - Fetches and checks out specified tag or branch
-   - Runs `bun install` in module directory
+   - **Tag-based**: Always removes and re-clones to ensure exact version
+   - **Branch-based**: Skips if already exists to preserve local changes
 4. Validates required files exist (`package.json`, `src/config.ts`)
+
+**Tag vs Branch Behavior:**
+
+| Ref Type            | If Exists | Behavior                                |
+| ------------------- | --------- | --------------------------------------- |
+| `tag: 'v1.0.0'`     | Re-clones | Ensures exact version, no local changes |
+| `branch: 'develop'` | Skips     | Preserves local changes for development |
+
+**Recommendations:**
+
+- Use `tag` for production builds (deterministic, reproducible)
+- Use `branch` for development (allows local modifications)
 
 **Note:** Migrations are NOT auto-generated during fetch. Modules must include their migrations in the `drizzle/` directory. Use `bun run db:migration:create` to create new migrations manually.
 
