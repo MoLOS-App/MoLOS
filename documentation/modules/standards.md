@@ -199,7 +199,25 @@ export default defineConfig({
 
 ## Import Standards
 
-### Within a Module
+### Within a Module (Use `$module` alias)
+
+**CRITICAL**: When importing from within a module's own code, ALWAYS use the `$module` alias. This ensures imports work in both development and production builds.
+
+```typescript
+// ✅ Correct: Use $module alias for module-internal imports
+import { TaskRepository } from '$module/server/repositories/task-repository.js';
+import { TaskStatus } from '$module/models/index.js';
+import { myValidator } from '$module/server/utils/validator.js';
+import { db } from '$module/server/database/schema.js';
+
+// ❌ Wrong: Fragile relative paths (break in production builds)
+import { TaskRepository } from '../../../../../server/repositories/task-repository.js';
+import { TaskStatus } from '../../../../models/index.js';
+```
+
+The `$module` alias is resolved by a custom Vite plugin in `vite.config.ts` that automatically detects which module is importing and resolves to that module's `src/` directory.
+
+### From Main App (Use `$lib` alias)
 
 Use `$lib` alias for imports from the main app:
 
@@ -211,6 +229,18 @@ import { Button } from '$lib/components/ui/button';
 // ❌ Wrong: Relative paths don't work in node_modules
 import { db } from '../../../../../src/lib/server/db';
 ```
+
+### Import Summary Table
+
+| What You're Importing    | Use This Pattern                |
+| ------------------------ | ------------------------------- |
+| Module's own server code | `$module/server/...`            |
+| Module's own models      | `$module/models/...`            |
+| Module's own lib         | `$module/lib/...`               |
+| Main app database        | `$lib/server/db`                |
+| Main app auth            | `$lib/server/auth`              |
+| Main app UI components   | `$lib/components/ui/...`        |
+| Another module's code    | `$lib/modules/{ModuleName}/...` |
 
 ### Cross-Module Imports
 
@@ -371,9 +401,17 @@ bun run module:link    # Link routes only
 
 ### Import errors in node_modules
 
-1. Replace relative imports with `$lib` alias
-2. Ensure `.js` extension on TypeScript imports
-3. Check package.json exports are correct
+1. Replace relative imports with `$lib` alias for main app
+2. Replace relative imports with `$module` alias for module-internal code
+3. Ensure `.js` extension on TypeScript imports
+4. Check package.json exports are correct
+
+### Production build fails with "Could not resolve" error
+
+1. Check that module-internal imports use `$module` alias
+2. Replace fragile relative paths like `../../../../../server/...` with `$module/server/...`
+3. The `$module` alias is resolved by a custom Vite plugin in `vite.config.ts`
+4. Dev mode (Vite) may be more lenient than production builds (Rollup)
 
 ### tsconfig.json/vite.config.ts errors
 

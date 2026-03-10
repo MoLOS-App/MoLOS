@@ -209,10 +209,29 @@ export const POST: RequestHandler = async ({ request }) => {
 
 ## Import Rules (CRITICAL)
 
-### From Main App
+### Module-Internal Imports (Use `$module` alias)
+
+**CRITICAL**: When importing from within a module's own code, ALWAYS use the `$module` alias. This ensures imports work in both development and production builds.
 
 ```typescript
-// ✅ ALWAYS use $lib alias
+// ✅ CORRECT: Use $module alias for module-internal imports
+import { MyRepository } from '$module/server/repositories/my-repository.js';
+import { MyStatus } from '$module/models/index.js';
+import { myModuleItems } from '$module/server/database/schema.js';
+import { myValidator } from '$module/server/utils/validator.js';
+
+// ❌ WRONG: Fragile relative paths (break in production builds)
+import { MyRepository } from '../server/repositories/my-repository.js';
+import { MyStatus } from '../../models/index.js';
+import { myModuleItems } from '../../../../../server/database/schema.js';
+```
+
+The `$module` alias is resolved by a custom Vite plugin (`vite.config.ts`) that automatically detects which module is importing and resolves to that module's `src/` directory.
+
+### From Main App (Use `$lib` alias)
+
+```typescript
+// ✅ ALWAYS use $lib alias for main app imports
 import { db } from '$lib/server/db';
 import { Button } from '$lib/components/ui/button';
 
@@ -220,14 +239,16 @@ import { Button } from '$lib/components/ui/button';
 import { db } from '../../../../../src/lib/server/db';
 ```
 
-### Within Module
+### Import Summary Table
 
-```typescript
-// Use relative paths with .js extension
-import { MyRepository } from '../server/repositories/my-repository.js';
-import { MyStatus } from '../../models/index.js';
-import { myModuleItems } from '../server/db/schema.js';
-```
+| What You're Importing    | Use This Pattern         |
+| ------------------------ | ------------------------ |
+| Module's own server code | `$module/server/...`     |
+| Module's own models      | `$module/models/...`     |
+| Module's own lib         | `$module/lib/...`        |
+| Main app database        | `$lib/server/db`         |
+| Main app auth            | `$lib/server/auth`       |
+| Main app UI components   | `$lib/components/ui/...` |
 
 ## Create Migrations
 
@@ -284,7 +305,9 @@ git push -u origin main
 - [ ] Database tables prefixed with module ID
 - [ ] Routes under `/ui/{ModuleID}/`
 - [ ] API routes under `/api/{ModuleID}/`
-- [ ] All imports use `$lib` alias (not relative paths to main app)
+- [ ] **Module-internal imports use `$module` alias** (e.g., `$module/server/...`)
+- [ ] **Main app imports use `$lib` alias** (e.g., `$lib/server/db`)
+- [ ] **NO fragile relative paths** (e.g., `../../../../../server/...`)
 - [ ] TypeScript imports use `.js` extension
 - [ ] Migrations created with `bun run db:migration:create` (not auto-generated)
 - [ ] Migrations included in `drizzle/` directory

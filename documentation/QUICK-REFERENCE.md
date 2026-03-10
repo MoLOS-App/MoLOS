@@ -101,6 +101,19 @@ sqliteTable("MoLOS-Tasks_MoLOS-Tasks_tasks")     // Duplicated
 
 ## Import Patterns
 
+### Module-Internal (Use `$module` alias)
+
+**CRITICAL**: Use `$module` for imports within a module's own code. This works in both dev and production.
+
+```typescript
+// ✅ CORRECT: Use $module alias
+import { TaskRepository } from '$module/server/repositories/task-repository.js';
+import { TaskStatus } from '$module/models/index.js';
+
+// ❌ WRONG: Fragile relative paths (break in production)
+import { TaskRepository } from '../../../../../server/repositories/task-repository.js';
+```
+
 ### From Main App
 
 ```typescript
@@ -119,12 +132,13 @@ import { Goal } from '$lib/models/external_modules/MoLOS-Goals';
 import { Repo } from '$lib/repositories/external_modules/MoLOS-Tasks';
 ```
 
-### In Routes (Always .js)
+### Import Summary
 
-```typescript
-// TypeScript imports need .js extension
-import { repo } from '../../../server/repositories/repo.js';
-```
+| What You're Importing   | Use This Pattern                             |
+| ----------------------- | -------------------------------------------- |
+| Module's own code       | `$module/server/...` or `$module/models/...` |
+| Main app (db, auth, UI) | `$lib/server/...` or `$lib/components/...`   |
+| Another module          | `$lib/modules/{ModuleName}/...`              |
 
 ---
 
@@ -203,7 +217,8 @@ DATABASE_URL=./molos.db
 | Table not found                                           | Run `bun run db:migrate:improved`                                                |
 | Migration failed                                          | Run `bun run db:repair`, then `bun run db:restore --latest`                      |
 | Checksum mismatch                                         | Revert changes OR create new migration (never edit applied migrations)           |
-| Import errors                                             | Use `$lib` alias, check symlinks                                                 |
+| Import errors                                             | Use `$module` for module-internal, `$lib` for main app, check symlinks           |
+| Production build fails                                    | Replace fragile relative paths with `$module` alias                              |
 | tsconfig errors                                           | Remove standalone configs from module                                            |
 | Duplicate column name error                               | Normal if db created from snapshot - see ADR-002                                 |
 | "Cannot read properties of undefined (reading 'headers')" | API needs `request` in params: use `({ locals, params, request })` - see ADR-003 |
