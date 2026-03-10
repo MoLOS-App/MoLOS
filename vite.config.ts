@@ -3,9 +3,79 @@ import { defineConfig } from 'vite';
 import { playwright } from '@vitest/browser-playwright';
 import { sveltekit } from '@sveltejs/kit/vite';
 import path from 'path';
+import fs from 'fs';
+import type { Plugin } from 'vite';
+
+/**
+ * Custom Vite plugin that provides a `$module` alias for module-internal imports.
+ *
+ * Usage in modules:
+ * - `$module/server/repositories/task-repository` → resolves to `{module}/src/server/repositories/task-repository`
+ * - `$module/lib/models/index` → resolves to `{module}/src/lib/models/index`
+ * - `$module/server/database/schema` → resolves to `{module}/src/server/database/schema`
+ *
+ * The plugin automatically detects which module is importing and resolves accordingly.
+ * Handles .js extensions in imports by stripping them (actual files may be .ts).
+ */
+function moduleAliasPlugin(): Plugin {
+	return {
+		name: 'molos-module-alias',
+		enforce: 'pre',
+		resolveId(source: string, importer: string | undefined) {
+			// Only handle $module imports
+			if (!source.startsWith('$module/')) {
+				return null;
+			}
+
+			// Must have an importer to determine module context
+			if (!importer) {
+				return null;
+			}
+
+			// Find which module the importer belongs to
+			// Handles both 'modules/MoLOS-XXX' and 'external_modules/MoLOS-XXX'
+			const moduleMatch = importer.match(/(?:modules|external_modules)\/(MoLOS-[^/\\]+)/);
+
+			if (!moduleMatch) {
+				// Not inside a module, skip
+				return null;
+			}
+
+			const moduleName = moduleMatch[1];
+			let rest = source.slice('$module/'.length); // Remove '$module/' prefix
+
+			// Strip .js extension if present (TypeScript files are imported with .js in ESM)
+			if (rest.endsWith('.js')) {
+				rest = rest.slice(0, -3);
+			}
+
+			// Resolve to the module's src directory
+			const basePath = path.resolve(__dirname, 'modules', moduleName, 'src', rest);
+
+			// Check for file with various extensions
+			const extensions = ['.ts', '.js', '.svelte', '/index.ts', '/index.js'];
+
+			// First check if the path exists exactly as-is (for directories with index)
+			if (fs.existsSync(basePath) && fs.statSync(basePath).isFile()) {
+				return basePath;
+			}
+
+			// Try adding extensions
+			for (const ext of extensions) {
+				const fullPath = basePath + ext;
+				if (fs.existsSync(fullPath)) {
+					return fullPath;
+				}
+			}
+
+			// If nothing found, return the base path and let Vite handle the error
+			return basePath;
+		}
+	};
+}
 
 export default defineConfig({
-	plugins: [tailwindcss(), sveltekit()],
+	plugins: [moduleAliasPlugin(), tailwindcss(), sveltekit()],
 
 	resolve: {
 		preserveSymlinks: false,
