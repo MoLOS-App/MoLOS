@@ -184,7 +184,9 @@ function applyMigrationsDirectly(
 								// Handle common non-errors (table/column already exists)
 								if (
 									stmtErrMsg.includes('already exists') ||
-									stmtErrMsg.includes('duplicate column name')
+									stmtErrMsg.includes('duplicate column name') ||
+									// Handle "no such column" on RENAME COLUMN - indicates column was already renamed
+									(stmtErrMsg.includes('no such column') && sqlToExecute.includes('RENAME COLUMN'))
 								) {
 									appliedCount++;
 								} else {

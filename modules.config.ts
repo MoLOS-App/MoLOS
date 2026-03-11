@@ -73,15 +73,15 @@ export const modulesConfig: ModuleConfigEntry[] = [
 		id: 'MoLOS-Markdown',
 		git: 'https://github.com/MoLOS-App/MoLOS-Markdown.git',
 		branch: 'develop'
-	}
+	},
 	// {
 	// 	id: 'MoLOS-Product-Owner',
 	// 	git: 'https://github.com/MoLOS-App/MoLOS-Product-Owner.git',
 	// 	branch: "develop"
 	// },
-	// {
-	// 	id: 'MoLOS-Sample-Module',
-	// 	git: 'https://github.com/MoLOS-App/MoLOS-Sample-Module.git',
-	// 	branch: 'develop'
-	// }
+	{
+		id: 'MoLOS-Sample-Module',
+		git: 'https://github.com/MoLOS-App/MoLOS-Sample-Module.git',
+		branch: 'develop'
+	}
 ];
