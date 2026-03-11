@@ -56,30 +56,30 @@
 </svelte:head>
 
 <div
-	class="flex min-h-screen flex-col items-center justify-center bg-background p-6 text-foreground"
+	class="flex flex-col items-center justify-center min-h-screen p-6 bg-background text-foreground"
 >
 	<div class="w-full max-w-md" in:fly={{ y: 20, duration: 1000, easing: cubicOut }}>
-		<div class="mb-8 flex flex-col items-center space-y-4 text-center">
+		<div class="flex flex-col items-center mb-8 space-y-4 text-center">
 			<div
-				class="inline-flex h-16 w-16 items-center justify-center overflow-hidden rounded-3xl border border-border bg-card text-card-foreground shadow-xl"
+				class="inline-flex items-center justify-center w-16 h-16 overflow-hidden border shadow-xl rounded-3xl border-border bg-card text-card-foreground"
 			>
-				<img src="/favicon.svg" alt="MoLOS Logo" class="h-10 w-10" />
+				<img src="/favicon.ico" alt="MoLOS Logo" class="w-10 h-10" />
 			</div>
 			<div class="space-y-2">
 				<h1 class="text-4xl font-bold tracking-tight">Welcome back.</h1>
-				<p class="text-muted-foreground font-medium">Enter your details to access your account.</p>
+				<p class="font-medium text-muted-foreground">Enter your details to access your account.</p>
 			</div>
 		</div>
 
 		<Card
 			class="overflow-hidden rounded-[2.5rem] border border-border p-2 shadow-[0_20px_50px_rgba(0,0,0,0.1)]"
 		>
-			<CardContent class="space-y-6 p-8 sm:p-10">
+			<CardContent class="p-8 space-y-6 sm:p-10">
 				{#if error}
 					<div in:fade>
 						<Alert
 							variant="destructive"
-							class="rounded-2xl border-none bg-destructive/10 text-destructive"
+							class="border-none rounded-2xl bg-destructive/10 text-destructive"
 						>
 							<AlertDescription class="font-bold">{error}</AlertDescription>
 						</Alert>
@@ -95,7 +95,7 @@
 						>
 						<div class="relative">
 							<Mail
-								class="text-muted-foreground absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2"
+								class="absolute w-5 h-5 -translate-y-1/2 text-muted-foreground top-1/2 left-4"
 							/>
 							<Input
 								id="email"
@@ -103,13 +103,13 @@
 								bind:value={email}
 								placeholder="name@example.com"
 								disabled={loading}
-								class="h-14 rounded-2xl border-none bg-muted pl-12 text-lg focus-visible:ring-2 focus-visible:ring-primary"
+								class="pl-12 text-lg border-none h-14 rounded-2xl bg-muted focus-visible:ring-2 focus-visible:ring-primary"
 							/>
 						</div>
 					</div>
 
 					<div class="space-y-2">
-						<div class="ml-1 flex items-center justify-between">
+						<div class="flex items-center justify-between ml-1">
 							<Label
 								for="password"
 								class="text-muted-foreground text-[10px] font-bold tracking-widest uppercase"
@@ -123,7 +123,7 @@
 						</div>
 						<div class="relative">
 							<Lock
-								class="text-muted-foreground absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2"
+								class="absolute w-5 h-5 -translate-y-1/2 text-muted-foreground top-1/2 left-4"
 							/>
 							<Input
 								id="password"
@@ -131,7 +131,7 @@
 								bind:value={password}
 								placeholder="••••••••"
 								disabled={loading}
-								class="h-14 rounded-2xl border-none bg-muted pl-12 text-lg focus-visible:ring-2 focus-visible:ring-primary"
+								class="pl-12 text-lg border-none h-14 rounded-2xl bg-muted focus-visible:ring-2 focus-visible:ring-primary"
 								onkeydown={(e) => e.key === 'Enter' && handleLogin()}
 							/>
 						</div>
@@ -144,25 +144,25 @@
 					>
 						{#if loading}
 							<div
-								class="mr-2 h-5 w-5 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent"
+								class="w-5 h-5 mr-2 border-2 rounded-full animate-spin border-primary-foreground border-t-transparent"
 							></div>
 							Signing in...
 						{:else}
 							Sign In
-							<ChevronRight class="ml-1 h-5 w-5" />
+							<ChevronRight class="w-5 h-5 ml-1" />
 						{/if}
 					</Button>
 				</div>
 
 				{#if data.publicRegistration}
 					<div class="pt-4 text-center">
-						<p class="text-muted-foreground text-sm font-medium">
+						<p class="text-sm font-medium text-muted-foreground">
 							Don't have an account?
 							<a
 								href="/ui/signup"
 								class="inline-flex items-center gap-1 font-bold text-primary hover:underline"
 							>
-								Create one <ArrowRight class="h-3 w-3" />
+								Create one <ArrowRight class="w-3 h-3" />
 							</a>
 						</p>
 					</div>
@@ -171,13 +171,13 @@
 		</Card>
 
 		<!-- Footer Info -->
-		<div class="text-muted-foreground mt-8 flex justify-center gap-8">
+		<div class="flex justify-center gap-8 mt-8 text-muted-foreground">
 			<div class="flex items-center gap-2">
-				<div class="bg-muted-foreground/30 h-1 w-1 rounded-full"></div>
+				<div class="w-1 h-1 rounded-full bg-muted-foreground/30"></div>
 				<span class="text-[10px] font-bold tracking-widest uppercase">Secure Access</span>
 			</div>
 			<div class="flex items-center gap-2">
-				<div class="bg-muted-foreground/30 h-1 w-1 rounded-full"></div>
+				<div class="w-1 h-1 rounded-full bg-muted-foreground/30"></div>
 				<span class="text-[10px] font-bold tracking-widest uppercase">Privacy First</span>
 			</div>
 		</div>

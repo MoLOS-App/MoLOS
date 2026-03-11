@@ -45,14 +45,14 @@
 </svelte:head>
 
 <div
-	class="flex min-h-screen flex-col items-center justify-center bg-background p-6 text-foreground"
+	class="flex flex-col items-center justify-center min-h-screen p-6 bg-background text-foreground"
 >
 	<div class="w-full max-w-md" in:fly={{ y: 20, duration: 1000, easing: cubicOut }}>
-		<div class="mb-8 flex flex-col items-center space-y-4 text-center">
+		<div class="flex flex-col items-center mb-8 space-y-4 text-center">
 			<div
-				class="inline-flex h-16 w-16 items-center justify-center overflow-hidden rounded-3xl border border-border bg-card text-card-foreground shadow-xl"
+				class="inline-flex items-center justify-center w-16 h-16 overflow-hidden border shadow-xl rounded-3xl border-border bg-card text-card-foreground"
 			>
-				<img src="/favicon.svg" alt="MoLOS Logo" class="h-10 w-10" />
+				<img src="/favicon.ico" alt="MoLOS Logo" class="w-10 h-10" />
 			</div>
 			<div class="space-y-2">
 				<h1 class="text-4xl font-bold tracking-tight">MoLOS</h1>
@@ -62,13 +62,13 @@
 		<Card
 			class="overflow-hidden rounded-[2.5rem] border border-border p-2 shadow-[0_20px_50px_rgba(0,0,0,0.1)]"
 		>
-			<CardContent class="flex flex-col items-center space-y-6 p-8 sm:p-10">
+			<CardContent class="flex flex-col items-center p-8 space-y-6 sm:p-10">
 				<div class="relative">
-					<div class="absolute inset-0 animate-ping rounded-full bg-primary/20"></div>
+					<div class="absolute inset-0 rounded-full animate-ping bg-primary/20"></div>
 					<div
-						class="relative flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 text-primary"
+						class="relative flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 text-primary"
 					>
-						<LogOut class="h-10 w-10" />
+						<LogOut class="w-10 h-10" />
 					</div>
 				</div>
 
@@ -80,7 +80,7 @@
 				</div>
 
 				<div class="flex items-center gap-2 font-bold text-primary">
-					<Loader2 class="h-5 w-5 animate-spin" />
+					<Loader2 class="w-5 h-5 animate-spin" />
 					<span>Processing...</span>
 				</div>
 			</CardContent>
