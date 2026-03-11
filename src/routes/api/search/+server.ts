@@ -2,7 +2,7 @@ import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { z } from 'zod';
 import { and, desc, eq, like } from 'drizzle-orm';
-import { aiMemories, aiSessions } from '$lib/server/db/schema';
+import { aiMemories, aiSessions } from '@molos/database/schema';
 import { db } from '$lib/server/db';
 import { SettingsRepository } from '$lib/repositories/settings/settings-repository';
 import { getAllModules } from '$lib/config';

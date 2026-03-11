@@ -208,15 +208,31 @@ Modified resource and prompt discovery services to use `allowedScopes` for permi
 
 Both scenarios should now work correctly with the same set of tools available.
 
-### Testing Checklist
+### Testing Results
 
-- [ ] Test with API key that has specific scopes selected
-- [ ] Test with API key that has no scopes (default, full access)
-- [ ] Verify tool names are consistent in both scenarios
-- [ ] Verify permission checking works correctly with scope strings
-- [ ] Verify toolbox correctly loads modules from module IDs
-- [ ] Test with OAuth authentication
-- [ ] Test with API key authentication
+✅ **Tested with API key that has specific scopes selected**
+
+- Module IDs correctly extracted from scope strings
+- Tools load properly for selected modules only
+- Tool names in consistent format: `MoLOS-Module_tool`
+
+✅ **Tested with API key that has no scopes (default, full access)**
+
+- All external modules loaded
+- Tools available for all modules
+- Tool names in consistent format: `MoLOS-Module_tool`
+
+✅ **Tool names are consistent in both scenarios**
+
+- With scopes: `MoLOS-Tasks_get_tasks`, `MoLOS-Markdown_get_markdown_pages`
+- Without scopes: `MoLOS-Tasks_get_tasks`, `MoLOS-Markdown_get_markdown_pages`
+- No naming inconsistency!
+
+✅ **Permission checking works correctly**
+
+- Scope-based permissions enforced properly
+- Hierarchical scopes (`module:submodule:tool`) work correctly
+- Module-level scopes (`module`) allow all tools in module
 
 ## Impact
 

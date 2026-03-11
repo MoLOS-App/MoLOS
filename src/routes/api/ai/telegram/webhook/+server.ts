@@ -58,7 +58,7 @@ export const POST: RequestHandler = async ({ request }) => {
 
 		const aiRepo = new AiRepository();
 		const db = aiRepo['db'];
-		const { telegramSettings } = await import('$lib/server/db/schema');
+		const { telegramSettings } = await import('@molos/database/schema');
 
 		// Handle callback query (button presses)
 		if (update.callback_query) {
@@ -117,7 +117,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		// Handle /new command - create a new session
 		if (messageText === '/new' || messageText.startsWith('/new ')) {
 			console.log('[Telegram Webhook] /new command detected, creating new session');
-			const { telegramSessions: telegramSessionsTable } = await import('$lib/server/db/schema');
+			const { telegramSessions: telegramSessionsTable } = await import('@molos/database/schema');
 			const { uuid } = await import('$lib/utils/uuid');
 
 			// Delete existing session for this chat
@@ -265,7 +265,7 @@ async function handleCallbackQuery(
 ) {
 	if (!callbackQuery) return json({ ok: true });
 
-	const { telegramSettings } = await import('$lib/server/db/schema');
+	const { telegramSettings } = await import('@molos/database/schema');
 	const telegramChatId = callbackQuery.message.chat.id.toString();
 	const callbackData = callbackQuery.data; // Format: "confirm:sessionId" or "reject:sessionId"
 

@@ -3,7 +3,7 @@ import { ApiKeyRepository } from '$lib/repositories/ai/mcp';
 import { McpLogRepository } from '$lib/repositories/ai/mcp';
 import { McpResourceRepository } from '$lib/repositories/ai/mcp';
 import { McpPromptRepository } from '$lib/repositories/ai/mcp';
-import { MCPApiKeyStatus, MCPLogStatus } from '$lib/server/db/schema';
+import { MCPApiKeyStatus, MCPLogStatus } from '@molos/database/schema';
 import { getAllModules } from '$lib/config';
 import { oauthClientsStore } from '$lib/server/ai/mcp/oauth';
 import { getAvailableScopes } from '$lib/server/ai/mcp/oauth';

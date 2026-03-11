@@ -87,7 +87,7 @@ export const projects = sqliteTable(getTableName(MODULE_ID, 'projects'), {
 
 MoLOS uses a **unified migration system** based on Drizzle ORM:
 
-- **Core migrations**: `drizzle/` directory (tracked in `__drizzle_migrations`)
+- **Core migrations**: `packages/database/drizzle/` directory (tracked in `__drizzle_migrations`)
 - **Module migrations**: `modules/{ModuleName}/drizzle/` (per-module tracking)
 
 See [ADR-001](../adr/001-migration-tracking-strategy.md) for the tracking strategy decision.
@@ -127,7 +127,7 @@ bun run db:migration:create --name add_column --module MoLOS-Tasks --reversible
 
 This creates SQL files in the appropriate `drizzle/` directory:
 
-- Core: `drizzle/000X_add_user_preferences.sql`
+- Core: `packages/database/drizzle/000X_add_user_preferences.sql`
 - Module: `modules/MoLOS-Tasks/drizzle/000X_add_priority.sql`
 
 #### Applying Migrations
@@ -145,11 +145,11 @@ bun run db:validate
 Migration files follow Drizzle conventions:
 
 ```
-drizzle/
-├── 0000_initial.sql
-├── 0001_add_settings.sql
+packages/database/drizzle/
+├── 0000_condemned_ultron.sql
+├── 0001_gifted_terrax.sql
 ├── ...
-├── 0015_cleanup_duplicate_ai_messages.sql
+├── 0016_add_submodule_tool_permissions.sql
 └── meta/
     └── _journal.json     # Migration tracking
 ```
@@ -191,7 +191,7 @@ The system supports rollback via:
 2. **Auto-generated rollback** - For simple DDL (CREATE TABLE, CREATE INDEX, ALTER TABLE ADD COLUMN)
 
 ```
-drizzle/
+packages/database/drizzle/
 ├── 0016_add_column.sql
 ├── 0016_add_column.down.sql  # Manual rollback
 ```
@@ -329,4 +329,4 @@ describe('My Test', () => {
 
 ---
 
-_Last Updated: 2026-02-23_
+_Last Updated: 2026-03-11_

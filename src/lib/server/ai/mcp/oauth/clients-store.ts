@@ -7,9 +7,8 @@
 
 import { randomBytes, createHash } from 'crypto';
 import { db } from '$lib/server/db';
-import { aiMcpOAuthClients } from '$lib/server/db/schema';
+import { aiMcpOAuthClients, MCPOAuthClientStatus } from '@molos/database/schema';
 import { eq, and, isNull } from 'drizzle-orm';
-import { MCPOAuthClientStatus } from '$lib/server/db/schema';
 
 // OAuth types from MCP SDK - define locally to avoid import issues
 export interface OAuthClientInformationFull {

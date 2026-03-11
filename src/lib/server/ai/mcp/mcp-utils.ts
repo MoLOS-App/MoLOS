@@ -46,6 +46,37 @@ export function extractModuleIdFromToolName(toolName: string): string {
 }
 
 /**
+ * Extract module IDs from scopes
+ *
+ * Handles both module IDs and scope strings:
+ * - "MoLOS-Tasks" -> "MoLOS-Tasks"
+ * - "MoLOS-Tasks:tasks:get_tasks" -> "MoLOS-Tasks"
+ * - "MoLOS-Tasks:tasks" -> "MoLOS-Tasks"
+ *
+ * @param scopes - Array of scope strings or module IDs
+ * @returns Array of unique module IDs
+ */
+export function extractModuleIdsFromScopes(scopes: string[]): string[] {
+	const moduleIds = new Set<string>();
+	const availableModules = getAllModules();
+
+	for (const scope of scopes) {
+		// Split by colon to get module part
+		const parts = scope.split(':');
+		const potentialModuleId = parts[0];
+
+		// Validate that it's a real module ID
+		const isValidModule = availableModules.some((m) => m.id === potentialModuleId);
+
+		if (isValidModule) {
+			moduleIds.add(potentialModuleId);
+		}
+	}
+
+	return Array.from(moduleIds);
+}
+
+/**
  * Filter tools by allowed modules
  */
 export function filterToolsByModules(tools: MCPTool[], allowedModules: string[]): MCPTool[] {

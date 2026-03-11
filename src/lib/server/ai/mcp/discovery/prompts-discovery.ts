@@ -65,9 +65,9 @@ export async function getMcpPrompt(
 		throw new Error('Prompt is disabled');
 	}
 
-	// Check module scope
-	if (prompt.moduleId && context.allowedModules.length > 0) {
-		if (!context.allowedModules.includes(prompt.moduleId)) {
+	// Check module scope using allowedScopes for proper permission checking
+	if (prompt.moduleId && context.allowedScopes.length > 0) {
+		if (!context.allowedScopes.includes(prompt.moduleId)) {
 			throw new Error('Module not allowed for this API key');
 		}
 	}

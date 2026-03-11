@@ -5,7 +5,7 @@
  */
 
 import { eq, and, desc, count, sql } from 'drizzle-orm';
-import { aiMcpResources } from '$lib/server/db/schema';
+import { aiMcpResources } from '@molos/database/schema';
 import type {
 	MCPResource,
 	CreateResourceInput,

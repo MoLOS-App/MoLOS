@@ -5,7 +5,7 @@
  */
 
 import { eq, and, desc, count, like, or } from 'drizzle-orm';
-import { aiMcpApiKeys, MCPApiKeyStatus } from '$lib/server/db/schema';
+import { aiMcpApiKeys, MCPApiKeyStatus } from '@molos/database/schema';
 import type {
 	MCPApiKey,
 	CreateApiKeyInput,

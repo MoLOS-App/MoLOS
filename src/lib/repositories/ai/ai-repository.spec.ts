@@ -3,7 +3,7 @@ import { AiRepository } from './ai-repository';
 import { createTestDb } from '$lib/test-utils';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import type { AiSettings, AiSession, AiMessage } from '$lib/models/ai';
-import { user } from '$lib/server/db/schema';
+import { user } from '@molos/database/schema';
 
 describe('AiRepository', () => {
 	let db: BetterSQLite3Database<Record<string, unknown>>;

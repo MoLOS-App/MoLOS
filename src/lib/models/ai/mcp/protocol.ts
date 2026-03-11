@@ -274,8 +274,9 @@ export interface MCPContext {
 	apiKeyId: string | null;
 	oauthClientId: string | null;
 	sessionId: string;
-	scopes: string[];
-	allowedModules: string[]; // Array of allowed module IDs
+	scopes: string[]; // OAuth scopes (for OAuth auth)
+	allowedModules: string[]; // Array of allowed module IDs (for toolbox loading)
+	allowedScopes: string[]; // Array of allowed scope strings (for permission checking)
 }
 
 /**

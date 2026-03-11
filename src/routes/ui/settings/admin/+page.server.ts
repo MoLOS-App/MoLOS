@@ -4,7 +4,7 @@ import { auth } from '$lib/server/auth';
 import { SettingsRepository } from '$lib/repositories/settings/settings-repository';
 import { db } from '$lib/server/db';
 import { count } from 'drizzle-orm';
-import { session, apikey } from '$lib/server/db/schema';
+import { session, apikey } from '@molos/database/schema';
 
 export const load: PageServerLoad = async ({ locals, request }) => {
 	if (!locals.user) {
