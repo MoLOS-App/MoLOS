@@ -35,9 +35,7 @@
 		{@render children?.()}
 		<TooltipPrimitive.Arrow>
 			{#snippet child({ props })}
-				<div
-					class='hidden'
-				></div>
+				<div class="hidden"></div>
 			{/snippet}
 		</TooltipPrimitive.Arrow>
 	</TooltipPrimitive.Content>

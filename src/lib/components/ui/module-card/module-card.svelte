@@ -46,7 +46,7 @@
 	aria-disabled={disabled}
 	aria-label="Toggle {module.name} module"
 	class={cn(
-		'group relative flex items-center justify-between gap-4 rounded-2xl p-4 transition-all duration-200',
+		'flex items-center justify-center gap-4 rounded-2xl p-4 align-middle transition-all duration-200',
 		'border border-transparent bg-muted',
 		'shadow-lg hover:shadow-xl',
 		'cursor-pointer select-none',
@@ -58,44 +58,25 @@
 	onclick={handleClick}
 	onkeydown={handleKeyDown}
 >
-	<!-- Icon Container -->
-	<div
-		class={cn(
-			'flex h-12 w-12 shrink-0 items-center justify-center rounded-xl',
-			'bg-background shadow-sm transition-transform duration-200',
-			!disabled && 'group-hover:scale-105',
-			selected && 'bg-primary/10'
-		)}
-		in:scale={{ duration: 300, easing: cubicOut }}
-	>
-		{#if module.icon}
-			<svelte:component
-				this={module.icon}
-				class={cn('h-6 w-6', selected ? 'text-primary' : 'text-muted-foreground')}
-			/>
-		{/if}
-	</div>
-
-	<!-- Selection Indicator -->
-	{#if selected}
-		<div
-			class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"
-			in:scale={{ duration: 200, easing: cubicOut }}
-		>
-			<Check class="h-4 w-4" />
-		</div>
-	{:else if !disabled}
-		<div class="border-muted-foreground/30 h-6 w-6 shrink-0 rounded-full border-2"></div>
-	{/if}
-
 	<!-- Info Icon for Tooltip (only visible on hover) -->
 	<TooltipProvider>
 		<Tooltip>
 			<TooltipTrigger
-				class="absolute top-4 right-4 z-10 opacity-0 transition-opacity group-hover:opacity-100"
+				class={cn(
+					'flex h-12 w-12 shrink-0 items-center justify-center rounded-xl',
+					'bg-background shadow-sm transition-transform duration-200',
+					!disabled && 'group-hover:scale-105',
+					selected && 'bg-primary/10'
+				)}
 				onclick={(e) => e.stopPropagation()}
 			>
-				<Info class="text-muted-foreground h-4 w-4" />
+				<!-- Icon Container -->
+				{#if module.icon}
+					<svelte:component
+						this={module.icon}
+						class={cn('h-6 w-6 self-center', selected ? 'text-primary' : 'text-muted-foreground')}
+					/>
+				{/if}
 			</TooltipTrigger>
 			<TooltipContent side="right" class="max-w-xs">
 				<div class="space-y-1">

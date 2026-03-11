@@ -11,9 +11,6 @@
 
 <TooltipPrimitive.Arrow bind:ref {...restProps}>
 	{#snippet child({ props })}
-		<div
-			class='z-50 size-2.5 rotate-45 rounded-[2px] bg-primary'
-			{...props}
-		></div>
+		<div class="z-50 size-2.5 rotate-45 rounded-[2px] bg-primary" {...props}></div>
 	{/snippet}
 </TooltipPrimitive.Arrow>

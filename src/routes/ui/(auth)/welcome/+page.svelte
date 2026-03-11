@@ -214,17 +214,15 @@
 							<ArrowRight class="h-3 w-3 rotate-180" />
 							Back
 						</button>
-						<h2 class="text-3xl font-bold tracking-tight">Customize your workspace.</h2>
-						<p class="text-muted-foreground mt-2 font-medium">
+						<h2 class="text-3xl font-bold tracking-tight">
 							Select the modules you want to start with.
-						</p>
-
-						<p class="text-muted-foreground mt-2 text-sm font-medium">
+						</h2>
+						<p class="text-muted-foreground mt-2 text-xs font-medium">
 							Hover the modules for more info
 						</p>
 
 						<!-- Module Selection Grid -->
-						<div class="mt-8">
+						<div class="mt-8 max-h-[50vh] overflow-y-auto">
 							<ModuleGrid
 								modules={Object.values(MODULE_REGISTRY)}
 								selectedIds={selectedModules}
