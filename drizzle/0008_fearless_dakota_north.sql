@@ -1,1 +1,0 @@
-ALTER TABLE `telegram_settings` ADD `polling_interval` integer DEFAULT 2000 NOT NULL;

@@ -1,1 +1,0 @@
-ALTER TABLE `telegram_settings` ADD `webhook_url` text;

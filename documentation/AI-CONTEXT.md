@@ -68,7 +68,6 @@ MoLOS/
 │   │   └── config/             # App configuration
 │   └── routes/                 # SvelteKit routes
 ├── scripts/                    # Build and utility scripts
-├── drizzle/                    # Core database migrations
 └── documentation/              # This documentation
 ```
 
@@ -315,10 +314,11 @@ import { GoalRepository } from '$lib/repositories/external_modules/MoLOS-Goals';
 | App entry point          | `src/app.html`                              |
 | Module registry          | `src/lib/config/index.ts`                   |
 | Module types             | `src/lib/config/types.ts`                   |
-| Database client          | `src/lib/server/db/index.ts`                |
+| Database client          | `packages/database/src/connection.ts`       |
 | Core schema              | `packages/database/src/schema/core/`        |
 | Module schemas           | `packages/database/src/schema/external/`    |
-| Core migrations          | `drizzle/`                                  |
+| Core migrations          | `packages/database/drizzle/`                |
+| Drizzle config           | `packages/database/drizzle.config.ts`       |
 | Unified migration runner | `packages/database/src/migrate-unified.ts`  |
 | Schema validator         | `packages/database/src/schema-validator.ts` |
 | Migration logger         | `packages/database/src/migration-logger.ts` |
@@ -486,4 +486,4 @@ For comprehensive module development guide, see **[Module Development Guide](./m
 
 ---
 
-_Last Updated: 2026-03-10_
+_Last Updated: 2026-03-11_

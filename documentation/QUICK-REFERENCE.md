@@ -54,7 +54,8 @@ bun run db:reset         # Reset database (WARNING: deletes data)
 
 **Important:** Migrations are NOT auto-generated during module fetch or dev startup.
 
-- Modules must include their migrations in the `drizzle/` directory
+- Core migrations are in `packages/database/drizzle/`
+- Module migrations are in `modules/{ModuleName}/drizzle/`
 - Use `bun run db:migration:create` to create new migrations
 - Never run `drizzle-kit generate` or `bun run db:generate` directly (removed for safety)
 

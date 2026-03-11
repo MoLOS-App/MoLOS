@@ -1,8 +1,8 @@
 {
 	"version": "6",
 	"dialect": "sqlite",
-	"id": "5adda589-acfd-404a-8a1a-18302b888e98",
-	"prevId": "68f5b626-e8ac-41b7-bbee-08549e6d3203",
+	"id": "1ea0ee90-8a3a-4749-bfa6-5bcae8a23668",
+	"prevId": "74af0b68-3bf2-48ce-8d33-cf28ef249b67",
 	"tables": {
 		"account": {
 			"name": "account",
@@ -603,8 +603,8 @@
 					"autoincrement": false,
 					"default": "'active'"
 				},
-				"allowed_modules": {
-					"name": "allowed_modules",
+				"allowed_scopes": {
+					"name": "allowed_scopes",
 					"type": "text",
 					"primaryKey": false,
 					"notNull": true,
@@ -1253,6 +1253,20 @@
 					"notNull": false,
 					"autoincrement": false
 				},
+				"submodule_id": {
+					"name": "submodule_id",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"prompt_name": {
+					"name": "prompt_name",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
 				"enabled": {
 					"name": "enabled",
 					"type": "integer",
@@ -1326,6 +1340,20 @@
 				},
 				"module_id": {
 					"name": "module_id",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"submodule_id": {
+					"name": "submodule_id",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"resource_name": {
+					"name": "resource_name",
 					"type": "text",
 					"primaryKey": false,
 					"notNull": false,
@@ -2442,6 +2470,110 @@
 				}
 			},
 			"indexes": {},
+			"foreignKeys": {},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {},
+			"checkConstraints": {}
+		},
+		"molos_migrations": {
+			"name": "molos_migrations",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "integer",
+					"primaryKey": true,
+					"notNull": true,
+					"autoincrement": true
+				},
+				"migration_name": {
+					"name": "migration_name",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"module": {
+					"name": "module",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"version": {
+					"name": "version",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"checksum": {
+					"name": "checksum",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"applied_at": {
+					"name": "applied_at",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "(cast(unixepoch('subsecond') * 1000 as integer))"
+				},
+				"execution_time_ms": {
+					"name": "execution_time_ms",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"success": {
+					"name": "success",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"rollback_available": {
+					"name": "rollback_available",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false
+				},
+				"sql_content": {
+					"name": "sql_content",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"error_message": {
+					"name": "error_message",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				}
+			},
+			"indexes": {
+				"idx_migrations_module_version": {
+					"name": "idx_migrations_module_version",
+					"columns": ["module", "version"],
+					"isUnique": false
+				},
+				"idx_migrations_name": {
+					"name": "idx_migrations_name",
+					"columns": ["migration_name"],
+					"isUnique": false
+				},
+				"idx_migrations_module": {
+					"name": "idx_migrations_module",
+					"columns": ["module"],
+					"isUnique": false
+				}
+			},
 			"foreignKeys": {},
 			"compositePrimaryKeys": {},
 			"uniqueConstraints": {},

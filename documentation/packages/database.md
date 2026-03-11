@@ -16,12 +16,13 @@ packages/database/
 │   ├── migrate-unified.ts   # Unified migration runner (core + modules)
 │   ├── schema-validator.ts  # Schema validation utility
 │   ├── migration-logger.ts  # Structured logging for migrations
+│   ├── connection.ts        # Database connection (db, sqlite, schema)
 │   ├── utils/               # Database utilities
 │   │   └── namespace.ts     # Table namespacing helpers
 │   └── index.ts             # Main exports
-├── drizzle/                 # Core migration files
+├── drizzle/                 # Core migration files (consolidated here)
 ├── package.json
-└── drizzle.config.ts
+└── drizzle.config.ts        # Canonical Drizzle config
 ```
 
 ## Exports
