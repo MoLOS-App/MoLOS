@@ -9,7 +9,29 @@ error() {
   echo "[$(date +'%Y-%m-%d %H:%M:%S')] [Entrypoint] ERROR: $@" >&2
 }
 
-log "Starting MoLOS Production Environment..."
+# Get the UID/GID that should own the data directory
+# Default to bun user (UID 1000 in oven/bun image)
+BUN_UID=${BUN_UID:-1000}
+BUN_GID=${BUN_GID:-1000}
+
+# If running as root, fix permissions and drop privileges
+if [ "$(id -u)" = '0' ]; then
+  log "Running as root, fixing permissions on /data..."
+  
+  # Ensure data directory exists with correct subdirectories
+  mkdir -p /data/.db_backups /data/modules
+  
+  # Fix ownership of the data directory (volume mount may have root ownership)
+  chown -R "${BUN_UID}:${BUN_GID}" /data
+  
+  log "Permissions fixed, dropping privileges to bun user..."
+  
+  # Use gosu to drop privileges and re-run this script as bun user
+  exec gosu bun "$0" "$@"
+fi
+
+# Now running as non-root user (bun)
+log "Starting MoLOS Production Environment as $(whoami) (UID: $(id -u))..."
 
 # Default to production settings
 export NODE_ENV="${NODE_ENV:-production}"
