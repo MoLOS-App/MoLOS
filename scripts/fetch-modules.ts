@@ -79,6 +79,38 @@ function commandExists(command: string): boolean {
 }
 
 /**
+ * Check if a ref exists on the remote repository
+ */
+function refExists(gitUrl: string, ref: string, refType: 'tag' | 'branch'): boolean {
+	try {
+		const refPath = refType === 'tag' ? `refs/tags/${ref}` : `refs/heads/${ref}`;
+		const output = execSync(`git ls-remote ${gitUrl} ${refPath}`, { stdio: 'pipe' });
+		return output.toString().trim().length > 0;
+	} catch {
+		return false;
+	}
+}
+
+/**
+ * Get list of available tags from remote
+ */
+function getAvailableTags(gitUrl: string): string[] {
+	try {
+		const output = execSync(`git ls-remote --tags ${gitUrl}`, { stdio: 'pipe' });
+		const lines = output.toString().trim().split('\n');
+		return lines
+			.filter((line) => line.includes('refs/tags/'))
+			.map((line) => {
+				const match = line.match(/refs\/tags\/(.+)$/);
+				return match ? match[1] : '';
+			})
+			.filter((tag) => tag && !tag.endsWith('^{}'));
+	} catch {
+		return [];
+	}
+}
+
+/**
  * Clone or update a module from git
  */
 async function fetchModule(moduleEntry: ModuleConfigEntry): Promise<FetchResult> {
@@ -100,6 +132,21 @@ async function fetchModule(moduleEntry: ModuleConfigEntry): Promise<FetchResult>
 	}
 
 	log(`Processing module: ${id} from ${git} (${refType}: ${ref})`);
+
+	// Check if ref exists before attempting to clone
+	if (!refExists(git, ref, refType)) {
+		const errorMsg =
+			refType === 'tag'
+				? `Tag '${ref}' not found on remote. Available tags: ${getAvailableTags(git).slice(0, 5).join(', ')}${getAvailableTags(git).length > 5 ? '...' : ''}`
+				: `Branch '${ref}' not found on remote`;
+		return {
+			moduleId: id,
+			success: false,
+			skipped: false,
+			error: errorMsg,
+			message: `Failed: ${errorMsg}`
+		};
+	}
 
 	const result: FetchResult = {
 		moduleId: id,
@@ -128,7 +175,12 @@ async function fetchModule(moduleEntry: ModuleConfigEntry): Promise<FetchResult>
 		}
 
 		log(`Cloning ${id}...`, 'info');
-		runCommand(`git clone --depth 1 --branch ${ref} ${git} ${id}`, MODULES_DIR);
+		// For tags: git clone --depth 1 --branch <tag> works for tags too
+		// Suppress detached HEAD warning
+		runCommand(
+			`git -c advice.detachedHead=false clone --depth 1 --branch ${ref} ${git} ${id}`,
+			MODULES_DIR
+		);
 		result.message = 'Cloned new module';
 
 		const packageJsonPath = path.join(modulePath, 'package.json');

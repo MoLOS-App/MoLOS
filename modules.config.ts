@@ -53,7 +53,7 @@ export function getModuleRefType(entry: ModuleConfigEntry): 'tag' | 'branch' {
 }
 
 export const modulesConfig: ModuleConfigEntry[] = [
-	{ id: 'MoLOS-Tasks', git: 'https://github.com/MoLOS-App/MoLOS-Tasks.git', branch: 'develop' },
+	{ id: 'MoLOS-Tasks', git: 'https://github.com/MoLOS-App/MoLOS-Tasks.git', tag: 'v1.0.3' },
 	// { id: 'MoLOS-Goals', git: 'https://github.com/MoLOS-App/MoLOS-Goals.git', branch: 'develop' },
 	// { id: 'MoLOS-Finance', git: 'https://github.com/MoLOS-App/MoLOS-Finance.git', branch: 'develop' },
 	// { id: 'MoLOS-Health', git: 'https://github.com/MoLOS-App/MoLOS-Health.git', branch: 'develop' },
@@ -67,21 +67,21 @@ export const modulesConfig: ModuleConfigEntry[] = [
 	{
 		id: 'MoLOS-LLM-Council',
 		git: 'https://github.com/MoLOS-App/MoLOS-LLM-Council.git',
-		branch: 'develop'
+		tag: 'v1.0.0'
 	},
 	{
 		id: 'MoLOS-Markdown',
 		git: 'https://github.com/MoLOS-App/MoLOS-Markdown.git',
-		branch: 'develop'
-	},
-	// {
+		tag: 'v1.0.0'
+	}
+	// {e
 	// 	id: 'MoLOS-Product-Owner',
 	// 	git: 'https://github.com/MoLOS-App/MoLOS-Product-Owner.git',
 	// 	branch: "develop"
 	// },
-	{
-		id: 'MoLOS-Sample-Module',
-		git: 'https://github.com/MoLOS-App/MoLOS-Sample-Module.git',
-		branch: 'develop'
-	}
+	// {
+	// 	id: 'MoLOS-Sample-Module',
+	// 	git: 'https://github.com/MoLOS-App/MoLOS-Sample-Module.git',
+	// 	branch: 'develop'
+	// }
 ];
