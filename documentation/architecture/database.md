@@ -60,7 +60,7 @@ packages/database/
 │   │   │   └── migration.ts         # Migration tracking
 │   │   └── external/                # External module schemas
 │   ├── migrate.ts                   # Core migrations only
-│   ├── migrate-unified.ts           # Unified runner
+│   ├── migrate-improved.ts             # Production migration runner
 │   ├── schema-validator.ts          # Validation utility
 │   ├── migration-logger.ts          # Logging utility
 │   └── index.ts

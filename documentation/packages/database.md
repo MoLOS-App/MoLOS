@@ -12,8 +12,7 @@ packages/database/
 │   ├── schema/              # Database schema definitions
 │   │   ├── core/            # Core tables (user, session, settings)
 │   │   └── external/        # External module tables
-│   ├── migrate.ts           # Core migration runner
-│   ├── migrate-unified.ts   # Unified migration runner (core + modules)
+│   ├── migrate-improved.ts  # Production-ready migration runner (core + modules)
 │   ├── schema-validator.ts  # Schema validation utility
 │   ├── migration-logger.ts  # Structured logging for migrations
 │   ├── connection.ts        # Database connection (db, sqlite, schema)
@@ -33,7 +32,7 @@ packages/database/
 | `@molos/database/schema`           | Schema definitions               |
 | `@molos/database/schema/core`      | Core schema only                 |
 | `@molos/database/utils`            | Table namespacing utilities      |
-| `@molos/database/migrate-unified`  | Unified migration runner         |
+| `@molos/database/migrate`          | Migration runner                 |
 | `@molos/database/schema-validator` | Schema validation utility        |
 | `@molos/database/migration-logger` | Structured logging               |
 

@@ -949,7 +949,7 @@ export const aiMcpApiKeys = sqliteTable("ai_mcp_api_keys", {
 	keyPrefix: text("key_prefix").notNull(),
 	keyHash: text("key_hash").notNull(),
 	status: text().default("active").notNull(),
-	allowedModules: text("allowed_modules").default("[]").notNull(),
+	allowedScopes: text("allowed_scopes").default("[]").notNull(),
 	expiresAt: integer("expires_at"),
 	lastUsedAt: integer("last_used_at"),
 	usageCount: integer("usage_count").default(0).notNull(),

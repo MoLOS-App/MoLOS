@@ -396,7 +396,30 @@ function applyMigration(
 
 		for (const statement of statements) {
 			if (statement.trim()) {
-				db.exec(statement);
+				try {
+					db.exec(statement);
+				} catch (stmtError) {
+					const stmtErrMsg = stmtError instanceof Error ? stmtError.message : String(stmtError);
+					const upperStatement = statement.toUpperCase();
+
+					// Handle idempotent cases - these are OK (already applied)
+					if (
+						// Table/index already exists
+						stmtErrMsg.includes('already exists') ||
+						// ADD COLUMN when column already exists
+						stmtErrMsg.includes('duplicate column name') ||
+						// RENAME COLUMN when column doesn't exist (already renamed)
+						(stmtErrMsg.includes('no such column') && upperStatement.includes('RENAME COLUMN')) ||
+						// DROP COLUMN when column doesn't exist (already dropped/renamed)
+						(stmtErrMsg.includes('no such column') && upperStatement.includes('DROP COLUMN')) ||
+						// DROP TABLE when table doesn't exist
+						(stmtErrMsg.includes('no such table') && upperStatement.includes('DROP TABLE'))
+					) {
+						// Already applied, continue
+						continue;
+					}
+					throw stmtError;
+				}
 			}
 		}
 
@@ -489,7 +512,7 @@ function loadMigrations(migrationsPath: string, module: string): MigrationFile[]
 /**
  * Run all migrations
  */
-export async function runAllMigrations(): Promise<MigrationResult> {
+export async function runAllMigrations(dbPath?: string): Promise<MigrationResult> {
 	const result: MigrationResult = {
 		success: true,
 		core: { applied: 0, failed: 0, skipped: 0 },
@@ -499,24 +522,24 @@ export async function runAllMigrations(): Promise<MigrationResult> {
 		tablesCreated: 0
 	};
 
-	const dbPath = getDatabasePath();
+	const actualDbPath = dbPath || getDatabasePath();
 
 	// Ensure database directory exists
-	if (!ensureDatabaseDir(dbPath)) {
+	if (!ensureDatabaseDir(actualDbPath)) {
 		result.success = false;
 		result.errors.push('Failed to create database directory');
 		return result;
 	}
 
 	// Check if database exists
-	result.databaseCreated = !existsSync(dbPath);
+	result.databaseCreated = !existsSync(actualDbPath);
 
 	// Create backup if database exists
 	if (!result.databaseCreated) {
 		log('info', 'Database does not exist, will be created');
 	} else {
 		log('info', 'Creating backup before migrations...');
-		const backupPath = createBackup(dbPath);
+		const backupPath = createBackup(actualDbPath);
 		if (!backupPath) {
 			result.errors.push('Failed to create backup before migrations');
 			// Continue anyway - user can decide to abort
@@ -528,7 +551,7 @@ export async function runAllMigrations(): Promise<MigrationResult> {
 	// Open database
 	let db: Database.Database;
 	try {
-		db = new Database(dbPath);
+		db = new Database(actualDbPath);
 		db.pragma('foreign_keys = ON');
 	} catch (error) {
 		const errorMsg = `Failed to open database: ${error instanceof Error ? error.message : String(error)}`;
@@ -562,7 +585,7 @@ export async function runAllMigrations(): Promise<MigrationResult> {
 
 		// Step 1: Run core migrations
 		log('info', 'Running CORE migrations...');
-		const coreMigrationsPath = join(process.cwd(), 'drizzle');
+		const coreMigrationsPath = join(__dirname, '..', 'drizzle');
 		const coreMigrations = loadMigrations(coreMigrationsPath, 'core');
 
 		for (const migration of coreMigrations) {

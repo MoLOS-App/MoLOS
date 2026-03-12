@@ -407,7 +407,7 @@ DOCKER_BUILDKIT=1 docker build \
 - Check `node_modules/better-sqlite3` was built correctly
 - Run `bun run db:migrate` manually to see detailed error output
 
-**Note:** Migrations run automatically before every server start via the `serve` script. This ensures the database schema is always up-to-date. The unified migration runner (`packages/database/src/migrate-unified.ts`) handles:
+**Note:** Migrations run automatically before every server start via the `serve` script. This ensures the database schema is always up-to-date. The migration runner (`packages/database/src/migrate-improved.ts`) handles:
 
 - Creating the database directory if missing
 - Creating the database file if missing

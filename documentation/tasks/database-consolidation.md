@@ -31,7 +31,7 @@ Consolidate all database schemas and utilities from `src/lib/server/db/schema/` 
 - `packages/database/src/schema/core/auth.ts`
 - `packages/database/src/schema/core/settings.ts`
 - `packages/database/src/connection.ts`
-- `packages/database/src/migrate-unified.ts`
+- `packages/database/src/migrate-improved.ts`
 - **Only 3 files** importing from `@molos/database`
 
 ### Problem
@@ -55,7 +55,7 @@ packages/database/          ← Single source of truth
 ├── src/
 │   ├── schema/core/       ← All schema definitions
 │   ├── connection.ts      ← Database connection logic
-│   ├── migrate-unified.ts ← Migration runner
+│   ├── migrate-improved.ts ← Migration runner
 │   ├── schema-validator.ts
 │   ├── migration-logger.ts
 │   └── utils/             ← Database utilities
@@ -303,7 +303,7 @@ packages/database/
 │   │   │   └── settings.ts # Settings tables
 │   │   └── external/       # External module tables (namespaced)
 │   ├── connection.ts       # Database connection (db, sqlite exports)
-│   ├── migrate-unified.ts  # Unified migration runner (core + modules)
+│   ├── migrate-improved.ts  # Production migration runner (core + modules)
 │   ├── schema-validator.ts # Schema validation utility
 │   ├── migration-logger.ts # Structured logging
 │   └── index.ts            # Main exports

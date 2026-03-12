@@ -1,4 +1,10 @@
-CREATE TABLE `core_module_migrations` (
+-- Migration 0018: Add core_module_migrations table and rebuild settings_external_modules
+-- Note: molos_migrations table and indexes were already created in migration 0017
+-- Note: allowed_modules -> allowed_scopes rename was already done in migration 0016
+-- Note: ADD columns to prompts/resources were already done in migration 0016
+
+-- Step 1: Create core_module_migrations table (new in this migration)
+CREATE TABLE IF NOT EXISTS `core_module_migrations` (
 	`id` text PRIMARY KEY NOT NULL,
 	`module_id` text NOT NULL,
 	`migration_name` text NOT NULL,
@@ -7,8 +13,11 @@ CREATE TABLE `core_module_migrations` (
 	`rolled_back_at` integer,
 	`rollback_sql` text
 );
+
 --> statement-breakpoint
-CREATE TABLE `molos_migrations` (
+
+-- Step 2: Ensure molos_migrations table exists (idempotent - created in 0017)
+CREATE TABLE IF NOT EXISTS `molos_migrations` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`migration_name` text NOT NULL,
 	`module` text NOT NULL,
@@ -21,12 +30,28 @@ CREATE TABLE `molos_migrations` (
 	`sql_content` text,
 	`error_message` text
 );
+
 --> statement-breakpoint
-CREATE INDEX `idx_migrations_module_version` ON `molos_migrations` (`module`,`version`);--> statement-breakpoint
-CREATE INDEX `idx_migrations_name` ON `molos_migrations` (`migration_name`);--> statement-breakpoint
-CREATE INDEX `idx_migrations_module` ON `molos_migrations` (`module`);--> statement-breakpoint
-PRAGMA foreign_keys=OFF;--> statement-breakpoint
-CREATE TABLE `__new_settings_external_modules` (
+
+-- Step 3: Ensure indexes exist (idempotent - created in 0017)
+CREATE INDEX IF NOT EXISTS `idx_migrations_module_version` ON `molos_migrations` (`module`,`version`);
+
+--> statement-breakpoint
+
+CREATE INDEX IF NOT EXISTS `idx_migrations_name` ON `molos_migrations` (`migration_name`);
+
+--> statement-breakpoint
+
+CREATE INDEX IF NOT EXISTS `idx_migrations_module` ON `molos_migrations` (`module`);
+
+--> statement-breakpoint
+
+-- Step 4: Rebuild settings_external_modules table (remove old columns if any)
+PRAGMA foreign_keys=OFF;
+
+--> statement-breakpoint
+
+CREATE TABLE IF NOT EXISTS `__new_settings_external_modules` (
 	`id` text PRIMARY KEY NOT NULL,
 	`repo_url` text NOT NULL,
 	`status` text CHECK(status IN ('pending', 'active', 'error_manifest', 'error_migration', 'error_config', 'disabled', 'deleting')) DEFAULT 'pending' NOT NULL,
@@ -41,14 +66,20 @@ CREATE TABLE `__new_settings_external_modules` (
 	`installed_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
 	`updated_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL
 );
+
 --> statement-breakpoint
-INSERT INTO `__new_settings_external_modules`("id", "repo_url", "status", "git_ref", "block_updates", "last_error", "error_details", "error_type", "recovery_steps", "retry_count", "last_retry_at", "installed_at", "updated_at") SELECT "id", "repo_url", "status", "git_ref", "block_updates", "last_error", "error_details", "error_type", "recovery_steps", "retry_count", "last_retry_at", "installed_at", "updated_at" FROM `settings_external_modules`;--> statement-breakpoint
-DROP TABLE `settings_external_modules`;--> statement-breakpoint
-ALTER TABLE `__new_settings_external_modules` RENAME TO `settings_external_modules`;--> statement-breakpoint
-PRAGMA foreign_keys=ON;--> statement-breakpoint
-ALTER TABLE `ai_mcp_api_keys` ADD `allowed_scopes` text DEFAULT '[]' NOT NULL;--> statement-breakpoint
-ALTER TABLE `ai_mcp_api_keys` DROP COLUMN `allowed_modules`;--> statement-breakpoint
-ALTER TABLE `ai_mcp_prompts` ADD `submodule_id` text;--> statement-breakpoint
-ALTER TABLE `ai_mcp_prompts` ADD `prompt_name` text;--> statement-breakpoint
-ALTER TABLE `ai_mcp_resources` ADD `submodule_id` text;--> statement-breakpoint
-ALTER TABLE `ai_mcp_resources` ADD `resource_name` text;
+
+-- Only copy data if source table exists
+INSERT INTO `__new_settings_external_modules`("id", "repo_url", "status", "git_ref", "block_updates", "last_error", "error_details", "error_type", "recovery_steps", "retry_count", "last_retry_at", "installed_at", "updated_at") SELECT "id", "repo_url", "status", "git_ref", "block_updates", "last_error", "error_details", "error_type", "recovery_steps", "retry_count", "last_retry_at", "installed_at", "updated_at" FROM `settings_external_modules`;
+
+--> statement-breakpoint
+
+DROP TABLE IF EXISTS `settings_external_modules`;
+
+--> statement-breakpoint
+
+ALTER TABLE `__new_settings_external_modules` RENAME TO `settings_external_modules`;
+
+--> statement-breakpoint
+
+PRAGMA foreign_keys=ON;

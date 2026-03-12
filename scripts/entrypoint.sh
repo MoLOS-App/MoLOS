@@ -56,7 +56,7 @@ fi
 
 # Run database migrations
 log "Running database migrations..."
-if node /app/packages/database/dist/migrate-unified.js; then
+if node /app/packages/database/dist/migrate-improved.js; then
   log "Database migrations completed successfully."
 else
   error "Database migrations failed. Cannot proceed without a properly initialized database."

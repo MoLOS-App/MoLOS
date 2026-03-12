@@ -309,28 +309,28 @@ import { GoalRepository } from '$lib/repositories/external_modules/MoLOS-Goals';
 
 ## Key File Locations
 
-| What                     | Where                                       |
-| ------------------------ | ------------------------------------------- |
-| App entry point          | `src/app.html`                              |
-| Module registry          | `src/lib/config/index.ts`                   |
-| Module types             | `src/lib/config/types.ts`                   |
-| Database client          | `packages/database/src/connection.ts`       |
-| Core schema              | `packages/database/src/schema/core/`        |
-| Module schemas           | `packages/database/src/schema/external/`    |
-| Core migrations          | `packages/database/drizzle/`                |
-| Drizzle config           | `packages/database/drizzle.config.ts`       |
-| Unified migration runner | `packages/database/src/migrate-unified.ts`  |
-| Schema validator         | `packages/database/src/schema-validator.ts` |
-| Migration logger         | `packages/database/src/migration-logger.ts` |
-| Migration logs           | `logs/migrations.log`                       |
-| Migration tests          | `tests/migrations/`                         |
-| Shared components        | `packages/ui/src/lib/components/`           |
-| Module linker script     | `scripts/link-modules.ts`                   |
-| Migration audit script   | `scripts/audit-module-migrations.ts`        |
-| Release CLI              | `scripts/release-cli.ts`                    |
-| Modules config updater   | `scripts/update-modules-config.ts`          |
-| Changeset config         | `.changeset/config.json`                    |
-| Modules config           | `modules.config.ts`                         |
+| What                   | Where                                       |
+| ---------------------- | ------------------------------------------- |
+| App entry point        | `src/app.html`                              |
+| Module registry        | `src/lib/config/index.ts`                   |
+| Module types           | `src/lib/config/types.ts`                   |
+| Database client        | `packages/database/src/connection.ts`       |
+| Core schema            | `packages/database/src/schema/core/`        |
+| Module schemas         | `packages/database/src/schema/external/`    |
+| Core migrations        | `packages/database/drizzle/`                |
+| Drizzle config         | `packages/database/drizzle.config.ts`       |
+| Migration runner       | `packages/database/src/migrate-improved.ts` |
+| Schema validator       | `packages/database/src/schema-validator.ts` |
+| Migration logger       | `packages/database/src/migration-logger.ts` |
+| Migration logs         | `logs/migrations.log`                       |
+| Migration tests        | `tests/migrations/`                         |
+| Shared components      | `packages/ui/src/lib/components/`           |
+| Module linker script   | `scripts/link-modules.ts`                   |
+| Migration audit script | `scripts/audit-module-migrations.ts`        |
+| Release CLI            | `scripts/release-cli.ts`                    |
+| Modules config updater | `scripts/update-modules-config.ts`          |
+| Changeset config       | `.changeset/config.json`                    |
+| Modules config         | `modules.config.ts`                         |
 
 ---
 
