@@ -23,6 +23,28 @@
 
 	// Form state - reactive to data changes
 	let name = $state(data.apiKey.name);
+
+	// Normalize scopes from old format (module IDs) to new format (null for all)
+	// Old format: ['MoLOS-Tasks', 'MoLOS-Markdown'] → means all tools in those modules
+	// New format: ['MoLOS-Tasks:tasks:get_tasks', ...] → means specific tools
+	// We normalize old format to null (all tools) to use Scope Picker
+	let normalizedScopes = $derived(() => {
+		const scopes = data.apiKey.allowedScopes;
+		if (!scopes || scopes.length === 0) return [];
+
+		// Check if scopes are in old format (just module IDs, no colons)
+		const hasOldFormatScopes = scopes.some((s) => !s.includes(':'));
+
+		if (hasOldFormatScopes) {
+			// Old format detected - convert to null (all tools)
+			console.log('[ApiKeyDetail] Normalizing old-format scopes to null:', scopes);
+			return [];
+		}
+
+		// Already in new format - return as-is
+		return scopes;
+	});
+
 	let selectedScopes = $state(data.apiKey.allowedScopes || []);
 	let expiresAt = $state(
 		data.apiKey.expiresAt ? new Date(data.apiKey.expiresAt).toISOString().split('T')[0] : ''
@@ -110,7 +132,7 @@
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					name: name.trim(),
-					allowedScopes: selectedScopes,
+					allowedScopes: normalizedScopes, // Use normalized scopes for saving
 					expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null
 				})
 			});

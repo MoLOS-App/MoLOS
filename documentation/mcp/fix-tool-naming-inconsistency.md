@@ -175,15 +175,17 @@ Modified resource and prompt discovery services to use `allowedScopes` for permi
 
 ## Files Modified
 
-| File                                                     | Changes                                                                      |
-| -------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| `src/lib/models/ai/mcp/protocol.ts`                      | Added `allowedScopes` to `MCPContext` interface                              |
-| `packages/core/src/types/mcp.ts`                         | Added `allowedScopes` to `MCPContext` interface                              |
-| `src/lib/server/ai/mcp/mcp-utils.ts`                     | Added `extractModuleIdsFromScopes()` function                                |
-| `src/lib/server/ai/mcp/middleware/auth-middleware.ts`    | Updated auth functions to populate both `allowedModules` and `allowedScopes` |
-| `src/lib/server/ai/mcp/middleware/scope-middleware.ts`   | Updated validation functions to use `allowedScopes`                          |
-| `src/lib/server/ai/mcp/discovery/resources-discovery.ts` | Updated permission check to use `allowedScopes`                              |
-| `src/lib/server/ai/mcp/discovery/prompts-discovery.ts`   | Updated permission check to use `allowedScopes`                              |
+| File                                                                 | Changes                                                                      |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `src/lib/models/ai/mcp/protocol.ts`                                  | Added `allowedScopes` to `MCPContext` interface                              |
+| `packages/core/src/types/mcp.ts`                                     | Added `allowedScopes` to `MCPContext` interface                              |
+| `src/lib/server/ai/mcp/mcp-utils.ts`                                 | Added `extractModuleIdsFromScopes()` function                                |
+| `src/lib/server/ai/mcp/middleware/auth-middleware.ts`                | Updated auth functions to populate both `allowedModules` and `allowedScopes` |
+| `src/lib/server/ai/mcp/middleware/scope-middleware.ts`               | Updated validation functions to use `allowedScopes`                          |
+| `src/lib/server/ai/mcp/discovery/resources-discovery.ts`             | Updated permission check to use `allowedScopes`                              |
+| `src/lib/server/ai/mcp/discovery/prompts-discovery.ts`               | Updated permission check to use `allowedScopes`                              |
+| `packages/ui/src/components/shared/ai/mcp/McpCreateKeyDialog.svelte` | Removed module-level selection, now uses null scopes                         |
+| `packages/ui/src/components/shared/ai/mcp/McpEditKeyDialog.svelte`   | Removed module-level selection, preserves existing scopes                    |
 
 ## Verification
 
@@ -234,6 +236,44 @@ Both scenarios should now work correctly with the same set of tools available.
 - Hierarchical scopes (`module:submodule:tool`) work correctly
 - Module-level scopes (`module`) allow all tools in module
 
+✅ **UI dialogs updated to use scope picker**
+
+- Create/Edit dialogs now direct users to Scope Picker
+- Module-level selection removed (was causing mixed format)
+- Consistent scope string format throughout
+
+## UI Changes Summary
+
+To prevent mixing module IDs and scope strings, the following UI components were updated:
+
+### McpCreateKeyDialog.svelte
+
+- **Removed**: Module-level selection UI (checkboxes for selecting modules)
+- **Changed**: Now saves `allowedScopes: null` (all tools by default)
+- **Added**: Info directing users to use Scope Picker for fine-grained control
+
+### McpEditKeyDialog.svelte
+
+- **Removed**: Module-level selection UI from edit form
+- **Changed**: Now preserves existing `allowedScopes` without modification
+- **Added**: Info directing users to use Scope Picker for modifications
+
+### ApiKeyDetail/+page.svelte
+
+- **Added**: Normalization logic to detect old-format scopes (module IDs without colons)
+- **Changed**: Save handler now uses normalized scopes (null for old format)
+- **Result**: Old-format keys are normalized when saved, converting module-level access to full access
+
+### McpScopePicker.svelte
+
+- **Added**: Old format detection and warning banner
+- **Changed**: Shows warning when old-format scopes are detected
+- **Result**: Users are informed to use Scope Picker for fine-grained control
+
+### Result
+
+Users must now use **Scope Picker** (`McpScopePicker`) to configure fine-grained permissions. The create/edit dialogs no longer support module-level selection, preventing the mixed format where module IDs and scope strings were being saved together.
+
 ## Impact
 
 ### Benefits
@@ -242,6 +282,7 @@ Both scenarios should now work correctly with the same set of tools available.
 2. **Proper Permissions**: Scope-based permission checking works correctly
 3. **Module Loading**: Toolbox can correctly load modules from module IDs
 4. **Future-Proof**: Separation of concerns allows for independent evolution of scope format
+5. **Backward Compatibility**: Old-format keys are automatically normalized to use Scope Picker
 
 ## Related Issues
 
