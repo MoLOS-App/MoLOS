@@ -42,7 +42,7 @@ export const DELETE: RequestHandler = async ({ locals, request }) => {
 		throw error(400, 'Missing key');
 	}
 
-	const { settingsSystem } = await import('$lib/server/db/schema');
+	const { settingsSystem } = await import('@molos/database/schema');
 	const { eq } = await import('drizzle-orm');
 	await db.delete(settingsSystem).where(eq(settingsSystem.key, key));
 

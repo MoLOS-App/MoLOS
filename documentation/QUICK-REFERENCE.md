@@ -43,15 +43,21 @@ bun run db:restore --file <filename>
                          # Restore from specific backup
 
 # LEGACY COMMANDS (for backward compatibility)
-bun run db:migrate:unified
+bun run db:migrate
                          # Old unified migration runner
-bun run db:generate      # Generate migrations with drizzle-kit
 bun run db:push          # Push schema changes directly (dev only)
 
 # UTILITY COMMANDS
 bun run db:studio        # Open Drizzle Studio
 bun run db:reset         # Reset database (WARNING: deletes data)
 ```
+
+**Important:** Migrations are NOT auto-generated during module fetch or dev startup.
+
+- Core migrations are in `packages/database/drizzle/`
+- Module migrations are in `modules/{ModuleName}/drizzle/`
+- Use `bun run db:migration:create` to create new migrations
+- Never run `drizzle-kit generate` or `bun run db:generate` directly (removed for safety)
 
 ---
 
@@ -61,6 +67,17 @@ bun run db:reset         # Reset database (WARNING: deletes data)
 | -------- | -------------- | ---------------------------- |
 | Internal | lowercase      | `dashboard`, `ai`            |
 | External | `MoLOS-{Name}` | `MoLOS-Tasks`, `MoLOS-Goals` |
+
+---
+
+## modules.config.ts: Tag vs Branch
+
+| Ref Type            | If Exists | Behavior                                |
+| ------------------- | --------- | --------------------------------------- |
+| `tag: 'v1.0.0'`     | Re-clones | Ensures exact version, no local changes |
+| `branch: 'develop'` | Skips     | Preserves local changes for development |
+
+**Use `tag` for production, `branch` for development.**
 
 ---
 
@@ -85,6 +102,19 @@ sqliteTable("MoLOS-Tasks_MoLOS-Tasks_tasks")     // Duplicated
 
 ## Import Patterns
 
+### Module-Internal (Use `$module` alias)
+
+**CRITICAL**: Use `$module` for imports within a module's own code. This works in both dev and production.
+
+```typescript
+// ✅ CORRECT: Use $module alias
+import { TaskRepository } from '$module/server/repositories/task-repository.js';
+import { TaskStatus } from '$module/models/index.js';
+
+// ❌ WRONG: Fragile relative paths (break in production)
+import { TaskRepository } from '../../../../../server/repositories/task-repository.js';
+```
+
 ### From Main App
 
 ```typescript
@@ -103,12 +133,13 @@ import { Goal } from '$lib/models/external_modules/MoLOS-Goals';
 import { Repo } from '$lib/repositories/external_modules/MoLOS-Tasks';
 ```
 
-### In Routes (Always .js)
+### Import Summary
 
-```typescript
-// TypeScript imports need .js extension
-import { repo } from '../../../server/repositories/repo.js';
-```
+| What You're Importing   | Use This Pattern                             |
+| ----------------------- | -------------------------------------------- |
+| Module's own code       | `$module/server/...` or `$module/models/...` |
+| Main app (db, auth, UI) | `$lib/server/...` or `$lib/components/...`   |
+| Another module          | `$lib/modules/{ModuleName}/...`              |
 
 ---
 
@@ -187,7 +218,8 @@ DATABASE_URL=./molos.db
 | Table not found                                           | Run `bun run db:migrate:improved`                                                |
 | Migration failed                                          | Run `bun run db:repair`, then `bun run db:restore --latest`                      |
 | Checksum mismatch                                         | Revert changes OR create new migration (never edit applied migrations)           |
-| Import errors                                             | Use `$lib` alias, check symlinks                                                 |
+| Import errors                                             | Use `$module` for module-internal, `$lib` for main app, check symlinks           |
+| Production build fails                                    | Replace fragile relative paths with `$module` alias                              |
 | tsconfig errors                                           | Remove standalone configs from module                                            |
 | Duplicate column name error                               | Normal if db created from snapshot - see ADR-002                                 |
 | "Cannot read properties of undefined (reading 'headers')" | API needs `request` in params: use `({ locals, params, request })` - see ADR-003 |

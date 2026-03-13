@@ -6,7 +6,7 @@
  */
 
 import { ApiKeyRepository } from '$lib/repositories/ai/mcp';
-import { parseApiKeyFromHeader } from '../mcp-utils';
+import { parseApiKeyFromHeader, extractModuleIdsFromScopes } from '../mcp-utils';
 import { mcpOAuthProvider } from '../oauth';
 import type { MCPContext, ApiKeyValidation, MCPAuthMethod } from '$lib/models/ai/mcp';
 import { scopesToAllowedScopes } from '../oauth/scope-mapper';
@@ -90,12 +90,23 @@ async function authenticateWithApiKey(
 	let allowedModules = validation.apiKey.allowedScopes ?? [];
 	console.log('[MCP Auth] Original allowedScopes:', allowedModules);
 
+	let moduleIds: string[]; // For toolbox loading
+	let scopeStrings: string[]; // For permission checking
+
 	if (allowedModules.length === 0) {
 		// No restriction = allow all external modules (both package and legacy)
-		allowedModules = getAllModules()
+		moduleIds = getAllModules()
 			.filter((m) => m.isPackageModule || m.isExternal)
 			.map((m) => m.id);
-		console.log('[MCP Auth] Expanded allowedModules to all external modules:', allowedModules);
+		scopeStrings = []; // Empty = no restriction for permission checking
+		console.log('[MCP Auth] Expanded allowedModules to all external modules:', moduleIds);
+	} else {
+		// Extract module IDs from scope strings (e.g., "MoLOS-Tasks:tasks:get_tasks" -> "MoLOS-Tasks")
+		// This ensures the toolbox receives module IDs, not full scope strings
+		moduleIds = extractModuleIdsFromScopes(allowedModules);
+		scopeStrings = allowedModules; // Keep original scopes for permission checking
+		console.log('[MCP Auth] Extracted module IDs from scopes:', moduleIds);
+		console.log('[MCP Auth] Using original scopes for permission checking:', scopeStrings);
 	}
 
 	// Create context
@@ -106,7 +117,8 @@ async function authenticateWithApiKey(
 		oauthClientId: null,
 		sessionId,
 		scopes: [], // API keys don't use OAuth scopes
-		allowedModules
+		allowedModules: moduleIds, // Module IDs for toolbox loading
+		allowedScopes: scopeStrings // Scope strings for permission checking
 	};
 
 	console.log('[MCP Auth] Created context with allowedModules:', context.allowedModules);
@@ -144,13 +156,17 @@ async function authenticateWithOAuth(
 		const authInfo = await mcpOAuthProvider.verifyAccessToken(token);
 
 		// Map OAuth scopes to allowed modules
-		let allowedModules = scopesToAllowedScopes(authInfo.scopes ?? []);
+		let scopeStrings = scopesToAllowedScopes(authInfo.scopes ?? []);
 
 		// If no scopes specified, allow all external modules (full access)
-		if (allowedModules.length === 0) {
-			allowedModules = getAllModules()
+		let moduleIds: string[];
+		if (scopeStrings.length === 0) {
+			moduleIds = getAllModules()
 				.filter((m) => m.isPackageModule || m.isExternal)
 				.map((m) => m.id);
+		} else {
+			// Extract module IDs from scope strings for toolbox loading
+			moduleIds = extractModuleIdsFromScopes(scopeStrings);
 		}
 
 		// Get user ID from token- we need to look up token to get userId
@@ -173,8 +189,9 @@ async function authenticateWithOAuth(
 			apiKeyId: null,
 			oauthClientId: authInfo.clientId,
 			sessionId,
-			scopes: authInfo.scopes ?? [],
-			allowedModules
+			scopes: authInfo.scopes ?? [], // Original OAuth scopes
+			allowedModules: moduleIds, // Module IDs for toolbox loading
+			allowedScopes: scopeStrings // Scope strings for permission checking
 		};
 
 		return {

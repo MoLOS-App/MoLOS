@@ -7,7 +7,7 @@
 
 import { randomBytes } from 'crypto';
 import { db } from '$lib/server/db';
-import { aiMcpOAuthCodes } from '$lib/server/db/schema';
+import { aiMcpOAuthCodes } from '@molos/database/schema';
 import { eq, or, and, isNotNull, lt } from 'drizzle-orm';
 import type { OAuthClientInformationFull } from '$lib/server/ai/mcp/oauth/clients-store.js';
 

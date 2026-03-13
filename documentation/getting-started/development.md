@@ -62,13 +62,13 @@ The application will be available at `http://localhost:5173`.
 
 ### Database
 
-| Command               | Description             |
-| --------------------- | ----------------------- |
-| `npm run db:push`     | Push schema to database |
-| `npm run db:migrate`  | Run migrations          |
-| `npm run db:generate` | Generate migrations     |
-| `npm run db:studio`   | Open Drizzle Studio     |
-| `npm run db:reset`    | Reset database          |
+| Command                       | Description             |
+| ----------------------------- | ----------------------- |
+| `npm run db:push`             | Push schema to database |
+| `npm run db:migrate`          | Run migrations          |
+| `npm run db:migration:create` | Create new migration    |
+| `npm run db:studio`           | Open Drizzle Studio     |
+| `npm run db:reset`            | Reset database          |
 
 ### Modules
 

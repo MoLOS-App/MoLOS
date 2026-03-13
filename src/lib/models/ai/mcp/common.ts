@@ -4,7 +4,7 @@
  * Shared types used across multiple MCP features.
  */
 
-import type { MCPApiKeyStatus, MCPLogStatus } from '$lib/server/db/schema';
+import type { MCPApiKeyStatus, MCPLogStatus } from '@molos/database/schema';
 
 /**
  * API Key Status Enum

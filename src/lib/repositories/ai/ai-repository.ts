@@ -7,7 +7,7 @@ import {
 	telegramSettings,
 	telegramSessions,
 	telegramMessages
-} from '$lib/server/db/schema';
+} from '@molos/database/schema';
 import type {
 	AiSettings,
 	AiMessage,

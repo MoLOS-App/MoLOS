@@ -12,16 +12,26 @@
  * Process:
  *   1. Read modules.config.ts
  *   2. Clone each module to modules/{id}/ if it doesn't exist
- *   3. Fetch and checkout specified tag
- *   4. Run bun install in module directory
- *   5. Run drizzle-kit generate if module has drizzle config
- *   6. Validate required files exist
+ *   3. Fetch and checkout specified tag or branch
+ *   4. Validate required files exist
+ *
+ * Note: Modules must include their migrations in the drizzle/ directory.
+ * Migrations are NOT auto-generated during fetch. Use `bun run db:migration:create`
+ * to create new migrations manually.
+ *
+ * Dependencies are resolved at the monorepo root level via workspace:* protocol.
  */
 
 import { execSync } from 'child_process';
 import { existsSync, mkdirSync, readFileSync } from 'fs';
 import path from 'path';
-import { modulesConfig, type ModuleConfigEntry } from '../modules.config';
+import {
+	modulesConfig,
+	type ModuleConfigEntry,
+	validateModuleConfigEntry,
+	getModuleRef,
+	getModuleRefType
+} from '../modules.config';
 
 const ROOT_DIR = path.resolve(import.meta.dirname, '..');
 const MODULES_DIR = path.resolve(ROOT_DIR, 'modules');
@@ -69,13 +79,74 @@ function commandExists(command: string): boolean {
 }
 
 /**
+ * Check if a ref exists on the remote repository
+ */
+function refExists(gitUrl: string, ref: string, refType: 'tag' | 'branch'): boolean {
+	try {
+		const refPath = refType === 'tag' ? `refs/tags/${ref}` : `refs/heads/${ref}`;
+		const output = execSync(`git ls-remote ${gitUrl} ${refPath}`, { stdio: 'pipe' });
+		return output.toString().trim().length > 0;
+	} catch {
+		return false;
+	}
+}
+
+/**
+ * Get list of available tags from remote
+ */
+function getAvailableTags(gitUrl: string): string[] {
+	try {
+		const output = execSync(`git ls-remote --tags ${gitUrl}`, { stdio: 'pipe' });
+		const lines = output.toString().trim().split('\n');
+		return lines
+			.filter((line) => line.includes('refs/tags/'))
+			.map((line) => {
+				const match = line.match(/refs\/tags\/(.+)$/);
+				return match ? match[1] : '';
+			})
+			.filter((tag) => tag && !tag.endsWith('^{}'));
+	} catch {
+		return [];
+	}
+}
+
+/**
  * Clone or update a module from git
  */
 async function fetchModule(moduleEntry: ModuleConfigEntry): Promise<FetchResult> {
-	const { id, git, tag, required } = moduleEntry;
+	const { id, git, required } = moduleEntry;
 	const modulePath = path.join(MODULES_DIR, id);
+	const ref = getModuleRef(moduleEntry);
+	const refType = getModuleRefType(moduleEntry);
 
-	log(`Processing module: ${id} from ${git}#${tag}`);
+	// Validate config entry
+	const validationError = validateModuleConfigEntry(moduleEntry);
+	if (validationError) {
+		return {
+			moduleId: id,
+			success: false,
+			skipped: false,
+			error: validationError,
+			message: `Configuration error: ${validationError}`
+		};
+	}
+
+	log(`Processing module: ${id} from ${git} (${refType}: ${ref})`);
+
+	// Check if ref exists before attempting to clone
+	if (!refExists(git, ref, refType)) {
+		const errorMsg =
+			refType === 'tag'
+				? `Tag '${ref}' not found on remote. Available tags: ${getAvailableTags(git).slice(0, 5).join(', ')}${getAvailableTags(git).length > 5 ? '...' : ''}`
+				: `Branch '${ref}' not found on remote`;
+		return {
+			moduleId: id,
+			success: false,
+			skipped: false,
+			error: errorMsg,
+			message: `Failed: ${errorMsg}`
+		};
+	}
 
 	const result: FetchResult = {
 		moduleId: id,
@@ -85,14 +156,31 @@ async function fetchModule(moduleEntry: ModuleConfigEntry): Promise<FetchResult>
 	};
 
 	try {
-		// Always remove existing module folder to ensure clean clone
+		// For branch-based modules, skip if already exists (preserve local changes)
+		// For tag-based modules, always re-clone (ensure exact version)
 		if (existsSync(modulePath)) {
-			log(`Removing existing ${id} for clean clone...`, 'info');
+			if (refType === 'branch') {
+				log(
+					`Module ${id} already exists (branch: ${ref}), skipping clone to preserve local changes`,
+					'info'
+				);
+				result.success = true;
+				result.skipped = true;
+				result.message = `Skipped (already exists, branch: ${ref})`;
+				return result;
+			}
+			// Tag-based: remove for clean clone
+			log(`Removing existing ${id} for clean clone (tag: ${ref})...`, 'info');
 			runCommand(`rm -rf ${modulePath}`, ROOT_DIR);
 		}
 
 		log(`Cloning ${id}...`, 'info');
-		runCommand(`git clone --depth 1 --branch ${tag} ${git} ${id}`, MODULES_DIR);
+		// For tags: git clone --depth 1 --branch <tag> works for tags too
+		// Suppress detached HEAD warning
+		runCommand(
+			`git -c advice.detachedHead=false clone --depth 1 --branch ${ref} ${git} ${id}`,
+			MODULES_DIR
+		);
 		result.message = 'Cloned new module';
 
 		const packageJsonPath = path.join(modulePath, 'package.json');
@@ -100,22 +188,13 @@ async function fetchModule(moduleEntry: ModuleConfigEntry): Promise<FetchResult>
 			throw new Error('package.json not found');
 		}
 
-		log(`Installing dependencies for ${id}...`, 'info');
-		try {
-			runCommand('bun install', modulePath, true);
-		} catch (error) {
-			log(`Warning: bun install failed for ${id}: ${error}`, 'warn');
-		}
+		// Note: We don't run `bun install` here because modules may have
+		// workspace:* dependencies that can only be resolved from the monorepo root.
+		// The root-level `bun install` (after module:sync-deps) handles all dependencies.
 
-		const drizzleConfigPath = path.join(modulePath, 'drizzle.config.ts');
-		if (existsSync(drizzleConfigPath)) {
-			log(`Generating migrations for ${id}...`, 'info');
-			try {
-				runCommand('npx drizzle-kit generate', modulePath, true);
-			} catch (error) {
-				log(`Warning: drizzle-kit generate failed for ${id}: ${error}`, 'warn');
-			}
-		}
+		// Note: Migrations are NOT auto-generated. Modules must include their
+		// migrations in the drizzle/ directory. Use `bun run db:migration:create`
+		// to create new migrations manually.
 
 		const configPath = path.join(modulePath, 'src/config.ts');
 		if (!existsSync(configPath)) {
@@ -151,7 +230,7 @@ function validateEnvironment(): void {
 	}
 
 	if (!commandExists('bun')) {
-		throw new Error('bun is not installed. Please install bun to install module dependencies.');
+		throw new Error('bun is not installed.');
 	}
 }
 
@@ -163,6 +242,21 @@ async function main(): Promise<void> {
 
 	try {
 		validateEnvironment();
+
+		// Validate all module config entries first
+		const configErrors: string[] = [];
+		for (const entry of modulesConfig) {
+			const error = validateModuleConfigEntry(entry);
+			if (error) {
+				configErrors.push(error);
+			}
+		}
+
+		if (configErrors.length > 0) {
+			log('Configuration errors found:', 'error');
+			configErrors.forEach((err) => log(`  - ${err}`, 'error'));
+			process.exit(1);
+		}
 
 		if (!existsSync(MODULES_DIR)) {
 			mkdirSync(MODULES_DIR, { recursive: true });

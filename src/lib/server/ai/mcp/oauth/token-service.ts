@@ -7,7 +7,7 @@
 
 import { randomBytes, createHash } from 'crypto';
 import { db } from '$lib/server/db';
-import { aiMcpOAuthTokens, MCPOAuthTokenType } from '$lib/server/db/schema';
+import { aiMcpOAuthTokens, MCPOAuthTokenType } from '@molos/database/schema';
 import { eq, and, lt, or, isNull, sql } from 'drizzle-orm';
 
 /**

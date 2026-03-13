@@ -9,10 +9,11 @@
 - Database:
   - `bun run db:push` - Push schema changes (dev)
   - `bun run db:migrate` - Run migrations
-  - `bun run db:generate` - Generate migrations
+  - `bun run db:migration:create --name <name>` - Create new migration
   - `bun run db:studio` - Open Drizzle Studio
 
 Notes
 
 - Use tabs, single quotes, printWidth 100 (Prettier).
 - Prefer server-side data loading via +page.server.ts or load.
+- Migrations are NOT auto-generated. Use `db:migration:create` to create new migrations.

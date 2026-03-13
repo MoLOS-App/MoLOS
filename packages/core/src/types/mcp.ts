@@ -586,6 +586,7 @@ export interface MCPContext {
 	sessionId: string;
 	scopes: string[];
 	allowedModules: string[];
+	allowedScopes: string[];
 }
 
 /**

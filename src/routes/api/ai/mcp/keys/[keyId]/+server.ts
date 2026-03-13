@@ -12,7 +12,7 @@ import { ApiKeyRepository } from '$lib/repositories/ai/mcp';
 import { McpLogRepository } from '$lib/repositories/ai/mcp';
 import type { UpdateApiKeyInput } from '$lib/models/ai/mcp';
 import { validateScopes, validateKeyName } from '$lib/server/ai/mcp/validation/scope-validator';
-import { MCPApiKeyStatus } from '$lib/server/db/schema';
+import { MCPApiKeyStatus } from '@molos/database/schema';
 
 /**
  * GET - Get API key details

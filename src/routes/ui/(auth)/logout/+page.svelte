@@ -52,7 +52,7 @@
 			<div
 				class="inline-flex h-16 w-16 items-center justify-center overflow-hidden rounded-3xl border border-border bg-card text-card-foreground shadow-xl"
 			>
-				<img src="/favicon.svg" alt="MoLOS Logo" class="h-10 w-10" />
+				<img src="/favicon.ico" alt="MoLOS Logo" class="h-10 w-10" />
 			</div>
 			<div class="space-y-2">
 				<h1 class="text-4xl font-bold tracking-tight">MoLOS</h1>

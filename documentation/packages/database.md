@@ -12,16 +12,16 @@ packages/database/
 │   ├── schema/              # Database schema definitions
 │   │   ├── core/            # Core tables (user, session, settings)
 │   │   └── external/        # External module tables
-│   ├── migrate.ts           # Core migration runner
-│   ├── migrate-unified.ts   # Unified migration runner (core + modules)
+│   ├── migrate-improved.ts  # Production-ready migration runner (core + modules)
 │   ├── schema-validator.ts  # Schema validation utility
 │   ├── migration-logger.ts  # Structured logging for migrations
+│   ├── connection.ts        # Database connection (db, sqlite, schema)
 │   ├── utils/               # Database utilities
 │   │   └── namespace.ts     # Table namespacing helpers
 │   └── index.ts             # Main exports
-├── drizzle/                 # Core migration files
+├── drizzle/                 # Core migration files (consolidated here)
 ├── package.json
-└── drizzle.config.ts
+└── drizzle.config.ts        # Canonical Drizzle config
 ```
 
 ## Exports
@@ -32,7 +32,7 @@ packages/database/
 | `@molos/database/schema`           | Schema definitions               |
 | `@molos/database/schema/core`      | Core schema only                 |
 | `@molos/database/utils`            | Table namespacing utilities      |
-| `@molos/database/migrate-unified`  | Unified migration runner         |
+| `@molos/database/migrate`          | Migration runner                 |
 | `@molos/database/schema-validator` | Schema validation utility        |
 | `@molos/database/migration-logger` | Structured logging               |
 
@@ -86,71 +86,57 @@ export const projects = sqliteTable(getTableName(MODULE_ID, 'projects'), {
 
 MoLOS uses a **unified migration system** based on Drizzle ORM:
 
-- **Core migrations**: `drizzle/` directory (tracked in `__drizzle_migrations`)
+- **Core migrations**: `packages/database/drizzle/` directory (tracked in `__drizzle_migrations`)
 - **Module migrations**: `modules/{ModuleName}/drizzle/` (per-module tracking)
 
 See [ADR-001](../adr/001-migration-tracking-strategy.md) for the tracking strategy decision.
 
 ### Commands
 
-| Command                    | Description                                                              | Usage Context              |
-| -------------------------- | ------------------------------------------------------------------------ | -------------------------- |
-| `bun run db:init`          | Initialize database (first-time setup, applies existing migrations only) | New setup, fresh install   |
-| `bun run db:migrate`       | Run all pending migrations                                               | Update existing DB         |
-| `bun run db:migrate`       | Unified runner with logging                                              | Debugging migrations       |
-| `bun run db:generate`      | **DEVELOPMENT ONLY**: Generate new migration files from schema changes   | After editing schema files |
-| `bun run db:push`          | Push schema directly (dev only)                                          | Quick iteration in dev     |
-| `bun run db:validate`      | Validate schema matches migrations                                       | Verify migration health    |
-| `bun run db:audit-modules` | Audit all module migrations                                              | Check module DB setup      |
-| `bun run db:studio`        | Open Drizzle Studio                                                      | Visual DB inspection       |
-| `bun run db:reset`         | Reset database (destructive)                                             | Clean slate                |
+| Command                       | Description                                                              | Usage Context              |
+| ----------------------------- | ------------------------------------------------------------------------ | -------------------------- |
+| `bun run db:init`             | Initialize database (first-time setup, applies existing migrations only) | New setup, fresh install   |
+| `bun run db:migrate`          | Run all pending migrations                                               | Update existing DB         |
+| `bun run db:migrate`          | Unified runner with logging                                              | Debugging migrations       |
+| `bun run db:migration:create` | Create new migration with proper naming                                  | After editing schema files |
+| `bun run db:push`             | Push schema directly (dev only)                                          | Quick iteration in dev     |
+| `bun run db:validate`         | Validate schema matches migrations                                       | Verify migration health    |
+| `bun run db:audit-modules`    | Audit all module migrations                                              | Check module DB setup      |
+| `bun run db:studio`           | Open Drizzle Studio                                                      | Visual DB inspection       |
+| `bun run db:reset`            | Reset database (destructive)                                             | Clean slate                |
 
-**Important:** `db:generate` is only for development when creating new migrations from schema changes. It is NOT part of `db:init` which only applies existing migrations. See [Migration Workflow](#migration-workflow) for details.
+**Important:** Migrations are NOT auto-generated. Use `bun run db:migration:create --name <name> [--module <module>]` to create new migrations manually. Never run `drizzle-kit generate` or `bun run db:generate` directly - these are removed for safety. See [Migration Workflow](#migration-workflow) for details.
 
 ### Migration Workflow
 
-#### Understanding the Two Phases
+#### Creating a New Migration
 
-Database migration has two distinct phases that must be kept separate:
-
-| Phase           | Command               | Purpose                                | Fails If...                           |
-| --------------- | --------------------- | -------------------------------------- | ------------------------------------- |
-| **Generation**  | `bun run db:generate` | CREATE new migration files from schema | ANY module has invalid schema         |
-| **Application** | `bun run db:migrate`  | APPLY existing migrations to database  | Migration SQL has errors or conflicts |
-
-**Why They Must Be Separate:**
-
-- **Generation** scans ALL module schemas - one bad schema blocks everyone
-- **Application** only runs pending migrations - independent of other modules
-- **Generation** is development-time (schema → SQL files)
-- **Application** is runtime/deploy-time (SQL files → database)
-- **Init script** should only APPLY, not GENERATE
-
-#### Creating a New Migration (Development Phase)
+Migrations are created manually using the migration generator:
 
 ```bash
-# 1. Modify schema in packages/database/src/schema/
-# 2. Generate migration
-cd packages/database
-bun run db:generate
+# Core migration
+bun run db:migration:create --name add_user_preferences
 
-# 3. Review generated SQL in drizzle/*.sql
-# 4. Test migration
-cd ../..
-bun run db:migrate
-bun run db:validate
+# Module migration
+bun run db:migration:create --name add_priority --module MoLOS-Tasks
+
+# With rollback support
+bun run db:migration:create --name add_column --module MoLOS-Tasks --reversible
 ```
 
-#### Module Migrations
+This creates SQL files in the appropriate `drizzle/` directory:
+
+- Core: `packages/database/drizzle/000X_add_user_preferences.sql`
+- Module: `modules/MoLOS-Tasks/drizzle/000X_add_priority.sql`
+
+#### Applying Migrations
 
 ```bash
-# 1. Modify schema in modules/{ModuleName}/src/server/database/schema.ts
-# 2. Generate migration
-cd modules/{ModuleName}
-bun run db:generate
-
-# 3. Review and test
+# Apply all pending migrations (core + modules)
 bun run db:migrate
+
+# Validate after applying
+bun run db:validate
 ```
 
 ### Migration Files
@@ -158,11 +144,11 @@ bun run db:migrate
 Migration files follow Drizzle conventions:
 
 ```
-drizzle/
-├── 0000_initial.sql
-├── 0001_add_settings.sql
+packages/database/drizzle/
+├── 0000_condemned_ultron.sql
+├── 0001_gifted_terrax.sql
 ├── ...
-├── 0015_cleanup_duplicate_ai_messages.sql
+├── 0016_add_submodule_tool_permissions.sql
 └── meta/
     └── _journal.json     # Migration tracking
 ```
@@ -204,7 +190,7 @@ The system supports rollback via:
 2. **Auto-generated rollback** - For simple DDL (CREATE TABLE, CREATE INDEX, ALTER TABLE ADD COLUMN)
 
 ```
-drizzle/
+packages/database/drizzle/
 ├── 0016_add_column.sql
 ├── 0016_add_column.down.sql  # Manual rollback
 ```
@@ -342,4 +328,4 @@ describe('My Test', () => {
 
 ---
 
-_Last Updated: 2026-02-23_
+_Last Updated: 2026-03-11_

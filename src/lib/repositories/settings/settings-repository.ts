@@ -5,7 +5,7 @@ import {
 	settingsExternalModules,
 	settingsServerLogs,
 	settingsSystem
-} from '../../server/db/schema';
+} from '@molos/database/schema';
 import { BaseRepository } from '../base-repository';
 import type { ModuleError } from '../../config/module-types.ts';
 

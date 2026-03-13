@@ -28,11 +28,11 @@
 			"default": "./dist/utils/index.js",
 			"source": "./src/utils/index.ts"
 		},
-		"./migrate-unified": {
-			"types": "./dist/migrate-unified.d.ts",
-			"import": "./dist/migrate-unified.js",
-			"default": "./dist/migrate-unified.js",
-			"source": "./src/migrate-unified.ts"
+		"./migrate": {
+			"types": "./dist/migrate-improved.d.ts",
+			"import": "./dist/migrate-improved.js",
+			"default": "./dist/migrate-improved.js",
+			"source": "./src/migrate-improved.ts"
 		},
 		"./schema-validator": {
 			"types": "./dist/schema-validator.d.ts",

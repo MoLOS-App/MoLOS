@@ -30,7 +30,7 @@ The database (`data/molos.db`) was created with a **complete schema** instead of
 
 ### Error Handling Bug
 
-In `packages/database/src/migrate-unified.ts:177`, the error handler only checked for "already exists" errors:
+In `packages/database/src/migrate-improved.ts`, the error handler only checked for "already exists" errors:
 
 ```typescript
 if (errMsg.includes('already exists')) {
@@ -42,7 +42,7 @@ But ALTER TABLE failures produce "duplicate column name" errors, which weren't h
 
 ## Solution
 
-**File Modified**: `packages/database/src/migrate-unified.ts:177`
+**File Modified**: `packages/database/src/migrate-improved.ts`
 
 **Change**:
 

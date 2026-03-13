@@ -10,6 +10,7 @@ MCP enables AI assistants to interact with MoLOS functionality through a standar
 
 - [Integration PRD](./integration-prd.md) - Product requirements for MCP integration
 - [Server Development](./server-development.md) - Building the MCP server
+- **[Fix: Tool Naming Inconsistency](./fix-tool-naming-inconsistency.md)** - Fixed critical bug where scopes prevented tools from loading
 
 ## MCP in MoLOS
 

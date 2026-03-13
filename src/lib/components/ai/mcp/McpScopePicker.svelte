@@ -36,6 +36,11 @@
 	let selectedModuleTab = $state(modules[0]?.id || '');
 	let copiedToClipboard = $state(false);
 	let previousTab = $state('');
+	let showOldFormatWarning = $derived(() => {
+		// Detect if scopes are in old format (module IDs without colons)
+		if (selectedScopes.length === 0) return false;
+		return selectedScopes.some((s) => !s.includes(':'));
+	});
 
 	// Update selected tab when modules change
 	$effect(() => {
@@ -276,6 +281,26 @@
 			{/if}
 		</div>
 	</div>
+
+	<!-- Warning for old format scopes -->
+	{#if showOldFormatWarning}
+		<div class="bg-warning/10 border-warning/20 mb-4 rounded-lg p-4">
+			<div class="flex items-start gap-3">
+				<Info class="text-warning mt-0.5 h-5 w-5 flex-shrink-0" />
+				<div class="flex-1">
+					<h4 class="text-warning-foreground mb-1 font-medium">Legacy Format Detected</h4>
+					<p class="text-warning-foreground/80 text-sm">
+						This API key was created with an old permission format. Please edit the key and use the
+						Scope Picker to select specific tools with fine-grained control.
+					</p>
+					<p class="text-warning-foreground/60 text-xs">
+						Current format: Module-level access (e.g., "All Tasks"). New format: Tool-level access
+						(e.g., "Tasks: get_tasks, create_task").
+					</p>
+				</div>
+			</div>
+		</div>
+	{/if}
 
 	<!-- Tabs for Module Selection -->
 	{#if modules.length > 0}

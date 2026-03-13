@@ -15,9 +15,9 @@ export type { AuthorizationCodeInfo } from './authorization-service';
 export { McpOAuthProvider, mcpOAuthProvider } from './oauth-provider';
 
 export {
-	scopesToModules,
-	modulesToScopes,
-	validateScopes,
+	scopesToAllowedScopes,
+	scopesToOAuthScopes,
+	validateOAuthScopes,
 	getAvailableScopes,
 	MCP_OAUTH_SCOPES
 } from './scope-mapper';

@@ -53,7 +53,7 @@ bun run db:backup
 ### Legacy (Backward Compatibility)
 
 ```bash
-bun run db:migrate:unified
+bun run db:migrate
 bun run db:generate
 bun run db:migrate
 bun run db:push

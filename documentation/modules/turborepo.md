@@ -37,8 +37,8 @@ bun run lint
 # Type check everything
 bun run typecheck
 
-# Generate migrations in all modules
-bun run db:generate
+# Create new migration
+bun run db:migration:create --name add_feature --module MoLOS-Tasks
 
 # Run migrations in all modules
 bun run db:migrate
@@ -70,21 +70,21 @@ graph TD
     A[build] --> B[lint]
     A --> C[test]
     A --> D[typecheck]
-    E[db:generate] --> F[db:migrate]
+    E[db:migration:create] --> F[db:migrate]
 ```
 
 Tasks in `turbo.json`:
 
-| Task          | Description         | Cache           |
-| ------------- | ------------------- | --------------- |
-| `build`       | Build packages      | ✅              |
-| `lint`        | Lint code           | ✅              |
-| `test`        | Run tests           | ✅              |
-| `typecheck`   | Type check          | ✅              |
-| `db:generate` | Generate migrations | ❌              |
-| `db:migrate`  | Run migrations      | ❌              |
-| `dev`         | Dev servers         | ❌ (persistent) |
-| `clean`       | Clean artifacts     | ❌              |
+| Task                  | Description       | Cache           |
+| --------------------- | ----------------- | --------------- |
+| `build`               | Build packages    | ✅              |
+| `lint`                | Lint code         | ✅              |
+| `test`                | Run tests         | ✅              |
+| `typecheck`           | Type check        | ✅              |
+| `db:migration:create` | Create migrations | ❌              |
+| `db:migrate`          | Run migrations    | ❌              |
+| `dev`                 | Dev servers       | ❌ (persistent) |
+| `clean`               | Clean artifacts   | ❌              |
 
 ## Caching
 

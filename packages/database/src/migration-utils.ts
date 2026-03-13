@@ -151,7 +151,22 @@ export function parseStatements(sql: string): string[] {
 		return sql
 			.split('--> statement-breakpoint')
 			.map((s) => s.trim())
-			.filter((s) => s.length > 0 && !s.startsWith('--'));
+			.filter((s) => s.length > 0)
+			.map((s) => {
+				// Remove leading comment lines but keep the SQL
+				const lines = s.split('\n');
+				const sqlLines: string[] = [];
+				for (const line of lines) {
+					const trimmed = line.trim();
+					// Skip pure comment lines
+					if (trimmed.startsWith('--') && !trimmed.includes(';')) {
+						continue;
+					}
+					sqlLines.push(line);
+				}
+				return sqlLines.join('\n').trim();
+			})
+			.filter((s) => s.length > 0);
 	}
 
 	// Fallback: semicolon splitting (with warning about edge cases)

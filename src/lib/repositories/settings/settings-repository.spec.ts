@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { SettingsRepository } from './settings-repository';
 import { createTestDb } from '$lib/test-utils';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
-import { user } from '$lib/server/db/schema';
+import { user } from '@molos/database/schema';
 
 describe('SettingsRepository', () => {
 	let db: BetterSQLite3Database<Record<string, unknown>>;

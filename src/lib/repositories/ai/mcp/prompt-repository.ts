@@ -5,7 +5,7 @@
  */
 
 import { eq, and, desc, count, sql } from 'drizzle-orm';
-import { aiMcpPrompts } from '$lib/server/db/schema';
+import { aiMcpPrompts } from '@molos/database/schema';
 import type {
 	MCPPrompt,
 	CreatePromptInput,

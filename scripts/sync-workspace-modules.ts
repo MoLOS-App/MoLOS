@@ -3,7 +3,8 @@
  * Sync Workspace Modules Script
  *
  * Auto-discovers all modules in modules/ directory and ensures they are
- * added as workspace dependencies in package.json.
+ * added as workspace dependencies in package.json. Also cleans up stale
+ * entries for modules that no longer exist.
  *
  * Usage:
  *   bun run module:sync-deps
@@ -56,6 +57,22 @@ function discoverModules(): Array<{ name: string; path: string }> {
 	return modules;
 }
 
+/**
+ * Check if a dependency name is a MoLOS module package
+ * Valid formats: @molos/module-*
+ * Invalid formats: MoLOS-* (repo names, not package names)
+ */
+function isMolosModulePackage(name: string): boolean {
+	return name.startsWith('@molos/module-');
+}
+
+/**
+ * Check if a dependency name looks like a MoLOS repo name (incorrect format)
+ */
+function isMolosRepoName(name: string): boolean {
+	return name.startsWith('MoLOS-') && !name.startsWith('@');
+}
+
 function syncDependencies(): void {
 	console.log('[SyncDeps] Discovering modules...');
 
@@ -82,6 +99,36 @@ function syncDependencies(): void {
 	// Track changes
 	const added: string[] = [];
 	const existing: string[] = [];
+	const removed: string[] = [];
+
+	// Build set of valid module package names
+	const validModuleNames = new Set(modules.map((m) => m.name));
+
+	// Clean up stale entries and incorrect formats
+	const depsToRemove: string[] = [];
+	for (const depName of Object.keys(packageJson.dependencies)) {
+		const depValue = packageJson.dependencies[depName];
+
+		// Check for incorrect repo-name format dependencies
+		if (isMolosRepoName(depName) && depValue === 'workspace:*') {
+			depsToRemove.push(depName);
+			removed.push(`${depName} (incorrect format - use @molos/module-* instead)`);
+			continue;
+		}
+
+		// Check for stale workspace module entries
+		if (isMolosModulePackage(depName) && depValue === 'workspace:*') {
+			if (!validModuleNames.has(depName)) {
+				depsToRemove.push(depName);
+				removed.push(`${depName} (module no longer exists)`);
+			}
+		}
+	}
+
+	// Remove stale/incorrect entries
+	for (const depName of depsToRemove) {
+		delete packageJson.dependencies[depName];
+	}
 
 	// Add all modules as workspace dependencies
 	for (const mod of modules) {
@@ -113,9 +160,12 @@ function syncDependencies(): void {
 	if (existing.length > 0) {
 		console.log(`  Existing: ${existing.join(', ')}`);
 	}
+	if (removed.length > 0) {
+		console.log(`  Removed: ${removed.join(', ')}`);
+	}
 
-	if (added.length > 0) {
-		console.log('\n[SyncDeps] Run `bun install` to install new dependencies');
+	if (added.length > 0 || removed.length > 0) {
+		console.log('\n[SyncDeps] Run `bun install` from root to update dependencies');
 	}
 }
 

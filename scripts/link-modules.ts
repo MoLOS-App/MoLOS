@@ -455,6 +455,32 @@ async function linkSingleModule(moduleId: string, modulePath: string): Promise<M
 			result.linkedPaths.push(modelsDest);
 		}
 
+		// Link stores directory (at root level, like server and models)
+		const storesSource = path.join(moduleSrcPath, 'stores');
+		if (existsSync(storesSource)) {
+			const storesDestDir = path.resolve('src/lib/stores/external_modules');
+			const storesDest = path.join(storesDestDir, moduleId);
+			rmSync(storesDest, { recursive: true, force: true });
+			if (!existsSync(storesDestDir)) {
+				mkdirSync(storesDestDir, { recursive: true });
+			}
+			symlinkSync(storesSource, storesDest, 'dir');
+			result.linkedPaths.push(storesDest);
+		}
+
+		// Link components directory (at root level, like server and models)
+		const componentsSource = path.join(moduleSrcPath, 'components');
+		if (existsSync(componentsSource)) {
+			const componentsDestDir = path.resolve('src/lib/components/external_modules');
+			const componentsDest = path.join(componentsDestDir, moduleId);
+			rmSync(componentsDest, { recursive: true, force: true });
+			if (!existsSync(componentsDestDir)) {
+				mkdirSync(componentsDestDir, { recursive: true });
+			}
+			symlinkSync(componentsSource, componentsDest, 'dir');
+			result.linkedPaths.push(componentsDest);
+		}
+
 		result.success = true;
 		console.log(
 			`[ModuleLinker] Successfully linked ${moduleId} (${result.linkedPaths.length} paths)`
@@ -650,6 +676,32 @@ export async function linkModuleRoutes(): Promise<void> {
 				mkdirSync(modelsDestDir, { recursive: true });
 			}
 			symlinkSync(modelsSource, modelsDest, 'dir');
+			linked++;
+		}
+
+		// Link stores directory (at root level, like server and models)
+		const storesSource = path.join(moduleSrcPath, 'stores');
+		if (existsSync(storesSource)) {
+			const storesDestDir = path.resolve('src/lib/stores/external_modules');
+			const storesDest = path.join(storesDestDir, moduleId);
+			rmSync(storesDest, { recursive: true, force: true });
+			if (!existsSync(storesDestDir)) {
+				mkdirSync(storesDestDir, { recursive: true });
+			}
+			symlinkSync(storesSource, storesDest, 'dir');
+			linked++;
+		}
+
+		// Link components directory (at root level, like server and models)
+		const componentsSource = path.join(moduleSrcPath, 'components');
+		if (existsSync(componentsSource)) {
+			const componentsDestDir = path.resolve('src/lib/components/external_modules');
+			const componentsDest = path.join(componentsDestDir, moduleId);
+			rmSync(componentsDest, { recursive: true, force: true });
+			if (!existsSync(componentsDestDir)) {
+				mkdirSync(componentsDestDir, { recursive: true });
+			}
+			symlinkSync(componentsSource, componentsDest, 'dir');
 			linked++;
 		}
 	}

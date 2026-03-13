@@ -75,11 +75,11 @@ export async function readMcpResource(
 		throw new Error('Resource is disabled');
 	}
 
-	// Check module scope
+	// Check module scope using allowedScopes for proper permission checking
 	if (
-		context.allowedModules.length > 0 &&
+		context.allowedScopes.length > 0 &&
 		resource.moduleId &&
-		!context.allowedModules.includes(resource.moduleId)
+		!context.allowedScopes.includes(resource.moduleId)
 	) {
 		throw new Error('Module not allowed for this API key');
 	}

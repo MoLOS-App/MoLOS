@@ -28,7 +28,8 @@ This approach provides:
 export interface ModuleConfigEntry {
 	id: string; // Module identifier (folder name)
 	git: string; // Git repository URL
-	tag: string; // Tag or branch to checkout
+	tag?: string; // Git tag to checkout (mutually exclusive with branch)
+	branch?: string; // Git branch to checkout (mutually exclusive with tag)
 	required?: boolean; // If true, build fails if module cannot be cloned
 }
 
@@ -37,10 +38,17 @@ export const modulesConfig: ModuleConfigEntry[] = [
 		id: 'MoLOS-Tasks',
 		git: 'https://github.com/molos-org/MoLOS-Tasks.git',
 		tag: 'v1.0.0'
+	},
+	{
+		id: 'MoLOS-MyDevModule',
+		git: 'https://github.com/user/MoLOS-MyDevModule.git',
+		branch: 'develop' // Use branch instead of tag for development
 	}
 	// ... more modules
 ];
 ```
+
+**Note:** Either `tag` or `branch` must be specified, but not both.
 
 ### Adding a Module
 
@@ -66,10 +74,14 @@ docker build -t molos:latest .
 ### Updating a Module
 
 1. Open `modules.config.ts`
-2. Change the `tag` value for the module:
+2. Change the `tag` or `branch` value for the module:
 
 ```typescript
+// Using a tag
 { id: 'MoLOS-Tasks', git: 'https://github.com/molos-org/MoLOS-Tasks.git', tag: 'v2.0.0' }
+
+// Or using a branch
+{ id: 'MoLOS-Tasks', git: 'https://github.com/molos-org/MoLOS-Tasks.git', branch: 'main' }
 ```
 
 3. Rebuild the image
@@ -80,7 +92,7 @@ For local development, create `modules.config.local.ts` to override `modules.con
 
 ```typescript
 // modules.config.local.ts
-export const modulesConfig = [{ id: 'MoLOS-Tasks', git: '../MoLOS-Tasks', tag: 'main' }];
+export const modulesConfig = [{ id: 'MoLOS-Tasks', git: '../MoLOS-Tasks', branch: 'main' }];
 ```
 
 This file is git-ignored and won't be committed or built in production images.
@@ -115,7 +127,7 @@ For manual migration control:
 
 ```bash
 # Run migrations only
-bun run db:migrate:unified
+bun run db:migrate
 
 # Then start server
 NODE_ENV=production PORT=4173 node build/index.js
@@ -188,12 +200,25 @@ Clones all modules defined in `modules.config.ts` into the `modules/` directory.
 **Process:**
 
 1. Reads `modules.config.ts`
-2. For each module:
-   - Clones to `modules/{id}/` if it doesn't exist
-   - Fetches and checks out specified tag
-   - Runs `npm install` in module directory
-   - Runs `drizzle-kit generate` if module has drizzle config
-3. Validates required files exist (`package.json`, `src/config.ts`)
+2. Validates each module entry (tag or branch, not both)
+3. For each module:
+   - **Tag-based**: Always removes and re-clones to ensure exact version
+   - **Branch-based**: Skips if already exists to preserve local changes
+4. Validates required files exist (`package.json`, `src/config.ts`)
+
+**Tag vs Branch Behavior:**
+
+| Ref Type            | If Exists | Behavior                                |
+| ------------------- | --------- | --------------------------------------- |
+| `tag: 'v1.0.0'`     | Re-clones | Ensures exact version, no local changes |
+| `branch: 'develop'` | Skips     | Preserves local changes for development |
+
+**Recommendations:**
+
+- Use `tag` for production builds (deterministic, reproducible)
+- Use `branch` for development (allows local modifications)
+
+**Note:** Migrations are NOT auto-generated during fetch. Modules must include their migrations in the `drizzle/` directory. Use `bun run db:migration:create` to create new migrations manually.
 
 **Options:**
 
@@ -209,9 +234,8 @@ Prepares modules for production build.
 **Process:**
 
 1. Runs `module:sync-deps` to update workspace dependencies
-2. Runs `module:cleanup` to remove broken symlinks
-3. Runs `module:sync` to link module routes
-4. Runs `svelte-kit sync` to generate types
+2. Runs `module:link` to link module routes (includes symlink cleanup)
+3. Runs `svelte-kit sync` to generate types
 
 ### `bun run build:prod`
 
@@ -381,9 +405,9 @@ DOCKER_BUILDKIT=1 docker build \
 - Check database file permissions: `ls -l /data/molos.db`
 - Ensure `/data` directory exists and is writable
 - Check `node_modules/better-sqlite3` was built correctly
-- Run `bun run db:migrate:unified` manually to see detailed error output
+- Run `bun run db:migrate` manually to see detailed error output
 
-**Note:** Migrations run automatically before every server start via the `serve` script. This ensures the database schema is always up-to-date. The unified migration runner (`packages/database/src/migrate-unified.ts`) handles:
+**Note:** Migrations run automatically before every server start via the `serve` script. This ensures the database schema is always up-to-date. The migration runner (`packages/database/src/migrate-improved.ts`) handles:
 
 - Creating the database directory if missing
 - Creating the database file if missing

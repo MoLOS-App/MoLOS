@@ -5,7 +5,7 @@
  */
 
 import { eq, and, desc, count, sql } from 'drizzle-orm';
-import { aiMcpLogs } from '$lib/server/db/schema';
+import { aiMcpLogs } from '@molos/database/schema';
 import type { MCPLogEntry, PaginationParams, PaginatedResponse } from '$lib/models/ai/mcp';
 import { BaseRepository } from '../../base-repository';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';

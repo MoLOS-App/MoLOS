@@ -68,6 +68,11 @@ Welcome to the MoLOS (Modular Life Organization System) documentation. MoLOS is 
 - [ADR Overview](./adr/README.md) - Architecture decision process and index
 - [ADR-001: Migration Tracking Strategy](./adr/001-migration-tracking-strategy.md) - Database migration tracking approach
 
+### Tasks & Improvement Plans
+
+- [Tasks Overview](./tasks/README.md) - Active and proposed tasks
+- [Database Package Consolidation](./tasks/database-consolidation.md) - Consolidate schemas to @molos/database
+
 ### Archive
 
 - [Archive Overview](./archive/README.md) - Archived documentation overview
@@ -76,10 +81,6 @@ Welcome to the MoLOS (Modular Life Organization System) documentation. MoLOS is 
 - [Plugins Documentation](./archive/plugins/) - Archived plugin system documentation
 - [Module Documentation](./archive/module-documentation/) - Archived per-module documentation
 - **[Database Improvements](./archive/DB_IMPROV/)** - Migration system v2.1 implementation (Production Ready 9.5/10)
-
-### ADR (Architecture Decision Records)
-
-- [ADR Overview](./adr/README.md) - Architecture decision process and index
 
 ## Project Structure
 

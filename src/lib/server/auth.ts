@@ -3,7 +3,7 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { sveltekitCookies } from 'better-auth/svelte-kit';
 import { getRequestEvent } from '$app/server';
 import { db } from '$lib/server/db'; // your drizzle instance
-import * as schema from '$lib/server/db/schema';
+import * as schema from '@molos/database/schema';
 import { env } from '$env/dynamic/private';
 import { admin } from 'better-auth/plugins';
 import { sql } from 'drizzle-orm';

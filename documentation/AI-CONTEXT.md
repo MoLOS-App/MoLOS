@@ -68,7 +68,6 @@ MoLOS/
 │   │   └── config/             # App configuration
 │   └── routes/                 # SvelteKit routes
 ├── scripts/                    # Build and utility scripts
-├── drizzle/                    # Core database migrations
 └── documentation/              # This documentation
 ```
 
@@ -220,11 +219,32 @@ MoLOS-{ModuleName}_{table_name}
 
 ## Import Patterns
 
-### Within a Module (Use $lib alias)
+### Module-Internal Imports (Use `$module` alias)
+
+**CRITICAL**: When importing from within a module's own code, use the `$module` alias. This ensures imports work in both development and production builds.
 
 ```typescript
-// From main app
+// ✅ CORRECT: Use $module alias for module-internal imports
+import { TaskRepository } from '$module/server/repositories/task-repository.js';
+import { TaskStatus } from '$module/models/index.js';
+import { myValidator } from '$module/server/utils/validator.js';
+import { db } from '$module/server/database/schema.js';
+
+// ❌ WRONG: Fragile relative paths (break in production builds)
+import { TaskRepository } from '../../../../../server/repositories/task-repository.js';
+import { TaskStatus } from '../../../../models/index.js';
+```
+
+The `$module` alias is resolved by a custom Vite plugin (`vite.config.ts`) that automatically detects which module is importing and resolves to that module's `src/` directory.
+
+### From Main App (Use `$lib` alias)
+
+```typescript
+// Database and auth from main app
 import { db } from '$lib/server/db';
+import { auth } from '$lib/server/auth';
+
+// UI components from main app
 import { Button } from '$lib/components/ui/button';
 ```
 
@@ -239,12 +259,17 @@ import { Goal } from '$lib/models/external_modules/MoLOS-Goals';
 import { GoalRepository } from '$lib/repositories/external_modules/MoLOS-Goals';
 ```
 
-### Route Imports (Use .js extension)
+### Import Summary Table
 
-```typescript
-// Always use .js for TypeScript imports in routes
-import { TaskRepository } from '../../../server/repositories/task-repository.js';
-```
+| What You're Importing    | Use This Pattern                |
+| ------------------------ | ------------------------------- |
+| Module's own server code | `$module/server/...`            |
+| Module's own models      | `$module/models/...`            |
+| Module's own lib         | `$module/lib/...`               |
+| Main app database        | `$lib/server/db`                |
+| Main app auth            | `$lib/server/auth`              |
+| Main app UI components   | `$lib/components/ui/...`        |
+| Another module's code    | `$lib/modules/{ModuleName}/...` |
 
 **See:** [Quick Reference - Import Patterns](./QUICK-REFERENCE.md#import-patterns)
 
@@ -261,9 +286,9 @@ import { TaskRepository } from '../../../server/repositories/task-repository.js'
 | `bun run module:sync`                         | Sync and initialize modules                      |
 | `bun run module:link`                         | Create route symlinks                            |
 | `bun run db:init`                             | Initialize database (first-time setup, dev only) |
+| `bun run db:migration:create --name <name>    | Create new migration                             |
 | `bun run db:migrate`                          | Run all pending migrations                       |
 | `bun run db:migrate`                          | Unified runner - used by prod and dev            |
-| `bun run db:generate`                         | Generate migrations from schema                  |
 | `bun run db:push`                             | Push schema changes (dev only)                   |
 | `bun run db:validate`                         | Validate schema matches migrations               |
 | `bun run db:audit-modules`                    | Audit all module migrations                      |
@@ -284,27 +309,53 @@ import { TaskRepository } from '../../../server/repositories/task-repository.js'
 
 ## Key File Locations
 
-| What                     | Where                                       |
-| ------------------------ | ------------------------------------------- |
-| App entry point          | `src/app.html`                              |
-| Module registry          | `src/lib/config/index.ts`                   |
-| Module types             | `src/lib/config/types.ts`                   |
-| Database client          | `src/lib/server/db/index.ts`                |
-| Core schema              | `packages/database/src/schema/core/`        |
-| Module schemas           | `packages/database/src/schema/external/`    |
-| Core migrations          | `drizzle/`                                  |
-| Unified migration runner | `packages/database/src/migrate-unified.ts`  |
-| Schema validator         | `packages/database/src/schema-validator.ts` |
-| Migration logger         | `packages/database/src/migration-logger.ts` |
-| Migration logs           | `logs/migrations.log`                       |
-| Migration tests          | `tests/migrations/`                         |
-| Shared components        | `packages/ui/src/lib/components/`           |
-| Module linker script     | `scripts/link-modules.ts`                   |
-| Migration audit script   | `scripts/audit-module-migrations.ts`        |
-| Release CLI              | `scripts/release-cli.ts`                    |
-| Modules config updater   | `scripts/update-modules-config.ts`          |
-| Changeset config         | `.changeset/config.json`                    |
-| Modules config           | `modules.config.ts`                         |
+| What                   | Where                                       |
+| ---------------------- | ------------------------------------------- |
+| App entry point        | `src/app.html`                              |
+| Module registry        | `src/lib/config/index.ts`                   |
+| Module types           | `src/lib/config/types.ts`                   |
+| Database client        | `packages/database/src/connection.ts`       |
+| Core schema            | `packages/database/src/schema/core/`        |
+| Module schemas         | `packages/database/src/schema/external/`    |
+| Core migrations        | `packages/database/drizzle/`                |
+| Drizzle config         | `packages/database/drizzle.config.ts`       |
+| Migration runner       | `packages/database/src/migrate-improved.ts` |
+| Schema validator       | `packages/database/src/schema-validator.ts` |
+| Migration logger       | `packages/database/src/migration-logger.ts` |
+| Migration logs         | `logs/migrations.log`                       |
+| Migration tests        | `tests/migrations/`                         |
+| Shared components      | `packages/ui/src/lib/components/`           |
+| Module linker script   | `scripts/link-modules.ts`                   |
+| Migration audit script | `scripts/audit-module-migrations.ts`        |
+| Release CLI            | `scripts/release-cli.ts`                    |
+| Modules config updater | `scripts/update-modules-config.ts`          |
+| Changeset config       | `.changeset/config.json`                    |
+| Modules config         | `modules.config.ts`                         |
+
+---
+
+## modules.config.ts
+
+Module configuration for production builds:
+
+```typescript
+export interface ModuleConfigEntry {
+	id: string; // Module identifier (folder name)
+	git: string; // Git repository URL
+	tag?: string; // Git tag (mutually exclusive with branch)
+	branch?: string; // Git branch (mutually exclusive with tag)
+	required?: boolean; // Build fails if required module can't be fetched
+}
+```
+
+**Tag vs Branch Behavior:**
+
+| Ref Type            | If Exists | Behavior                                |
+| ------------------- | --------- | --------------------------------------- |
+| `tag: 'v1.0.0'`     | Re-clones | Ensures exact version, no local changes |
+| `branch: 'develop'` | Skips     | Preserves local changes for development |
+
+**Use `tag` for production, `branch` for development.**
 
 ---
 
@@ -405,9 +456,14 @@ For comprehensive module development guide, see **[Module Development Guide](./m
 - [ ] `src/server/repositories/` extending `BaseRepository`
 - [ ] `src/routes/api/+server.ts` with CRUD endpoints
 - [ ] `src/routes/ui/` with SvelteKit pages
+- [ ] **All module-internal imports use `$module` alias** (e.g., `$module/server/...`)
+- [ ] **All main app imports use `$lib` alias** (e.g., `$lib/server/db`)
+- [ ] **NO fragile relative paths** (e.g., `../../../../../server/...`)
+- [ ] `drizzle/` directory with migrations (migrations are NOT auto-generated)
 - [ ] `drizzle.config.ts` pointing to root DB
-- [ ] Run `cd modules/{name} && npx drizzle-kit generate`
 - [ ] Run `bun run module:sync` from root
+
+**Important:** Migrations must be manually created using `bun run db:migration:create --name <name> --module {module}` and included in the module's `drizzle/` directory. Migrations are NOT auto-generated during module fetch or dev startup.
 
 **Reference Implementation:** `modules/MoLOS-Tasks/` is the reference module implementation.
 
@@ -430,4 +486,4 @@ For comprehensive module development guide, see **[Module Development Guide](./m
 
 ---
 
-_Last Updated: 2026-02-25_
+_Last Updated: 2026-03-11_
