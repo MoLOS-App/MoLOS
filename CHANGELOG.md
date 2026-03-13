@@ -7,11 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-03-13
+
 ### Added
 
 - Automated release system with Changesets and PR labels
 - Release manager agent for managing versions and releases
 - GitHub Actions workflows for automated versioning
+- **Docker Improvements**:
+  - Proper privilege dropping with `gosu` for secure container startup
+  - Volume permission handling in entrypoint script
+  - Automatic database backups before migrations
+
+### Changed
+
+- Consolidated migration system with improved error handling
+- Switched to tag-based module dependencies for reproducible builds
+- Improved container entrypoint with better security model
+
+### Technical
+
+- First stable release
+- Production-ready Docker image with security hardening
+- All core modules verified and tested
 
 ## [0.3.0] - 2026-03-09
 
