@@ -47,13 +47,16 @@ FROM oven/bun:latest
 
 WORKDIR /app
 
-# Install nodejs for running the server (better-sqlite3 native module)
-# and wget for healthcheck
-# and ca-certificates for SSL/TLS verification (required for HTTPS requests)
+# Install runtime dependencies:
+# - nodejs: for running the server (better-sqlite3 native module)
+# - wget: for healthchecks
+# - ca-certificates: for SSL/TLS verification (HTTPS requests)
+# - gosu: for dropping privileges after fixing permissions
 RUN apt-get update && apt-get install -y --no-install-recommends \
     nodejs \
     wget \
     ca-certificates \
+    gosu \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy built application from builder
@@ -68,8 +71,9 @@ COPY --from=builder /app/scripts/entrypoint.sh ./scripts/entrypoint.sh
 # Create data directory for SQLite and subdirectories
 RUN mkdir -p /data/.db_backups /data/modules
 
-# Set permissions
-RUN chmod +x /app/scripts/entrypoint.sh
+# Set permissions on app directory (data directory permissions handled by entrypoint)
+RUN chmod +x /app/scripts/entrypoint.sh && \
+    chown -R bun:bun /app
 
 # Set production environment
 ENV NODE_ENV=production
@@ -80,9 +84,6 @@ ENV MOLOS_MODULE_DATA_DIR=/data/modules
 # Expose port SvelteKit runs on
 EXPOSE 4173
 
-# Security hardening - run as non-root user (bun user already exists in oven/bun image)
-RUN chown -R bun:bun /app /data
-USER bun
-
-# Use the entrypoint script to handle migrations and start the server
+# The container starts as root to fix volume permissions, then drops to bun user
+# See entrypoint.sh for the privilege drop logic
 ENTRYPOINT ["/app/scripts/entrypoint.sh"]
