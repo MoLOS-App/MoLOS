@@ -52,8 +52,14 @@ export function getModuleRefType(entry: ModuleConfigEntry): 'tag' | 'branch' {
 	return entry.tag ? 'tag' : 'branch';
 }
 
-export const modulesConfig: ModuleConfigEntry[] = [
-	{ id: 'MoLOS-Tasks', git: 'https://github.com/MoLOS-App/MoLOS-Tasks.git', tag: 'v1.0.3' },
+/**
+ * Development Module Configuration
+ *
+ * Uses branches to get the latest code during development.
+ * Used when NODE_ENV=development.
+ */
+export const modulesConfigDev: ModuleConfigEntry[] = [
+	{ id: 'MoLOS-Tasks', git: 'https://github.com/MoLOS-App/MoLOS-Tasks.git', branch: 'develop' },
 	// { id: 'MoLOS-Goals', git: 'https://github.com/MoLOS-App/MoLOS-Goals.git', branch: 'develop' },
 	// { id: 'MoLOS-Finance', git: 'https://github.com/MoLOS-App/MoLOS-Finance.git', branch: 'develop' },
 	// { id: 'MoLOS-Health', git: 'https://github.com/MoLOS-App/MoLOS-Health.git', branch: 'develop' },
@@ -67,14 +73,14 @@ export const modulesConfig: ModuleConfigEntry[] = [
 	{
 		id: 'MoLOS-LLM-Council',
 		git: 'https://github.com/MoLOS-App/MoLOS-LLM-Council.git',
-		tag: 'v1.0.0'
+		branch: 'develop'
 	},
 	{
 		id: 'MoLOS-Markdown',
 		git: 'https://github.com/MoLOS-App/MoLOS-Markdown.git',
-		tag: 'v1.0.0'
+		branch: 'develop'
 	}
-	// {e
+	// {
 	// 	id: 'MoLOS-Product-Owner',
 	// 	git: 'https://github.com/MoLOS-App/MoLOS-Product-Owner.git',
 	// 	branch: "develop"
@@ -85,3 +91,59 @@ export const modulesConfig: ModuleConfigEntry[] = [
 	// 	branch: 'develop'
 	// }
 ];
+
+/**
+ * Production Module Configuration
+ *
+ * Uses specific tags for reproducible builds.
+ * Used when NODE_ENV=production.
+ *
+ * Update tags when releasing new versions.
+ */
+export const modulesConfigProd: ModuleConfigEntry[] = [
+	{ id: 'MoLOS-Tasks', git: 'https://github.com/MoLOS-App/MoLOS-Tasks.git', tag: 'v1.0.4' },
+	// { id: 'MoLOS-Goals', git: 'https://github.com/MoLOS-App/MoLOS-Goals.git', tag: 'v1.0.0' },
+	// { id: 'MoLOS-Finance', git: 'https://github.com/MoLOS-App/MoLOS-Finance.git', tag: 'v1.0.0' },
+	// { id: 'MoLOS-Health', git: 'https://github.com/MoLOS-App/MoLOS-Health.git', tag: 'v1.0.0' },
+	// { id: 'MoLOS-Meals', git: 'https://github.com/MoLOS-App/MoLOS-Meals.git', tag: 'v1.0.0' },
+	// { id: 'MoLOS-Google', git: 'https://github.com/MoLOS-App/MoLOS-Google.git', tag: 'v1.0.0' },
+	// {
+	// 	id: 'MoLOS-AI-Knowledge',
+	// 	git: 'https://github.com/MoLOS-App/MoLOS-AI-Knowledge.git',
+	// 	tag: 'v1.0.0'
+	// },
+	{
+		id: 'MoLOS-LLM-Council',
+		git: 'https://github.com/MoLOS-App/MoLOS-LLM-Council.git',
+		tag: 'v1.0.0'
+	},
+	{
+		id: 'MoLOS-Markdown',
+		git: 'https://github.com/MoLOS-App/MoLOS-Markdown.git',
+		tag: 'v1.0.0'
+	}
+	// {
+	// 	id: 'MoLOS-Product-Owner',
+	// 	git: 'https://github.com/MoLOS-App/MoLOS-Product-Owner.git',
+	// 	tag: 'v1.0.0'
+	// },
+	// {
+	// 	id: 'MoLOS-Sample-Module',
+	// 	git: 'https://github.com/MoLOS-App/MoLOS-Sample-Module.git',
+	// 	tag: 'v1.0.0'
+	// }
+];
+
+/**
+ * Get the appropriate module config based on NODE_ENV
+ */
+export function getModulesConfig(): ModuleConfigEntry[] {
+	const isDev = process.env.NODE_ENV !== 'production';
+	return isDev ? modulesConfigDev : modulesConfigProd;
+}
+
+/**
+ * Default export - uses getModulesConfig() for convenience
+ * Note: For scripts that need to control env explicitly, use getModulesConfig() instead
+ */
+export const modulesConfig: ModuleConfigEntry[] = getModulesConfig();

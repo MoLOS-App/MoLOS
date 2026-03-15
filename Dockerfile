@@ -14,6 +14,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
+# Set production environment for module fetching (uses tags instead of branches)
+ENV NODE_ENV=production
+
 # Copy source code (modules/ is excluded by .dockerignore)
 COPY . .
 

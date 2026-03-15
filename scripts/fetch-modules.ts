@@ -26,7 +26,7 @@ import { execSync } from 'child_process';
 import { existsSync, mkdirSync, readFileSync } from 'fs';
 import path from 'path';
 import {
-	modulesConfig,
+	getModulesConfig,
 	type ModuleConfigEntry,
 	validateModuleConfigEntry,
 	getModuleRef,
@@ -240,8 +240,15 @@ function validateEnvironment(): void {
 async function main(): Promise<void> {
 	log('Starting module fetch process...');
 
+	const isDev = process.env.NODE_ENV !== 'production';
+	log(
+		`Using ${isDev ? 'development' : 'production'} module config (NODE_ENV=${process.env.NODE_ENV || 'not set'})`
+	);
+
 	try {
 		validateEnvironment();
+
+		const modulesConfig = getModulesConfig();
 
 		// Validate all module config entries first
 		const configErrors: string[] = [];
