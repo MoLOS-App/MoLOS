@@ -149,6 +149,7 @@
       "version": "1.0.0",
       "dependencies": {
         "changeset": "^0.2.6",
+        "drizzle": "^1.4.0",
         "lucide-svelte": "^0.561.0",
         "zod": "^4.3.6",
       },
@@ -207,7 +208,7 @@
     },
     "modules/MoLOS-Tasks": {
       "name": "@molos/module-tasks",
-      "version": "1.0.3",
+      "version": "1.0.4",
       "dependencies": {
         "drizzle": "^1.4.0",
         "lucide-svelte": "^0.561.0",

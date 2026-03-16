@@ -28,7 +28,7 @@
 		"module:tui": "bun scripts/module-tui.ts",
 		"db:init": "tsx scripts/init-database.ts",
 		"db:migrate": "tsx packages/database/src/migrate-improved.ts",
-		"db:migration:create": "tsx scripts/generate-migration.ts",
+		"db:migration:create": "echo 0; # tsx scripts/generate-migration.ts",
 		"db:validate": "tsx packages/database/src/schema-validator.ts",
 		"db:repair": "tsx scripts/migration-repair-tool.ts diagnose",
 		"db:repair:fix": "tsx scripts/migration-repair-tool.ts repair",
