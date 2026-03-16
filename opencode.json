@@ -51,7 +51,7 @@
 			"description": "Type check and lint"
 		},
 		"migrate": {
-			"template": "Generate and run database migrations: bun run db:generate && bun run db:migrate",
+			"template": "Create and run database migrations: bun run db:migration:create --name <name> --module <module> --reversible, then edit the SQL file, then bun run db:migrate. NEVER run drizzle-kit generate.",
 			"description": "Run DB migrations"
 		}
 	}

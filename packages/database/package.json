@@ -60,7 +60,7 @@
 	"scripts": {
 		"build": "tsc",
 		"dev": "tsc --watch",
-		"db:generate": "drizzle-kit generate",
+		"db:generate": "echo '❌ FORBIDDEN: drizzle-kit generate is disabled. Use bun run db:migration:create from root instead. See documentation/adr/003-migration-auto-generation-ban.md'; exit 1",
 		"db:push": "drizzle-kit push",
 		"db:studio": "drizzle-kit studio",
 		"clean": "rm -rf dist"

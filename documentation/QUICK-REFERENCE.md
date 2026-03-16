@@ -52,6 +52,27 @@ bun run db:studio        # Open Drizzle Studio
 bun run db:reset         # Reset database (WARNING: deletes data)
 ```
 
+**⚠️ CRITICAL SAFETY RULE: NEVER RUN drizzle-kit generate**
+
+**FORBIDDEN:** Never run `drizzle-kit generate` or `bun run db:generate`. These commands are explicitly removed for safety.
+
+**Why:**
+
+- Creates journal/SQL desync (migrations in journal but no SQL files)
+- Generates random names (`0003_dizzy_jane_foster.sql`) - zero context
+- Cannot enforce table naming conventions (`MoLOS-{Name}_{table}`)
+- Overwrites manual migrations without warning
+
+**Correct approach:**
+
+```bash
+# Always create migrations manually with descriptive names
+bun run db:migration:create --name add_user_preferences --module core
+
+# Validate after creating
+bun run db:validate
+```
+
 **Important:** Migrations are NOT auto-generated during module fetch or dev startup.
 
 - Core migrations are in `packages/database/drizzle/`

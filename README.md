@@ -99,6 +99,22 @@ Backups are simple. Move `./data` to a new machine and you are done.
 
 The codebase is small on purpose. It is easy to read, easy to extend, and easy to own.
 
+### Database Migrations
+
+⚠️ **CRITICAL**: Never run `drizzle-kit generate` or `bun run db:generate`. These commands are disabled.
+
+**Why**: Auto-generation creates journal/SQL desync and random migration names, corrupting the migration system.
+
+**Correct workflow**:
+
+```bash
+bun run db:migration:create --name <name> --module <module> --reversible
+# Then manually edit the SQL file
+bun run db:migrate
+```
+
+See `documentation/adr/003-migration-auto-generation-ban.md` for details.
+
 ### Module System
 
 - **[Production Build Guide](documentation/production-build.md)** - Build-time module resolution, Docker/Kubernetes deployment

@@ -98,27 +98,54 @@ export default myModuleConfig;
 ```typescript
 // src/server/db/schema/tables.ts
 import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+
+// Define tables following MoLOS naming conventions
+export const myModuleItems = sqliteTable('MoLOS-MyModule_items', {
+	id: text('id').primaryKey(),
+	userId: text('user_id').notNull(),
+	name: text('name').notNull()
+	// ...
+});
+```
+
+**⚠️ CRITICAL: NEVER RUN drizzle-kit generate**
+
+After creating or modifying schema files, you MUST create migrations manually:
+
+```bash
+# Create migration for this module
+bun run db:migration:create --name add_item_table --module MoLOS-MyModule --reversible
+
+# Validate
+bun run db:validate
+
+# Apply
+bun run db:migrate:improved
+```
+
+**FORBIDDEN:** Never run `drizzle-kit generate` or `bun run db:generate`. These commands are explicitly removed for safety. See [ADR-003: Migration Auto-Generation Ban](../adr/003-migration-auto-generation-ban.md).
 import { sql } from 'drizzle-orm';
 import { textEnum } from '@molos/database/utils';
 import { MyStatus } from '../../../models/index.js';
 
 // Table names MUST be prefixed with module ID
 export const myModuleItems = sqliteTable('MoLOS-MyModule_items', {
-	id: text('id')
-		.primaryKey()
-		.$defaultFn(() => crypto.randomUUID()),
-	userId: text('user_id'),
-	name: text('name').notNull(),
-	status: textEnum('status', MyStatus).default('active'),
-	createdAt: integer('created_at').default(sql`(strftime('%s','now'))`),
-	updatedAt: integer('updated_at').default(sql`(strftime('%s','now'))`)
+id: text('id')
+.primaryKey()
+.$defaultFn(() => crypto.randomUUID()),
+userId: text('user_id'),
+name: text('name').notNull(),
+status: textEnum('status', MyStatus).default('active'),
+createdAt: integer('created_at').default(sql`(strftime('%s','now'))`),
+updatedAt: integer('updated_at').default(sql`(strftime('%s','now'))`)
 });
-```
+
+````
 
 ```typescript
 // src/server/db/schema/index.ts
 export * from './tables.js';
-```
+````
 
 ### Step 5: Create Models
 

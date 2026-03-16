@@ -183,9 +183,12 @@ const records = await db.select().from(yourModuleTable);
 ### 5. Run Database Migration
 
 ```bash
-npm run db:generate
-npm run db:migrate
+bun run db:migration:create --name add_your_module --module <module> --reversible
+# Then manually edit the generated SQL file
+bun run db:migrate
 ```
+
+⚠️ **CRITICAL**: Never run `npm run db:generate` or `drizzle-kit generate`. Use `db:migration:create` instead.
 
 ## Naming Guidelines
 
@@ -263,7 +266,9 @@ Before deploying a new module schema:
 - [ ] Relations are properly defined
 - [ ] Comments document table purpose
 - [ ] Exported from `schema/index.ts`
-- [ ] Database migration runs successfully (`npm run db:generate;npm run db:migrate`)
+- [ ] Database migration runs successfully (`bun run db:migration:create --name <name> --module <module> --reversible; bun run db:migrate`)
+
+⚠️ **CRITICAL**: Never run `drizzle-kit generate` or `bun run db:generate`. See `documentation/adr/003-migration-auto-generation-ban.md`.
 
 ## Related Documentation
 

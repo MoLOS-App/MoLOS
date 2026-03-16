@@ -105,7 +105,35 @@ See [ADR-001](../adr/001-migration-tracking-strategy.md) for the tracking strate
 | `bun run db:studio`           | Open Drizzle Studio                                                      | Visual DB inspection       |
 | `bun run db:reset`            | Reset database (destructive)                                             | Clean slate                |
 
-**Important:** Migrations are NOT auto-generated. Use `bun run db:migration:create --name <name> [--module <module>]` to create new migrations manually. Never run `drizzle-kit generate` or `bun run db:generate` directly - these are removed for safety. See [Migration Workflow](#migration-workflow) for details.
+**⚠️ CRITICAL SAFETY RULE: NEVER RUN drizzle-kit generate**
+
+**FORBIDDEN**: Never run `drizzle-kit generate` or `bun run db:generate` directly. These commands are **explicitly removed** from the codebase for safety reasons.
+
+**Why this is dangerous:**
+
+- Auto-generates random migration names (e.g., `0003_dizzy_jane_foster.sql`)
+- Creates journal entries without creating SQL files (Journal/SQL desync)
+- Cannot detect schema naming convention violations
+- Overwrites manual migrations without warning
+- Creates inconsistent migration state that's hard to fix
+
+**REAL-WORLD EXAMPLE OF DAMAGE:**
+See `modules/MoLOS-LLM-Council/drizzle/` where 0003 and 0004 were auto-generated but never written to disk, creating an inconsistent state that required manual intervention.
+
+**CORRECT APPROACH:**
+
+```bash
+# For core schema changes
+bun run db:migration:create --name descriptive_name_here
+
+# For module schema changes
+bun run db:migration:create --name add_feature --module MoLOS-ModuleName --reversible
+
+# Validate after creating
+bun run db:validate
+```
+
+**Important:** Migrations are NOT auto-generated. Use `bun run db:migration:create --name <name> [--module <module>]` to create new migrations manually. See [Migration Workflow](#migration-workflow) for details.
 
 ### Migration Workflow
 

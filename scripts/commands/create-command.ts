@@ -123,7 +123,8 @@ export default ${this.camelCase(moduleName)}Config;
 				preview: 'vite preview',
 				check: 'svelte-kit sync && svelte-check --tsconfig ./tsconfig.json',
 				'check:watch': 'svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch',
-				'db:generate': 'drizzle-kit generate',
+				'db:generate':
+					"echo '❌ FORBIDDEN: drizzle-kit generate is disabled. Use bun run db:migration:create from root instead. See documentation/adr/003-migration-auto-generation-ban.md'; exit 1",
 				'test:unit': 'vitest',
 				test: 'npm run test:unit -- --run',
 				'db:push': 'drizzle-kit push',

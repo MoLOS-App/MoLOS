@@ -65,7 +65,10 @@ Quick overview:
 2. **Create file**: `schema/your-module/tables.ts` with table definitions
 3. **Add exports**: Include both modern and legacy exports
 4. **Register**: Add export to `schema/index.ts`
-5. **Migrate**: Run `npm run db:generate` and `npm run db:migrate`
+5. **Migrate**: Run `bun run db:migration:create --name <name> --module <module> --reversible` then `bun run db:migrate`
+
+⚠️ **CRITICAL**: Never run `bun run db:generate` or `drizzle-kit generate`. Use `db:migration:create` instead.
+See `documentation/adr/003-migration-auto-generation-ban.md` for details.
 
 Example:
 
@@ -137,12 +140,15 @@ After making changes:
 npm run build
 
 # Run database migration (if schema changed)
-npm run db:generate
-npm run db:migrate
+bun run db:migration:create --name <name> --module <module> --reversible
+# Then manually edit the SQL file
+bun run db:migrate
 
 # View schema in browser (if using studio)
 npm run db:studio
 ```
+
+⚠️ **CRITICAL**: Never run `bun run db:generate` or `drizzle-kit generate`.
 
 ## Best Practices
 

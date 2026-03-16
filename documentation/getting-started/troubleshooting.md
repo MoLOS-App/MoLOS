@@ -95,6 +95,33 @@ CREATE INDEX idx_users_email ON users (email);
 2. Either add the entry to `_journal.json` or remove the orphaned SQL file
 3. Run `bun run db:audit-modules` to verify
 
+### Randomly named migrations (auto-generated)
+
+Migration files have names like `0003_dizzy_jane_foster.sql` or `0004_workable_titanium_man.sql`.
+
+**Root Cause:** Someone ran `drizzle-kit generate` (FORBIDDEN command).
+
+**Solution:**
+
+1. **Do not commit these files** - They are auto-generated and unsafe
+2. **Revert the changes:**
+
+```bash
+git checkout -- drizzle/*.sql
+```
+
+3. **Create proper migrations manually:**
+
+```bash
+bun run db:migration:create --name descriptive_name_here --module core
+```
+
+4. **Fix journal if needed:** Edit `drizzle/meta/_journal.json` and remove auto-generated entries
+
+**Prevention:** See [ADR-003: Migration Auto-Generation Ban](../adr/003-migration-auto-generation-ban.md)
+
+**Real example:** `modules/MoLOS-LLM-Council/drizzle/` had 0003 and 0004 auto-generated but never written to disk, creating journal/SQL desync.
+
 ### Database file not found
 
 Database wasn't initialized.

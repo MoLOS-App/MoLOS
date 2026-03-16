@@ -140,7 +140,7 @@ Each module should have these scripts for Turborepo:
 ```json
 {
 	"scripts": {
-		"db:generate": "drizzle-kit generate",
+		"db:generate": "echo '❌ FORBIDDEN: Use bun run db:migration:create from root instead'; exit 1",
 		"db:migrate": "drizzle-kit migrate",
 		"lint": "prettier --check .",
 		"test": "vitest run",
@@ -148,3 +148,5 @@ Each module should have these scripts for Turborepo:
 	}
 }
 ```
+
+⚠️ **CRITICAL**: `drizzle-kit generate` is disabled. Use `bun run db:migration:create --name <name> --module <module> --reversible` from root instead. See `documentation/adr/003-migration-auto-generation-ban.md`.

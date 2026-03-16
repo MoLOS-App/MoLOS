@@ -19,7 +19,8 @@
 			"inputs": ["src/**/*.test.ts", "src/**/*.test.js", "**/*.spec.ts"]
 		},
 		"db:generate": {
-			"cache": false
+			"cache": false,
+			"outputs": []
 		},
 		"db:migrate": {
 			"cache": false
