@@ -36,23 +36,22 @@ docker build -t my-molos .
 
 ```
 MoLOS/
-├── apps/
-│   └── web/                    # Main SvelteKit application (future)
 ├── packages/
 │   ├── core/                   # @molos/core - utilities and types
 │   ├── database/               # @molos/database - schema and migrations
 │   └── ui/                     # @molos/ui - shared components
-├── modules/
+├── modules/                    # All modules (monorepo workspaces)
 │   ├── ai/                     # @molos/module-ai (internal)
-│   └── tasks/                  # @molos/module-tasks
-├── external_modules/           # External modules (migrated)
-│   ├── MoLOS-Goals/
-│   ├── MoLOS-Health/
-│   ├── MoLOS-Finance/
-│   ├── MoLOS-Meals/
-│   ├── MoLOS-Google/
-│   ├── MoLOS-AI-Knowledge/
-│   └── MoLOS-Sample-Module/
+│   ├── MoLOS-Tasks/            # Task management module
+│   ├── MoLOS-AI-Knowledge/     # AI prompts and workflows
+│   ├── MoLOS-LLM-Council/      # Multi-LLM consultation
+│   ├── MoLOS-Goals/            # Goal tracking
+│   ├── MoLOS-Meals/           # Meal planning
+│   ├── MoLOS-Health/           # Health tracking
+│   ├── MoLOS-Finance/          # Financial tracking
+│   ├── MoLOS-Markdown/         # Markdown editing
+│   ├── MoLOS-Google/           # Google integration
+│   └── MoLOS-Sample-Module/    # Example module
 ├── src/                        # Main SvelteKit app
 │   ├── lib/
 │   │   ├── components/         # UI components
@@ -154,11 +153,14 @@ Modules integrate through:
 
 - `MoLOS-{Name}_{table}` - Module-specific tables
 
+**Critical**: Module IDs use **hyphens** (`MoLOS-LLM-Council`), but table separator is **underscore** (`_`). Do not use underscores in module IDs.
+
 Example:
 
 - `MoLOS-Tasks_tasks`
 - `MoLOS-Goals_milestones`
-- `MoLOS-Finance_transactions`
+- `MoLOS-LLM-Council_conversations`
+- `MoLOS-AI-Knowledge_prompts`
 
 **See:** [Database Architecture](./database.md) for details
 
@@ -341,7 +343,9 @@ bun run module:sync
 - [Data Namespacing](./data-namespacing.md) - Database table namespacing
 - [Module System](../modules/README.md) - Module development and usage
 - [Getting Started](../getting-started/) - Development setup
+- **[v1.0.0 Release Notes](../releases/v1.0.0.md)** - Full v1.0.0 release notes
+- **[Migration Guide](../releases/v1.0.0-migration.md)** - Upgrading to v1.0.0
 
 ---
 
-_Last Updated: 2026-02-27_
+_Last Updated: 2026-03-17_

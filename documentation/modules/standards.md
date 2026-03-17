@@ -15,14 +15,20 @@ Internal modules are always loaded and cannot be filtered out. They live in the 
 
 ### External Modules
 
-External modules can be installed from npm or GitHub. They follow the naming convention `MoLOS-{Name}` for the repo and `@molos/module-{name}` for the package.
+External modules are developed in the monorepo `modules/` directory and can be published to npm or GitHub. They follow naming convention `MoLOS-{Name}` for repo and `@molos/module-{name}` for package.
 
-| Module ID        | Package                  | GitHub Repo                       |
-| ---------------- | ------------------------ | --------------------------------- |
-| `MoLOS-Tasks`    | `@molos/module-tasks`    | `github:MoLOS-App/MoLOS-Tasks`    |
-| `MoLOS-Finance`  | `@molos/module-finance`  | `github:MoLOS-App/MoLOS-Finance`  |
-| `MoLOS-Goals`    | `@molos/module-goals`    | `github:MoLOS-App/MoLOS-Goals`    |
-| `MoLOS-Markdown` | `@molos/module-markdown` | `github:MoLOS-App/MoLOS-Markdown` |
+| Module ID             | Package                      | GitHub Repo                                                             | Description                       | Version |
+| --------------------- | ---------------------------- | ----------------------------------------------------------------------- | --------------------------------- | ------- |
+| `MoLOS-Tasks`         | `@molos/module-tasks`        | [MoLOS-Tasks](https://github.com/MoLOS-App/MoLOS-Tasks)                 | Task management and projects      | 1.0.4   |
+| `MoLOS-AI-Knowledge`  | `@molos/module-ai-knowledge` | [MoLOS-AI-Knowledge](https://github.com/MoLOS-App/MoLOS-AI-Knowledge)   | AI prompts, playground, workflows | 1.0.0   |
+| `MoLOS-LLM-Council`   | `@molos/module-llm-council`  | [MoLOS-LLM-Council](https://github.com/MoLOS-App/MoLOS-LLM-Council)     | Multi-LLM consultation            | 1.0.0   |
+| `MoLOS-Goals`         | `@molos/module-goals`        | [MoLOS-Goals](https://github.com/MoLOS-App/MoLOS-Goals)                 | OKR and goal tracking             | -       |
+| `MoLOS-Meals`         | `@molos/module-meals`        | [MoLOS-Meals](https://github.com/MoLOS-App/MoLOS-Meals)                 | Meal planning and nutrition       | -       |
+| `MoLOS-Health`        | `@molos/module-health`       | [MoLOS-Health](https://github.com/MoLOS-App/MoLOS-Health)               | Health and fitness tracking       | -       |
+| `MoLOS-Finance`       | `@molos/module-finance`      | [MoLOS-Finance](https://github.com/MoLOS-App/MoLOS-Finance)             | Financial tracking and budgets    | -       |
+| `MoLOS-Markdown`      | `@molos/module-markdown`     | [MoLOS-Markdown](https://github.com/MoLOS-App/MoLOS-Markdown)           | Markdown editing and preview      | -       |
+| `MoLOS-Google`        | `@molos/module-google`       | [MoLOS-Google](https://github.com/MoLOS-App/MoLOS-Google)               | Google services integration       | -       |
+| `MoLOS-Sample-Module` | `@molos/module-sample`       | [MoLOS-Sample-Module](https://github.com/MoLOS-App/MoLOS-Sample-Module) | Example module for reference      | -       |
 
 ## Module ID Convention
 
@@ -82,9 +88,9 @@ modules/{module-name}/
 Every module MUST have a `config.ts` file in `src/config.ts` with a default export:
 
 ```typescript
-// modules/tasks/src/config.ts
+// modules/MoLOS-Tasks/src/config.ts
 import { SquareCheck, ListTodo } from 'lucide-svelte';
-import type { ModuleConfig } from '@molos/module-types';
+import type { ModuleConfig } from '$lib/config/types';
 
 export const tasksConfig: ModuleConfig = {
 	id: 'MoLOS-Tasks', // REQUIRED: Must match module ID convention
@@ -104,6 +110,8 @@ export const tasksConfig: ModuleConfig = {
 
 export default tasksConfig;
 ```
+
+**Important**: Use `$lib/config/types` for the ModuleConfig import, not `@molos/module-types`. This ensures compatibility with both development and production builds.
 
 ### package.json Exports
 
@@ -362,15 +370,40 @@ bun run module:link    # Link routes only
 
 ## Commands Reference
 
-| Command                       | Description                            |
-| ----------------------------- | -------------------------------------- |
-| `bun run module:sync`         | Sync and initialize modules            |
-| `bun run module:link`         | Create route symlinks                  |
-| `bun run db:migration:create` | Create new migration (from MoLOS root) |
-| `bun run db:migrate`          | Apply all pending migrations           |
-| `bun run dev`                 | Start development server               |
+| Command                       | Description                                                 |
+| ----------------------------- | ----------------------------------------------------------- |
+| `bun run dev`                 | Start development server (auto-discovers and syncs modules) |
+| `bun run module:sync`         | Sync and initialize modules                                 |
+| `bun run module:link`         | Create route symlinks                                       |
+| `bun run db:migration:create` | Create new migration (from MoLOS root)                      |
+| `bun run db:migrate`          | Apply all pending migrations                                |
+| `bun run db:validate`         | Validate schema integrity                                   |
 
-**Important:** Migrations are NOT auto-generated. Use `bun run db:migration:create --name <name> --module <ModuleName>` to create new migrations. Never run `drizzle-kit generate` directly.
+**⚠️ CRITICAL SAFETY RULE: NEVER RUN drizzle-kit generate**
+
+**FORBIDDEN:** Never run `drizzle-kit generate` or `bun run db:generate`. These commands are explicitly removed for safety.
+
+**Why:**
+
+- Creates journal/SQL desync (migrations in journal but no SQL files)
+- Generates random names (`0003_dizzy_jane_foster.sql`) - zero context
+- Cannot enforce table naming conventions (`MoLOS-{Name}_{table}`)
+- Overwrites manual migrations without warning
+
+**Correct approach:**
+
+```bash
+# Always create migrations manually with descriptive names
+bun run db:migration:create --name add_user_preferences --module core
+
+# Validate after creating
+bun run db:validate
+
+# Apply (safe with auto-backup)
+bun run db:migrate
+```
+
+**Important:** Migrations are NOT auto-generated during module fetch or dev startup.
 
 ## Error Checklist
 

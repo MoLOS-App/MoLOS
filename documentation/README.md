@@ -1,6 +1,6 @@
 # MoLOS Documentation
 
-Welcome to the MoLOS (Modular Life Organization System) documentation. MoLOS is a fast, privacy-focused, and deeply modular productivity suite designed to help you reclaim your focus.
+Welcome to the MoLOS (Modular Life Organization System) documentation. MoLOS v1.0.0 is a fast, privacy-focused, and deeply modular productivity suite designed to help you reclaim your focus.
 
 ## Quick Links
 
@@ -18,6 +18,7 @@ Welcome to the MoLOS (Modular Life Organization System) documentation. MoLOS is 
 | Release a new version           | [Release System](./deployment/release-system.md)            |
 | Integrate with AI tools         | [MCP Integration](./mcp/integration-prd.md)                 |
 | Troubleshoot issues             | [Troubleshooting](./getting-started/troubleshooting.md)     |
+| **View v1.0.0 Release Notes**   | [v1.0.0 Release](./releases/v1.0.0.md)                      |
 
 ## Documentation Structure
 
@@ -76,27 +77,48 @@ Welcome to the MoLOS (Modular Life Organization System) documentation. MoLOS is 
 ### Archive
 
 - [Archive Overview](./archive/README.md) - Archived documentation overview
-- [Consolidated Changelog](./archive/changelogs/) - Historical changelog entries
+- [v1.0.0 Development History](./archive/DB_IMPROV/) - Database migration system implementation
 - [Monorepo Migration](./archive/monorepo-migration/README.md) - Completed migration tasks
-- [Plugins Documentation](./archive/plugins/) - Archived plugin system documentation
-- [Module Documentation](./archive/module-documentation/) - Archived per-module documentation
-- **[Database Improvements](./archive/DB_IMPROV/)** - Migration system v2.1 implementation (Production Ready 9.5/10)
+- [Legacy Plugin System](./archive/plugins/) - Archived plugin system documentation
+- [Historical Changelogs](./archive/changelogs/) - Pre-v1.0.0 changelog entries
+
+### v1.0.0 Release
+
+- [v1.0.0 Release Notes](./releases/v1.0.0.md) - Full release notes and changes
+- [Migration Guide](./releases/v1.0.0-migration.md) - Upgrading from previous versions
 
 ## Project Structure
 
 ```
 MoLOS/
-├── apps/
-│   └── web/                    # Main SvelteKit application
 ├── packages/
 │   ├── core/                   # @molos/core - utilities and types
 │   ├── database/               # @molos/database - schema and migrations
 │   └── ui/                     # @molos/ui - shared components
-├── modules/
-│   ├── tasks/                  # @molos/module-tasks
-│   └── ai/                     # @molos/module-ai
-├── documentation/              # This documentation
-└── drizzle/                    # Core database migrations
+├── modules/                    # All modules (monorepo workspaces)
+│   ├── ai/                     # @molos/module-ai (internal)
+│   ├── MoLOS-Tasks/            # Task management module
+│   ├── MoLOS-AI-Knowledge/     # AI prompts and workflows
+│   ├── MoLOS-LLM-Council/      # Multi-LLM consultation
+│   ├── MoLOS-Goals/            # Goal tracking
+│   ├── MoLOS-Meals/           # Meal planning
+│   ├── MoLOS-Health/           # Health tracking
+│   ├── MoLOS-Finance/          # Financial tracking
+│   ├── MoLOS-Markdown/         # Markdown editing
+│   ├── MoLOS-Google/           # Google integration
+│   └── MoLOS-Sample-Module/    # Example module
+├── src/                        # Main SvelteKit app
+│   ├── lib/
+│   │   ├── components/         # UI components
+│   │   ├── server/             # Server-side code
+│   │   ├── stores/             # Svelte stores
+│   │   ├── models/             # TypeScript types
+│   │   ├── repositories/       # Data access layer
+│   │   └── config/             # App configuration
+│   └── routes/                 # SvelteKit routes
+├── scripts/                    # Build and utility scripts
+├── drizzle/                    # Core database migrations
+└── documentation/              # This documentation
 ```
 
 ## Tech Stack
@@ -122,4 +144,4 @@ See the [Module Development Guide](./modules/development.md) for information on 
 
 ---
 
-_Last Updated: 2026-02-25_
+_Last Updated: 2026-03-17_

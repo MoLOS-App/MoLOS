@@ -24,9 +24,18 @@ These cannot be filtered out by environment variables.
 
 ### External Modules (Installable)
 
-| ID            | Package               | Source                                             |
-| ------------- | --------------------- | -------------------------------------------------- |
-| `MoLOS-Tasks` | `@molos/module-tasks` | [GitHub](https://github.com/MoLOS-App/MoLOS-Tasks) |
+| ID                    | Package                      | Source                                                     | Description                           | Version |
+| --------------------- | ---------------------------- | ---------------------------------------------------------- | ------------------------------------- | ------- |
+| `MoLOS-Tasks`         | `@molos/module-tasks`        | [GitHub](https://github.com/MoLOS-App/MoLOS-Tasks)         | Task management and project tracking  | 1.0.4   |
+| `MoLOS-AI-Knowledge`  | `@molos/module-ai-knowledge` | [GitHub](https://github.com/MoLOS-App/MoLOS-AI-Knowledge)  | AI prompts, playground, and workflows | 1.0.0   |
+| `MoLOS-LLM-Council`   | `@molos/module-llm-council`  | [GitHub](https://github.com/MoLOS-App/MoLOS-LLM-Council)   | Multi-LLM consultation system         | 1.0.0   |
+| `MoLOS-Goals`         | `@molos/module-goals`        | [GitHub](https://github.com/MoLOS-App/MoLOS-Goals)         | OKR and goal tracking                 | -       |
+| `MoLOS-Meals`         | `@molos/module-meals`        | [GitHub](https://github.com/MoLOS-App/MoLOS-Meals)         | Meal planning and nutrition           | -       |
+| `MoLOS-Health`        | `@molos/module-health`       | [GitHub](https://github.com/MoLOS-App/MoLOS-Health)        | Health and fitness tracking           | -       |
+| `MoLOS-Finance`       | `@molos/module-finance`      | [GitHub](https://github.com/MoLOS-App/MoLOS-Finance)       | Financial tracking and budgets        | -       |
+| `MoLOS-Markdown`      | `@molos/module-markdown`     | [GitHub](https://github.com/MoLOS-App/MoLOS-Markdown)      | Markdown editing and preview          | -       |
+| `MoLOS-Google`        | `@molos/module-google`       | [GitHub](https://github.com/MoLOS-App/MoLOS-Google)        | Google services integration           | -       |
+| `MoLOS-Sample-Module` | `@molos/module-sample`       | [GitHub](https://github.com/MoLOS-App/MoLOS-Sample-Module) | Example module for reference          | -       |
 
 ## Quick Start
 
@@ -47,37 +56,85 @@ That's it! The `dev` command automatically:
 ```
 modules/{module-name}/
 ├── package.json              # @molos/module-{name}
-├── drizzle.config.ts         # Database migration config
-├── drizzle/                  # Migration files
+├── drizzle.config.ts         # Database migration config (if has DB)
+├── drizzle/                  # Migration files (if has DB)
+│   ├── 0000_initial.sql
+│   ├── 0000_initial.down.sql
+│   └── meta/
+└── src/
+    ├── index.ts              # Main exports
+    ├── config.ts             # Module configuration (REQUIRED)
+    ├── models/               # TypeScript types and enums
+    │   └── index.ts
+    ├── lib/                  # Library code
+    │   ├── components/       # Svelte components
+    │   └── utils/           # Utility functions
+    ├── server/
+    │   ├── ai/               # AI tools (optional)
+    │   │   └── ai-tools.ts
+    │   ├── database/          # Database schema (if has DB)
+    │   │   ├── schema/
+    │   │   │   ├── index.ts
+    │   │   │   └── tables.ts
+    │   └── repositories/     # Data access layer
+    │       ├── base-repository.ts
+    │       └── *.ts
+    ├── routes/
+    │   ├── ui/               # SvelteKit UI routes
+    │   │   ├── +layout.svelte
+    │   │   ├── +page.svelte
+    │   │   └── */            # Sub-routes
+    │   └── api/              # API endpoints
+    │       └── +server.ts
+    └── stores/               # Svelte stores (Svelte 5 runes)
+        └── index.ts
+```
+
+**Note**: Modules in the monorepo do NOT need their own `tsconfig.json`, `vite.config.ts`, or `svelte.config.js`. These are handled by the main SvelteKit app.
+modules/{module-name}/
+├── package.json # @molos/module-{name}
+├── drizzle.config.ts # Database migration config
+├── drizzle/ # Migration files
 ├── src/
-│   ├── index.ts              # Main exports
-│   ├── config.ts             # Module configuration (REQUIRED)
-│   ├── models/               # TypeScript types and enums
-│   ├── server/
-│   │   ├── database/
-│   │   │   └── schema.ts     # Drizzle schema
-│   │   └── repositories/     # Data access layer
-│   ├── routes/
-│   │   ├── ui/               # SvelteKit UI routes
-│   │   └── api/              # API endpoints
-│   ├── components/           # Svelte components
-│   └── stores/               # Svelte stores
+│ ├── index.ts # Main exports
+│ ├── config.ts # Module configuration (REQUIRED)
+│ ├── models/ # TypeScript types and enums
+│ ├── server/
+│ │ ├── database/
+│ │ │ └── schema.ts # Drizzle schema
+│ │ └── repositories/ # Data access layer
+│ ├── routes/
+│ │ ├── ui/ # SvelteKit UI routes
+│ │ └── api/ # API endpoints
+│ ├── components/ # Svelte components
+│ └── stores/ # Svelte stores
+
 ```
 
 ## Module Discovery
 
 Modules are discovered automatically via `import.meta.glob`:
 
-- Local configs: `modules/*/src/config.ts`
-- Installed configs: `node_modules/@molos/module-*/src/config.ts`
+- **Internal modules**: Auto-loaded from `modules/ai/` and `src/lib/config/`
+- **Local modules**: Discovered from `modules/*/src/config.ts` in monorepo
+- **Production builds**: Modules configured in `modules.config.ts` and fetched during Docker build
 
 ## Route Symlinks
 
 SvelteKit requires routes in `src/routes/`, so module routes are symlinked:
 
 ```
+
+src/routes/ui/(modules)/(external_modules)/MoLOS-Tasks → modules/MoLOS-Tasks/src/routes/ui
+src/routes/api/(external_modules)/MoLOS-Tasks → modules/MoLOS-Tasks/src/routes/api
+
+```
+
+Run `bun run module:sync` to create/update symlinks.
+
 src/routes/ui/(modules)/(external_modules)/MoLOS-Tasks → node_modules/@molos/module-tasks/src/routes/ui
 src/routes/api/(external_modules)/MoLOS-Tasks → node_modules/@molos/module-tasks/src/routes/api
+
 ```
 
 ## Environment Variables

@@ -1,6 +1,6 @@
 # MoLOS Quick Reference
 
-> Single-page reference for common commands, patterns, and conventions.
+> Single-page reference for common commands, patterns, and conventions for MoLOS v1.0.0.
 
 ---
 
@@ -110,12 +110,16 @@ bun run db:validate
 // Correct
 sqliteTable("MoLOS-Tasks_tasks", { ... })
 sqliteTable("MoLOS-Goals_milestones", { ... })
+sqliteTable("MoLOS-LLM-Council_conversations", { ... })
 
 // Wrong
-sqliteTable("tasks", { ... })                    // No prefix
-sqliteTable("mod_tasks_tasks", { ... })          // Old format
+sqliteTable("tasks", { ... })                        // No prefix
+sqliteTable("mod_tasks_tasks", { ... })              // Old format
 sqliteTable("MoLOS-Tasks_MoLOS-Tasks_tasks")     // Duplicated
+sqliteTable("MoLOS_LLM_Council_conversations", { ... }) // Underscores in module ID
 ```
+
+**Critical**: Module IDs use **hyphens** (`MoLOS-LLM-Council`), but table separator is **underscore** (`_`). Do not use underscores in module IDs.
 
 **Core tables:** No prefix (`user`, `session`, `settings`)
 
@@ -191,8 +195,18 @@ MoLOS/
 │   ├── core/          # @molos/core
 │   ├── database/      # @molos/database
 │   └── ui/            # @molos/ui
-├── modules/           # External modules (in monorepo)
-├── external_modules/  # Migrated external modules
+├── modules/           # All modules (monorepo workspaces)
+│   ├── ai/           # Internal AI module
+│   ├── MoLOS-Tasks/
+│   ├── MoLOS-AI-Knowledge/
+│   ├── MoLOS-LLM-Council/
+│   ├── MoLOS-Goals/
+│   ├── MoLOS-Meals/
+│   ├── MoLOS-Health/
+│   ├── MoLOS-Finance/
+│   ├── MoLOS-Markdown/
+│   ├── MoLOS-Google/
+│   └── MoLOS-Sample-Module/
 ├── src/               # Main SvelteKit app
 │   ├── lib/
 │   │   ├── components/
@@ -232,18 +246,29 @@ DATABASE_URL=./molos.db
 
 ## Troubleshooting Quick Fixes
 
-| Issue                                                     | Solution                                                                         |
-| --------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| Module not in sidebar                                     | `bun run module:sync`                                                            |
-| 404 on routes                                             | Check symlinks, run `module:link`                                                |
-| Table not found                                           | Run `bun run db:migrate:improved`                                                |
-| Migration failed                                          | Run `bun run db:repair`, then `bun run db:restore --latest`                      |
-| Checksum mismatch                                         | Revert changes OR create new migration (never edit applied migrations)           |
-| Import errors                                             | Use `$module` for module-internal, `$lib` for main app, check symlinks           |
-| Production build fails                                    | Replace fragile relative paths with `$module` alias                              |
-| tsconfig errors                                           | Remove standalone configs from module                                            |
-| Duplicate column name error                               | Normal if db created from snapshot - see ADR-002                                 |
-| "Cannot read properties of undefined (reading 'headers')" | API needs `request` in params: use `({ locals, params, request })` - see ADR-003 |
+| Issue                                                      | Solution                                                                            |
+| ---------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Module not in sidebar                                      | `bun run module:sync`                                                               |
+| 404 on routes                                              | Check symlinks, run `module:link`                                                   |
+| Table not found                                            | Run `bun run db:migrate`                                                            |
+| Migration failed                                           | Run `bun run db:repair`, then `bun run db:restore --latest`                         |
+| Checksum mismatch                                          | Revert changes OR create new migration (never edit applied migrations)              |
+| Import errors (`$module/server/...` not found)             | Ensure module code uses `$module` alias for internal imports                        |
+| Import errors (`$lib/server/db` not found)                 | Ensure main app imports use `$lib` alias                                            |
+| Production build fails (`Could not resolve '$module/...'`) | Check that module-internal imports use `$module` alias, not relative paths          |
+| tsconfig errors (`.svelte-kit/tsconfig.json` not found)    | Remove standalone `tsconfig.json`, `vite.config.ts`, `svelte.config.js` from module |
+| Duplicate column name error                                | Normal if db created from snapshot - see ADR-002                                    |
+| "Cannot read properties of undefined (reading 'headers')"  | API needs `request` in params: use `({ locals, params, request })` - see ADR-003    |
+| AI tool validation errors (invalid enum values)            | Add parameter validation in tool execute function (see AI-Tools Development Guide)  |
+| Module activation issues                                   | Check `settings_external_modules` table, run `bun run db:migrate`                   |
+
+---
+
+## v1.0.0 Quick Links
+
+- **[Release Notes](./releases/v1.0.0.md)** - Full v1.0.0 release notes
+- **[Migration Guide](./releases/v1.0.0-migration.md)** - Upgrading to v1.0.0
+- **[Migration System](./archive/DB_IMPROV/QUICK_START.md)** - Database migration v2.1 guide
 
 ---
 
