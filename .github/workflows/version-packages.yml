@@ -59,7 +59,7 @@ jobs:
               MOD_VERSION=$(cat "${mod}package.json" | grep '"version"' | cut -d'"' -f4)
               MOD_NAME=$(basename "$mod")
               PREV_MOD_VERSION=$(git show "HEAD~1:${mod}package.json" 2>/dev/null | grep '"version"' | cut -d'"' -f4 || echo "0.0.0")
-              
+
               if [ "$MOD_VERSION" != "$PREV_MOD_VERSION" ]; then
                 MOD_PKG_NAME=$(cat "${mod}package.json" | grep '"name"' | cut -d'"' -f4)
                 MODULES_CHANGED="$MODULES_CHANGED $MOD_PKG_NAME:$MOD_VERSION"
@@ -86,7 +86,7 @@ jobs:
               MOD_VERSION=$(cat "${mod}package.json" | grep '"version"' | cut -d'"' -f4)
               MOD_NAME=$(basename "$mod")
               MOD_ID=$(echo "$MOD_NAME" | sed 's/MoLOS-//' | tr '[:upper:]' '[:lower:]')
-              
+
               # Check if this module changed
               if git show "HEAD~1:${mod}package.json" 2>/dev/null | grep -q '"version"'; then
                 PREV_MOD_VERSION=$(git show "HEAD~1:${mod}package.json" | grep '"version"' | cut -d'"' -f4)
@@ -112,12 +112,3 @@ jobs:
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Trigger Docker build
-        if: steps.detect-changes.outputs.root_changed == 'true'
-        uses: benc-uk/workflow-dispatch@v1
-        with:
-          workflow: publish.yml
-          ref: main
-          inputs: |
-            { "version": "${{ steps.detect-changes.outputs.root_version }}" }
