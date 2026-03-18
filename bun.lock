@@ -19,14 +19,8 @@
         "@layerstack/tailwind": "2.0.0-next.17",
         "@layerstack/utils": "2.0.0-next.14",
         "@modelcontextprotocol/sdk": "^1.25.3",
-        "@molos/module-ai-knowledge": "workspace:*",
-        "@molos/module-goals": "workspace:*",
-        "@molos/module-google": "workspace:*",
-        "@molos/module-health": "workspace:*",
         "@molos/module-llm-council": "workspace:*",
         "@molos/module-markdown": "workspace:*",
-        "@molos/module-meals": "workspace:*",
-        "@molos/module-sample": "workspace:*",
         "@molos/module-tasks": "workspace:*",
         "@noble/hashes": "^2.0.1",
         "@sinclair/typebox": "^0.34.48",
@@ -106,44 +100,6 @@
         "vitest-browser-svelte": "^2.0.1",
       },
     },
-    "modules/MoLOS-AI-Knowledge": {
-      "name": "@molos/module-ai-knowledge",
-      "version": "1.0.0",
-      "devDependencies": {
-        "drizzle-kit": "^0.31.8",
-        "prettier": "^3.7.4",
-      },
-      "peerDependencies": {
-        "lucide-svelte": "^0.561.0",
-        "svelte": "^5.45.0",
-      },
-    },
-    "modules/MoLOS-Goals": {
-      "name": "@molos/module-goals",
-      "version": "1.0.0",
-      "peerDependencies": {
-        "svelte": "^5.45.0",
-      },
-    },
-    "modules/MoLOS-Google": {
-      "name": "@molos/module-google",
-      "version": "1.0.0",
-      "devDependencies": {
-        "drizzle-kit": "^0.31.8",
-        "prettier": "^3.7.4",
-      },
-      "peerDependencies": {
-        "lucide-svelte": "^0.561.0",
-        "svelte": "^5.45.0",
-      },
-    },
-    "modules/MoLOS-Health": {
-      "name": "@molos/module-health",
-      "version": "1.0.0",
-      "peerDependencies": {
-        "svelte": "^5.45.0",
-      },
-    },
     "modules/MoLOS-LLM-Council": {
       "name": "@molos/module-llm-council",
       "version": "1.0.0",
@@ -181,28 +137,6 @@
         "@molos/module-types": "workspace:*",
         "@sveltejs/kit": "^2.0.0",
         "drizzle-orm": "^0.41.0",
-        "svelte": "^5.45.0",
-      },
-    },
-    "modules/MoLOS-Meals": {
-      "name": "@molos/module-meals",
-      "version": "1.0.0",
-      "peerDependencies": {
-        "svelte": "^5.45.0",
-      },
-    },
-    "modules/MoLOS-Sample-Module": {
-      "name": "@molos/module-sample",
-      "version": "1.0.0",
-      "dependencies": {
-        "lucide-svelte": "^0.561.0",
-        "zod": "^4.3.6",
-      },
-      "devDependencies": {
-        "drizzle-kit": "^0.31.8",
-        "prettier": "^3.7.4",
-      },
-      "peerDependencies": {
         "svelte": "^5.45.0",
       },
     },
@@ -534,21 +468,9 @@
 
     "@molos/database": ["@molos/database@workspace:packages/database"],
 
-    "@molos/module-ai-knowledge": ["@molos/module-ai-knowledge@workspace:modules/MoLOS-AI-Knowledge"],
-
-    "@molos/module-goals": ["@molos/module-goals@workspace:modules/MoLOS-Goals"],
-
-    "@molos/module-google": ["@molos/module-google@workspace:modules/MoLOS-Google"],
-
-    "@molos/module-health": ["@molos/module-health@workspace:modules/MoLOS-Health"],
-
     "@molos/module-llm-council": ["@molos/module-llm-council@workspace:modules/MoLOS-LLM-Council"],
 
     "@molos/module-markdown": ["@molos/module-markdown@workspace:modules/MoLOS-Markdown"],
-
-    "@molos/module-meals": ["@molos/module-meals@workspace:modules/MoLOS-Meals"],
-
-    "@molos/module-sample": ["@molos/module-sample@workspace:modules/MoLOS-Sample-Module"],
 
     "@molos/module-tasks": ["@molos/module-tasks@workspace:modules/MoLOS-Tasks"],
 
