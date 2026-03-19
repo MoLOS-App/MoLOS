@@ -14,7 +14,7 @@
 
 	const tabs: Tab[] = [
 		{ id: 'dashboard', label: 'Dashboard', icon: Server },
-		{ id: 'keys', label: 'API Keys', icon: Key },
+		{ id: 'keys', label: 'Auth Keys', icon: Key },
 		{ id: 'oauth', label: 'OAuth Apps', icon: Shield },
 		{ id: 'resources', label: 'Resources', icon: ScrollText },
 		{ id: 'prompts', label: 'Prompts', icon: List },

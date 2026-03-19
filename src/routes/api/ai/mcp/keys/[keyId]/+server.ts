@@ -1,9 +1,9 @@
 /**
- * MCP API Key Individual Operations Endpoint
+ * MCP Auth Key Individual Operations Endpoint
  *
- * GET    /api/ai/mcp/keys/:keyId  - Get API key details
- * PATCH  /api/ai/mcp/keys/:keyId  - Update API key
- * DELETE /api/ai/mcp/keys/:keyId  - Delete/revoke API key
+ * GET    /api/ai/mcp/keys/:keyId  - Get auth key details
+ * PATCH  /api/ai/mcp/keys/:keyId  - Update auth key
+ * DELETE /api/ai/mcp/keys/:keyId  - Delete/revoke auth key
  */
 
 import { json, error } from '@sveltejs/kit';
@@ -15,7 +15,7 @@ import { validateScopes, validateKeyName } from '$lib/server/ai/mcp/validation/s
 import { MCPApiKeyStatus } from '@molos/database/schema';
 
 /**
- * GET - Get API key details
+ * GET - Get auth key details
  */
 export const GET: RequestHandler = async ({ locals, params }) => {
 	if (!locals.user) {
@@ -26,7 +26,7 @@ export const GET: RequestHandler = async ({ locals, params }) => {
 	const apiKey = await repo.getByUserIdAndId(locals.user.id, params.keyId);
 
 	if (!apiKey) {
-		throw error(404, 'API key not found');
+		throw error(404, 'Auth key not found');
 	}
 
 	// Get recent usage logs
@@ -47,7 +47,7 @@ export const GET: RequestHandler = async ({ locals, params }) => {
 };
 
 /**
- * PATCH - Update API key
+ * PATCH - Update auth key
  */
 export const PATCH: RequestHandler = async ({ locals, params, request }) => {
 	if (!locals.user) {
@@ -101,14 +101,14 @@ export const PATCH: RequestHandler = async ({ locals, params, request }) => {
 	const apiKey = await repo.update(params.keyId, locals.user.id, input);
 
 	if (!apiKey) {
-		throw error(404, 'API key not found');
+		throw error(404, 'Auth key not found');
 	}
 
 	return json({ apiKey });
 };
 
 /**
- * DELETE - Delete/revoke API key
+ * DELETE - Delete/revoke auth key
  */
 export const DELETE: RequestHandler = async ({ locals, params }) => {
 	if (!locals.user) {
@@ -119,7 +119,7 @@ export const DELETE: RequestHandler = async ({ locals, params }) => {
 	const success = await repo.delete(params.keyId, locals.user.id);
 
 	if (!success) {
-		throw error(404, 'API key not found');
+		throw error(404, 'Auth key not found');
 	}
 
 	return json({ success: true });

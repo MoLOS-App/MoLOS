@@ -94,7 +94,7 @@
 <Dialog {open} {onOpenChange}>
 	<DialogContent class="sm:max-w-md">
 		<DialogHeader>
-			<DialogTitle>Create API Key</DialogTitle>
+			<DialogTitle>Create Auth Key</DialogTitle>
 		</DialogHeader>
 
 		<form onsubmit={(e) => e.preventDefault()} class="space-y-4">
@@ -177,7 +177,7 @@
 
 		<DialogFooter>
 			<Button variant="outline" onclick={() => onOpenChange(false)}>Cancel</Button>
-			<Button onclick={handleSubmit} disabled={!name.trim()}>Create Key</Button>
+			<Button onclick={handleSubmit} disabled={!name.trim()}>Create Auth Key</Button>
 		</DialogFooter>
 	</DialogContent>
 </Dialog>

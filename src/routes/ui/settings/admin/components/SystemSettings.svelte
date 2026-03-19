@@ -249,8 +249,8 @@
 				class="border-muted-foreground/5 flex items-center justify-between rounded-2xl border bg-background/50 p-4"
 			>
 				<div class="space-y-0.5">
-					<p class="text-sm font-bold">API Key Access</p>
-					<p class="text-muted-foreground text-xs">Allow users to generate and use API keys</p>
+					<p class="text-sm font-bold">Auth Key Access</p>
+					<p class="text-muted-foreground text-xs">Allow users to generate and use auth keys</p>
 				</div>
 				<Button
 					variant="ghost"

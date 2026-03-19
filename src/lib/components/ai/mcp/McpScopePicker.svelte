@@ -250,9 +250,7 @@
 	<div class="flex items-center justify-between">
 		<div>
 			<h2 class="text-lg font-semibold">Scope Selection</h2>
-			<p class="text-muted-foreground text-sm">
-				Select tools and resources this API key can access
-			</p>
+			<p class="text-muted-foreground text-sm">Select tools and resources this key can access</p>
 		</div>
 		<div class="flex items-center gap-2">
 			<Badge variant="secondary">
@@ -271,25 +269,25 @@
 		</div>
 	</div>
 
-	<!-- Warning for old format scopes -->
+	<!-- Warning for old format scopes
 	{#if showOldFormatWarning}
-		<div class="bg-warning/10 border-warning/20 mb-4 rounded-lg p-4">
+		<div class="p-4 mb-4 rounded-lg bg-warning/10 border-warning/20">
 			<div class="flex items-start gap-3">
 				<Info class="text-warning mt-0.5 h-5 w-5 flex-shrink-0" />
 				<div class="flex-1">
-					<h4 class="text-warning-foreground mb-1 font-medium">Legacy Format Detected</h4>
-					<p class="text-warning-foreground/80 text-sm">
-						This API key was created with an old permission format. Please edit the key and use the
+					<h4 class="mb-1 font-medium text-warning-foreground">Legacy Format Detected</h4>
+					<p class="text-sm text-warning-foreground/80">
+						This key was created with an old permission format. Please edit the key and use the
 						Scope Picker to select specific tools with fine-grained control.
 					</p>
-					<p class="text-warning-foreground/60 text-xs">
+					<p class="text-xs text-warning-foreground/60">
 						Current format: Module-level access (e.g., "All Tasks"). New format: Tool-level access
 						(e.g., "Tasks: get_tasks, create_task").
 					</p>
 				</div>
 			</div>
 		</div>
-	{/if}
+	{/if} -->
 
 	<!-- Tabs for Module Selection -->
 	{#if modules.length > 0}

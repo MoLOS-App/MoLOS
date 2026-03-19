@@ -282,7 +282,7 @@
 		await refreshData();
 	}
 
-	// API Key handlers
+	// Auth Key handlers
 	async function updateApiKey(
 		keyId: string,
 		formData: {
@@ -639,8 +639,8 @@
 		}
 	}
 
-	// Note: Full API key secrets are only shown once at creation time for security.
-	// Existing keys cannot have their full secret retrieved from the database.
+	// Note: Full auth key secrets are only shown once at creation time for security.
+	// Existing keys cannot have their full secret retrieved from database.
 </script>
 
 <svelte:head>
@@ -727,7 +727,7 @@
 				</div>
 			</div>
 		{:else if activeTab === 'keys'}
-			<!-- API Keys Tab -->
+			<!-- Auth Keys Tab -->
 			<McpApiKeyTable
 				keys={localKeys.map((k) => ({
 					...k,
@@ -788,7 +788,7 @@
 	</div>
 </div>
 
-<!-- Create API Key Dialog -->
+<!-- Create Auth Key Dialog -->
 <McpCreateKeyDialog
 	open={showCreateKeyDialog}
 	onOpenChange={(open) => (showCreateKeyDialog = open)}
@@ -796,7 +796,7 @@
 	onCreate={createApiKey}
 />
 
-<!-- Edit API Key Dialog -->
+<!-- Edit Auth Key Dialog -->
 <McpEditKeyDialog
 	open={showEditKeyDialog}
 	onOpenChange={(open) => (showEditKeyDialog = open)}
@@ -882,7 +882,7 @@
 			</AlertDialogTitle>
 			<AlertDialogDescription>
 				Are you sure you want to {deleteConfirmType === 'key' ? 'revoke' : 'delete'}
-				{deleteConfirmType === 'key' ? ' this API key' : ` this ${deleteConfirmType}`}
+				{deleteConfirmType === 'key' ? ' this auth key' : ` this ${deleteConfirmType}`}
 				<strong>"{deleteConfirmName}"</strong>? This action cannot be undone.
 			</AlertDialogDescription>
 		</AlertDialogHeader>

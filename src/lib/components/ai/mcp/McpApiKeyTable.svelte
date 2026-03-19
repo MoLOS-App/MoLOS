@@ -53,7 +53,7 @@
 				<div class="text-sm font-medium text-foreground">${key.name}</div>
 				${
 					key.expiresAt
-						? `<div class="text-muted-foreground text-xs">Expires: ${new Date(key.expiresAt).toLocaleDateString()}</div>`
+						? `<div class="text-xs text-muted-foreground">Expires: ${new Date(key.expiresAt).toLocaleDateString()}</div>`
 						: ''
 				}
 				`
@@ -62,7 +62,7 @@
 			key: 'keyPrefix',
 			label: 'Key',
 			render: (key: ApiKey) =>
-				`<code class="block rounded bg-muted px-3 py-2 font-mono text-sm text-foreground">mcp_live_${key.keyPrefix}_******</code>`
+				`<code class="block px-3 py-2 font-mono text-sm rounded bg-muted text-foreground">mcp_live_${key.keyPrefix}_******</code>`
 		},
 		{
 			key: 'allowedScopes',
@@ -73,16 +73,16 @@
 						.slice(0, 2)
 						.map(
 							(scope) =>
-								`<span class="inline-flex"><Badge variant="secondary" class="text-xs mr-1">${scope}</Badge></span>`
+								`<span class="inline-flex"><Badge variant="secondary" class="mr-1 text-xs">${scope}</Badge></span>`
 						)
 						.join('');
 					const more =
 						key.allowedScopes.length > 2
-							? `<span class="text-muted-foreground text-xs">+${key.allowedScopes.length - 2} more</span>`
+							? `<span class="text-xs text-muted-foreground">+${key.allowedScopes.length - 2} more</span>`
 							: '';
 					return `<div class="flex flex-wrap gap-1">${badges}${more}</div>`;
 				}
-				return `<span class="text-muted-foreground text-sm">All tools</span>`;
+				return `<span class="text-sm text-muted-foreground">All tools</span>`;
 			}
 		},
 		{
@@ -129,7 +129,7 @@
 		data={keys}
 		{columns}
 		{actions}
-		searchPlaceholder="Search API keys..."
+		searchPlaceholder="Search auth keys..."
 		searchKey="name"
 		filters={[
 			{
@@ -143,10 +143,10 @@
 				]
 			}
 		]}
-		createLabel="Create API Key"
+		createLabel="Create Auth Key"
 		onCreate={onCreateKey}
 		emptyIcon={Key}
-		emptyTitle="No API keys found"
+		emptyTitle="No auth keys found"
 	/>
 
 	{#if onShowHelp}
@@ -165,9 +165,9 @@
 		<div class="space-y-1 text-sm">
 			<p class="font-medium text-foreground">Important security note:</p>
 			<p class="text-muted-foreground">
-				For security reasons, the database only stores a hash of your API keys, not the full secret.
-				The complete key is only shown once at creation time. Existing keys (created before this
-				session) cannot have their full secret retrieved.
+				For security reasons, the database only stores a hash of your Auth keys, not the full
+				secret. The complete key is only shown once at creation time. Existing keys (created before
+				this session) cannot have their full secret retrieved.
 			</p>
 			<p class="text-muted-foreground">
 				After a page refresh or reload, only the masked version will be available again.

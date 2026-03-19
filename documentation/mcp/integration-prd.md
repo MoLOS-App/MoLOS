@@ -9,7 +9,7 @@
 **Target Routes:**
 
 - Dashboard: `/ui/ai/mcp`
-- API Keys: `/ui/ai/mcp/keys`
+- Auth Keys: `/ui/ai/mcp/keys`
 - Resources: `/ui/ai/mcp/resources`
 - Prompts: `/ui/ai/mcp/prompts`
 - Logs: `/ui/ai/mcp/logs`
@@ -22,8 +22,8 @@
 **Key Decisions:**
 | Question | Decision |
 |----------|----------|
-| Active Module Selection | **Option B:** MCP-specific module toggle per API key |
-| Authentication | **Option B:** Scoped API tokens with 3-level hierarchical access control (module/submodule/tool) |
+| Active Module Selection | **Option B:** MCP-specific module toggle per auth key |
+| Authentication | **Option B:** Scoped auth tokens with 3-level hierarchical access control (module/submodule/tool) |
 | Resources/Prompts | **Phase 1:** Implement both endpoints now |
 | Tool Naming | **Keep existing prefix:** `MoLOS-Tasks_get_tasks` |
 
@@ -48,14 +48,14 @@
 │         ▼                                                             │
 │  ┌─────────────────────────────────────────────────────────────┐    │
 │  │                    MCP Handler                               │    │
-│  │  - Validates API Key & Scope                                 │    │
+│  │  - Validates Auth Key & Scope                                 │    │
 │  │  - Routes to: Tools | Resources | Prompts                    │    │
 │  └─────────────────────────────────────────────────────────────┘    │
 │         │                                                             │
 │         ▼                                                             │
 │  ┌─────────────────────────────────────────────────────────────┐    │
 │  │                 AiToolbox (existing)                         │    │
-│  │  - Filters tools by API key's allowed scopes (3-level)                │    │
+│  │  - Filters tools by auth key's allowed scopes (3-level)                │    │
 │  └─────────────────────────────────────────────────────────────┘    │
 │                                                                       │
 └─────────────────────────────────────────────────────────────────────┘
@@ -69,7 +69,7 @@ Add to `src/lib/server/db/schema/ai-schema.ts`:
 
 #### 3.1 Table: `ai_mcp_api_keys`
 
-Scoped API keys for MCP access.
+Scoped auth keys for MCP access.
 
 ```typescript
 export const MCPApiKeyStatus = {
@@ -112,7 +112,7 @@ export const aiMcpApiKeys = sqliteTable('ai_mcp_api_keys', {
 
 #### 3.2 Table: `ai_mcp_logs`
 
-Request/response logging with API key tracking.
+Request/response logging with auth key tracking.
 
 ```typescript
 export const MCPLogStatus = {
@@ -210,7 +210,7 @@ src/
 │   │   └── ai/
 │   │       ├── mcp/
 │   │       │   ├── index.ts               # MCP types
-│   │       │   ├── api-key.ts             # API key types
+│   │       │   ├── api-key.ts             # Auth key types
 │   │       │   ├── resource.ts            # Resource types
 │   │       │   └── prompt.ts              # Prompt types
 │   ├── repositories/
@@ -223,22 +223,22 @@ src/
 │   └── server/
 │       ├── ai/
 │       │   ├── mcp/
-│       │   │   ├── handlers/
-│       │   │   │   ├── index.ts           # Main handler router
-│       │   │   │   ├── tools-handler.ts   # tools/list, tools/call
-│       │   │   │   ├── resources-handler.ts  # resources/list, resources/read
-│       │   │   │   ├── prompts-handler.ts    # prompts/list, prompts/get
-│       │   │   │   └── initialize-handler.ts  # initialize handshake
-│       │   │   ├── middleware/
-│       │   │   │   ├── auth-middleware.ts     # API key validation
-│       │   │   │   └── scope-middleware.ts    # Module scope checking
-│       │   │   ├── discovery/
-│       │   │   │   ├── tools-discovery.ts     # Wrap AiToolbox for MCP
-│       │   │   │   ├── resources-discovery.ts # Discover resources
-│       │   │   │   └── prompts-discovery.ts   # Discover prompts
-│       │   │   ├── mcp-transport.ts       # SSE transport layer
-│       │   │   ├── json-rpc.ts            # JSON-RPC 2.0 utilities
-│       │   │   └── mcp-utils.ts           # Helper functions
+│       │       │   ├── handlers/
+│       │       │   │   ├── index.ts           # Main handler router
+│       │       │   │   ├── tools-handler.ts   # tools/list, tools/call
+│       │       │   │   ├── resources-handler.ts  # resources/list, resources/read
+│       │       │   │   ├── prompts-handler.ts    # prompts/list, prompts/get
+│       │       │   │   └── initialize-handler.ts  # initialize handshake
+│       │       │   ├── middleware/
+│       │       │   │   ├── auth-middleware.ts     # Auth key validation
+│       │       │   │   └── scope-middleware.ts    # Module scope checking
+│       │       │   ├── discovery/
+│       │       │   │   ├── tools-discovery.ts     # Wrap AiToolbox for MCP
+│       │       │   │   ├── resources-discovery.ts # Discover resources
+│       │       │   │   └── prompts-discovery.ts   # Discover prompts
+│       │       │   ├── mcp-transport.ts       # SSE transport layer
+│       │       │   ├── json-rpc.ts            # JSON-RPC 2.0 utilities
+│       │       │   └── mcp-utils.ts           # Helper functions
 │       └── db/
 │           └── schema/
 │               └── ai-schema.ts           # UPDATE: Add MCP tables
@@ -249,7 +249,7 @@ src/
 │   │           ├── transport/
 │   │           │   └── +server.ts         # SSE endpoint
 │   │           └── keys/
-│   │               ├── +server.ts         # CRUD for API keys
+│   │               ├── +server.ts         # CRUD for auth keys
 │   │               └── [keyId]/
 │   │                   └── +server.ts     # Individual key operations
 │   └── ui/
@@ -259,7 +259,7 @@ src/
 │                   ├── +page.svelte        # MCP dashboard (overview)
 │                   ├── +page.server.ts
 │                   ├── keys/
-│                   │   ├── +page.svelte    # API keys management
+│                   │   ├── +page.svelte    # Auth keys management
 │                   │   └── +page.server.ts
 │                   ├── resources/
 │                   │   ├── +page.svelte    # Resources management
@@ -309,7 +309,7 @@ src/
 
 #### 5.2 Tools Methods
 
-**tools/list** - Returns available tools (filtered by API key scope)
+**tools/list** - Returns available tools (filtered by auth key scope)
 
 **tools/call** - Executes a tool with arguments
 
@@ -327,7 +327,7 @@ src/
 
 ---
 
-### 6. API Key Format
+### 6. Auth Key Format
 
 ```
 mcp_live_[prefix]_[suffix]
@@ -378,9 +378,9 @@ Examples:
 - Recent activity log
 - Quick actions (create key, view docs)
 
-#### 8.2 API Keys (`/ui/ai/mcp/keys`)
+#### 8.2 Auth Keys (`/ui/ai/mcp/keys`)
 
-- List of API keys with status
+- List of auth keys with status
 - Create new key dialog
 - Edit key (name, hierarchical scopes [module/submodule/tool], expiration)
 - Revoke key
@@ -401,7 +401,7 @@ Examples:
 #### 8.5 Logs (`/ui/ai/mcp/logs`)
 
 - Paginated request/response log
-- Filter by method, status, API key
+- Filter by method, status, auth key
 - View full request/response
 
 ---
@@ -415,7 +415,7 @@ Examples:
 5. **Middleware** - Auth & scope validation
 6. **Handlers** - Tools, Resources, Prompts endpoints
 7. **API Endpoint** - SSE transport at `/api/ai/mcp/transport`
-8. **API Keys API** - CRUD for API keys
+8. **Auth Keys API** - CRUD for auth keys
 9. **UI Components** - All pages under `/ui/ai/mcp/`
 10. **AI Module Config** - Update navigation
 
@@ -424,7 +424,7 @@ Examples:
 ### 10. Success Criteria
 
 1. **Protocol Compliance:** Valid JSON-RPC 2.0 implementation over SSE
-2. **Scoped Access:** API keys can only access configured modules
+2. **Scoped Access:** Auth keys can only access configured modules
 3. **Tool Discovery:** Successfully lists tools from enabled modules
 4. **Tool Execution:** External MCP client can call tools
 5. **User Isolation:** Complete separation between users

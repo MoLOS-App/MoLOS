@@ -261,9 +261,9 @@
 		<div class="space-y-1 text-sm">
 			<p class="font-medium text-foreground">Important security note:</p>
 			<p class="text-muted-foreground">
-				For security reasons, the database only stores a hash of your API keys, not the full secret.
-				The complete key is only shown once at creation time. Existing keys (created before this
-				session) cannot have their full secret retrieved.
+				For security reasons, the database only stores a hash of your Auth keys, not the full
+				secret. The complete key is only shown once at creation time. Existing keys (created before
+				this session) cannot have their full secret retrieved.
 			</p>
 			<p class="text-muted-foreground">
 				After a page refresh or reload, only the masked version will be available again.

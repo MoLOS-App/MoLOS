@@ -99,11 +99,11 @@
 		<Select bind:value={apiKeyFilter}>
 			<SelectTrigger class="h-9 w-40">
 				{apiKeyFilter
-					? apiKeyOptions.find((k) => k.id === apiKeyFilter)?.name || 'All API Keys'
-					: 'All API Keys'}
+					? apiKeyOptions.find((k) => k.id === apiKeyFilter)?.name || 'All Auth Keys'
+					: 'All Auth Keys'}
 			</SelectTrigger>
 			<SelectContent>
-				<SelectItem value="">All API Keys</SelectItem>
+				<SelectItem value="">All Auth Keys</SelectItem>
 				{#each apiKeyOptions as key}
 					<SelectItem value={key.id}>{key.name}</SelectItem>
 				{/each}

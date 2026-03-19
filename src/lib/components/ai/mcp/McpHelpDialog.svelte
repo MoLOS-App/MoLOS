@@ -38,15 +38,15 @@
 			description:
 				'The Dashboard provides an overview of your MCP server activity, including statistics, connection information, and quick setup guides.',
 			howItWorks: [
-				'Monitor your API keys usage and request statistics in real-time',
+				'Monitor your auth keys usage and request statistics in real-time',
 				'View success rates and average response times',
 				'Access quick setup guides for popular AI coding agents',
 				'See available external modules that can be accessed via MCP'
 			],
 			examples: [
 				{
-					title: 'API Key Statistics',
-					description: 'View how many active API keys you have and their usage patterns'
+					title: 'Auth Key Statistics',
+					description: 'View how many active auth keys you have and their usage patterns'
 				},
 				{
 					title: 'Connection Info',
@@ -56,11 +56,11 @@
 			]
 		},
 		keys: {
-			title: 'API Keys Management',
+			title: 'Auth Keys Management',
 			description:
-				'API keys are used to authenticate requests to your MCP server. Each key can be restricted to specific modules and have an expiration date.',
+				'Auth keys are used to authenticate requests to your MCP server. Each key can be restricted to specific modules and have an expiration date.',
 			howItWorks: [
-				'Create API keys with specific names to identify different applications',
+				'Create auth keys with specific names to identify different applications',
 				'Restrict key access to specific external modules for better security',
 				'Set expiration dates to automatically revoke access after a certain period',
 				'Enable or disable keys without revoking them',
@@ -70,7 +70,7 @@
 				{
 					title: 'Creating a Key for Claude Desktop',
 					description:
-						'Create an API key with "Claude Desktop" as the name, select the modules it can access, and leave expiration empty for permanent access.'
+						'Create an auth key with "Claude Desktop" as name, select modules it can access, and leave expiration empty for permanent access.'
 				},
 				{
 					title: 'Key with Module Restrictions',
@@ -148,8 +148,8 @@ Arguments:
 			description:
 				'Activity logs provide a detailed history of all MCP requests made to your server, including successful and failed requests.',
 			howItWorks: [
-				'Each request is logged with the API key used, method called, and duration',
-				'Filter logs by API key, method, status, or search terms',
+				'Each request is logged with auth key used, method called, and duration',
+				'Filter logs by auth key, method, status, or search terms',
 				'View detailed error messages and stack traces for failed requests',
 				'Track request/response data for debugging and auditing'
 			],
@@ -177,7 +177,7 @@ Prompt: generate-summary`,
 		oauth: {
 			title: 'OAuth Applications',
 			description:
-				'OAuth 2.0 allows third-party applications to access your MCP server without sharing your API keys. Applications use access tokens with scoped permissions.',
+				'OAuth 2.0 allows third-party applications to access your MCP server without sharing your auth keys. Applications use access tokens with scoped permissions.',
 			howItWorks: [
 				'Register an OAuth application with a name and redirect URIs',
 				'Applications redirect users to your authorization endpoint for consent',

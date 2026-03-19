@@ -29,7 +29,7 @@
 		refreshData = fn;
 	}
 
-	// API Key handlers
+	// Key handlers
 	async function createApiKey(formData: {
 		name: string;
 		allowedScopes: string[] | null;
@@ -119,7 +119,7 @@
 		{onShowHelp}
 	/>
 
-	<!-- Create API Key Dialog -->
+	<!-- Create Auth Key Dialog -->
 	<McpCreateKeyDialog
 		open={showCreateKeyDialog}
 		onOpenChange={(open) => (showCreateKeyDialog = open)}
@@ -127,7 +127,7 @@
 		onCreate={createApiKey}
 	/>
 
-	<!-- Edit API Key Dialog -->
+	<!-- Edit Auth Key Dialog -->
 	<McpEditKeyDialog
 		open={showEditKeyDialog}
 		onOpenChange={(open) => (showEditKeyDialog = open)}

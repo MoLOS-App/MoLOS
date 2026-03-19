@@ -179,7 +179,7 @@
 						</div>
 					{/if}
 					<div class="flex items-center gap-2 text-sm">
-						<span class="text-muted-foreground">API Key:</span>
+						<span class="text-muted-foreground">Auth Key:</span>
 						<span class="text-foreground">{log.apiKeyName || log.apiKeyId.slice(0, 8) + '...'}</span
 						>
 					</div>

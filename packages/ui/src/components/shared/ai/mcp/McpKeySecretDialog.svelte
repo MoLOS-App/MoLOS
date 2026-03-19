@@ -31,7 +31,7 @@
 			copied = true;
 
 			// Show toast with longer duration (10 seconds)
-			toast.success('API key copied to clipboard', {
+			toast.success('Auth key copied to clipboard', {
 				duration: 10000
 			});
 
@@ -63,7 +63,7 @@
 		<DialogHeader>
 			<DialogTitle class="flex items-center gap-3">
 				<CheckCircle class="text-success h-6 w-6" />
-				API Key Created
+				Auth Key Created
 			</DialogTitle>
 		</DialogHeader>
 

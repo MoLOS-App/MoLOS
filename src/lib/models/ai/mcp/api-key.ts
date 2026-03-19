@@ -1,5 +1,5 @@
 /**
- * MCP API Key Type Definitions
+ * MCP Key Type Definitions
  *
  * Types for API key management and authentication.
  */
@@ -7,7 +7,7 @@
 import type { ApiKeyStatus } from './common';
 
 /**
- * Full API Key entity from database
+ * Full Key entity from database
  */
 export interface MCPApiKey {
 	id: string;
@@ -26,7 +26,7 @@ export interface MCPApiKey {
 }
 
 /**
- * API Key creation input
+ * Key creation input
  */
 export interface CreateApiKeyInput {
 	name: string;
@@ -35,7 +35,7 @@ export interface CreateApiKeyInput {
 }
 
 /**
- * API Key update input
+ * Key update input
  */
 export interface UpdateApiKeyInput {
 	name?: string;
@@ -45,7 +45,7 @@ export interface UpdateApiKeyInput {
 }
 
 /**
- * API Key response (includes full key on creation)
+ * Key response (includes full key on creation)
  */
 export interface ApiKeyResponse {
 	apiKey: MCPApiKey;
@@ -54,7 +54,7 @@ export interface ApiKeyResponse {
 }
 
 /**
- * API Key list filters
+ * Key list filters
  */
 export interface ApiKeyFilters {
 	status?: ApiKeyStatus;
@@ -62,7 +62,7 @@ export interface ApiKeyFilters {
 }
 
 /**
- * API Key format types
+ * Key format types
  */
 export type ApiKeyEnvironment = 'live' | 'test';
 
@@ -78,7 +78,7 @@ export interface GeneratedApiKey {
 }
 
 /**
- * API Key validation result
+ * Key validation result
  */
 export interface ApiKeyValidation {
 	valid: boolean;

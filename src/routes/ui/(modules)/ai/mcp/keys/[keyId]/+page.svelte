@@ -138,10 +138,10 @@
 			});
 
 			if (response.ok) {
-				toast.success('API key updated successfully');
+				toast.success('Auth key updated successfully');
 			} else {
 				const error = await response.json();
-				toast.error(error.error || 'Failed to update API key');
+				toast.error(error.error || 'Failed to update auth key');
 			}
 		} catch (error) {
 			toast.error('An error occurred while saving');
@@ -152,8 +152,8 @@
 </script>
 
 <svelte:head>
-	<title>Edit API Key - {data.apiKey.name} | MoLOS</title>
-	<meta name="description" content="Manage MCP API key permissions" />
+	<title>Edit Auth Key - {data.apiKey.name} | MoLOS</title>
+	<meta name="description" content="Manage MCP auth key permissions" />
 </svelte:head>
 
 <div class="min-h-screen bg-background">
@@ -166,7 +166,7 @@
 					Back to Keys
 				</Button>
 				<div>
-					<h1 class="text-2xl font-semibold tracking-tight">Edit API Key</h1>
+					<h1 class="text-2xl font-semibold tracking-tight">Edit Auth Key</h1>
 					<p class="text-muted-foreground text-sm">{data.apiKey.name}</p>
 				</div>
 			</div>
@@ -206,7 +206,7 @@
 						<div>
 							<CardTitle class="text-base">Tool Permissions</CardTitle>
 							<p class="text-muted-foreground text-sm">
-								Select which tools this API key can access
+								Select which tools this auth key can access
 							</p>
 						</div>
 						<Button onclick={handleSave} disabled={saving} class="gap-2">

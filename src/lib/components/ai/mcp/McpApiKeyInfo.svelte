@@ -75,7 +75,7 @@
 				id="key-name"
 				bind:value={name}
 				disabled={!editable}
-				placeholder="API key name"
+				placeholder="Auth key name"
 				autocomplete="off"
 			/>
 		</div>

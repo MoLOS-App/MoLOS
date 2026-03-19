@@ -23,7 +23,7 @@
 			<Activity />
 		{/snippet}
 	</StatsCard>
-	<StatsCard title="API Keys" value={totalApiKeys}>
+	<StatsCard title="Auth Keys" value={totalApiKeys}>
 		{#snippet icon()}
 			<Key />
 		{/snippet}

@@ -1,10 +1,10 @@
 /**
- * MCP API Keys Management Endpoint
+ * MCP Auth Keys Management Endpoint
  *
- * CRUD operations for MCP API keys.
+ * CRUD operations for MCP auth keys.
  *
- * GET    /api/ai/mcp/keys        - List all API keys for user
- * POST   /api/ai/mcp/keys        - Create new API key
+ * GET    /api/ai/mcp/keys        - List all auth keys for user
+ * POST   /api/ai/mcp/keys        - Create new auth key
  */
 
 import { json, error } from '@sveltejs/kit';
@@ -14,7 +14,7 @@ import type { CreateApiKeyInput, ApiKeyFilters } from '$lib/models/ai/mcp';
 import { validateScopes, validateKeyName } from '$lib/server/ai/mcp/validation/scope-validator';
 
 /**
- * GET - List API keys for the authenticated user
+ * GET - List auth keys for the authenticated user
  */
 export const GET: RequestHandler = async ({ locals, url }) => {
 	if (!locals.user) {
@@ -38,7 +38,7 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 };
 
 /**
- * POST - Create a new API key
+ * POST - Create a new auth key
  */
 export const POST: RequestHandler = async ({ locals, request }) => {
 	if (!locals.user) {

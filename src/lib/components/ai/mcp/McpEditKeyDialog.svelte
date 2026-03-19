@@ -143,7 +143,7 @@
 		<DialogHeader>
 			<DialogTitle class="flex items-center gap-2">
 				<Key class="h-5 w-5" />
-				Edit API Key
+				Edit Auth Key
 			</DialogTitle>
 		</DialogHeader>
 

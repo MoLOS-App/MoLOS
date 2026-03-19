@@ -76,7 +76,7 @@
 	);
 
 	function getJsonConfig(): string {
-		const key = selectedApiKey || customApiKey || 'your-api-key-here';
+		const key = selectedApiKey || customApiKey || 'your-auth-key-here';
 		const serverName = 'molos-mcp';
 
 		switch (selectedAgent) {
@@ -151,7 +151,7 @@
 	}
 
 	function getCliCommand(): string {
-		const key = selectedApiKey || customApiKey || 'your-api-key-here';
+		const key = selectedApiKey || customApiKey || 'your-auth-key-here';
 
 		switch (selectedAgent) {
 			case 'claude-code':
@@ -174,7 +174,7 @@
 					`1. Open Claude Desktop`,
 					`2. Click the MCP icon in the sidebar`,
 					`3. Click "Add Server" and paste the config below`,
-					`4. Replace "your-api-key-here" with your actual API key`,
+					`4. Replace "your-api-key-here" with your actual key`,
 					`5. Save and start chatting!`
 				];
 
@@ -182,7 +182,7 @@
 				return [
 					`1. Open your terminal`,
 					`2. Run the command below`,
-					`3. Replace "your-api-key-here" with your actual API key`,
+					`3. Replace "your-api-key-here" with your actual key`,
 					`4. Start using Claude Code with MCP`
 				];
 
@@ -201,7 +201,7 @@
 					`2. Click the MCP icon in the sidebar`,
 					`3. Click "Edit MCP Settings"`,
 					`4. Add the JSON config below to your mcpServers`,
-					`5. Replace "your-api-key-here" with your API key`
+					`5. Replace "your-api-key-here" with your key`
 				];
 
 			case 'windsurf':
@@ -310,14 +310,14 @@
 			</div>
 		</div>
 
-		<!-- API Key Notice -->
+		<!-- Key Notice -->
 		{#if !selectedApiKey}
 			<button
 				onclick={() => (showApiKeyInput = !showApiKeyInput)}
 				class="group mb-4 flex w-full items-center justify-between rounded-lg bg-muted/50 p-3 transition-colors hover:bg-muted"
 			>
 				<span class="text-sm text-foreground">
-					{showApiKeyInput ? 'Using custom API key' : 'Use your API key in config'}
+					{showApiKeyInput ? 'Using custom key' : 'Use your key in config'}
 				</span>
 				<ChevronRight
 					class={cn(
@@ -330,7 +330,7 @@
 				<input
 					type="text"
 					bind:value={customApiKey}
-					placeholder="Enter your API key..."
+					placeholder="Enter your key..."
 					class="border-input focus:ring-ring mb-4 w-full rounded-lg border bg-background px-3 py-2.5 text-sm focus:ring-2 focus:ring-offset-background"
 				/>
 			{/if}
