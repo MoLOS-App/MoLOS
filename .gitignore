@@ -32,6 +32,11 @@ packages/*/dist/
 .opencode/
 devtools/
 .changeset/
+.opencode
+AGENTS.md
+CLAUDE.md
+opencode.json
+
 
 
 # ========================================
@@ -80,6 +85,3 @@ vite.config.ts.timestamp-*
 # ========================================
 .DS_Store
 Thumbs.db
-.opencode
-AGENTS.md
-CLAUDE.md
