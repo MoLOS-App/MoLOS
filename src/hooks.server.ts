@@ -120,9 +120,12 @@ const authHandler: Handle = async ({ event, resolve }) => {
 const moduleAccessHandler: Handle = async ({ event, resolve }) => {
 	const { pathname } = event.url;
 
-	// Only check access for module routes
+	// Only check access for module routes (but do NOT redirect - let page load and handle gracefully)
 	if (pathname.startsWith('/ui/') && !pathname.startsWith('/ui/settings')) {
 		const user = event.locals.user;
+
+		// If authenticated and accessing a module route, check module state
+		// This will allow the page to load normally and handle disabled state on client side
 		if (user) {
 			// Extract module ID from path (e.g., /ui/health/xxx -> health)
 			const moduleId = pathname.split('/')[2];
@@ -132,11 +135,6 @@ const moduleAccessHandler: Handle = async ({ event, resolve }) => {
 				const modState = moduleStates.find(
 					(s) => s.moduleId === moduleId && s.submoduleId === 'main'
 				);
-
-				// If module is explicitly disabled, redirect to dashboard or settings
-				if (modState && !modState.enabled) {
-					throw redirect(303, '/ui/dashboard');
-				}
 			}
 		}
 	}

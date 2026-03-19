@@ -169,6 +169,27 @@ export function parseStatements(sql: string): string[] {
 			.filter((s) => s.length > 0);
 	}
 
+	/**
+	 * Strip leading comment lines from a SQL statement
+	 */
+	function stripLeadingComments(sql: string): string {
+		const lines = sql.split('\n');
+		const sqlLines: string[] = [];
+		let foundSql = false;
+
+		for (const line of lines) {
+			const trimmed = line.trim();
+			// Skip leading comment lines until we find actual SQL
+			if (!foundSql && trimmed.startsWith('--')) {
+				continue;
+			}
+			foundSql = true;
+			sqlLines.push(line);
+		}
+
+		return sqlLines.join('\n').trim();
+	}
+
 	// Fallback: semicolon splitting (with warning about edge cases)
 	// Note: This doesn't handle semicolons in string literals
 	// Use statement-breakpoint for complex migrations
@@ -193,8 +214,8 @@ export function parseStatements(sql: string): string[] {
 
 		// Handle semicolons outside strings
 		if (char === ';' && !inString) {
-			const statement = current.trim();
-			if (statement && !statement.startsWith('--')) {
+			const statement = stripLeadingComments(current.trim());
+			if (statement) {
 				statements.push(statement);
 			}
 			current = '';
@@ -204,8 +225,8 @@ export function parseStatements(sql: string): string[] {
 	}
 
 	// Add final statement if exists
-	const finalStatement = current.trim();
-	if (finalStatement && !finalStatement.startsWith('--')) {
+	const finalStatement = stripLeadingComments(current.trim());
+	if (finalStatement) {
 		statements.push(finalStatement);
 	}
 

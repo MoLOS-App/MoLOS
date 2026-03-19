@@ -91,17 +91,6 @@
 		return count;
 	}
 
-	// Expand/collapse module
-	function toggleModuleExpand(moduleId: string) {
-		const newExpanded = new Set(expandedModules);
-		if (newExpanded.has(moduleId)) {
-			newExpanded.delete(moduleId);
-		} else {
-			newExpanded.add(moduleId);
-		}
-		expandedModules = newExpanded;
-	}
-
 	// Check if scope is selected
 	function isScopeSelected(scope: string): boolean {
 		return selectedScopes.includes(scope);
@@ -309,7 +298,7 @@
 				<TabsList class="grid h-auto min-h-fit w-full grid-cols-2 lg:grid-cols-4">
 					{#each modules as module}
 						<TabsTrigger value={module.id} class="h-auto min-h-[34px] text-sm whitespace-normal">
-							<div class="flex items-center gap-1">
+							<div class="flex cursor-pointer items-center gap-1">
 								<span>{module.name}</span>
 								<Badge variant="secondary" class="ml-1 flex-shrink-0">
 									{getModuleToolCount(module)}
@@ -322,40 +311,13 @@
 
 			{#each modules as module (module.id)}
 				<TabsContent value={module.id}>
-					<Card>
-						<CardHeader class="cursor-pointer" onclick={() => toggleModuleExpand(module.id)}>
+					<div>
+						<CardHeader>
 							<div class="flex items-center justify-between">
 								<CardTitle class="flex items-center gap-2">
 									{module.name}
 									<Badge variant="outline">{module.submodules.size} submodules</Badge>
 								</CardTitle>
-								<div class="flex items-center gap-2">
-									{#if expandedModules.has(module.id)}
-										<Button
-											variant="outline"
-											size="sm"
-											onclick={(e) => {
-												e.stopPropagation();
-												toggleModule(module);
-											}}
-										>
-											{#if isModuleFullySelected(module)}
-												Deselect All
-											{:else if isModulePartiallySelected(module)}
-												Select All
-											{:else}
-												Select All
-											{/if}
-										</Button>
-									{/if}
-									<Button variant="ghost" size="sm">
-										{#if expandedModules.has(module.id)}
-											<ChevronUp class="h-4 w-4" />
-										{:else}
-											<ChevronDown class="h-4 w-4" />
-										{/if}
-									</Button>
-								</div>
 							</div>
 						</CardHeader>
 
@@ -426,7 +388,7 @@
 								{/if}
 							</CardContent>
 						{/if}
-					</Card>
+					</div>
 				</TabsContent>
 			{/each}
 		</Tabs>

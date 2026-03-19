@@ -11,15 +11,14 @@ export const load: LayoutServerLoad = async ({ locals, url, cookies }) => {
 	const isAuthenticated = !!session;
 
 	if (!isAuthenticated && !isAuthPage) {
-		// Check if there are any users in the DB to decide where to redirect
-		const userCountResult = await db.all(sql`SELECT count(*) as count FROM user`);
-		const userCount = (userCountResult[0] as unknown as { count: number }).count;
-
-		if (userCount === 0) {
-			throw redirect(302, '/ui/welcome');
-		} else {
-			throw redirect(302, '/ui/login');
-		}
+		// Preserve query parameters during redirect
+		// Note: URL hash is not available server-side (never sent to server)
+		const searchParams = url.searchParams.toString();
+		console.log('[Auth Debug] Redirecting to /ui/welcome with params:', {
+			searchParams,
+			pathname: url.pathname
+		});
+		throw redirect(302, `/ui/welcome?${searchParams}`);
 	}
 
 	if (isAuthenticated && isAuthPage) {

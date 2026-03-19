@@ -27,13 +27,13 @@ These cannot be filtered out by environment variables.
 | ID                    | Package                      | Source                                                     | Description                           | Version |
 | --------------------- | ---------------------------- | ---------------------------------------------------------- | ------------------------------------- | ------- |
 | `MoLOS-Tasks`         | `@molos/module-tasks`        | [GitHub](https://github.com/MoLOS-App/MoLOS-Tasks)         | Task management and project tracking  | 1.0.4   |
-| `MoLOS-AI-Knowledge`  | `@molos/module-ai-knowledge` | [GitHub](https://github.com/MoLOS-App/MoLOS-AI-Knowledge)  | AI prompts, playground, and workflows | 1.0.0   |
+| `MoLOS-Markdown`      | `@molos/module-markdown`     | [GitHub](https://github.com/MoLOS-App/MoLOS-Markdown)      | Markdown editing and preview          | 1.0.0   |
 | `MoLOS-LLM-Council`   | `@molos/module-llm-council`  | [GitHub](https://github.com/MoLOS-App/MoLOS-LLM-Council)   | Multi-LLM consultation system         | 1.0.0   |
+| `MoLOS-AI-Knowledge`  | `@molos/module-ai-knowledge` | [GitHub](https://github.com/MoLOS-App/MoLOS-AI-Knowledge)  | AI prompts, playground, and workflows | -       |
 | `MoLOS-Goals`         | `@molos/module-goals`        | [GitHub](https://github.com/MoLOS-App/MoLOS-Goals)         | OKR and goal tracking                 | -       |
 | `MoLOS-Meals`         | `@molos/module-meals`        | [GitHub](https://github.com/MoLOS-App/MoLOS-Meals)         | Meal planning and nutrition           | -       |
 | `MoLOS-Health`        | `@molos/module-health`       | [GitHub](https://github.com/MoLOS-App/MoLOS-Health)        | Health and fitness tracking           | -       |
 | `MoLOS-Finance`       | `@molos/module-finance`      | [GitHub](https://github.com/MoLOS-App/MoLOS-Finance)       | Financial tracking and budgets        | -       |
-| `MoLOS-Markdown`      | `@molos/module-markdown`     | [GitHub](https://github.com/MoLOS-App/MoLOS-Markdown)      | Markdown editing and preview          | -       |
 | `MoLOS-Google`        | `@molos/module-google`       | [GitHub](https://github.com/MoLOS-App/MoLOS-Google)        | Google services integration           | -       |
 | `MoLOS-Sample-Module` | `@molos/module-sample`       | [GitHub](https://github.com/MoLOS-App/MoLOS-Sample-Module) | Example module for reference          | -       |
 

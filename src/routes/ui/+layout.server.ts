@@ -11,14 +11,16 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 	const isAuthenticated = !!session;
 
 	if (!isAuthenticated && !isAuthPage) {
-		// Check if there are any users in the DB to decide where to redirect
+		// Check if there are any users in the DB
 		const userCountResult = await db.all(sql`SELECT count(*) as count FROM user`);
 		const userCount = (userCountResult[0] as unknown as { count: number }).count;
 
 		if (userCount === 0) {
 			throw redirect(302, '/ui/welcome');
 		} else {
-			throw redirect(302, '/ui/login');
+			// Don't redirect UI routes for authenticated users
+			// They should load normally and access session data
+			console.log('[UI Layout] Authenticated user accessing UI route:', url.pathname);
 		}
 	}
 
@@ -48,7 +50,9 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 	const publicRegistration = await settingsRepo.getSystemSetting('PUBLIC_REGISTRATION');
 
 	if (url.pathname === '/ui/signup' && publicRegistration !== 'true') {
-		throw redirect(302, '/ui/login');
+		// Preserve query parameters during redirect
+		const searchParams = url.searchParams.toString();
+		throw redirect(302, `/ui/login?${searchParams}`);
 	}
 
 	return {
