@@ -174,7 +174,7 @@
 					`1. Open Claude Desktop`,
 					`2. Click the MCP icon in the sidebar`,
 					`3. Click "Add Server" and paste the config below`,
-					`4. Replace "your-api-key-here" with your actual key`,
+					`4. Replace "your-auth-key-here" with your actual key`,
 					`5. Save and start chatting!`
 				];
 
@@ -182,7 +182,7 @@
 				return [
 					`1. Open your terminal`,
 					`2. Run the command below`,
-					`3. Replace "your-api-key-here" with your actual key`,
+					`3. Replace "your-auth-key-here" with your actual key`,
 					`4. Start using Claude Code with MCP`
 				];
 
@@ -191,7 +191,7 @@
 					`1. Open Cursor IDE`,
 					`2. Go to Settings → Features → MCP Servers`,
 					`3. Click "Add New MCP Server"`,
-					`4. Paste the JSON config below (replace "your-api-key-here")`,
+					`4. Paste the JSON config below (replace "your-auth-key-here")`,
 					`5. Save and the server will be available`
 				];
 
@@ -201,7 +201,7 @@
 					`2. Click the MCP icon in the sidebar`,
 					`3. Click "Edit MCP Settings"`,
 					`4. Add the JSON config below to your mcpServers`,
-					`5. Replace "your-api-key-here" with your key`
+					`5. Replace "your-auth-key-here" with your key`
 				];
 
 			case 'windsurf':
@@ -209,7 +209,7 @@
 					`1. Open Windsurf IDE`,
 					`2. Click the MCPs icon in the top right menu`,
 					`3. Click "Add new global MCP server" or edit mcp_config.json`,
-					`4. Add the JSON config below (replace "your-api-key-here")`,
+					`4. Add the JSON config below (replace "your-auth-key-here")`,
 					`5. Save and the server will be available in Cascade`
 				];
 

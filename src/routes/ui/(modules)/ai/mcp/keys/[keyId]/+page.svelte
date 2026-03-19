@@ -37,7 +37,7 @@
 
 		if (hasOldFormatScopes) {
 			// Old format detected - convert to null (all tools)
-			console.log('[ApiKeyDetail] Normalizing old-format scopes to null:', scopes);
+			console.log('[AuthKeyDetail] Normalizing old-format scopes to null:', scopes);
 			return [];
 		}
 
@@ -102,7 +102,7 @@
 
 				return result;
 			} catch (e) {
-				console.error('[ApiKeyDetail] Error processing module:', module.id, e);
+				console.error('[AuthKeyDetail] Error processing module:', module.id, e);
 				return {
 					id: module.id,
 					name: module.name,
@@ -114,9 +114,9 @@
 		});
 
 	// Debug log
-	console.log('[ApiKeyDetail Page] Total modules:', modulesData.length);
+	console.log('[AuthKeyDetail Page] Total modules:', modulesData.length);
 	console.log(
-		'[ApiKeyDetail Page] Module names:',
+		'[AuthKeyDetail Page] Module names:',
 		modulesData.map((m) => m.name)
 	);
 
