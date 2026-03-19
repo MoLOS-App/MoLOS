@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-03-18
+
+### Added
+
+- **Module Version Updates**:
+  - MoLOS-LLM-Council updated to v1.0.1
+  - MoLOS-Markdown updated to v1.0.1
+  - MoLOS-Tasks remains at v1.0.4
+
+### Changed
+
+- **CI/CD Simplification**:
+  - Removed automated release pipeline (release.yml)
+  - Removed test workflow (test.yml)
+  - Simplified publish.yml to only build on version tags
+  - Switched to manual release workflow per simplified architecture
+
+- **Module Configuration**:
+  - Separated dev and prod module configurations
+  - Development uses module branches for latest code
+  - Production uses module tags for reproducible builds
+  - NODE_ENV controls which configuration is used
+
+- **Database Migration Safety**:
+  - Banned `drizzle-kit generate` command to prevent journal/SQL desync
+  - Enforced manual migration creation with descriptive names
+  - Improved migration system safety and naming conventions
+
+### Fixed
+
+- **Auth Configuration**:
+  - Fixed HTTP deployments to use single ORIGIN environment variable
+  - Improved authentication consistency across deployment types
+
+### Technical
+
+- Manual release workflow for faster, user-controlled releases
+- Production Docker builds default to NODE_ENV=production
+- Removed automated changeset-based versioning
+
 ## [1.0.0] - 2026-03-13
 
 ### Added
