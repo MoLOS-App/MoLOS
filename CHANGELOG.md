@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-03-20
+
+### Changed
+
+- **Module Version Updates**:
+  - MoLOS-Tasks: v1.0.4 → v1.1.0
+  - MoLOS-LLM-Council: v1.0.0 → v1.1.0
+  - MoLOS-Markdown: v1.0.0 → v1.1.0
+
+### Technical
+
+- Updated modules.config.ts to reference v1.1.0 for all released modules
+- Minor release cycle for module ecosystem improvements
+
 ## [1.0.1] - 2026-03-18
 
 ### Added
