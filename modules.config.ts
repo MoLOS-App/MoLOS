@@ -105,7 +105,7 @@ export const modulesConfigDev: ModuleConfigEntry[] = [
  * Update tags when releasing new versions.
  */
 export const modulesConfigProd: ModuleConfigEntry[] = [
-	{ id: 'MoLOS-Tasks', git: 'https://github.com/MoLOS-App/MoLOS-Tasks.git', tag: 'v1.0.4' },
+	{ id: 'MoLOS-Tasks', git: 'https://github.com/MoLOS-App/MoLOS-Tasks.git', tag: 'v1.1.0' },
 	// { id: 'MoLOS-Goals', git: 'https://github.com/MoLOS-App/MoLOS-Goals.git', tag: 'v1.0.0' },
 	// { id: 'MoLOS-Finance', git: 'https://github.com/MoLOS-App/MoLOS-Finance.git', tag: 'v1.0.0' },
 	// { id: 'MoLOS-Health', git: 'https://github.com/MoLOS-App/MoLOS-Health.git', tag: 'v1.0.0' },
@@ -119,12 +119,12 @@ export const modulesConfigProd: ModuleConfigEntry[] = [
 	{
 		id: 'MoLOS-LLM-Council',
 		git: 'https://github.com/MoLOS-App/MoLOS-LLM-Council.git',
-		tag: 'v1.0.1'
+		tag: 'v1.1.0'
 	},
 	{
 		id: 'MoLOS-Markdown',
 		git: 'https://github.com/MoLOS-App/MoLOS-Markdown.git',
-		tag: 'v1.0.1'
+		tag: 'v1.1.0'
 	}
 	// {
 	// 	id: 'MoLOS-Product-Owner',
