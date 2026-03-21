@@ -1,4 +1,4 @@
-<img width="96" height="96" alt="MoLOS icon" src="static/favicon.svg" align="right">
+<img width="144" height="144" alt="MoLOS icon" src="static/pwa-assets/logo-512.png">
 
 # MoLOS
 
