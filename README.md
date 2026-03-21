@@ -2,142 +2,80 @@
 
 # MoLOS
 
-MoLOS is a modular, local-first workspace you can shape into whatever you need.
-It is for people who want a fast, private home base they can control.
+**Your AI agents have amnesia. MoLOS gives them permanent memory.**
 
-## Why MoLOS exists
+The structured memory layer for productive AI agents. Local-first, self-hostable, MCP-native.
 
-Most productivity tools start simple and end up noisy. They add features you do not use,
-move your data into someone else's cloud, and slow down over time. MoLOS is the opposite.
-It stays lean, runs on your hardware, and grows only when you want.
+---
 
-If you want a calm, private place to build your own system, try it. If you don't like it you just need to remove it. Just one command.
-
-## What you get
-
-- Local-first by default and easy to self-host
-- Speed. Even on older machines that at least can run Doom
-- Modularity and control
-- Full ownership of your data and workflow
-- Built for long-term use
-
-## What people build with it
-
-MoLOS is a base, not a box. A few real examples:
-
-- [MoLOS-Tasks](https://github.com): Simple tasks and project management. The first module created
-- [MoLOS-CRM](https://github.com): Mini CRM for clients and follow-ups
-- [MoLOS-AI Hub](https://github.com): Centralized AI prompt store
-- [MoLOS-Docustore](https://github.com): Personal knowledge docs hub
-- [MoLOS-Homeboard](https://github.com): Self-hosted dashboard for home or work
-- [MoLOS-3DP](https://github.com): 3D printer control center
-
-Start with one use case. Add more when it makes sense.
-
-You can also keep it small, I won't judge.
-
-## Who it is for
-
-- Developers who want a clean, fast workspace
-- Power users who like to tune their own systems
-- People who care about privacy and local storage
-- Anyone tired configuring Notion and after all the work end up not using it
-
-## Quick start (Podman)
-
-First make the persistence folders:
+## Install in 30 seconds
 
 ```bash
-mkdir -p ./data
+/bin/bash -c "$(curl -fsSL https://molos.app/install.sh)"
 ```
 
-Then start MoLOS:
+That's it. MoLOS opens in your browser with Docker/Podman auto-detected, secure authentication configured, and data stored on your filesystem at `~/.molos/data`.
+
+[Full Installation Guide](https://molos.app/docs/getting-started)
+
+---
+
+## Why MoLOS?
+
+AI tools forget everything between sessions. MoLOS remembers forever.
+
+| Problem | MoLOS Solution |
+|---------|---------------|
+| **AI forgets context** | Permanent memory for every conversation |
+| **No structure** | Tasks → Projects → Areas hierarchy |
+| **Data in clouds** | Local-first, your data stays with you |
+| **Fragmented tools** | One system for everything AI needs |
+
+---
+
+## What You Can Do
+
+MoLOS gives your AI agents 72+ tools to take real action. Manage tasks, write notes, track projects, and query everything across all modules at once. Perfect for Claude Code, OpenCode, OpenClaw, and any MCP-compatible AI.
+
+---
+
+## Built for Privacy & Control
+
+MoLOS is local-first. Your data never leaves your machine. Self-host with Docker/Podman, run it yourself with no monthly fees, and own everything with Apache 2.0 open source license.
+
+---
+
+## Modules
+
+MoLOS is modular. Use what you need: [Tasks](https://molos.app/docs/modules/tasks), [Markdown](https://molos.app/docs/modules/markdown), [LLM Council](https://molos.app/docs/modules/llm-council), and [more](https://molos.app/docs/modules/all). [Build your own module](https://molos.app/docs/module-development).
+
+---
+
+## For Developers
+
+Clean, simple codebase. Easy to read, easy to extend. Check the [documentation](https://molos.app/docs), [module development guide](https://molos.app/docs/module-development), and [contributing guide](https://molos.app/docs/community/contributing).
 
 ```bash
-podman run -d \
-  -p 4173:4173 \
-  -v ./data:/data \
-  -e DATABASE_URL=file:/data/molos.db \
-  -e PORT=4173 \
-  -e MOLOS_AUTOLOAD_MODULES=true \
-  -e FORCE_REBUILD=true \
-  ghcr.io/molos-app/molos:latest
+git clone https://github.com/MoLOS-App/MoLOS.git
+cd MoLOS
+bun install
+bun run dev
 ```
 
-Open `http://localhost:4173`. Your data stays in `./data`.
+---
 
-That is the whole setup. You can stop here and explore.
+## Who Uses MoLOS?
 
-## Screenshots
+Developers who want AI-assisted workflows, privacy-conscious users who own their data, productivity enthusiasts who love local-first software, and anyone tired of AI forgetting everything.
 
-<!-- Screenshot: Dashboard overview -->
-<!-- Screenshot: Module picker -->
-<!-- Screenshot: Example workspace -->
+---
 
-## Modular system, plain English
+## Learn More
 
-MoLOS is built from small modules. Add or remove them without breaking the core app.
-Keep it minimal, or assemble a full workspace over time.
+[Documentation](https://molos.app/docs) | [MCP Integration](https://molos.app/docs/getting-started/mcp-integration) | [Blog](https://molos.app/blog) | [Discussions](https://github.com/MoLOS-App/MoLOS/discussions)
 
-To customize which modules are included in production builds, edit `modules.config.ts` in the project root.
-Modules are fetched from git repositories during the build process.
+---
 
-Modules can be shared, versioned, and replaced. Your data stays in one place.
+## Star it?
 
-See `documentation/production-build.md` for details on the build system and module configuration.
-
-## Privacy and control
-
-MoLOS is local-first. It runs on your machine and stores data locally by default.
-You decide if and how it is exposed to the network.
-
-Backups are simple. Move `./data` to a new machine and you are done.
-
-## For developers
-
-[Documentation](https://molos-docs.eduard3v.com)
-
-The codebase is small on purpose. It is easy to read, easy to extend, and easy to own.
-
-### Database Migrations
-
-⚠️ **CRITICAL**: Never run `drizzle-kit generate` or `bun run db:generate`. These commands are disabled.
-
-**Why**: Auto-generation creates journal/SQL desync and random migration names, corrupting the migration system.
-
-**Correct workflow**:
-
-```bash
-bun run db:migration:create --name <name> --module <module> --reversible
-# Then manually edit the SQL file
-bun run db:migrate
-```
-
-See `documentation/adr/003-migration-auto-generation-ban.md` for details.
-
-### Module System
-
-- **[Production Build Guide](documentation/production-build.md)** - Build-time module resolution, Docker/Kubernetes deployment
-- **[Module Improvements Guide](documentation/module-improvements.md)** - Learn about retry logic, change detection, and module linking
-- **[Quick Reference](documentation/module-quick-reference.md)** - Common commands and troubleshooting
-- **[Module System Context](documentation/context/module-system.md)** - Architecture and design decisions
-
-If you want to build a module or know why I made some architectural decisions, start there.
-
-### Module Configuration
-
-Modules are configured in `modules.config.ts` at the project root:
-
-```typescript
-export const modulesConfig: ModuleConfigEntry[] = [
-	{ id: 'MoLOS-Tasks', git: 'https://github.com/molos-org/MoLOS-Tasks.git', tag: 'v1.0.0' },
-	{ id: 'MoLOS-Goals', git: 'https://github.com/molos-org/MoLOS-Goals.git', tag: 'v1.0.0' }
-];
-```
-
-To add or remove modules, edit this file and rebuild the production image.
-
-## Contributing
-
-Issues and PRs are welcome. If you build something useful, share it.
-If MoLOS helps you, star it and tell a friend!.
+If MoLOS helps you, star it and tell a friend!
