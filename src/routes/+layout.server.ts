@@ -10,15 +10,25 @@ export const load: LayoutServerLoad = async ({ locals, url, cookies }) => {
 		url.pathname === '/ui/login' || url.pathname === '/ui/signup' || url.pathname === '/ui/welcome';
 	const isAuthenticated = !!session;
 
+	// Check if any users exist in the database
+	const userCountResult = await db.all(sql`SELECT count(*) as count FROM user`);
+	const userCount = (userCountResult[0] as unknown as { count: number }).count;
+
 	if (!isAuthenticated && !isAuthPage) {
 		// Preserve query parameters during redirect
 		// Note: URL hash is not available server-side (never sent to server)
 		const searchParams = url.searchParams.toString();
-		console.log('[Auth Debug] Redirecting to /ui/welcome with params:', {
+
+		// Only redirect to /ui/welcome if NO users exist (first-time setup)
+		// Otherwise redirect to /ui/login for authentication
+		const redirectTarget = userCount === 0 ? '/ui/welcome' : '/ui/login';
+
+		console.log('[Auth Debug] Redirecting to', redirectTarget, 'with params:', {
 			searchParams,
-			pathname: url.pathname
+			pathname: url.pathname,
+			userCount
 		});
-		throw redirect(302, `/ui/welcome?${searchParams}`);
+		throw redirect(302, `${redirectTarget}${searchParams ? `?${searchParams}` : ''}`);
 	}
 
 	if (isAuthenticated && isAuthPage) {
