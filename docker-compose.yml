@@ -1,0 +1,43 @@
+services:
+  molos:
+    build: .
+    image: ghcr.io/molos-app/molos:latest
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp
+    ports:
+      - '4173:4173'
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=/data/molos.db
+      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET:-}
+      - BETTER_AUTH_URL=http://127.0.0.1:4173
+      - ORIGIN=http://127.0.0.1:4173
+      - GITHUB_REPOSITORY=${GITHUB_REPOSITORY:-molos/molos}
+      - PORT=4173
+      - CSRF_TRUSTED_ORIGINS=http://127.0.0.1:4173,http://localhost:4173
+    volumes:
+      - ./data:/data:rw
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:4173/api/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '0.5'
+          memory: 512M

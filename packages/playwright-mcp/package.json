@@ -1,0 +1,29 @@
+{
+	"name": "@molos/playwright-mcp",
+	"version": "1.0.0",
+	"description": "Playwright MCP server for UI testing",
+	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"bin": {
+		"playwright-mcp": "./dist/index.js"
+	},
+	"scripts": {
+		"build": "tsc",
+		"dev": "tsx src/index.ts",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@modelcontextprotocol/sdk": "^1.25.3",
+		"playwright": "^1.57.0",
+		"zod": "^4.3.6"
+	},
+	"devDependencies": {
+		"@types/node": "^20",
+		"tsx": "^4.21.0",
+		"typescript": "^5.9.3"
+	},
+	"engines": {
+		"node": ">=18"
+	}
+}

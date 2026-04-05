@@ -1,0 +1,86 @@
+# ========================================
+# Dependencies
+# ========================================
+node_modules/
+
+# ========================================
+# Build outputs
+# ========================================
+.output/
+.vercel/
+.netlify/
+.wrangler/
+.svelte-kit/
+/build/
+dist/
+packages/*/dist/
+.turbo/
+
+# ========================================
+# Environment & secrets
+# ========================================
+.env
+.env.*
+!.env.example
+
+# ========================================
+# Development tools & IDEs
+# ========================================
+.vscode/
+.kilocode/
+.claude/
+.codex/
+.opencode/
+devtools/
+.changeset/
+.opencode
+AGENTS.md
+CLAUDE.md
+opencode.json
+.playwright-mcp
+
+
+# ========================================
+# Databases
+# ========================================
+*.db
+*.db-shm
+*.db-wal
+db.sqlite
+data/
+
+# ========================================
+# Module system
+# ========================================
+/external_modules/
+external_modules/
+/modules/
+modules.config.local.ts
+.molo-sync-state.json
+.molo-module-links.json
+src/routes/api/(external_modules)/
+src/routes/ui/(modules)/(external_modules)/
+src/lib/modules/
+documentation/plugins/molos-module-management.md
+
+# ========================================
+
+AGENTS.md
+.mcp.json
+
+# ========================================
+# Vite
+# ========================================
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# ========================================
+# Logs & temporary files
+# ========================================
+*.log
+
+# ========================================
+# OS-specific files
+# ========================================
+.DS_Store
+Thumbs.db

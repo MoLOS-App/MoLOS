@@ -1,0 +1,665 @@
+<script lang="ts">
+	import { onMount, tick } from 'svelte';
+	import type { AiMessage, AiAction, AiSession } from '$lib/models/ai';
+	import { toast } from 'svelte-sonner';
+	import { page } from '$app/stores';
+	import { invalidateAll } from '$app/navigation';
+	import { Loader2 } from 'lucide-svelte';
+	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
+
+	import ChatHeader from './ChatHeader.svelte';
+	import SessionList from './SessionList.svelte';
+	import ChatMessage from './ChatMessage.svelte';
+	import ChatInput from './ChatInput.svelte';
+	import ReviewChangesOverlay from './ReviewChangesOverlay.svelte';
+	import { uuid } from '$lib/utils/uuid';
+
+	let { isOpen = $bindable(false) } = $props();
+
+	let sessions = $state<AiSession[]>([]);
+	let currentSessionId = $state<string | null>(null);
+	let messages = $state<AiMessage[]>([]);
+	let input = $state('');
+	let isLoading = $state(false);
+	let isStreaming = $state(false);
+	let streamEnabled = $state(true);
+	let scrollViewport = $state<HTMLElement | null>(null);
+	let view = $state<'sessions' | 'chat'>('sessions');
+
+	// Delete dialog state
+	let showDeleteDialog = $state(false);
+	let sessionToDelete = $state<string | null>(null);
+
+	// Resizing State
+	let width = $state(384); // Default 384px (md:w-96)
+	let isResizing = $state(false);
+	const minWidth = 320;
+	const maxWidth = 800;
+
+	// Review Changes State
+	let pendingAction = $state<AiAction | null>(null);
+	let actionTimer = $state<number>(5);
+	let timerInterval = $state<number | null>(null);
+
+	// Get active modules from page data (passed from root layout)
+	let activeModuleIds = $derived($page.data.activeExternalIds || []);
+
+	async function loadSessions() {
+		const res = await fetch('/api/ai/chat');
+		if (res.ok) {
+			const data = await res.json();
+			sessions = data.sessions;
+		}
+	}
+
+	async function loadSettings() {
+		const res = await fetch('/api/ai/settings');
+		if (res.ok) {
+			const data = await res.json();
+			streamEnabled = data.settings?.streamEnabled ?? true;
+		}
+	}
+
+	async function loadMessages(sessionId: string) {
+		const res = await fetch(`/api/ai/chat?sessionId=${sessionId}`);
+		if (res.ok) {
+			const data = await res.json();
+			messages = data.messages;
+			currentSessionId = sessionId;
+			view = 'chat';
+			await scrollToBottom();
+		}
+	}
+
+	async function startNewChat() {
+		currentSessionId = null;
+		messages = [];
+		isLoading = false;
+		isStreaming = false;
+		view = 'chat';
+	}
+
+	function updateAssistantMessage(messageId: string, content: string) {
+		messages = messages.map((msg) => (msg.id === messageId ? { ...msg, content } : msg));
+	}
+
+	function applyStreamMeta(meta: { sessionId?: string; actions?: AiAction[] }) {
+		if (meta.sessionId) {
+			currentSessionId = meta.sessionId;
+		}
+		if (meta.actions?.some((a) => a.type === 'write' && a.status === 'pending')) {
+			pendingAction =
+				meta.actions.find((a) => a.type === 'write' && a.status === 'pending') || null;
+			if (pendingAction) startActionTimer();
+		}
+	}
+
+	// Track progress log for current assistant message
+	let progressLog = $state<string[]>([]);
+	// Track message segments for multi-message streaming
+	let segmentMessages = $state<Map<string, { id: string; content: string; isComplete: boolean }>>(
+		new Map()
+	);
+
+	async function handleStreamResponse(res: Response, assistantMessageId: string) {
+		const reader = res.body?.getReader();
+		if (!reader) throw new Error('Streaming response unavailable');
+
+		const decoder = new TextDecoder();
+		let buffer = '';
+		let content = '';
+		progressLog = []; // Reset progress log for new message
+		segmentMessages = new Map(); // Reset segments
+
+		while (true) {
+			const { value, done } = await reader.read();
+			if (done) break;
+			buffer += decoder.decode(value, { stream: true });
+			const parts = buffer.split('\n\n');
+			buffer = parts.pop() || '';
+			for (const part of parts) {
+				const line = part.split('\n').find((l) => l.startsWith('data:'));
+				if (!line) continue;
+				const payload = line.replace(/^data:\s?/, '');
+				if (payload === '[DONE]') {
+					return;
+				}
+				let data: {
+					type?: string;
+					content?: string;
+					message?: string;
+					eventType?: string;
+					data?: any;
+				} & {
+					sessionId?: string;
+					actions?: AiAction[];
+				};
+				try {
+					data = JSON.parse(payload);
+				} catch {
+					continue;
+				}
+
+				// Handle progress events (intermediate updates)
+				if (data.type === 'progress') {
+					const eventData = data.data;
+					const eventType = data.eventType;
+
+					// Handle message_segment events for multi-message streaming
+					if (eventType === 'message_segment') {
+						handleMessageSegment(eventData, assistantMessageId);
+					} else {
+						handleProgressEvent(eventType, eventData, assistantMessageId);
+
+						// Also update content for text deltas (backward compatibility)
+						if (eventType === 'text' && eventData?.delta) {
+							content += eventData.delta;
+							updateAssistantMessage(assistantMessageId, content);
+							await scrollToBottom();
+						}
+					}
+				} else if (data.type === 'chunk') {
+					content += data.content || '';
+					updateAssistantMessage(assistantMessageId, content);
+					await scrollToBottom();
+				} else if (data.type === 'meta') {
+					applyStreamMeta(data);
+					// Store progress log in message metadata
+					if (progressLog.length > 0) {
+						updateMessageMetadata(assistantMessageId, { progressLog });
+					}
+				} else if (data.type === 'error') {
+					throw new Error(data.message || 'Streaming failed');
+				}
+			}
+		}
+	}
+
+	/**
+	 * Handle message_segment events for multi-message streaming
+	 * Creates separate message bubbles for each segment
+	 */
+	function handleMessageSegment(eventData: any, baseMessageId: string) {
+		if (!eventData?.id) return;
+
+		const segmentId = eventData.id;
+		const content = eventData.content || '';
+		const isComplete = eventData.isComplete ?? false;
+		const segmentIndex = eventData.segmentIndex ?? 0;
+
+		// Update or create the segment
+		segmentMessages.set(segmentId, {
+			id: segmentId,
+			content,
+			isComplete
+		});
+
+		// Convert segments to message format
+		const segmentMsgs = Array.from(segmentMessages.values())
+			.filter((s) => s.content.trim())
+			.sort((a, b) => {
+				// Sort by segment ID which contains index
+				const aIdx = parseInt(a.id.split('_').pop() || '0');
+				const bIdx = parseInt(b.id.split('_').pop() || '0');
+				return aIdx - bIdx;
+			});
+
+		// If we have multiple segments, render them as separate messages
+		if (segmentMsgs.length > 1 || (segmentMsgs.length === 1 && segmentMsgs[0].isComplete)) {
+			// Remove old segment messages and add new ones
+			messages = messages.filter((m) => !m.id.startsWith(`seg_${baseMessageId}`));
+
+			// Add segment messages
+			for (let i = 0; i < segmentMsgs.length; i++) {
+				const seg = segmentMsgs[i];
+				const msgId = seg.id;
+
+				// Only add if content exists
+				if (seg.content.trim()) {
+					const newMsg: AiMessage = {
+						id: msgId,
+						userId: '',
+						sessionId: currentSessionId || '',
+						role: 'assistant',
+						content: seg.content,
+						createdAt: new Date(),
+						contextMetadata: JSON.stringify({
+							isSegment: true,
+							segmentIndex: i,
+							progressLog: i === segmentMsgs.length - 1 ? progressLog : []
+						})
+					};
+
+					messages = [...messages, newMsg];
+				}
+			}
+
+			scrollToBottom();
+		} else if (segmentMsgs.length === 1 && !segmentMsgs[0].isComplete) {
+			// Single incomplete segment - update in place
+			updateAssistantMessage(baseMessageId, segmentMsgs[0].content);
+			scrollToBottom();
+		}
+	}
+
+	function handleProgressEvent(eventType: string | undefined, eventData: any, messageId: string) {
+		switch (eventType) {
+			case 'tool_start':
+				const toolName = eventData?.toolName || 'unknown';
+				progressLog.push(`🔧 Calling tool: ${toolName}`);
+				break;
+			case 'tool_complete':
+				const completedTool = eventData?.toolName || 'unknown';
+				progressLog.push(`✓ Tool completed: ${completedTool}`);
+				break;
+			case 'step_complete':
+				if (eventData?.toolCalls?.length) {
+					progressLog.push(`📝 Step completed with ${eventData.toolCalls.length} tool call(s)`);
+				}
+				break;
+			case 'error':
+				progressLog.push(`❌ Error: ${eventData?.error || 'Unknown error'}`);
+				break;
+			case 'complete':
+				progressLog.push(`✅ Response complete`);
+				break;
+		}
+	}
+
+	function updateMessageMetadata(messageId: string, metadata: Record<string, any>) {
+		messages = messages.map((msg) => {
+			if (msg.id === messageId) {
+				const existingMetadata = msg.contextMetadata ? JSON.parse(msg.contextMetadata) : {};
+				return {
+					...msg,
+					contextMetadata: JSON.stringify({ ...existingMetadata, ...metadata })
+				};
+			}
+			return msg;
+		});
+	}
+
+	async function sendMessage() {
+		if (!input.trim() || isLoading) return;
+
+		const userContent = input;
+		input = '';
+		isLoading = true;
+		isStreaming = false;
+
+		const tempUserMsg: AiMessage = {
+			id: uuid(),
+			userId: '',
+			sessionId: currentSessionId || '',
+			role: 'user',
+			content: userContent,
+			createdAt: new Date()
+		};
+
+		let assistantMessageId: string | null = null;
+		if (streamEnabled) {
+			assistantMessageId = uuid();
+			const tempAssistantMsg: AiMessage = {
+				id: assistantMessageId,
+				userId: '',
+				sessionId: currentSessionId || '',
+				role: 'assistant',
+				content: '...',
+				createdAt: new Date()
+			};
+			messages = [...messages, tempUserMsg, tempAssistantMsg];
+		} else {
+			messages = [...messages, tempUserMsg];
+		}
+		await scrollToBottom();
+
+		try {
+			const res = await fetch('/api/ai/chat', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					content: userContent,
+					sessionId: currentSessionId,
+					activeModuleIds,
+					stream: streamEnabled
+				})
+			});
+
+			const isEventStream =
+				res.headers.get('content-type')?.includes('text/event-stream') ?? streamEnabled;
+
+			if (res.ok && streamEnabled && isEventStream && assistantMessageId) {
+				isStreaming = true;
+				await handleStreamResponse(res, assistantMessageId);
+				if (currentSessionId) {
+					await loadMessages(currentSessionId);
+				}
+				await loadSessions();
+			} else if (res.ok) {
+				const data = await res.json();
+				currentSessionId = data.sessionId;
+
+				if (data.actions?.some((a: AiAction) => a.type === 'write' && a.status === 'pending')) {
+					pendingAction = data.actions.find(
+						(a: AiAction) => a.type === 'write' && a.status === 'pending'
+					);
+					startActionTimer();
+				}
+
+				await loadMessages(currentSessionId!);
+				await loadSessions();
+			}
+		} catch (e) {
+			console.error(e);
+		} finally {
+			isLoading = false;
+			isStreaming = false;
+			await scrollToBottom();
+		}
+	}
+
+	function startActionTimer() {
+		actionTimer = 5;
+		if (timerInterval) clearInterval(timerInterval);
+		timerInterval = setInterval(() => {
+			actionTimer -= 1;
+			if (actionTimer <= 0) {
+				if (timerInterval !== null) clearInterval(timerInterval);
+				confirmAction();
+			}
+		}, 1000) as unknown as number;
+	}
+
+	function cancelAction() {
+		if (timerInterval) clearInterval(timerInterval);
+		pendingAction = null;
+	}
+
+	async function confirmAction() {
+		if (!pendingAction) return;
+		if (timerInterval) clearInterval(timerInterval);
+
+		const action = pendingAction;
+		pendingAction = null; // Clear immediately to avoid double execution
+		isLoading = true;
+
+		try {
+			const res = await fetch('/api/ai/chat', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					actionToExecute: action,
+					sessionId: currentSessionId,
+					activeModuleIds
+				})
+			});
+
+			if (res.ok) {
+				// Refresh UI data
+				await refreshModuleData(action);
+				await loadMessages(currentSessionId!);
+			}
+		} catch (e) {
+			toast.error('Failed to execute action');
+		} finally {
+			isLoading = false;
+		}
+	}
+
+	async function refreshModuleData(action: AiAction) {
+		console.log('Refreshing module data for action:', action);
+		const entity = action.entity.toLowerCase();
+		const toolName = ((action.data as any)?.toolName || '').toLowerCase();
+
+		// Always invalidate SvelteKit data
+		await invalidateAll();
+
+		try {
+			// TODO: this has to be different because of external modules
+
+			// Determine which stores to refresh
+			// const isTask =
+			// 	entity.includes('task') ||
+			// 	entity.includes('project') ||
+			// 	entity.includes('area') ||
+			// 	entity.includes('log') ||
+			// 	toolName.includes('task');
+			// const isFinance =
+			// 	entity.includes('expense') ||
+			// 	entity.includes('sub') ||
+			// 	entity.includes('account') ||
+			// 	entity.includes('budget') ||
+			// 	toolName.includes('expense');
+			// const isHealth =
+			// 	entity.includes('weight') ||
+			// 	entity.includes('activity') ||
+			// 	entity.includes('measure') ||
+			// 	entity.includes('profile') ||
+			// 	toolName.includes('weight') ||
+			// 	toolName.includes('activity');
+			// const isGoal =
+			// 	entity.includes('goal') || entity.includes('resource') || toolName.includes('goal');
+			// const isMeal =
+			// 	entity.includes('meal') ||
+			// 	entity.includes('workout') ||
+			// 	toolName.includes('meal') ||
+			// 	toolName.includes('workout');
+
+			// if (isTask) {
+			// 	console.log('Refreshing Tasks store...');
+			// 	const { loadAllTasksData } = await import('$lib/stores/modules/tasks/tasks.store');
+			// 	await loadAllTasksData();
+			// }
+			// if (isFinance) {
+			// 	console.log('Refreshing Finance store...');
+			// 	const { loadAllFinanceData } = await import('$lib/stores/modules/finance/finance.store');
+			// 	await loadAllFinanceData();
+			// }
+			// if (isHealth) {
+			// 	console.log('Refreshing Health store...');
+			// 	const { loadAllHealthData } = await import('$lib/stores/modules/health/health.store');
+			// 	await loadAllHealthData();
+			// }
+			// if (isGoal) {
+			// 	console.log('Refreshing Goals store...');
+			// 	const { loadAllGoalsData } = await import('$lib/stores/modules/goals/goals.store');
+			// 	await loadAllGoalsData();
+			// }
+			// if (isMeal) {
+			// 	console.log('Refreshing Meals store...');
+			// 	const { loadAllMealsData } = await import('$lib/stores/modules/meals/meals.store');
+			// 	await loadAllMealsData();
+			// }
+
+			console.log('Refresh complete.');
+		} catch (e) {
+			console.warn(`Failed to refresh store for action:`, e);
+		}
+	}
+
+	function deleteSession(sessionId: string) {
+		sessionToDelete = sessionId;
+		showDeleteDialog = true;
+	}
+
+	async function confirmDelete() {
+		if (sessionToDelete) {
+			await fetch(`/api/ai/chat?sessionId=${sessionToDelete}`, { method: 'DELETE' });
+			await loadSessions();
+			if (currentSessionId === sessionToDelete) {
+				view = 'sessions';
+				currentSessionId = null;
+			}
+		}
+		showDeleteDialog = false;
+		sessionToDelete = null;
+	}
+
+	async function scrollToBottom() {
+		await tick();
+		if (scrollViewport) {
+			scrollViewport.scrollTop = scrollViewport.scrollHeight;
+		}
+	}
+
+	// Resizing Handlers
+	function startResizing(e: MouseEvent) {
+		isResizing = true;
+		e.preventDefault();
+	}
+
+	function handleMouseMove(e: MouseEvent) {
+		if (!isResizing) return;
+		const newWidth = window.innerWidth - e.clientX;
+		if (newWidth >= minWidth && newWidth <= maxWidth) {
+			width = newWidth;
+		}
+	}
+
+	function stopResizing() {
+		isResizing = false;
+	}
+
+	function handleKeydown(e: KeyboardEvent) {
+		if (e.key === 'Enter' && !e.shiftKey) {
+			e.preventDefault();
+			sendMessage();
+		}
+	}
+
+	onMount(() => {
+		loadSessions();
+		loadSettings();
+		window.addEventListener('mousemove', handleMouseMove);
+		window.addEventListener('mouseup', stopResizing);
+		return () => {
+			window.removeEventListener('mousemove', handleMouseMove);
+			window.removeEventListener('mouseup', stopResizing);
+		};
+	});
+
+	$effect(() => {
+		if (isOpen && view === 'chat') {
+			scrollToBottom();
+		}
+	});
+</script>
+
+{#if isOpen}
+	<aside
+		class="flex flex-col border-l border-border/60 bg-background/95 shadow-sm backdrop-blur transition-all duration-300"
+		style="width: min({width}px, 100vw)"
+	>
+		<!-- Resize Handle -->
+		<button
+			type="button"
+			aria-label="Resize handle"
+			class="absolute top-0 bottom-0 left-0 w-1 cursor-ew-resize transition-colors hover:bg-primary/30 {isResizing
+				? 'bg-primary'
+				: ''}"
+			onmousedown={startResizing}
+		></button>
+
+		<ChatHeader
+			{view}
+			onBack={() => (view = 'sessions')}
+			onNewChat={startNewChat}
+			onClose={() => (isOpen = false)}
+		/>
+
+		{#if view === 'sessions'}
+			<SessionList
+				{sessions}
+				onNewChat={startNewChat}
+				onLoadSession={loadMessages}
+				onDeleteSession={deleteSession}
+			/>
+		{:else}
+			<!-- Chat View -->
+			<div class="flex-1 overflow-y-auto scroll-smooth bg-muted/10 p-4" bind:this={scrollViewport}>
+				<div class="space-y-6">
+					{#each messages.filter((m) => m.role === 'user' || (m.role === 'assistant' && (m.content?.trim() !== '' || m.contextMetadata || m.parts || m.attachments))) as msg (msg.id)}
+						<ChatMessage message={msg} />
+					{/each}
+					{#if isLoading && !isStreaming}
+						<div class="flex items-start">
+							<div
+								class="text-muted-foreground flex items-center gap-3 rounded-2xl border border-border/60 bg-muted/20 px-3 py-2 text-[10px] tracking-[0.2em] uppercase shadow-sm"
+							>
+								<Loader2 class="h-3.5 w-3.5 animate-spin" />
+								Thinking
+								<span class="ai-dots">
+									<span></span>
+									<span></span>
+									<span></span>
+								</span>
+							</div>
+						</div>
+					{/if}
+				</div>
+			</div>
+
+			<ReviewChangesOverlay {pendingAction} {actionTimer} onCancelAction={cancelAction} />
+
+			<ChatInput
+				bind:input
+				{isLoading}
+				{pendingAction}
+				onSendMessage={sendMessage}
+				onInput={(value: string) => (input = value)}
+				onKeydown={handleKeydown}
+			/>
+		{/if}
+	</aside>
+{/if}
+
+<AlertDialog.Root bind:open={showDeleteDialog}>
+	<AlertDialog.Content>
+		<AlertDialog.Header>
+			<AlertDialog.Title>Delete Chat Session</AlertDialog.Title>
+			<AlertDialog.Description>
+				Are you sure you want to delete this chat session? This action cannot be undone.
+			</AlertDialog.Description>
+		</AlertDialog.Header>
+		<AlertDialog.Footer>
+			<AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+			<AlertDialog.Action onclick={confirmDelete}>Delete</AlertDialog.Action>
+		</AlertDialog.Footer>
+	</AlertDialog.Content>
+</AlertDialog.Root>
+
+<style>
+	.ai-dots {
+		display: inline-flex;
+		gap: 4px;
+	}
+
+	.ai-dots span {
+		width: 4px;
+		height: 4px;
+		border-radius: 9999px;
+		background: currentColor;
+		opacity: 0.4;
+		animation: pulse-dot 1.2s infinite ease-in-out;
+	}
+
+	.ai-dots span:nth-child(2) {
+		animation-delay: 0.2s;
+	}
+
+	.ai-dots span:nth-child(3) {
+		animation-delay: 0.4s;
+	}
+
+	@keyframes pulse-dot {
+		0%,
+		100% {
+			transform: translateY(0);
+			opacity: 0.4;
+		}
+		50% {
+			transform: translateY(-2px);
+			opacity: 1;
+		}
+	}
+</style>

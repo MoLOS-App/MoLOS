@@ -1,0 +1,55 @@
+{
+	"name": "@molos/agent",
+	"version": "0.1.0",
+	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"import": "./dist/index.js",
+			"types": "./dist/index.d.ts"
+		},
+		"./core": {
+			"import": "./dist/core/index.js",
+			"types": "./dist/core/index.d.ts"
+		},
+		"./tools": {
+			"import": "./dist/tools/index.js",
+			"types": "./dist/tools/index.d.ts"
+		},
+		"./providers": {
+			"import": "./dist/providers/index.js",
+			"types": "./dist/providers/index.d.ts"
+		},
+		"./hooks": {
+			"import": "./dist/hooks/index.js",
+			"types": "./dist/hooks/index.d.ts"
+		},
+		"./events": {
+			"import": "./dist/events/index.js",
+			"types": "./dist/events/index.d.ts"
+		},
+		"./multi-agent": {
+			"import": "./dist/multi-agent/index.js",
+			"types": "./dist/multi-agent/index.d.ts"
+		},
+		"./types": {
+			"import": "./dist/types/index.js",
+			"types": "./dist/types/index.d.ts"
+		}
+	},
+	"scripts": {
+		"build": "tsc",
+		"dev": "tsc --watch",
+		"test": "vitest",
+		"check": "tsc --noEmit"
+	},
+	"dependencies": {
+		"zod": "^3.22.0"
+	},
+	"devDependencies": {
+		"@types/node": "^20.0.0",
+		"typescript": "^5.3.0",
+		"vitest": "^1.0.0"
+	}
+}

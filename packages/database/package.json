@@ -1,0 +1,77 @@
+{
+	"name": "@molos/database",
+	"version": "0.0.1",
+	"private": true,
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js",
+			"default": "./dist/index.js",
+			"source": "./src/index.ts"
+		},
+		"./schema": {
+			"types": "./dist/schema/index.d.ts",
+			"import": "./dist/schema/index.js",
+			"default": "./dist/schema/index.js",
+			"source": "./src/schema/index.ts"
+		},
+		"./schema/core": {
+			"types": "./dist/schema/core/index.d.ts",
+			"import": "./dist/schema/core/index.js",
+			"default": "./dist/schema/core/index.js",
+			"source": "./src/schema/core/index.ts"
+		},
+		"./utils": {
+			"types": "./dist/utils/index.d.ts",
+			"import": "./dist/utils/index.js",
+			"default": "./dist/utils/index.js",
+			"source": "./src/utils/index.ts"
+		},
+		"./migrate": {
+			"types": "./dist/migrate-improved.d.ts",
+			"import": "./dist/migrate-improved.js",
+			"default": "./dist/migrate-improved.js",
+			"source": "./src/migrate-improved.ts"
+		},
+		"./schema-validator": {
+			"types": "./dist/schema-validator.d.ts",
+			"import": "./dist/schema-validator.js",
+			"default": "./dist/schema-validator.js",
+			"source": "./src/schema-validator.ts"
+		},
+		"./migration-logger": {
+			"types": "./dist/migration-logger.d.ts",
+			"import": "./dist/migration-logger.js",
+			"default": "./dist/migration-logger.js",
+			"source": "./src/migration-logger.ts"
+		},
+		"./migration-utils": {
+			"types": "./dist/migration-utils.d.ts",
+			"import": "./dist/migration-utils.js",
+			"default": "./dist/migration-utils.js",
+			"source": "./src/migration-utils.ts"
+		}
+	},
+	"files": [
+		"dist",
+		"drizzle"
+	],
+	"scripts": {
+		"build": "tsc",
+		"dev": "tsc --watch",
+		"db:generate": "echo '❌ FORBIDDEN: drizzle-kit generate is disabled. Use bun run db:migration:create from root instead. See documentation/adr/003-migration-auto-generation-ban.md'; exit 1",
+		"db:push": "drizzle-kit push",
+		"db:studio": "drizzle-kit studio",
+		"clean": "rm -rf dist"
+	},
+	"dependencies": {
+		"drizzle-orm": "^0.41.0",
+		"better-sqlite3": "^12.5.0"
+	},
+	"devDependencies": {
+		"@types/better-sqlite3": "^7.6.13",
+		"drizzle-kit": "^0.31.8",
+		"typescript": "^5.9.3"
+	}
+}

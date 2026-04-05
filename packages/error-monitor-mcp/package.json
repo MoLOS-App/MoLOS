@@ -1,0 +1,28 @@
+{
+	"name": "@molos/error-monitor-mcp",
+	"version": "1.0.0",
+	"description": "Error monitoring MCP server for automated error detection and pattern memory",
+	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"bin": {
+		"error-monitor-mcp": "./dist/index.js"
+	},
+	"scripts": {
+		"build": "tsc",
+		"dev": "tsx src/index.ts",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@modelcontextprotocol/sdk": "^1.25.3",
+		"zod": "^4.3.6"
+	},
+	"devDependencies": {
+		"@types/node": "^20",
+		"tsx": "^4.21.0",
+		"typescript": "^5.9.3"
+	},
+	"engines": {
+		"node": ">=18"
+	}
+}

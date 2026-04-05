@@ -1,0 +1,39 @@
+{
+	"$schema": "https://turbo.build/schema.json",
+	"globalDependencies": ["**/.env.*local"],
+	"tasks": {
+		"build": {
+			"dependsOn": ["^build"],
+			"inputs": ["$TURBO_DEFAULT$", ".env*"],
+			"outputs": [".svelte-kit/**", "dist/**"]
+		},
+		"dev": {
+			"cache": false,
+			"persistent": true
+		},
+		"lint": {
+			"dependsOn": ["^build"]
+		},
+		"test": {
+			"dependsOn": ["^build"],
+			"inputs": ["src/**/*.test.ts", "src/**/*.test.js", "**/*.spec.ts"]
+		},
+		"db:generate": {
+			"cache": false,
+			"outputs": []
+		},
+		"db:migrate": {
+			"cache": false
+		},
+		"module:sync": {
+			"cache": false
+		},
+		"clean": {
+			"cache": false
+		},
+		"typecheck": {
+			"dependsOn": ["^build"],
+			"inputs": ["**/*.ts", "**/*.svelte"]
+		}
+	}
+}

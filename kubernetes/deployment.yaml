@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: molos-deployment
+  namespace: molos
+  labels:
+    app: molos
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: molos
+  template:
+    metadata:
+      labels:
+        app: molos
+    spec:
+      containers:
+        - name: molos
+          image: ghcr.io/molos-app/molos:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 4173
+          env:
+            - name: NODE_ENV
+              value: 'production'
+            - name: DATABASE_URL
+              value: 'file:/data/molos.db'
+            - name: BETTER_AUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: molos-secrets
+                  key: better-auth-secret
+            - name: PORT
+              value: '4173'
+            - name: CSRF_TRUSTED_ORIGINS
+              value: 'http://localhost:4173,http://127.0.0.1:4173'
+
+          volumeMounts:
+            - name: molos-data
+              mountPath: /data
+              subPath: database
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 4173
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 4173
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          startupProbe:
+            httpGet:
+              path: /api/health
+              port: 4173
+            failureThreshold: 60
+            periodSeconds: 5
+      volumes:
+        - name: molos-data
+          persistentVolumeClaim:
+            claimName: molos-data-pvc
