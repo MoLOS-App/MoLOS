@@ -44,6 +44,7 @@
 	import UsersTable from './components/UsersTable.svelte';
 	import SystemSettings from './components/SystemSettings.svelte';
 	import LogsViewer from './components/LogsViewer.svelte';
+	import DatabaseManager from './components/DatabaseManager.svelte';
 
 	let { data } = $props();
 	let users = $derived(data.users);
@@ -339,6 +340,13 @@
 						<Terminal class="mr-2 h-3.5 w-3.5" />
 						Logs
 					</Tabs.Trigger>
+					<Tabs.Trigger
+						value="database"
+						class="rounded-lg px-6 text-[10px] font-bold tracking-wider uppercase data-[state=active]:bg-background data-[state=active]:shadow-xs"
+					>
+						<Database class="mr-2 h-3.5 w-3.5" />
+						Database
+					</Tabs.Trigger>
 				</Tabs.List>
 
 				{#if activeTab === 'users'}
@@ -386,6 +394,11 @@
 					onClearLogs={handleClearLogs}
 					{requestConfirmation}
 				/>
+			</Tabs.Content>
+
+			<!-- Database Tab -->
+			<Tabs.Content value="database">
+				<DatabaseManager {requestConfirmation} onDownloadDb={handleDownloadDb} />
 			</Tabs.Content>
 		</Tabs.Root>
 	</div>

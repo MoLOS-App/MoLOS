@@ -1,5 +1,6 @@
 {
   "lockfileVersion": 1,
+  "configVersion": 0,
   "workspaces": {
     "": {
       "name": "molos",
@@ -19,16 +20,8 @@
         "@layerstack/tailwind": "2.0.0-next.17",
         "@layerstack/utils": "2.0.0-next.14",
         "@modelcontextprotocol/sdk": "^1.25.3",
-        "@molos/module-ai-knowledge": "workspace:*",
-        "@molos/module-goals": "workspace:*",
-        "@molos/module-google": "workspace:*",
-        "@molos/module-health": "workspace:*",
         "@molos/module-llm-council": "workspace:*",
         "@molos/module-markdown": "workspace:*",
-        "@molos/module-meals": "workspace:*",
-        "@molos/module-sample": "workspace:*",
-        "@molos/module-social-media": "workspace:*",
-        "@molos/module-tasks": "workspace:*",
         "@noble/hashes": "^2.0.1",
         "@sinclair/typebox": "^0.34.48",
         "ai": "^6.0.84",
@@ -108,44 +101,6 @@
         "vitest-browser-svelte": "^2.0.1",
       },
     },
-    "modules/MoLOS-AI-Knowledge": {
-      "name": "@molos/module-ai-knowledge",
-      "version": "1.0.0",
-      "devDependencies": {
-        "drizzle-kit": "^0.31.8",
-        "prettier": "^3.7.4",
-      },
-      "peerDependencies": {
-        "lucide-svelte": "^0.561.0",
-        "svelte": "^5.45.0",
-      },
-    },
-    "modules/MoLOS-Goals": {
-      "name": "@molos/module-goals",
-      "version": "1.0.0",
-      "peerDependencies": {
-        "svelte": "^5.45.0",
-      },
-    },
-    "modules/MoLOS-Google": {
-      "name": "@molos/module-google",
-      "version": "1.0.0",
-      "devDependencies": {
-        "drizzle-kit": "^0.31.8",
-        "prettier": "^3.7.4",
-      },
-      "peerDependencies": {
-        "lucide-svelte": "^0.561.0",
-        "svelte": "^5.45.0",
-      },
-    },
-    "modules/MoLOS-Health": {
-      "name": "@molos/module-health",
-      "version": "1.0.0",
-      "peerDependencies": {
-        "svelte": "^5.45.0",
-      },
-    },
     "modules/MoLOS-LLM-Council": {
       "name": "@molos/module-llm-council",
       "version": "1.0.0",
@@ -183,68 +138,6 @@
         "@molos/module-types": "workspace:*",
         "@sveltejs/kit": "^2.0.0",
         "drizzle-orm": "^0.41.0",
-        "svelte": "^5.45.0",
-      },
-    },
-    "modules/MoLOS-Meals": {
-      "name": "@molos/module-meals",
-      "version": "1.0.0",
-      "peerDependencies": {
-        "svelte": "^5.45.0",
-      },
-    },
-    "modules/MoLOS-Sample-Module": {
-      "name": "@molos/module-sample",
-      "version": "1.0.0",
-      "dependencies": {
-        "lucide-svelte": "^0.561.0",
-        "zod": "^4.3.6",
-      },
-      "devDependencies": {
-        "drizzle-kit": "^0.31.8",
-        "prettier": "^3.7.4",
-      },
-      "peerDependencies": {
-        "svelte": "^5.45.0",
-      },
-    },
-    "modules/MoLOS-Social-Media": {
-      "name": "@molos/module-social-media",
-      "version": "0.1.0",
-      "dependencies": {
-        "better-sqlite3": "^11.0.0",
-        "drizzle-orm": "^0.38.0",
-        "uuid": "^10.0.0",
-        "zod": "^3.23.0",
-      },
-      "devDependencies": {
-        "@sveltejs/kit": "^2.49.2",
-        "drizzle-orm": "^0.38.0",
-        "svelte": "^5.46.1",
-        "typescript": "^5.0.0",
-        "vitest": "^4.0.16",
-      },
-      "peerDependencies": {
-        "@molos/core": "workspace:*",
-        "@molos/database": "workspace:*",
-        "@molos/module-types": "workspace:*",
-        "@sveltejs/kit": "^2.0.0",
-        "svelte": "^5.0.0",
-      },
-    },
-    "modules/MoLOS-Tasks": {
-      "name": "@molos/module-tasks",
-      "version": "1.0.4",
-      "dependencies": {
-        "drizzle": "^1.4.0",
-        "lucide-svelte": "^0.561.0",
-        "zod": "^4.3.6",
-      },
-      "devDependencies": {
-        "drizzle-kit": "^0.31.8",
-        "prettier": "^3.7.4",
-      },
-      "peerDependencies": {
         "svelte": "^5.45.0",
       },
     },
@@ -611,25 +504,9 @@
 
     "@molos/error-monitor-mcp": ["@molos/error-monitor-mcp@workspace:packages/error-monitor-mcp"],
 
-    "@molos/module-ai-knowledge": ["@molos/module-ai-knowledge@workspace:modules/MoLOS-AI-Knowledge"],
-
-    "@molos/module-goals": ["@molos/module-goals@workspace:modules/MoLOS-Goals"],
-
-    "@molos/module-google": ["@molos/module-google@workspace:modules/MoLOS-Google"],
-
-    "@molos/module-health": ["@molos/module-health@workspace:modules/MoLOS-Health"],
-
     "@molos/module-llm-council": ["@molos/module-llm-council@workspace:modules/MoLOS-LLM-Council"],
 
     "@molos/module-markdown": ["@molos/module-markdown@workspace:modules/MoLOS-Markdown"],
-
-    "@molos/module-meals": ["@molos/module-meals@workspace:modules/MoLOS-Meals"],
-
-    "@molos/module-sample": ["@molos/module-sample@workspace:modules/MoLOS-Sample-Module"],
-
-    "@molos/module-social-media": ["@molos/module-social-media@workspace:modules/MoLOS-Social-Media"],
-
-    "@molos/module-tasks": ["@molos/module-tasks@workspace:modules/MoLOS-Tasks"],
 
     "@molos/module-types": ["@molos/module-types@workspace:packages/module-types"],
 
@@ -2501,7 +2378,7 @@
 
     "utils-merge": ["utils-merge@1.0.1", "", {}, "sha512-pMZTvIkT1d+TFGvDOqodOclx0QWkkgi6Tdoa8gC8ffGAAqz9pzPTZWAybbsHHoED/ztMtkv/VoYTYyShUn81hA=="],
 
-    "uuid": ["uuid@10.0.0", "", { "bin": { "uuid": "dist/bin/uuid" } }, "sha512-8XkAphELsDnEGrDxUOHB3RGvXz6TeuYSGEZBOjtTtPm2lwhGBjLgOzLHB63IUWfBpNucQjND6d3AOudO+H3RWQ=="],
+    "uuid": ["uuid@2.0.1", "", {}, "sha512-nWg9+Oa3qD2CQzHIP4qKUqwNfzKn8P0LtFhotaCTFchsV7ZfDhAybeip/HZVeMIpZi9JgY1E3nUlwaCmZT1sEg=="],
 
     "valibot": ["valibot@1.2.0", "", { "peerDependencies": { "typescript": ">=5" }, "optionalPeers": ["typescript"] }, "sha512-mm1rxUsmOxzrwnX5arGS+U4T25RdvpPjPN4yR0u9pUBov9+zGVtO84tif1eY4r6zWxVxu3KzIyknJy3rxfRZZg=="],
 
@@ -2567,7 +2444,7 @@
 
     "webidl-conversions": ["webidl-conversions@3.0.1", "", {}, "sha512-2JAn3z8AR6rjK8Sm8orRC0h/bcl/DqL7tRPdGZ4I1CjdF+EaMLmYxBHyXuKL849eucPFhvBoxMsflfOb8kxaeQ=="],
 
-    "websocket": ["websocket@github:frozeman/WebSocket-Node#6c72925", { "dependencies": { "debug": "^2.2.0", "nan": "^2.3.3", "typedarray-to-buffer": "^3.1.2", "yaeti": "^0.0.6" } }, "frozeman-WebSocket-Node-6c72925"],
+    "websocket": ["websocket@github:frozeman/WebSocket-Node#6c72925", { "dependencies": { "debug": "^2.2.0", "nan": "^2.3.3", "typedarray-to-buffer": "^3.1.2", "yaeti": "^0.0.6" } }, "frozeman-WebSocket-Node-6c72925", "sha512-JRuargwhMA5xY6szp7e8JRmIu0Zw1SYvW7gLu9SwaKGe7ud0osV/O7+T8ZN54RZW2FM46OOZ0QipgyPeumag0w=="],
 
     "whatwg-url": ["whatwg-url@5.0.0", "", { "dependencies": { "tr46": "~0.0.3", "webidl-conversions": "^3.0.0" } }, "sha512-saE57nupxk6v3HY35+jzBwYa0rKSy0XR8JSxZPwgLr7ys0IBzhGviA1/TUGJLmSVqs8pb9AnvICXEuOHLprYTw=="],
 
@@ -2652,12 +2529,6 @@
     "@molos/module-markdown/marked": ["marked@15.0.7", "", { "bin": { "marked": "bin/marked.js" } }, "sha512-dgLIeKGLx5FwziAnsk4ONoGwHwGPJzselimvlVskE9XLN4Orv9u2VA3GWw/lYUqjfA0rUT/6fqKwfZJapP9BEg=="],
 
     "@molos/module-markdown/zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
-
-    "@molos/module-social-media/better-sqlite3": ["better-sqlite3@11.10.0", "", { "dependencies": { "bindings": "^1.5.0", "prebuild-install": "^7.1.1" } }, "sha512-EwhOpyXiOEL/lKzHz9AW1msWFNzGc/z+LzeB3/jnFJpxu+th2yqvzsSWas1v9jgs9+xiXJcD5A8CJxAG2TaghQ=="],
-
-    "@molos/module-social-media/drizzle-orm": ["drizzle-orm@0.38.4", "", { "peerDependencies": { "@aws-sdk/client-rds-data": ">=3", "@cloudflare/workers-types": ">=4", "@electric-sql/pglite": ">=0.2.0", "@libsql/client": ">=0.10.0", "@libsql/client-wasm": ">=0.10.0", "@neondatabase/serverless": ">=0.10.0", "@op-engineering/op-sqlite": ">=2", "@opentelemetry/api": "^1.4.1", "@planetscale/database": ">=1", "@prisma/client": "*", "@tidbcloud/serverless": "*", "@types/better-sqlite3": "*", "@types/pg": "*", "@types/react": ">=18", "@types/sql.js": "*", "@vercel/postgres": ">=0.8.0", "@xata.io/client": "*", "better-sqlite3": ">=7", "bun-types": "*", "expo-sqlite": ">=14.0.0", "knex": "*", "kysely": "*", "mysql2": ">=2", "pg": ">=8", "postgres": ">=3", "react": ">=18", "sql.js": ">=1", "sqlite3": ">=5" }, "optionalPeers": ["@aws-sdk/client-rds-data", "@cloudflare/workers-types", "@electric-sql/pglite", "@libsql/client", "@libsql/client-wasm", "@neondatabase/serverless", "@op-engineering/op-sqlite", "@opentelemetry/api", "@planetscale/database", "@prisma/client", "@tidbcloud/serverless", "@types/better-sqlite3", "@types/pg", "@types/react", "@types/sql.js", "@vercel/postgres", "@xata.io/client", "better-sqlite3", "bun-types", "expo-sqlite", "knex", "kysely", "mysql2", "pg", "postgres", "react", "sql.js", "sqlite3"] }, "sha512-s7/5BpLKO+WJRHspvpqTydxFob8i1vo2rEx4pY6TGY7QSMuUfWUuzaY0DIpXCkgHOo37BaFC+SJQb99dDUXT3Q=="],
-
-    "@molos/module-social-media/zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
 
     "@molos/playwright-mcp/playwright": ["playwright@1.59.1", "", { "dependencies": { "playwright-core": "1.59.1" }, "optionalDependencies": { "fsevents": "2.3.2" }, "bin": { "playwright": "cli.js" } }, "sha512-C8oWjPR3F81yljW9o5OxcWzfh6avkVwDD2VYdwIGqTkl+OGFISgypqzfu7dOe4QNLL2aqcWBmI3PMtLIK233lw=="],
 
@@ -2892,8 +2763,6 @@
     "web3-eth-abi/bn.js": ["bn.js@4.11.6", "", {}, "sha512-XWwnNNFCuuSQ0m3r3C4LE3EiORltHd9M05pq6FOlVeiophzRbMo50Sbz1ehl8K3Z+jw9+vmgnXefY1hz8X+2wA=="],
 
     "web3-eth-accounts/eth-lib": ["eth-lib@0.2.7", "", { "dependencies": { "bn.js": "^4.11.6", "elliptic": "^6.4.0", "xhr-request-promise": "^0.1.2" } }, "sha512-VqEBQKH92jNsaE8lG9CTq8M/bc12gdAfb5MY8Ro1hVyXkh7rOtY3m5tRHK3Hus5HqIAAwU2ivcUjTLVwsvf/kw=="],
-
-    "web3-eth-accounts/uuid": ["uuid@2.0.1", "", {}, "sha512-nWg9+Oa3qD2CQzHIP4qKUqwNfzKn8P0LtFhotaCTFchsV7ZfDhAybeip/HZVeMIpZi9JgY1E3nUlwaCmZT1sEg=="],
 
     "web3-eth-iban/bn.js": ["bn.js@4.11.6", "", {}, "sha512-XWwnNNFCuuSQ0m3r3C4LE3EiORltHd9M05pq6FOlVeiophzRbMo50Sbz1ehl8K3Z+jw9+vmgnXefY1hz8X+2wA=="],
 
